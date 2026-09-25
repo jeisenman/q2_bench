@@ -1,0 +1,12 @@
+.coverage
+.agentsdk/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+build/
+dist/
+reports/
+*.egg-info/
+var/
