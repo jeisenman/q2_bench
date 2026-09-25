@@ -32,7 +32,7 @@ Obtain credentials through the approved Q2 access process; do not copy another
 developer's credential files. The repository expects:
 
 - An AWS SSO profile in `~/.aws/config`. The default profile is
-  `Q2Developer-031713251199`; set `AWS_PROFILE` if your assigned profile has a
+  `Q2Developer-#########`; set `AWS_PROFILE` if your assigned profile has a
   different name.
 - The Q2 CA certificate at `~/.aws/q2-ca-bundle.pem` for container access to
   AWS services.
@@ -52,7 +52,7 @@ SSO access:
 
 ```bash
 export CODEX_HOME="${CODEX_HOME:-$HOME/.bedrock_codex}"
-export AWS_PROFILE="${AWS_PROFILE:-Q2Developer-031713251199}"
+export AWS_PROFILE="${AWS_PROFILE:-Q2Developer-#########}"
 aws sso login --profile "$AWS_PROFILE"
 aws sts get-caller-identity --profile "$AWS_PROFILE"
 docker compose config --quiet
@@ -120,7 +120,7 @@ Export the host paths and AWS profile that Docker Compose should mount:
 
 ```bash
 export CODEX_HOME="${CODEX_HOME:-$HOME/.bedrock_codex}"
-export AWS_PROFILE="${AWS_PROFILE:-Q2Developer-031713251199}"
+export AWS_PROFILE="${AWS_PROFILE:-Q2Developer-#########}"
 ```
 
 Refresh AWS SSO credentials on the host before running any container command

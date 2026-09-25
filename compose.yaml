@@ -11,7 +11,7 @@ x-agentbench: &agentbench
   environment:
     AWS_CA_BUNDLE: /home/agentbench/.aws/q2-ca-bundle.pem
     AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-2}
-    AWS_PROFILE: ${AWS_PROFILE:-Q2Developer-031713251199}
+    AWS_PROFILE: ${AWS_PROFILE:-Q2Developer-#########}
     AWS_REGION: ${AWS_REGION:-us-east-2}
     CODEX_HOME: /home/agentbench/.bedrock_codex
     CODEX_SOURCE_HOME: /mnt/codex-host
@@ -31,7 +31,7 @@ services:
     environment:
       AWS_CA_BUNDLE: /home/agentbench/.aws/q2-ca-bundle.pem
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-2}
-      AWS_PROFILE: ${AWS_PROFILE:-Q2Developer-031713251199}
+      AWS_PROFILE: ${AWS_PROFILE:-Q2Developer-#########}
       AWS_REGION: ${AWS_REGION:-us-east-2}
       CODEX_HOME: /home/agentbench/.bedrock_codex
       CODEX_SOURCE_HOME: /mnt/codex-host
