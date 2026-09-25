@@ -1,0 +1,265 @@
+{
+  "022312e6-2997-4156-bf22-921fdb1cbf40": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-22",
+    "name": "Wells Fargo - PL Data Validation",
+    "source": "resource-discovery-api"
+  },
+  "043b84df-bd0f-4c92-8a2d-851e8ae511f1": {
+    "api_status": "no-unique-match",
+    "last_checked": "2026-08-20",
+    "source": "unresolved"
+  },
+  "076939cf-4a4a-4fa4-a5e6-44a4c8d33bb2": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-29",
+    "name": "Wells Fargo Bank, National Association",
+    "source": "resource-discovery-api"
+  },
+  "09641549-76d9-4ba3-9b1c-ec0bbb4f437c": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "Seacoast Bank",
+    "source": "resource-discovery-api"
+  },
+  "151de825-fb37-4228-a1f5-cbb24d3b8ae7": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-26",
+    "name": "PrecisionLender Support Bank 01",
+    "source": "resource-discovery-api"
+  },
+  "1629288a-bae1-42c5-8334-613959c829be": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-20",
+    "name": "First Bank (Creve Coeur, MO)",
+    "source": "resource-discovery-api"
+  },
+  "1b8ba46c-91c7-4cfb-998c-d583dd08e980": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-29",
+    "name": "American AgCredit (Santa Rosa, CA)",
+    "source": "resource-discovery-api"
+  },
+  "1bad59e0-e44e-421c-bbab-c1a78ba2e579": {
+    "api_status": "no-unique-match",
+    "last_checked": "2026-08-06",
+    "prod_support_ignore": true,
+    "prod_support_ignore_reason": "PrecisionLender Canary account",
+    "source": "unresolved"
+  },
+  "1c83e1d0-caf4-4d81-8c51-bc7f7e12014d": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-22",
+    "name": "Cornhusker Bank",
+    "source": "resource-discovery-api"
+  },
+  "1f06da19-2f61-401c-a1b7-38902e4f3543": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "Scotiabank",
+    "source": "resource-discovery-api"
+  },
+  "21b952f8-508c-4842-9d0b-54890201cfb7": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-20",
+    "name": "Gulf Coast Bank and Trust",
+    "source": "resource-discovery-api"
+  },
+  "264bb95d-d384-40af-8524-95c37970945a": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-26",
+    "name": "Northwoods Bank of Minnesota",
+    "source": "resource-discovery-api"
+  },
+  "2d5e0682-cbbc-4c72-9ca2-e50ddae81401": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-20",
+    "name": "OptimumBank (Plantation, FL)",
+    "source": "resource-discovery-api"
+  },
+  "32fc2ab6-1a8d-471c-8d11-d8b51f9de0b1": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "State Savings Bank",
+    "source": "resource-discovery-api"
+  },
+  "385c35bf-29c4-48a7-9527-a91963b7af69": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "U.S. Bancorp (Minneapolis, MN)",
+    "source": "resource-discovery-api"
+  },
+  "3fd3c589-cbff-41b8-897d-72362213bc8f": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-26",
+    "name": "Fairwinds Credit Union",
+    "source": "resource-discovery-api"
+  },
+  "414725cb-5411-47db-818f-3333dd706256": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-29",
+    "name": "First Hawaiian Bank",
+    "source": "resource-discovery-api"
+  },
+  "5301628b-e85f-4ff9-b5b3-e8d13c5926a7": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "TD Bank (Wilmington, DE)",
+    "source": "resource-discovery-api"
+  },
+  "5d13454b-e8a4-4ada-98bd-b1ab2754ad89": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-29",
+    "name": "Farmers & Merchants Bank",
+    "source": "resource-discovery-api"
+  },
+  "60009dc8-695b-4b58-b512-1fc72c3c98e7": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "Popular Community Bank",
+    "source": "resource-discovery-api"
+  },
+  "631c7704-582e-4705-af1e-1dbd04af145f": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "Sunflower Bank, NA",
+    "source": "resource-discovery-api"
+  },
+  "792f7424-402e-4a7e-b4de-69f811435d9c": {
+    "api_status": "no-unique-match",
+    "last_checked": "2026-08-30",
+    "name": "BoFA",
+    "source": "user-confirmed"
+  },
+  "81914376-95ac-4531-8cf4-72ab1190d41f": {
+    "api_status": "no-unique-match",
+    "last_checked": "2026-08-22",
+    "name": "Wilmington Savings Fund Society, FSB",
+    "source": "user-confirmed"
+  },
+  "83377b51-9ab0-4974-93ff-4ab1c0d5cea8": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-22",
+    "name": "Truist Bank (Charlotte, NC)",
+    "source": "resource-discovery-api"
+  },
+  "8b2e8a38-b778-402a-819a-4904f42f5a2a": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-25",
+    "name": "Valley National Bank",
+    "source": "resource-discovery-api"
+  },
+  "8f472547-3491-479b-9731-cd81ba90b992": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-29",
+    "name": "Busey Bank",
+    "source": "resource-discovery-api"
+  },
+  "951ddcc6-dc43-408e-a4f4-bf0a67015ccc": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "Synovus Bank (Columbus, GA)",
+    "source": "resource-discovery-api"
+  },
+  "96c60b8e-d2ca-48ce-a74a-32ee65a35cbc": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-20",
+    "name": "First National Bank of Omaha",
+    "source": "resource-discovery-api"
+  },
+  "978be19f-cc1e-4cc1-8cbb-99ddbc2c1287": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-26",
+    "name": "The Citizens National Bank of Meridian (Meridian, ",
+    "source": "resource-discovery-api"
+  },
+  "982c463c-de35-4823-9fa7-17e9e48db82c": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-26",
+    "name": "First Similar Bank of Non-Credit",
+    "source": "resource-discovery-api"
+  },
+  "99b9412b-70fd-4221-8431-d1b3934889ec": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "First Example Bank",
+    "source": "resource-discovery-api"
+  },
+  "9d272969-2cdd-401b-a373-6a73cf5a3042": {
+    "api_status": "ambiguous",
+    "last_checked": "2026-08-30",
+    "name": "Glacier Bancorp",
+    "source": "user-confirmed"
+  },
+  "a6f041a5-fda3-4b68-a002-d115b39e9914": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-21",
+    "name": "Bremer Bank, National Association",
+    "source": "resource-discovery-api"
+  },
+  "ab2812e2-2486-4ff1-b8b1-4028570f0241": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-29",
+    "name": "Auburn State Bank",
+    "source": "resource-discovery-api"
+  },
+  "aff872b2-05b6-4b18-b940-679b172782e0": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-22",
+    "name": "Peoples National Bank (Mount Vernon, IL)",
+    "source": "resource-discovery-api"
+  },
+  "b441897e-a525-4546-b68c-3f6820de847c": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-29",
+    "name": "Citizens Bank - Validation",
+    "source": "resource-discovery-api"
+  },
+  "be9a26dc-5d2a-4962-8e63-2665eea43266": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-26",
+    "name": "The American National Bank of Texas (Terrell, TX)",
+    "source": "resource-discovery-api"
+  },
+  "c3563e8a-3e29-45e9-9dad-9e6743126d78": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-26",
+    "name": "Truist Bank - Data Validation",
+    "source": "resource-discovery-api"
+  },
+  "c372d2f7-7d6b-408e-a79b-a762a998d488": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-22",
+    "name": "Ag Texas Farm Credit Services",
+    "source": "resource-discovery-api"
+  },
+  "cb635fb3-df32-4dd0-9f4f-258959ef8d15": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "Citizens Bank (Providence, RI)",
+    "source": "resource-discovery-api"
+  },
+  "cd0c6dcb-fbd5-4bac-8b3a-8d48b0944a29": {
+    "api_status": "no-unique-match",
+    "last_checked": "2026-08-06",
+    "source": "unresolved"
+  },
+  "dff9e5f7-c60a-4e43-b7a9-845ab44f34d0": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-30",
+    "name": "Atlantic Union Bank (Richmond, VA)",
+    "source": "resource-discovery-api"
+  },
+  "f0677711-a7c7-4db2-bfa1-7f334a8dabf4": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-29",
+    "name": "The Union State Bank",
+    "source": "resource-discovery-api"
+  },
+  "fbfcd207-8a85-4f28-a787-3ed1e2736f28": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-29",
+    "name": "CIBC Canada",
+    "source": "resource-discovery-api"
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Resource Discovery"
+  short_description: "Query PL client resource metadata"
+  default_prompt: "Use $resource-discovery to query the Resource Discovery API for this PrecisionLender client or resource."
