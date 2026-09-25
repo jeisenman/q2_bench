@@ -1,0 +1,82 @@
+{
+  "captured_at": "2026-09-25T15:00:12.581871+00:00",
+  "claim": "CA Airflow DAG processor is unhealthy",
+  "evidence": {
+    "airflow_dag_inventory": {
+      "captured_at": "2026-09-25T15:00:12.581871+00:00",
+      "l3_main_graph_counts": {
+        "CA-02": 6,
+        "US-01": 78
+      },
+      "only_active": false
+    },
+    "airflow_health": {
+      "dag_processor": {
+        "latest_heartbeat": "2026-09-15T02:01:11.656938+00:00",
+        "status": "unhealthy"
+      },
+      "metadatabase": {
+        "status": "healthy"
+      },
+      "scheduler": {
+        "latest_heartbeat": "2026-09-25T15:00:12.581871+00:00",
+        "status": "healthy"
+      }
+    },
+    "dag_inventory": {
+      "active_dag_count": 0,
+      "inactive_dag_count": 35,
+      "last_parsed_time": "2026-09-15T01:41:32.149674+00:00",
+      "total_dag_count": 35
+    },
+    "dag_processor_log": {
+      "archive": "/opt/airflow/dags/precisionlender.zip",
+      "event_time": "2026-09-15T02:01:11.671000+00:00",
+      "message": "Processor for /opt/airflow/dags/precisionlender.zip with PID 1334507 started at 2026-09-15T01:41:11.072819+00:00 has timed out, killing it.",
+      "observed_runtime_seconds": 1192.46
+    },
+    "historical_processor_error": {
+      "error_type": "KeyError",
+      "event_time": "2026-08-14T06:45:25.958000+00:00",
+      "message": "KeyError: '/opt/airflow/dags/precisionlender.zip/l3_main_graph.py'",
+      "operation": "DAG processor refreshed the DAG directory while tracking files inside precisionlender.zip"
+    },
+    "kubernetes": {
+      "container_restart_count": 13,
+      "dag_processor_pod": "airflow-dag-processor-5d89bb769-sdwcn",
+      "namespace": "scheduler",
+      "pod_phase": "Running"
+    },
+    "oms": {
+      "corroborates_claim": false,
+      "queries": [
+        {
+          "result_count": 0,
+          "search_term": "dag_processor",
+          "time_end": "2026-09-16T23:59:59+00:00",
+          "time_start": "2026-09-14T00:00:00+00:00"
+        },
+        {
+          "result_count": 0,
+          "search_term": "DagProcessor",
+          "time_end": "2026-09-16T23:59:59+00:00",
+          "time_start": "2026-09-14T00:00:00+00:00"
+        },
+        {
+          "result_count": 0,
+          "search_term": "dag processor",
+          "time_end": "2026-09-16T23:59:59+00:00",
+          "time_start": "2026-09-14T00:00:00+00:00"
+        }
+      ],
+      "subscription_id": "71aa0ec0-8411-43a2-9908-ddd2add764eb",
+      "subscription_name": "PrecisionLender Production",
+      "telemetry_gap": "No ContainerLog, ContainerLogV2, KubePodInventory, or Heartbeat usage was returned for the inspected period.",
+      "workspace_id": "2fc9684b-5d16-42f0-ab99-9dc044e4ea73",
+      "workspace_name": "pl-oms-ca-primary"
+    }
+  },
+  "mutation_performed": false,
+  "region": "CA-02",
+  "verdict": "confirmed_by_airflow_health_not_correlated_in_oms"
+}

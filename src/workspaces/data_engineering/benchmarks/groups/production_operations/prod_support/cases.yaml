@@ -1,9 +1,64 @@
 schema_version: 1
 cases:
+  - id: current-ca-dags-exist-2026-09-25
+    reference_time: "2026-09-25T12:00:00Z"
+    prompt: Look at current CA prod support and ensure that reported DAGs exist.
+    region: CA-02
+    expected_since: "2026-09-24T05:00:00Z"
+    expected_failure_ids: []
+    expected_diagnoses: {}
+    require_reported_dags_exist: true
+    dag_inventory_captured_at: "2026-09-25T12:00:00Z"
+    infrastructure_evidence_uri: evidence/current-ca-dag-processor.json
+    expected_infrastructure_status: dag_processor_unhealthy
+    expected_oms_corroboration: false
+    expected_l3_main_graph_counts:
+      US-01: 78
+      CA-02: 6
+    expected_dag_ids:
+      - clients_data
+      - clients_metadata
+      - connection_validation
+      - database_cleanup
+      - databricks_repair_all_external_tables
+      - de_2953_andi_backfill
+      - delete_hard_coded_paths_dagDE3035
+      - delete_hard_coded_paths_dagQDS7960
+      - demo
+      - deprecate_datasets
+      - event_bus_to_payloads_historical
+      - handle_record_locked_dags
+      - invalidate_opportunity_spread_guidance_data_cache
+      - invalidate_portfolio_spread_guidance_data_cache
+      - l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543
+      - l3-main-37de14dd-118d-4d12-bfa3-89db98071a1b
+      - l3-main-47322c85-71cf-45ea-9695-6bdcc1cc1ea9
+      - l3-main-b4916353-ef8a-4af8-9601-74305858e905
+      - l3-main-cefa3c2a-e1da-4c24-8676-532dc2b59056
+      - l3-main-fbfcd207-8a85-4f28-a787-3ed1e2736f28
+      - l3-trigger-dag
+      - log_analytics_daily_graph
+      - log_cleanup
+      - opportunity_avro_aggregation_backfill
+      - opportunity_avro_aggregation_backfill_chunked
+      - opportunity_snapshot_backfill
+      - pl_storage_backfill
+      - pod_cleanup
+      - prod_support_retry_data_studio_client_tasks
+      - prod_support_slack_alerts
+      - ra_backfill
+      - ra_rerun_derived_monthly
+      - redis_maintenance
+      - redis_metrics
+      - validate_group_partitions
   - id: today-2026-09-25
     reference_time: "2026-09-25T12:00:00Z"
     prompt: do today's prod support
     expected_since: "2026-09-24T05:00:00Z"
+    infrastructure_evidence_uri: evidence/current-us-healthy.json
+    expected_infrastructure_status: healthy
+    expected_active_dag_count: 209
+    expected_active_l3_main_dag_count: 153
     expected_failure_ids:
       - US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-23T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data
       - US-01|l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a|manual__2026-09-23T05:00:00+00:00|high_quality_core_account_financial_statements.high_quality_core_account_financial_statements
@@ -20,6 +75,24 @@ cases:
       US-01|market_insights_3_output|scheduled__2026-09-24T00:00:00+00:00|client_specific.client_specific_mi_3_raw_output_validation_621d1ad2-3d0f-4fc4-8245-e3878a6bff7c: application_error
       US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T03:00:00+00:00|check_for_subscriber_client_errors: application_error
       US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T15:00:00+00:00|check_for_subscriber_client_errors: application_error
+  - id: current-ca-deployment-events-2026-09-25
+    reference_time: "2026-09-25T15:18:00Z"
+    prompt: Review the current CA Airflow deployment events and report whether the DAG deployment completed.
+    region: CA-02
+    infrastructure_evidence_uri: evidence/current-ca-deployment-events.json
+    expected_infrastructure_status: dag_processor_rollout_not_observed
+    expected_event_reasons:
+      - Killing
+      - Scheduled
+      - Pulling
+      - Pulled
+      - Created
+      - Started
+      - SuccessfulCreate
+      - Completed
+      - ScaledObjectCheckFailed
+    expected_migration_completed: true
+    expected_dag_processor_rollout_observed: false
   - id: default-2026-09-25
     reference_time: "2026-09-25T12:00:00Z"
     prompt: do prod support

@@ -15,10 +15,12 @@ from workspaces.data_engineering.benchmarks.quality import (
     ToolStep,
     TrajectoryScore,
     build_efficiency_judge_prompt,
+    dag_existence_rate,
     detect_compute_kind,
     evaluate_trajectory,
     failure_recall,
     filter_failures,
+    regional_count_accuracy,
 )
 
 __all__ = [
@@ -31,9 +33,11 @@ __all__ = [
     "ToolStep",
     "TrajectoryScore",
     "build_efficiency_judge_prompt",
+    "dag_existence_rate",
     "default_catalog",
     "detect_compute_kind",
     "evaluate_trajectory",
     "failure_recall",
     "filter_failures",
+    "regional_count_accuracy",
 ]

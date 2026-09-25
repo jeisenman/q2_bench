@@ -10,6 +10,8 @@ from typing import Any, cast
 
 import yaml
 
+from workspaces.data_engineering.benchmarks import dag_existence_rate
+
 
 class RecordedEvaluationError(RuntimeError):
     """Raised when recorded benchmark evidence cannot be evaluated."""
@@ -82,17 +84,33 @@ def load_recorded_evaluation(
         for item in diagnoses
         if isinstance(item, dict)
     }
+    actual_dag_ids = {
+        str(item["dag_id"])
+        for item in diagnoses
+        if isinstance(item, dict) and "dag_id" in item
+    }
+    expected_dag_ids = selected.get("expected_dag_ids", [])
+    if not isinstance(expected_dag_ids, list):
+        raise RecordedEvaluationError.invalid(
+            cases_path,
+            f"case {case_id!r} expected_dag_ids must be a list",
+        )
     return RecordedEvaluation(
         inputs={"prompt": str(selected["prompt"]), "case_id": case_id},
         outputs={
             "failed_since": str(result["failed_since"]),
             "failure_ids": sorted(actual_diagnoses),
+            "dag_ids": sorted(actual_dag_ids),
             "diagnoses": actual_diagnoses,
             "report": str(result["report"]),
         },
         expectations={
             "failed_since": str(selected["expected_since"]),
             "failure_ids": sorted(str(item) for item in expected_ids),
+            "dag_ids": sorted(str(item) for item in expected_dag_ids),
+            "require_reported_dags_exist": bool(
+                selected.get("require_reported_dags_exist", False)
+            ),
             "diagnoses": {
                 str(key): str(value) for key, value in expected_diagnoses.items()
             },
@@ -136,6 +154,16 @@ def publish_recorded_evaluation(
         correct = sum(actual.get(key) == value for key, value in expected.items())
         return correct / len(expected) if expected else 1.0
 
+    def score_dag_existence(
+        outputs: dict[str, object],
+        expectations: dict[str, object],
+    ) -> float:
+        if not expectations.get("require_reported_dags_exist"):
+            return 1.0
+        reported = set(cast("list[str]", outputs["dag_ids"]))
+        inventory = set(cast("list[str]", expectations["dag_ids"]))
+        return dag_existence_rate(reported, inventory)
+
     def score_response_formatting(outputs: dict[str, object]) -> float:
         report = str(outputs["report"])
         required = ("Message for Data Internal Channel", "PROD SUPPORT", "US", "CA")
@@ -144,6 +172,7 @@ def publish_recorded_evaluation(
     query_translation = scorer(name="query_translation")(score_query_translation)
     failure_recall = scorer(name="failure_recall")(score_failure_recall)
     diagnosis_accuracy = scorer(name="diagnosis_accuracy")(score_diagnosis_accuracy)
+    dag_existence = scorer(name="dag_existence")(score_dag_existence)
     response_formatting = scorer(name="response_formatting")(score_response_formatting)
     result = mlflow.genai.evaluate(
         data=[
@@ -157,6 +186,7 @@ def publish_recorded_evaluation(
             query_translation,
             failure_recall,
             diagnosis_accuracy,
+            dag_existence,
             response_formatting,
         ],
     )

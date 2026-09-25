@@ -22,6 +22,8 @@ cases:
     prompt: do today's prod support
     expected_since: "2026-09-24T05:00:00Z"
     expected_failure_ids: [US-01|dag|run|task]
+    expected_dag_ids: [dag]
+    require_reported_dags_exist: true
     expected_diagnoses:
       US-01|dag|run|task: confirmed_oom
 """,
@@ -51,6 +53,9 @@ cases:
 
     assert evaluation.inputs["case_id"] == "today"
     assert evaluation.outputs["failure_ids"] == ["US-01|dag|run|task"]
+    assert evaluation.outputs["dag_ids"] == ["dag"]
+    assert evaluation.expectations["dag_ids"] == ["dag"]
+    assert evaluation.expectations["require_reported_dags_exist"] is True
     assert evaluation.expectations["diagnoses"] == {
         "US-01|dag|run|task": "confirmed_oom"
     }
@@ -111,12 +116,15 @@ def test_publish_recorded_evaluation_configures_mlflow(monkeypatch) -> None:
         outputs={
             "failed_since": "2026-09-24T05:00:00Z",
             "failure_ids": ["failure"],
+            "dag_ids": ["dag"],
             "diagnoses": {"failure": "confirmed_oom"},
             "report": "Message for Data Internal Channel\nPROD SUPPORT\nUS\nCA",
         },
         expectations={
             "failed_since": "2026-09-24T05:00:00Z",
             "failure_ids": ["failure"],
+            "dag_ids": ["dag"],
+            "require_reported_dags_exist": True,
             "diagnoses": {"failure": "confirmed_oom"},
         },
     )
@@ -135,5 +143,8 @@ def test_publish_recorded_evaluation_configures_mlflow(monkeypatch) -> None:
         "query_translation",
         "failure_recall",
         "diagnosis_accuracy",
+        "dag_existence",
         "response_formatting",
     ]
+    dag_scorer = next(item for item in scorers if item.name == "dag_existence")
+    assert dag_scorer.function(evaluation.outputs, evaluation.expectations) == 1.0

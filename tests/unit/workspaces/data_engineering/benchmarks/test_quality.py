@@ -5,9 +5,11 @@ from workspaces.data_engineering.agents.prod_support.models import Region
 from workspaces.data_engineering.benchmarks import (
     ComputeKind,
     TaskObservation,
+    dag_existence_rate,
     detect_compute_kind,
     failure_recall,
     filter_failures,
+    regional_count_accuracy,
 )
 
 
@@ -38,6 +40,28 @@ def test_failure_recall_requires_every_expected_job() -> None:
 
     assert failure_recall({"one", "two", "three"}, expected) == 1.0
     assert failure_recall({"one", "two"}, expected) == 2 / 3
+
+
+def test_dag_existence_rejects_hallucinated_or_stale_dags() -> None:
+    inventory = {"clients_data", "event_bus_to_payloads_historical"}
+    half_exist = 1 / 2
+
+    assert dag_existence_rate({"clients_data"}, inventory) == 1.0
+    assert dag_existence_rate({"clients_data", "missing_dag"}, inventory) == half_exist
+    assert dag_existence_rate(set(), inventory) == 1.0
+
+
+def test_regional_count_accuracy_requires_exact_counts() -> None:
+    expected = {"US-01": 78, "CA-02": 6}
+    one_of_two_regions = 1 / 2
+
+    assert regional_count_accuracy(expected, expected) == 1.0
+    assert (
+        regional_count_accuracy({"US-01": 78, "CA-02": 5}, expected)
+        == one_of_two_regions
+    )
+    assert regional_count_accuracy({"US-01": 78}, expected) == one_of_two_regions
+    assert regional_count_accuracy({}, {}) == 1.0
 
 
 def test_compute_detection_routes_spark_and_batch_jobs() -> None:

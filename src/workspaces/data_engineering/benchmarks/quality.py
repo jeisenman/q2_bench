@@ -63,6 +63,22 @@ def failure_recall(actual: set[str], expected: set[str]) -> float:
     return len(actual.intersection(expected)) / len(expected) if expected else 1.0
 
 
+def dag_existence_rate(reported: set[str], inventory: set[str]) -> float:
+    """Return the share of reported DAG IDs present in the known inventory."""
+    return len(reported.intersection(inventory)) / len(reported) if reported else 1.0
+
+
+def regional_count_accuracy(
+    actual: Mapping[str, int],
+    expected: Mapping[str, int],
+) -> float:
+    """Return the share of regions whose observed counts exactly match."""
+    if not expected:
+        return 1.0
+    matches = sum(actual.get(region) == count for region, count in expected.items())
+    return matches / len(expected)
+
+
 def detect_compute_kind(log: str) -> ComputeKind:
     """Detect the compute path using explicit task-log markers."""
     normalized = log.casefold()
