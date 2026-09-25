@@ -12,6 +12,7 @@ This directory is the agent-readable entry point for the project.
 - [Benchmark scaffold](scaffold-layout.md)
 - [OpenAI Agents SDK](openai-agents-sdk.md)
 - [Vector search](vector-search.md)
+- [Data-engineering outbound targets](data-engineering-outbound.md)
 
 ## Documentation policy
 
