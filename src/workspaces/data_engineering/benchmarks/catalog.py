@@ -52,8 +52,8 @@ class BenchmarkCatalog:
 
     @classmethod
     def load(cls, root: Path) -> BenchmarkCatalog:
-        """Load all manifests beneath a benchmark groups directory."""
-        manifests = sorted(root.glob("*/**/manifest.yaml"))
+        """Load all benchmark manifests beneath a workspace directory."""
+        manifests = sorted(root.rglob("manifest.yaml"))
         return cls(_load_manifest(path) for path in manifests)
 
     def list(self) -> tuple[Benchmark, ...]:
@@ -99,4 +99,4 @@ def _load_manifest(path: Path) -> Benchmark:
 def default_catalog() -> BenchmarkCatalog:
     """Load the benchmark catalog bundled with this package."""
     package_root = files("workspaces.data_engineering.benchmarks")
-    return BenchmarkCatalog.load(Path(str(package_root.joinpath("groups"))))
+    return BenchmarkCatalog.load(Path(str(package_root)))

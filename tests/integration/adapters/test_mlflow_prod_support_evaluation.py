@@ -30,6 +30,16 @@ cases:
       automatic_actions: []
     expected_diagnoses:
       US-01|dag|run|task: confirmed_oom
+    expected_developer_message: |
+      Message for Developer
+      - Investigate dag/task: confirmed OOM.
+    expected_prod_support_message: |
+      Message for Prod Support
+      PROD SUPPORT
+      US
+      - Ongoing
+      CA
+      - Good
 """,
         encoding="utf-8",
     )
@@ -48,7 +58,12 @@ cases:
                     }
                 ],
                 "automatic_actions": [],
-                "report": "Message for Data Internal Channel\nPROD SUPPORT\nUS\nCA",
+                "report": (
+                    "Message for developer\n"
+                    "- Investigate dag/task: confirmed OOM.\n\n"
+                    "Message for Data Internal Channel\n"
+                    "PROD SUPPORT\nUS\n- Ongoing\nCA\n- Good"
+                ),
             }
         ),
         encoding="utf-8",
@@ -64,6 +79,15 @@ cases:
     assert evaluation.expectations["require_reported_dags_exist"] is True
     assert evaluation.expectations["remediation_mode"] == "suggestion_only"
     assert evaluation.outputs["automatic_actions"] == []
+    assert evaluation.outputs["developer_message"] == (
+        "Message for Developer\n- Investigate dag/task: confirmed OOM."
+    )
+    assert evaluation.outputs["prod_support_message"] == (
+        "Message for Prod Support\nPROD SUPPORT\nUS\n- Ongoing\nCA\n- Good"
+    )
+    assert evaluation.expectations["developer_message"] == (
+        "Message for Developer\n- Investigate dag/task: confirmed OOM."
+    )
     assert evaluation.expectations["diagnoses"] == {
         "US-01|dag|run|task": "confirmed_oom"
     }
@@ -89,6 +113,8 @@ cases:
     expected_since: "2026-09-24T05:00:00Z"
     expected_failure_ids: []
     expected_diagnoses: {}
+    expected_developer_message: Developer message
+    expected_prod_support_message: Prod support message
 """,
         encoding="utf-8",
     )
@@ -129,6 +155,8 @@ cases:
     expected_since: "2026-09-24T05:00:00Z"
     expected_failure_ids: []
     expected_diagnoses: {{}}
+    expected_developer_message: Developer message
+    expected_prod_support_message: Prod support message
     {invalid_metadata}
 """,
         encoding="utf-8",
@@ -196,7 +224,12 @@ def test_publish_recorded_evaluation_configures_mlflow(monkeypatch) -> None:
             "failure_ids": ["failure"],
             "dag_ids": ["dag"],
             "diagnoses": {"failure": "confirmed_oom"},
-            "report": "Message for Data Internal Channel\nPROD SUPPORT\nUS\nCA",
+            "report": (
+                "Message for Developer\nDeveloper details\n\n"
+                "Message for Prod Support\nPROD SUPPORT\nUS\nCA"
+            ),
+            "developer_message": "Message for Developer\nDeveloper details",
+            "prod_support_message": "Message for Prod Support\nPROD SUPPORT\nUS\nCA",
             "automatic_actions": [],
         },
         expectations={
@@ -207,6 +240,8 @@ def test_publish_recorded_evaluation_configures_mlflow(monkeypatch) -> None:
             "require_reported_dags_exist": True,
             "remediation_mode": "suggestion_only",
             "diagnoses": {"failure": "confirmed_oom"},
+            "developer_message": "Message for Developer\nDeveloper details",
+            "prod_support_message": "Message for Prod Support\nPROD SUPPORT\nUS\nCA",
         },
     )
 
@@ -228,6 +263,8 @@ def test_publish_recorded_evaluation_configures_mlflow(monkeypatch) -> None:
         "regional_reporting",
         "remediation_safety",
         "response_formatting",
+        "developer_message",
+        "prod_support_message",
     ]
     dag_scorer = next(item for item in scorers if item.name == "dag_existence")
     assert dag_scorer.function(evaluation.outputs, evaluation.expectations) == 1.0
@@ -248,3 +285,15 @@ def test_publish_recorded_evaluation_configures_mlflow(monkeypatch) -> None:
     }
     assert regional_scorer.function(unsafe_outputs, evaluation.expectations) == 0.0
     assert remediation_scorer.function(unsafe_outputs, evaluation.expectations) == 0.0
+    developer_scorer = next(
+        item for item in scorers if item.name == "developer_message"
+    )
+    prod_support_scorer = next(
+        item for item in scorers if item.name == "prod_support_message"
+    )
+    assert developer_scorer.function(evaluation.outputs, evaluation.expectations) == 1.0
+    assert (
+        prod_support_scorer.function(evaluation.outputs, evaluation.expectations) == 1.0
+    )
+    wrong_message = {**evaluation.outputs, "prod_support_message": "wrong"}
+    assert prod_support_scorer.function(wrong_message, evaluation.expectations) == 0.0

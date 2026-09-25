@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from urllib.parse import urlencode
 
 from workspaces.data_engineering.agents.prod_support.models import (
@@ -11,18 +11,22 @@ from workspaces.data_engineering.agents.prod_support.models import (
     Region,
 )
 
+HISTORICAL_WINDOW_DAYS = 2
+
 
 def format_report(
     operational_date: date,
     failures: tuple[AirflowFailure, ...],
     diagnoses: tuple[FailureDiagnosis, ...],
+    *,
+    reference_date: date | None = None,
 ) -> str:
     """Render a deterministic regional production-support report."""
     diagnosis_by_id = {item.failure_id: item for item in diagnoses}
     lines = [
         "URLs to validate",
-        f"- {airflow_failure_url(Region.US_01, operational_date)}",
-        f"- {airflow_failure_url(Region.CA_02, operational_date)}",
+        f"- {airflow_failure_url(Region.US_01, operational_date, reference_date)}",
+        f"- {airflow_failure_url(Region.CA_02, operational_date, reference_date)}",
         "",
         "Message for Data Internal Channel",
         f":bangbang: PROD SUPPORT {operational_date.isoformat()} :bangbang:",
@@ -39,17 +43,24 @@ def format_report(
     return "\n".join(lines)
 
 
-def airflow_failure_url(region: Region, operational_date: date) -> str:
+def airflow_failure_url(
+    region: Region,
+    operational_date: date,
+    reference_date: date | None = None,
+) -> str:
     """Return the filtered Airflow task-instance URL for one region and day."""
     host = {
         Region.US_01: "airflow-us01.precisionlender.com",
         Region.CA_02: "airflow-ca02.precisionlender.com",
     }[region]
-    cutoff = datetime.combine(operational_date, time(hour=5), tzinfo=UTC)
-    query = urlencode(
-        {
-            "_flt_3_state": "failed",
-            "_flt_2_end_date": cutoff.strftime("%m/%d/%Y %-I:%M %p"),
-        }
-    )
+    cutoff = datetime.combine(operational_date, time(hour=9), tzinfo=UTC)
+    filters = {"_flt_1_end_date": cutoff.isoformat()}
+    if (
+        reference_date is not None
+        and (reference_date - operational_date).days >= HISTORICAL_WINDOW_DAYS
+    ):
+        upper_bound = cutoff + timedelta(days=1)
+        filters["_flt_2_end_date"] = upper_bound.isoformat()
+    filters["_flt_3_state"] = "failed"
+    query = urlencode(filters)
     return f"https://{host}/taskinstance/list/?{query}#"

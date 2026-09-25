@@ -3,6 +3,10 @@
 Each operational date has a redacted Airflow evidence snapshot under the
 ignored `var/benchmark_data/prod_support/<date>/` directory.
 
+Curated benchmark definitions and evidence are versioned separately under
+`dates/09-25-26/`. Suite directory names use `MM-DD-YY`; the suite manifest
+records the unambiguous ISO date.
+
 Capture a date with:
 
 ```bash

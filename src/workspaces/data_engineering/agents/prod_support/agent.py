@@ -75,7 +75,8 @@ class ProdSupportAgent:
 
     async def investigate(self, prompt: str) -> ProdSupportOutcome:
         """Return structured evidence and reporting for benchmark evaluation."""
-        window = resolve_query_window(prompt, self._clock())
+        reference_time = self._clock()
+        window = resolve_query_window(prompt, reference_time)
         candidates = await self._source.discover_failures(window.failed_since)
         failures = tuple(
             failure for failure in candidates if failure.end_at >= window.failed_since
@@ -91,6 +92,7 @@ class ProdSupportAgent:
             window.operational_date,
             tuple(hydrated),
             tuple(diagnoses),
+            reference_date=reference_time.date(),
         )
         return ProdSupportOutcome(
             operational_date=window.operational_date,

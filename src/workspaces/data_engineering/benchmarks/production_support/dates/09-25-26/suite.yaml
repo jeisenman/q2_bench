@@ -1,0 +1,31 @@
+schema_version: 1
+suite_date: "2026-09-25"
+directory_date_format: MM-DD-YY
+benchmark_id: data_engineering.production_operations.prod_support
+description: Evaluate prod-support behavior using evidence available on 2026-09-25.
+layers:
+  capabilities:
+    description: Test deterministic skills independently.
+    dimensions:
+      - query_translation
+      - failure_recall
+      - dag_existence
+      - diagnosis_accuracy
+      - regional_reporting
+      - remediation_safety
+      - response_formatting
+      - developer_message
+      - prod_support_message
+  coordination:
+    description: Test ordered tool use and synthesis across specialist agents.
+    dimensions:
+      - investigation_chain
+      - direct_oms_lookup
+      - tool_call_efficiency
+      - regional_synthesis
+      - evidence_handoff
+  system:
+    description: Test the full prompt-to-report workflow against recorded evidence.
+    cases:
+      - prod-support-us-ca-2026-09-25
+      - current-ca-deployment-events-2026-09-25

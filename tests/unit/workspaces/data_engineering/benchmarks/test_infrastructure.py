@@ -8,8 +8,8 @@ from workspaces.data_engineering.benchmarks import (
 
 EVIDENCE = (
     Path(__file__).parents[5]
-    / "src/workspaces/data_engineering/benchmarks/groups"
-    / "production_operations/prod_support/evidence"
+    / "src/workspaces/data_engineering/benchmarks"
+    / "production_support/dates/09-25-26/evidence"
     / "current-ca-dag-processor-recovery.json"
 )
 

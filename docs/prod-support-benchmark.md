@@ -48,6 +48,36 @@ Captured evidence includes one prior day as distractor data. This allows the
 benchmark to measure whether the agent selects every failure in the target
 window without incorrectly including older failures.
 
+## Date-versioned benchmark suites
+
+Benchmark definitions are immutable snapshots organized using `MM-DD-YY`:
+
+```text
+production_support/
+├── manifest.yaml
+├── dataset/
+│   └── README.md
+└── dates/
+    └── 09-25-26/
+        ├── suite.yaml
+        ├── cases.yaml
+        └── evidence/
+```
+
+The root manifest provides the stable benchmark identity. Each dated suite
+captures the cases and evidence available on that date and defines three
+evaluation layers:
+
+- Capabilities test query translation, failure capture, diagnosis, safety, and
+  message construction independently.
+- Coordination tests ordered specialist tool use, evidence handoffs, regional
+  synthesis, and investigation efficiency.
+- System behavior tests the complete prompt-to-final-report workflow against
+  the recorded dataset.
+
+New benchmark snapshots belong in a new `MM-DD-YY` directory rather than
+mutating a prior suite.
+
 The 2026-09-26 dataset is marked as future in the case catalog because it
 cannot contain production evidence as of 2026-09-25.
 
@@ -58,6 +88,12 @@ cannot contain production evidence as of 2026-09-25.
 - DAG existence: every reported DAG ID must exist in the captured regional
   inventory; an empty failure set passes without inventing failures.
 - Diagnosis accuracy: evidence-based classification from exact logs.
+- Developer message: exact curated technical analysis and recommended next steps.
+  It includes filtered US and CA Airflow cluster links and expands operational
+  acronyms such as DV (Distinctness Validation), MI (Market Insights), and MI3
+  (Market Insights 3).
+- Prod-support message: exact curated operational channel update, including
+  regional infrastructure findings.
 - Response formatting: required date and regional report structure.
 
 The `prod-support-us-ca-2026-09-25` case is the single curated benchmark for

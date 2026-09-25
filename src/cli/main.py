@@ -27,8 +27,8 @@ from workspaces.data_engineering.benchmarks import default_catalog
 DEFAULT_TRACKING_URI = "sqlite:///var/mlflow/backend.db"
 DEFAULT_ARTIFACT_ROOT = Path("var/mlflow/artifacts")
 PROD_SUPPORT_CASES = Path(
-    "src/workspaces/data_engineering/benchmarks/groups/"
-    "production_operations/prod_support/cases.yaml"
+    "src/workspaces/data_engineering/benchmarks/"
+    "production_support/dates/09-25-26/cases.yaml"
 )
 DEFAULT_ASSISTANT_CONFIG = Path.home() / ".mlflow/assistant/config.json"
 

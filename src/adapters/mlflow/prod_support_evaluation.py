@@ -116,6 +116,19 @@ def load_recorded_evaluation(
             result_path,
             "automatic_actions must be a list",
         )
+    expected_developer_message = _required_message(
+        selected,
+        cases_path,
+        case_id,
+        "expected_developer_message",
+    )
+    expected_prod_support_message = _required_message(
+        selected,
+        cases_path,
+        case_id,
+        "expected_prod_support_message",
+    )
+    report = str(result["report"])
     return RecordedEvaluation(
         inputs={"prompt": str(selected["prompt"]), "case_id": case_id},
         outputs={
@@ -123,7 +136,25 @@ def load_recorded_evaluation(
             "failure_ids": sorted(actual_diagnoses),
             "dag_ids": sorted(actual_dag_ids),
             "diagnoses": actual_diagnoses,
-            "report": str(result["report"]),
+            "report": report,
+            "developer_message": _extract_message(
+                report,
+                canonical_heading="Message for Developer",
+                headings=("Message for Developer",),
+                stop_headings=(
+                    "Message for Prod Support",
+                    "Message for Data Internal Channel",
+                ),
+            ),
+            "prod_support_message": _extract_message(
+                report,
+                canonical_heading="Message for Prod Support",
+                headings=(
+                    "Message for Prod Support",
+                    "Message for Data Internal Channel",
+                ),
+                stop_headings=("Benchmark observations",),
+            ),
             "automatic_actions": [str(item) for item in automatic_actions],
         },
         expectations={
@@ -138,6 +169,8 @@ def load_recorded_evaluation(
             "diagnoses": {
                 str(key): str(value) for key, value in expected_diagnoses.items()
             },
+            "developer_message": _normalize_message(expected_developer_message),
+            "prod_support_message": _normalize_message(expected_prod_support_message),
         },
     )
 
@@ -208,8 +241,23 @@ def publish_recorded_evaluation(
 
     def score_response_formatting(outputs: dict[str, object]) -> float:
         report = str(outputs["report"])
-        required = ("Message for Data Internal Channel", "PROD SUPPORT", "US", "CA")
-        return float(all(item in report for item in required))
+        required = ("PROD SUPPORT", "US", "CA")
+        has_messages = bool(
+            outputs.get("developer_message") and outputs.get("prod_support_message")
+        )
+        return float(has_messages and all(item in report for item in required))
+
+    def score_developer_message(
+        outputs: dict[str, object],
+        expectations: dict[str, object],
+    ) -> float:
+        return _score_expected_message(outputs, expectations, "developer_message")
+
+    def score_prod_support_message(
+        outputs: dict[str, object],
+        expectations: dict[str, object],
+    ) -> float:
+        return _score_expected_message(outputs, expectations, "prod_support_message")
 
     query_translation = scorer(name="query_translation")(score_query_translation)
     failure_recall = scorer(name="failure_recall")(score_failure_recall)
@@ -218,6 +266,10 @@ def publish_recorded_evaluation(
     regional_reporting = scorer(name="regional_reporting")(score_regional_reporting)
     remediation_safety = scorer(name="remediation_safety")(score_remediation_safety)
     response_formatting = scorer(name="response_formatting")(score_response_formatting)
+    developer_message = scorer(name="developer_message")(score_developer_message)
+    prod_support_message = scorer(name="prod_support_message")(
+        score_prod_support_message
+    )
     result = mlflow.genai.evaluate(
         data=[
             {
@@ -234,6 +286,8 @@ def publish_recorded_evaluation(
             regional_reporting,
             remediation_safety,
             response_formatting,
+            developer_message,
+            prod_support_message,
         ],
     )
     run_id = getattr(result, "run_id", None)
@@ -257,3 +311,59 @@ def _failure_id(value: dict[str, object]) -> str:
         return "|".join(str(value[key]) for key in required)
     except KeyError as error:
         raise RecordedEvaluationError.missing_field(error.args[0]) from error
+
+
+def _required_message(
+    case: dict[str, object],
+    path: Path,
+    case_id: str,
+    field: str,
+) -> str:
+    value = case.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise RecordedEvaluationError.invalid(
+            path,
+            f"case {case_id!r} {field} must be a non-empty string",
+        )
+    return value
+
+
+def _extract_message(
+    report: str,
+    *,
+    canonical_heading: str,
+    headings: tuple[str, ...],
+    stop_headings: tuple[str, ...],
+) -> str:
+    lines = report.splitlines()
+    normalized_headings = {heading.casefold() for heading in headings}
+    normalized_stops = {heading.casefold() for heading in stop_headings}
+    start: int | None = None
+    end = len(lines)
+    for index, line in enumerate(lines):
+        heading = line.strip().lstrip("#").strip().rstrip(":").casefold()
+        if start is None and heading in normalized_headings:
+            start = index + 1
+            continue
+        if start is not None and heading in normalized_stops:
+            end = index
+            break
+    if start is None:
+        return ""
+    body = "\n".join(lines[start:end]).strip()
+    return _normalize_message(f"{canonical_heading}\n{body}")
+
+
+def _normalize_message(message: str) -> str:
+    lines = [line.rstrip() for line in message.strip().splitlines()]
+    return "\n".join(lines)
+
+
+def _score_expected_message(
+    outputs: dict[str, object],
+    expectations: dict[str, object],
+    field: str,
+) -> float:
+    actual = _normalize_message(str(outputs.get(field, "")))
+    expected = _normalize_message(str(expectations[field]))
+    return float(actual == expected)

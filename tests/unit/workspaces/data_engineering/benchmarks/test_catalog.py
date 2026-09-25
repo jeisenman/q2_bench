@@ -39,8 +39,8 @@ def test_prod_support_case_combines_us_and_ca_expectations() -> None:
     expected_us_failure_count = 7
     cases_path = (
         Path(__file__).parents[5]
-        / "src/workspaces/data_engineering/benchmarks/groups"
-        / "production_operations/prod_support/cases.yaml"
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates/09-25-26/cases.yaml"
     )
     configured = yaml.safe_load(cases_path.read_text(encoding="utf-8"))["cases"]
     case = next(
@@ -88,3 +88,18 @@ def test_prod_support_case_combines_us_and_ca_expectations() -> None:
         "default-2026-09-25",
     }
     assert removed_ids.isdisjoint(item["id"] for item in configured)
+
+
+def test_prod_support_suite_defines_three_evaluation_layers() -> None:
+    suite_path = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates/09-25-26/suite.yaml"
+    )
+    suite = yaml.safe_load(suite_path.read_text(encoding="utf-8"))
+
+    assert suite["suite_date"] == "2026-09-25"
+    assert set(suite["layers"]) == {"capabilities", "coordination", "system"}
+    assert "diagnosis_accuracy" in suite["layers"]["capabilities"]["dimensions"]
+    assert "evidence_handoff" in suite["layers"]["coordination"]["dimensions"]
+    assert "prod-support-us-ca-2026-09-25" in suite["layers"]["system"]["cases"]
