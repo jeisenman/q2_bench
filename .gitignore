@@ -1,5 +1,7 @@
 .coverage
 .agentsdk/
+.env
+!.env.example
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/

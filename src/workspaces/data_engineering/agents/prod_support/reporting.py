@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime, time
+from urllib.parse import urlencode
 
 from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
@@ -19,6 +20,10 @@ def format_report(
     """Render a deterministic regional production-support report."""
     diagnosis_by_id = {item.failure_id: item for item in diagnoses}
     lines = [
+        "URLs to validate",
+        f"- {airflow_failure_url(Region.US_01, operational_date)}",
+        f"- {airflow_failure_url(Region.CA_02, operational_date)}",
+        "",
         "Message for Data Internal Channel",
         f":bangbang: PROD SUPPORT {operational_date.isoformat()} :bangbang:",
     ]
@@ -32,3 +37,19 @@ def format_report(
                 f"  - {failure.dag_id} / {failure.task_id}: {diagnosis.kind.value}"
             )
     return "\n".join(lines)
+
+
+def airflow_failure_url(region: Region, operational_date: date) -> str:
+    """Return the filtered Airflow task-instance URL for one region and day."""
+    host = {
+        Region.US_01: "airflow-us01.precisionlender.com",
+        Region.CA_02: "airflow-ca02.precisionlender.com",
+    }[region]
+    cutoff = datetime.combine(operational_date, time(hour=5), tzinfo=UTC)
+    query = urlencode(
+        {
+            "_flt_3_state": "failed",
+            "_flt_2_end_date": cutoff.strftime("%m/%d/%Y %-I:%M %p"),
+        }
+    )
+    return f"https://{host}/taskinstance/list/?{query}#"

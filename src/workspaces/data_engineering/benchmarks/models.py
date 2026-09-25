@@ -40,7 +40,7 @@ class Benchmark:
             group=group,
             description=str(manifest["description"]),
             mlflow=MlflowMapping(
-                experiment_name=f"q2_bench/data_engineering/{group}",
+                experiment_name=group,
                 experiment_tags=MappingProxyType(
                     {
                         "workspace": "data_engineering",

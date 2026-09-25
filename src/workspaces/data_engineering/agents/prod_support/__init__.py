@@ -29,6 +29,9 @@ from workspaces.data_engineering.agents.prod_support.models import (
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
 )
+from workspaces.data_engineering.agents.prod_support.reporting import (
+    airflow_failure_url,
+)
 
 __all__ = [
     "PROD_SUPPORT_DEFINITION",
@@ -42,6 +45,7 @@ __all__ = [
     "ProdSupportScores",
     "QueryWindow",
     "ReplayAirflowFailureSource",
+    "airflow_failure_url",
     "capture_day",
     "classify_log",
     "evaluate_outcome",

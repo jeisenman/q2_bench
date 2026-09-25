@@ -9,12 +9,20 @@ from pathlib import Path
 import click
 
 from adapters.airflow import AirflowApiSource
-from adapters.mlflow import MlflowExperimentAdapter
+from adapters.mlflow import (
+    MlflowExperimentAdapter,
+    load_recorded_evaluation,
+    publish_recorded_evaluation,
+)
 from workspaces.data_engineering.agents.prod_support import capture_day
 from workspaces.data_engineering.benchmarks import default_catalog
 
 DEFAULT_TRACKING_URI = "sqlite:///var/mlflow/backend.db"
 DEFAULT_ARTIFACT_ROOT = Path("var/mlflow/artifacts")
+PROD_SUPPORT_CASES = Path(
+    "src/workspaces/data_engineering/benchmarks/groups/"
+    "production_operations/prod_support/cases.yaml"
+)
 
 
 @click.group()
@@ -79,6 +87,36 @@ def capture_prod_support(operational_date: datetime, output_root: Path) -> None:
         )
     )
     click.echo(str(target))
+
+
+@cli.command("evaluate")
+@click.argument("benchmark", type=click.Choice(["prod-support"]))
+@click.option("--case", "case_id", required=True)
+@click.option(
+    "--recorded-result",
+    type=click.Path(dir_okay=False, path_type=Path),
+    required=True,
+)
+@click.option("--tracking-uri", default=DEFAULT_TRACKING_URI, show_default=True)
+def evaluate_benchmark(
+    benchmark: str,
+    case_id: str,
+    recorded_result: Path,
+    tracking_uri: str,
+) -> None:
+    """Publish a recorded benchmark case to the MLflow Evaluations view."""
+    del benchmark
+    evaluation = load_recorded_evaluation(
+        PROD_SUPPORT_CASES,
+        case_id,
+        recorded_result,
+    )
+    run_id = publish_recorded_evaluation(
+        evaluation,
+        experiment_name="production_operations",
+        tracking_uri=tracking_uri,
+    )
+    click.echo(f"{case_id}\t{run_id}")
 
 
 def main() -> None:

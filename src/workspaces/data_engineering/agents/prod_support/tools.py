@@ -17,3 +17,16 @@ CLASSIFY_FAILURE = ToolDefinition(
     description="Classify explicit failure evidence from a captured task log.",
     input_schema=(("failure_id", "string"), ("log", "string")),
 )
+QUERY_OMS_JOB = ToolDefinition(
+    name="query_oms_job",
+    description=(
+        "Query DI_Scheduling_CL directly for one Spark job using its exact "
+        "client, run, task, and try identifiers."
+    ),
+    input_schema=(
+        ("client_id_g", "string"),
+        ("run_id_s", "string"),
+        ("task_id_s", "string"),
+        ("try_number_d", "integer"),
+    ),
+)

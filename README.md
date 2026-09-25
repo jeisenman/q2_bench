@@ -48,8 +48,17 @@ uv run mlflow server \
 ```
 
 Open <http://127.0.0.1:5000>. Select the
-`q2_bench/data_engineering/production_operations` experiment. Its run list
+`production_operations` experiment. Its run list
 contains the seeded **`prod-support`** benchmark.
+
+Publish a curated recorded case to the experiment's Evaluations view:
+
+```bash
+uv run agentbench evaluate prod-support \
+  --case today-2026-09-25 \
+  --recorded-result \
+  var/benchmark_data/prod_support/2026-09-24/steps/06-agent-result.json
+```
 
 Local mutable state is written beneath the ignored `var/` directory.
 

@@ -14,10 +14,7 @@ def test_default_catalog_contains_visible_prod_support_benchmark() -> None:
 
     assert benchmark.display_name == "prod-support"
     assert benchmark.group == "production_operations"
-    assert (
-        benchmark.mlflow.experiment_name
-        == "q2_bench/data_engineering/production_operations"
-    )
+    assert benchmark.mlflow.experiment_name == "production_operations"
     assert benchmark.mlflow.run_tags["benchmark.id"] == benchmark.benchmark_id
 
 
