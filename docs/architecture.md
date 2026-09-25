@@ -2,16 +2,13 @@
 
 ## Purpose
 
-`agentsdk` provides typed building blocks for defining, benchmarking, tracing,
+`q2-bench` provides typed building blocks for defining, benchmarking, tracing,
 and reviewing agent applications locally.
 
 ## Layout
 
 ```text
-src/agentsdk/       Public library code
-src/benchmarks/     Inspect AI tasks and benchmark manifests
-src/resources/      Containers, repository pointers, connector configuration
-src/investigations/ Reproducible benchmark investigations
+src/                Public library packages
 tests/              Tests mirroring production modules
 scripts/            Repository quality and policy checks
 docs/               Local, agent-readable documentation
@@ -23,7 +20,7 @@ docs/               Local, agent-readable documentation
 application/integrations
           |
           v
-    agentsdk APIs
+    q2-bench APIs
           |
           v
  pure domain and vector logic
@@ -35,8 +32,8 @@ interfaces.
 
 ## Public API
 
-Only names deliberately exported from `agentsdk.__init__` are considered
-public. New public behavior requires:
+Only names deliberately exported from package `__init__.py` files are
+considered public. New public behavior requires:
 
 1. Typed implementation.
 2. Boundary and failure tests.

@@ -1,5 +1,5 @@
 [project]
-name = "agentsdk"
+name = "q2-bench"
 version = "0.1.0"
 description = "Local-first data-engineering agent benchmark workspace."
 readme = "README.md"
@@ -13,8 +13,8 @@ dependencies = [
 ]
 
 [project.scripts]
-agentbench = "agentsdk.cli.main:main"
-prod-support-mcp = "agentsdk.mcp_servers.prod_support:main"
+agentbench = "cli.main:main"
+prod-support-mcp = "mcp_servers.prod_support:main"
 
 [dependency-groups]
 dev = [
@@ -31,7 +31,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/agentsdk"]
+packages = [
+    "src/adapters",
+    "src/cli",
+    "src/domain",
+    "src/mcp_servers",
+    "src/ports",
+    "src/workspaces",
+]
 
 [tool.ruff]
 target-version = "py311"
@@ -70,10 +77,10 @@ ignore = ["D203", "D213"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
-packages = ["agentsdk"]
+files = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "--strict-config --strict-markers --cov=agentsdk --cov-report=term-missing"
+addopts = "--strict-config --strict-markers --cov=src --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.coverage.run]

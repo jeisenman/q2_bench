@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
-from agentsdk.adapters.mlflow import MlflowExperimentAdapter
-from agentsdk.ws.data_engineering.benchmarks import default_catalog
+from adapters.mlflow import MlflowExperimentAdapter
+from workspaces.data_engineering.benchmarks import default_catalog
 
 
 @dataclass(frozen=True)

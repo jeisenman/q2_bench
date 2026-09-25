@@ -2,11 +2,11 @@
 
 ## Decision
 
-Use one installable Python package, `agentsdk`, with lowercase
+Use installable top-level Python packages under `src/`, with lowercase
 `snake_case` directories. Place the data-engineering domain under
-`agentsdk.ws.data_engineering`; place contracts in `agentsdk.ports`;
+`workspaces.data_engineering`; place contracts in `ports`;
 place MLflow, data-platform, agent-framework, and local-storage implementations
-in `agentsdk.adapters`.
+in `adapters`.
 
 Use MLflow 3.16.1 as the system of record for experiments, runs, traces,
 assessments, artifacts, prompts, and deployable model or agent versions. Use
@@ -23,7 +23,7 @@ the following corrections before implementation:
 
 - `Workspace`, `Ports`, `Adapters`, and `Benchmarks` are not valid project
   package conventions. Python packages should be lowercase, and all production
-  packages must remain under the configured `src/agentsdk/` package root.
+  packages must remain under the configured `src/` package root.
 - Filesystem nesting is useful for ownership, but it is not sufficient
   benchmark identity. Directories can move; IDs and revisions must not.
 - A global `ports/` or `adapters/` directory can become a junk drawer. Ports
@@ -69,22 +69,20 @@ Rules:
 
 ```text
 src/
-└── agentsdk/
-    ├── __init__.py
-    ├── domain/
+├── domain/
     │   ├── agents.py
     │   ├── benchmarks.py
     │   ├── evaluations.py
     │   ├── failures.py
     │   └── identifiers.py
-    ├── ports/
+├── ports/
     │   ├── agent_runtime.py
     │   ├── artifacts.py
     │   ├── datasets.py
     │   ├── evaluations.py
     │   ├── secrets.py
     │   └── tracking.py
-    ├── adapters/
+├── adapters/
     │   ├── mlflow/
     │   │   ├── tracking.py
     │   │   ├── tracing.py
@@ -100,8 +98,8 @@ src/
     │   └── local/
     │       ├── datasets.py
     │       └── secrets.py
-    ├── workspaces/
-    │   └── data_engineering/
+├── workspaces/
+│   └── data_engineering/
     │       ├── benchmarks/
     │       │   ├── catalog.py
     │       │   └── groups/
@@ -121,11 +119,11 @@ src/
     │       └── services/
     │           ├── run_benchmark.py
     │           └── review_run.py
-    ├── cli/
+├── cli/
     │   ├── main.py
     │   ├── benchmarks.py
     │   └── runs.py
-    └── config/
+└── config/
         ├── models.py
         └── loading.py
 ```
@@ -160,7 +158,7 @@ Use this MLflow hierarchy:
 
 | Concept | MLflow representation |
 | --- | --- |
-| Data-engineering benchmark group | Experiment: `agentsdk/data_engineering/data_transformation` |
+| Data-engineering benchmark group | Experiment: `q2_bench/data_engineering/data_transformation` |
 | One suite invocation | Parent run |
 | One benchmark/agent variant | Nested child run |
 | One case, trial, or fold | Nested leaf run or trace, based on volume |
@@ -307,7 +305,7 @@ Mirror architectural boundaries:
 ```text
 tests/
 ├── unit/domain/
-├── unit/ws/data_engineering/
+├── unit/workspaces/data_engineering/
 ├── contract/ports/
 ├── integration/adapters/mlflow/
 ├── integration/adapters/data/
@@ -320,7 +318,7 @@ Port contract tests should be adapter-independent and run against each adapter
 factory. Tests that require credentials or external systems must be explicitly
 marked and skipped with an actionable reason when unavailable.
 
-Place Click commands in `src/agentsdk/cli/`. Commands parse input, construct
+Place Click commands in `src/cli/`. Commands parse input, construct
 adapters, invoke one workspace service, and render results. They must not
 contain benchmark execution, scoring, SQL, MLflow logging, or secret-loading
 logic. Keep `agentbench` as the console entry point for compatibility.
@@ -359,7 +357,7 @@ belong under the installable source tree.
 
 ## Suggested implementation order
 
-1. Update packaging and rules for the `agentsdk` tree and MLflow 3.16.1.
+1. Update packaging and rules for the top-level source packages and MLflow 3.16.1.
 2. Add domain identifiers and benchmark manifest validation.
 3. Add ports and in-memory fakes with contract tests.
 4. Implement local MLflow tracking, tracing, evaluation, and registry adapters.

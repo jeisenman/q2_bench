@@ -3,7 +3,7 @@
 The `prod-support` agent is an importable package at:
 
 ```text
-src/agentsdk/ws/data_engineering/agents/prod_support/
+src/workspaces/data_engineering/agents/prod_support/
 ```
 
 Its workflow is split into date resolution, Airflow access, dataset capture,

@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from agentsdk.adapters.local import InMemoryDatasetProvider
+from adapters.local import InMemoryDatasetProvider
 
 
 def test_provider_filters_and_limits_records() -> None:

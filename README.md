@@ -48,7 +48,7 @@ uv run mlflow server \
 ```
 
 Open <http://127.0.0.1:5000>. Select the
-`agentsdk/data_engineering/production_operations` experiment. Its run list
+`q2_bench/data_engineering/production_operations` experiment. Its run list
 contains the seeded **`prod-support`** benchmark.
 
 Local mutable state is written beneath the ignored `var/` directory.
@@ -58,7 +58,7 @@ Local mutable state is written beneath the ignored `var/` directory.
 Reusable agents live under:
 
 ```text
-src/agentsdk/ws/data_engineering/agents/
+src/workspaces/data_engineering/agents/
 ```
 
 Agents depend on typed ports rather than Databricks, Snowflake, OMS, or MCP
@@ -68,7 +68,7 @@ same `AirflowFailureSource` interface.
 ```python
 from pathlib import Path
 
-from agentsdk.ws.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.prod_support import (
     ProdSupportAgent,
     ReplayAirflowFailureSource,
 )
@@ -85,7 +85,7 @@ MCP composition values expose an imported agent as approved tools, resources,
 and prompts:
 
 ```python
-from agentsdk.mcp_servers import AgentMcpCatalog, bind_workspace_agent
+from mcp_servers import AgentMcpCatalog, bind_workspace_agent
 
 binding = bind_workspace_agent(agent)
 catalog = AgentMcpCatalog((binding,))
@@ -108,13 +108,13 @@ Databricks, Snowflake, or OMS provider.
 ## Project layout
 
 ```text
-src/agentsdk/
+src/
 ├── domain/                       Immutable domain models
 ├── ports/                        Runtime and infrastructure interfaces
 ├── adapters/                     MLflow and local implementations
 ├── mcp_servers/                  MCP composition interfaces
 ├── cli/                          Application composition root
-└── ws/data_engineering/
+└── workspaces/data_engineering/
     ├── agents/                   Reusable agents and tools
     └── benchmarks/               Catalog and prod-support manifest
 ```

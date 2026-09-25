@@ -1,12 +1,12 @@
 # Vector search
 
-The local `agentsdk.vectors` module implements exact cosine similarity with
+The planned top-level `vectors` package implements exact cosine similarity with
 NumPy. It is provider-independent and requires no API key.
 
 ## Pairwise similarity
 
 ```python
-from agentsdk import cosine_similarity
+from vectors import cosine_similarity
 
 scores = cosine_similarity(
     [[1.0, 0.0], [0.0, 1.0]],
@@ -21,7 +21,7 @@ instead of comparing vectors in Python loops.
 ## Index and search
 
 ```python
-from agentsdk import VectorIndex
+from vectors import VectorIndex
 
 index = VectorIndex(
     ids=("alpha", "beta"),

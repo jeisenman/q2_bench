@@ -1,7 +1,7 @@
 # Benchmark scaffold layout
 
 The repository keeps benchmark definitions and runtime resources close to the
-source tree while leaving the existing `agentsdk` package unchanged.
+source tree using top-level packages beneath `src/`.
 
 Inspect AI is the canonical benchmark runner. Run the smoke benchmark with:
 
@@ -11,7 +11,7 @@ uv run inspect eval src/benchmarks/benchmark1/task.py
 
 ```text
 src/
-  agentsdk/                  Agent contracts, traces, storage, CLI, vectors
+  workspaces/                Workspace agents and benchmark definitions
   benchmarks/
     benchmark1/              Minimal benchmark example
     benchmarkn/              Larger benchmark template

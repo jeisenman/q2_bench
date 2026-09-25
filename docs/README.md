@@ -20,6 +20,6 @@ This directory is the agent-readable entry point for the project.
 - Include a `Reviewed` date on summaries of external documentation.
 - Update documentation and tests in the same change as behavior.
 
-The repository package is named `agentsdk`. The official OpenAI Agents SDK
-Python package is a separate dependency named `openai-agents` and is imported
-as `agents`. Do not confuse their public APIs.
+The repository distribution is named `q2-bench`; its Python code is organized
+as top-level packages under `src/`. The official OpenAI Agents SDK dependency
+is named `openai-agents` and is imported as `agents`.

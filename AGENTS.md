@@ -15,14 +15,14 @@ explicit contracts, vectorized batch operations, and deterministic behavior.
 
 ## Architecture
 
-- Production code belongs in `src/agentsdk/`.
+- Production code belongs in top-level packages under `src/`.
 - Data-engineering agents belong in
-  `src/agentsdk/ws/data_engineering/agents/<agent_name>/`.
+  `src/workspaces/data_engineering/agents/<agent_name>/`.
 - Every agent must be its own package directory.
 - When an agent implementation approaches or exceeds 400 lines, split it into
   focused modules such as dates, tools, classification, reporting, and data.
 - Workspace benchmark tasks belong in
-  `src/agentsdk/ws/data_engineering/benchmarks/`.
+  `src/workspaces/data_engineering/benchmarks/`.
 - Runtime containers and connector configuration belong outside `src/`.
 - Reproducible analysis belongs in the top-level `investigations/` directory.
 - Tests mirror production modules under `tests/`.

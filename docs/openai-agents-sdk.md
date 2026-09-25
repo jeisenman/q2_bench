@@ -24,9 +24,8 @@ Its Python import namespace is `agents`:
 from agents import Agent, Runner
 ```
 
-This repository's own package uses the `agentsdk` namespace. Keep imports
-explicit so the local vector library and the upstream orchestration SDK remain
-clearly separated.
+This repository uses top-level packages under `src/`. Keep imports explicit so
+local code and the upstream orchestration SDK remain clearly separated.
 
 ## Smallest useful agent
 
@@ -104,7 +103,7 @@ Never attach secrets or unnecessary sensitive data to trace metadata.
 Provider integration should live in a future module such as:
 
 ```text
-src/agentsdk/integrations/openai/
+src/integrations/openai/
 ```
 
 That module may depend on `agents`. Existing vector modules must remain usable

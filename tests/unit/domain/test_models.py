@@ -1,6 +1,6 @@
 import pytest
 
-from agentsdk.domain import (
+from domain import (
     AgentDefinition,
     AgentRequest,
     BenchmarkIdentity,

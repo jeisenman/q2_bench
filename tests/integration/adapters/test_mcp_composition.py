@@ -3,8 +3,8 @@ from typing import Any
 
 import pytest
 
-from agentsdk.domain import AgentDefinition, AgentRequest, AgentResult
-from agentsdk.mcp_servers import (
+from domain import AgentDefinition, AgentRequest, AgentResult
+from mcp_servers import (
     AgentMcpBinding,
     AgentMcpCatalog,
     McpPrompt,

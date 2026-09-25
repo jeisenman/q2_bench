@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from agentsdk.domain import AgentRequest, AgentResult, BenchmarkIdentity
-from agentsdk.domain.models import Attributes
-from agentsdk.ports import (
+from domain import AgentRequest, AgentResult, BenchmarkIdentity
+from domain.models import Attributes
+from ports import (
     ArtifactPort,
     DatasetProvider,
     EvaluationPort,

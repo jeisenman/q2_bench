@@ -2,8 +2,8 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from agentsdk.adapters.mlflow import MlflowExperimentAdapter
-from agentsdk.cli.main import cli
+from adapters.mlflow import MlflowExperimentAdapter
+from cli.main import cli
 
 
 def test_benchmarks_lists_prod_support() -> None:

@@ -1,6 +1,6 @@
 import asyncio
 
-from agentsdk.mcp_servers.prod_support import (
+from mcp_servers.prod_support import (
     prod_support_definition,
     prod_support_prompt,
     run_prod_support,

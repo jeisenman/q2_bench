@@ -4,13 +4,13 @@ from datetime import UTC, datetime
 
 import pytest
 
-from agentsdk.adapters.airflow.source import (
+from adapters.airflow.source import (
     AirflowApiError,
     AirflowApiSource,
     AirflowRegionConfig,
     UrllibAirflowTransport,
 )
-from agentsdk.ws.data_engineering.agents.prod_support.models import (
+from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
     Region,
 )
@@ -68,6 +68,42 @@ def test_airflow_source_discovers_by_end_date_and_fetches_log() -> None:
     assert transport.payload["end_date_gte"] == "2026-09-25T05:00:00Z"
     assert failures[0].task_id == "high_quality_accounts"
     assert log == "OOMKilled"
+
+
+def test_airflow_source_reads_structured_log_content() -> None:
+    class StructuredLogTransport(FakeTransport):
+        def request(
+            self,
+            config: AirflowRegionConfig,
+            method: str,
+            path: str,
+            payload: dict[str, object] | None = None,
+        ) -> object:
+            if method == "GET":
+                return {"content": "structured task log"}
+            return super().request(config, method, path, payload)
+
+    source = AirflowApiSource(
+        (
+            AirflowRegionConfig(
+                Region.US_01,
+                "https://airflow.example.test",
+                "user",
+                "password",
+            ),
+        ),
+        StructuredLogTransport(),
+    )
+    failure = AirflowFailure(
+        Region.US_01,
+        "dag",
+        "run",
+        "task",
+        datetime(2026, 9, 25, 5, tzinfo=UTC),
+        datetime(2026, 9, 25, 6, tzinfo=UTC),
+    )
+
+    assert asyncio.run(source.fetch_log(failure)) == "structured task log"
 
 
 def test_airflow_source_builds_regions_from_environment(
@@ -156,7 +192,7 @@ def test_urllib_transport_decodes_json(monkeypatch: pytest.MonkeyPatch) -> None:
         return FakeResponse()
 
     monkeypatch.setattr(
-        "agentsdk.adapters.airflow.source.urlopen",
+        "adapters.airflow.source.urlopen",
         fake_urlopen,
     )
     config = AirflowRegionConfig(
