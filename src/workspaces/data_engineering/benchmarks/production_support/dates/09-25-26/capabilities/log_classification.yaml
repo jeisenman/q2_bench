@@ -1,0 +1,26 @@
+schema_version: 1
+capability: log_classification
+description: Classify terminal evidence without inferring unsupported causes.
+cases:
+  - id: confirmed-oom
+    failure_id: US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-23T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data
+    evidence:
+      - OOMKilled by container
+    expected_classification: confirmed_oom
+  - id: distinctness-validation
+    failure_id: US-01|l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a|manual__2026-09-23T05:00:00+00:00|high_quality_core_account_financial_statements.high_quality_core_account_financial_statements
+    evidence:
+      - Distinctness Validation failed
+    expected_classification: distinctness
+  - id: uncorroborated-exit-negative-nine
+    failure_id: US-01|l3-main-a6f041a5-fda3-4b68-a002-d115b39e9914|manual__2026-09-23T05:00:00+00:00|relationship_signals_time_series.relationship_signals_time_series_agg_cp_to_snowflake
+    try_number: 9
+    evidence:
+      - Bash command failed. The command returned a non-zero exit code -9.
+      - OMS returned no corroborating memory signal.
+    expected_classification: unknown_resource_termination
+  - id: unknown-driver-exit
+    failure_id: US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-23T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data
+    evidence:
+      - Driver badly exited without an explicit terminal cause.
+    expected_classification: unknown

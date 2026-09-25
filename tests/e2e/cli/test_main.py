@@ -16,6 +16,18 @@ def test_benchmarks_lists_prod_support() -> None:
     assert result.output == "prod-support\tproduction_operations\n"
 
 
+def test_run_matrix_defaults_to_a_grouped_dry_run() -> None:
+    candidate_count = 6
+    result = CliRunner().invoke(cli, ["run-matrix"])
+
+    assert result.exit_code == 0
+    assert (
+        result.output.count('"matrix_id": "prod-support-09-25-26"') == candidate_count
+    )
+    assert '"profile": "sol-light"' in result.output
+    assert '"judge_profile": "sol-xhigh"' in result.output
+
+
 def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
     seeded: list[str] = []
 

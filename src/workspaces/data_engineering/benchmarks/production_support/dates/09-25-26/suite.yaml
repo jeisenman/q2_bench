@@ -6,6 +6,12 @@ description: Evaluate prod-support behavior using evidence available on 2026-09-
 layers:
   capabilities:
     description: Test deterministic skills independently.
+    fixtures:
+      - capabilities/date_resolution.yaml
+      - capabilities/failure_discovery.yaml
+      - capabilities/log_classification.yaml
+      - capabilities/developer_message.yaml
+      - capabilities/prod_support_message.yaml
     dimensions:
       - query_translation
       - failure_recall

@@ -103,3 +103,27 @@ def test_prod_support_suite_defines_three_evaluation_layers() -> None:
     assert "diagnosis_accuracy" in suite["layers"]["capabilities"]["dimensions"]
     assert "evidence_handoff" in suite["layers"]["coordination"]["dimensions"]
     assert "prod-support-us-ca-2026-09-25" in suite["layers"]["system"]["cases"]
+
+
+def test_prod_support_suite_registers_capability_fixtures() -> None:
+    suite_root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates/09-25-26"
+    )
+    suite = yaml.safe_load((suite_root / "suite.yaml").read_text(encoding="utf-8"))
+    fixtures = suite["layers"]["capabilities"]["fixtures"]
+
+    assert fixtures == [
+        "capabilities/date_resolution.yaml",
+        "capabilities/failure_discovery.yaml",
+        "capabilities/log_classification.yaml",
+        "capabilities/developer_message.yaml",
+        "capabilities/prod_support_message.yaml",
+    ]
+    for relative_path in fixtures:
+        fixture = yaml.safe_load(
+            (suite_root / relative_path).read_text(encoding="utf-8")
+        )
+        assert fixture["schema_version"] == 1
+        assert fixture["cases"]

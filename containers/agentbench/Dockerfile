@@ -9,6 +9,11 @@ ENV HOME=/home/agentbench \
 RUN groupadd --gid 1000 agentbench \
     && useradd --create-home --uid 1000 --gid 1000 agentbench
 
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends nodejs npm \
+    && npm install --global @openai/codex@0.156.1 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /workspace
 
 COPY pyproject.toml uv.lock README.md ./

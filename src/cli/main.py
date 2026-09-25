@@ -3,17 +3,20 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import date, datetime
 from pathlib import Path
 
 import click
 
 from adapters.airflow import AirflowApiSource
+from adapters.inbound import MatrixInboundAdapter
 from adapters.mlflow import (
     BedrockAssistantConfigurator,
     MlflowExperimentAdapter,
     UrlJsonTransport,
     load_recorded_evaluation,
+    publish_matrix_results,
     publish_recorded_evaluation,
 )
 from cli.prod_support_replay import (
@@ -22,7 +25,10 @@ from cli.prod_support_replay import (
     write_recorded_outcome,
 )
 from workspaces.data_engineering.agents.prod_support import capture_day
-from workspaces.data_engineering.benchmarks import default_catalog
+from workspaces.data_engineering.benchmarks import (
+    default_catalog,
+    load_matrix_manifest,
+)
 
 DEFAULT_TRACKING_URI = "sqlite:///var/mlflow/backend.db"
 DEFAULT_ARTIFACT_ROOT = Path("var/mlflow/artifacts")
@@ -31,6 +37,10 @@ PROD_SUPPORT_CASES = Path(
     "production_support/dates/09-25-26/cases.yaml"
 )
 DEFAULT_ASSISTANT_CONFIG = Path.home() / ".mlflow/assistant/config.json"
+DEFAULT_MATRIX_MANIFEST = Path(
+    "src/workspaces/data_engineering/benchmarks/production_support/"
+    "dates/09-25-26/matrix.yaml"
+)
 
 
 @click.group()
@@ -194,6 +204,50 @@ def replay_evaluate_benchmark(
         tracking_uri=tracking_uri,
     )
     click.echo(f"{case_id}\t{run_id}\t{result_path}")
+
+
+@cli.command("run-matrix")
+@click.option(
+    "--manifest",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=DEFAULT_MATRIX_MANIFEST,
+    show_default=True,
+)
+@click.option(
+    "--execute/--dry-run",
+    default=False,
+    help="Invoke configured Codex candidates and judge; default prints the plan.",
+)
+@click.option("--tracking-uri", default=DEFAULT_TRACKING_URI, show_default=True)
+def run_benchmark_matrix(
+    manifest: Path,
+    execute: bool,
+    tracking_uri: str,
+) -> None:
+    """Run or inspect a grouped prod-support model matrix."""
+    configured = load_matrix_manifest(manifest)
+    adapter = MatrixInboundAdapter(Path.cwd())
+    if not execute:
+        for planned_run in adapter.plan(configured):
+            click.echo(json.dumps(planned_run, sort_keys=True))
+        return
+    results = adapter.run(configured)
+    parent_run_id = publish_matrix_results(
+        configured,
+        results,
+        tracking_uri=tracking_uri,
+    )
+    click.echo(f"matrix\t{configured.matrix_id}\t{parent_run_id}")
+    for judged_run in sorted(
+        results,
+        key=lambda value: value.overall_score,
+        reverse=True,
+    ):
+        click.echo(
+            f"{judged_run.candidate.profile}\t{judged_run.overall_score:.3f}\t"
+            f"{judged_run.candidate.elapsed_seconds:.2f}s\t"
+            f"{judged_run.candidate.output_tokens} output tokens"
+        )
 
 
 def main() -> None:

@@ -46,11 +46,16 @@ cases:
       US
       - Ongoing
         - Valley National Bank (8b2) failed on Core Account Financial Statements high quality on DV
-        - Bremer Bank (a6f) failed on Relationship Signals aggregation 
+        - Bremer Bank (a6f) failed on Relationship Signals aggregation from 9-23-26 -- creating KPO ticket to resolve
         - D2P/Eventbus/MI [Reporting and or 
       CA
       - Ongoing
         - The DAG processor is unhealthy: 0 active DAGs versus 6 expected l3-main graphs, processor logs are unavailable, and 13 restarts were observed. Suggest a DAG-processor bounce for operator approval.
+    follow_on_message: |
+      Would you like me to retry:
+        - Bremer Bank (a6f) Relationship Signals aggregation, which exited with code -9 on attempt 9?
+        - Valley National Bank (8b2) Core Account Financial Statements job, which failed Distinctness Validation on attempt 4?
+
     require_reported_dags_exist: true
     evidence_captured_at:
       US-01: "2026-09-25T15:22:25.409249Z"

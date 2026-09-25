@@ -1,0 +1,19 @@
+schema_version: 1
+capability: failure_discovery
+description: Select every in-window failure while excluding prior-day distractors.
+cases:
+  - id: us-ca-operational-window
+    dataset_uri: var/benchmark_data/prod_support/2026-09-24/steps/02-airflow-capture/2026-09-24/airflow_failures.json
+    failed_since: "2026-09-24T05:00:00Z"
+    expected_counts:
+      US-01: 7
+      CA-02: 0
+    expected_failure_ids:
+      - US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-23T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data
+      - US-01|l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a|manual__2026-09-23T05:00:00+00:00|high_quality_core_account_financial_statements.high_quality_core_account_financial_statements
+      - US-01|l3-main-a6f041a5-fda3-4b68-a002-d115b39e9914|manual__2026-09-23T05:00:00+00:00|relationship_signals_time_series.relationship_signals_time_series_agg_cp_to_snowflake
+      - US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-23T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data
+      - US-01|market_insights_3_output|scheduled__2026-09-24T00:00:00+00:00|client_specific.client_specific_mi_3_raw_output_validation_621d1ad2-3d0f-4fc4-8245-e3878a6bff7c
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T03:00:00+00:00|check_for_subscriber_client_errors
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T15:00:00+00:00|check_for_subscriber_client_errors
+    exclude_records_before_since: true

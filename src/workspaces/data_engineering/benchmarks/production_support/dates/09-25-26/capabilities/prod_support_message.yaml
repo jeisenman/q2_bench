@@ -1,0 +1,25 @@
+schema_version: 1
+capability: prod_support_message
+description: Render a concise regional message for the production-support channel.
+cases:
+  - id: us-ca-channel-message
+    input:
+      operational_date: "2026-09-24"
+      us_status: ongoing
+      ca_status: ongoing
+      retry_candidates:
+        - Bremer Bank Relationship Signals
+        - Valley National Bank Core Account Financial Statements
+    expectations:
+      required_heading: PROD SUPPORT 2026-09-24
+      required_regions: [US, CA]
+      required_us_findings:
+        - Valley National Bank failed DV.
+        - Bremer Bank failed Relationship Signals aggregation.
+      required_ca_findings:
+        - DAG processor is unhealthy.
+        - 0 active DAGs versus 6 expected l3-main graphs.
+      required_follow_on_message:
+        - Retry Bremer Bank after exit -9 on attempt 9.
+        - Retry Valley National Bank after Distinctness Validation on attempt 4.
+      mutation_policy: suggestion_only
