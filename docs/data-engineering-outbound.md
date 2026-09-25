@@ -7,13 +7,16 @@ from `ports`.
 
 Configured targets:
 
-- Databricks RA preprod: `pl-databricks-us-rapreprod-01`, warehouse
+- Databricks RA preprod: `pl-databricks-us-rapreprod-01`, workspace
   `7628572648057993`.
-- Databricks production: `pl-databricks-us-prod-01`, warehouse
-  `3510128597187204`.
+- Databricks production: `pl-databricks-us-prod-01`, workspace
+  `3510128597187204`, SQL warehouse `434de6917eea68b6`.
 - Snowflake: alpha, staging, and US production through either the Python
   connector or Cortex.
 - ADLS preprod data mart: `pladls2usdatamartpreprod`.
+
+Shared Databricks notebook examples are maintained in the private
+[`precisionlender/radar-notebooks` Shared directory](https://github.com/precisionlender/radar-notebooks/tree/master/notebooks/Shared).
 
 `INITIATIVE_SMOKE_TESTS` maps each current Luna-discovered data-engineering
 initiative to its required platforms. Concrete external tests should inject

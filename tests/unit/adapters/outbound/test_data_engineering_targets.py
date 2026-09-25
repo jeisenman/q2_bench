@@ -11,11 +11,13 @@ from adapters.outbound.data_engineering import (
 EXPECTED_INITIATIVE_COUNT = 6
 
 
-def test_databricks_targets_use_requested_warehouses() -> None:
+def test_databricks_targets_use_requested_workspaces() -> None:
     assert DATABRICKS_RAPREPROD.name == "pl-databricks-us-rapreprod-01"
-    assert DATABRICKS_RAPREPROD.warehouse_id == "7628572648057993"
+    assert DATABRICKS_RAPREPROD.workspace_id == "7628572648057993"
+    assert DATABRICKS_RAPREPROD.sql_warehouse_id is None
     assert DATABRICKS_PROD.name == "pl-databricks-us-prod-01"
-    assert DATABRICKS_PROD.warehouse_id == "3510128597187204"
+    assert DATABRICKS_PROD.workspace_id == "3510128597187204"
+    assert DATABRICKS_PROD.sql_warehouse_id == "434de6917eea68b6"
 
 
 def test_snowflake_supports_python_and_cortex_in_each_environment() -> None:

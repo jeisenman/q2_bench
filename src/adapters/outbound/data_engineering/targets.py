@@ -23,10 +23,11 @@ class SnowflakeAccessMode(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class DatabricksTarget:
-    """A named Databricks workspace and SQL warehouse."""
+    """A named Databricks workspace with an optional SQL warehouse."""
 
     name: str
-    warehouse_id: str
+    workspace_id: str
+    sql_warehouse_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,11 +58,12 @@ class InitiativeSmokeTest:
 
 DATABRICKS_RAPREPROD = DatabricksTarget(
     name="pl-databricks-us-rapreprod-01",
-    warehouse_id="7628572648057993",
+    workspace_id="7628572648057993",
 )
 DATABRICKS_PROD = DatabricksTarget(
     name="pl-databricks-us-prod-01",
-    warehouse_id="3510128597187204",
+    workspace_id="3510128597187204",
+    sql_warehouse_id="434de6917eea68b6",
 )
 
 SNOWFLAKE_TARGETS = tuple(
