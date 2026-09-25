@@ -88,6 +88,7 @@ def test_adapter_runs_profiles_and_reuses_baselines(monkeypatch, tmp_path) -> No
 
 def test_command_builds_container_and_process_variants(tmp_path) -> None:
     workspace = tmp_path.resolve()
+    (workspace / ".env").write_text("EXAMPLE=value\n", encoding="utf-8")
     target = workspace / "var" / "final.md"
     profile = load_matrix_manifest(MATRIX_PATH).candidates[0]
     container = matrix._codex_command(
@@ -112,6 +113,9 @@ def test_command_builds_container_and_process_variants(tmp_path) -> None:
     )
 
     assert container[:2] == ["docker", "run"]
+    assert container[container.index("--env-file") + 1] == str(workspace / ".env")
+    assert "/mnt/codex-host:ro" in " ".join(container)
+    assert "--tmpfs" in container
     assert "/workspace/var/final.md" in container
     assert "--json" in container
     assert process[0] == "codex"

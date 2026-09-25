@@ -258,23 +258,28 @@ def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]
         command.extend(("--output-schema", _runtime_path(options.schema_path, options)))
     if options.runtime != "container":
         return ["codex", *command]
+    env_file = options.workspace / ".env"
     return [
         "docker",
         "run",
         "--rm",
-        "--entrypoint",
-        "codex",
+        *(["--env-file", str(env_file)] if env_file.is_file() else []),
+        "--env",
+        "SSL_CERT_FILE=/home/agentbench/.aws/q2-ca-bundle.pem",
+        "--tmpfs",
+        "/home/agentbench/.bedrock_codex:uid=1000,gid=1000,mode=0700",
         "--volume",
         f"{options.workspace}:/workspace:ro",
         "--volume",
         f"{options.workspace / 'var'}:/workspace/var",
         "--volume",
-        f"{Path.home() / '.bedrock_codex'}:/home/agentbench/.bedrock_codex:ro",
+        f"{Path.home() / '.bedrock_codex'}:/mnt/codex-host:ro",
         "--volume",
         f"{Path.home() / '.aws'}:/home/agentbench/.aws:ro",
         "--workdir",
         "/workspace",
         options.container_image,
+        "codex",
         *command,
     ]
 

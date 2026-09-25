@@ -6,17 +6,23 @@ x-agentbench: &agentbench
     dockerfile: containers/agentbench/Dockerfile
   image: agentsdk-agentbench:local
   working_dir: /workspace
+  env_file:
+    - .env
   environment:
     AWS_CA_BUNDLE: /home/agentbench/.aws/q2-ca-bundle.pem
     AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-2}
     AWS_PROFILE: ${AWS_PROFILE:-Q2Developer-031713251199}
     AWS_REGION: ${AWS_REGION:-us-east-2}
     CODEX_HOME: /home/agentbench/.bedrock_codex
+    CODEX_SOURCE_HOME: /mnt/codex-host
     HOME: /home/agentbench
+    SSL_CERT_FILE: /home/agentbench/.aws/q2-ca-bundle.pem
+  tmpfs:
+    - /home/agentbench/.bedrock_codex:uid=1000,gid=1000,mode=0700
   volumes:
     - ./var:/workspace/var
     - ${HOME}/.aws:/home/agentbench/.aws:ro
-    - ${CODEX_HOME}:/home/agentbench/.bedrock_codex:ro
+    - ${CODEX_HOME}:/mnt/codex-host:ro
     - ./var/mlflow/assistant:/home/agentbench/.mlflow/assistant
 
 services:
@@ -28,8 +34,10 @@ services:
       AWS_PROFILE: ${AWS_PROFILE:-Q2Developer-031713251199}
       AWS_REGION: ${AWS_REGION:-us-east-2}
       CODEX_HOME: /home/agentbench/.bedrock_codex
+      CODEX_SOURCE_HOME: /mnt/codex-host
       HOME: /home/agentbench
       MLFLOW_ENABLE_REMOTE_ASSISTANT: "true"
+      SSL_CERT_FILE: /home/agentbench/.aws/q2-ca-bundle.pem
     command:
       - mlflow
       - server

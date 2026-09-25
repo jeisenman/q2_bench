@@ -37,6 +37,8 @@ explicit contracts, vectorized batch operations, and deterministic behavior.
 - Add type annotations to all production functions.
 - Add concise docstrings to public modules, classes, and functions.
 - Raise specific exceptions with actionable messages.
+- Use fail-fast code: validate required inputs and configuration at boundaries,
+  stop immediately on invalid state, and avoid silent fallbacks or partial work.
 - Never hide lint or type failures with broad ignores.
 - Never commit secrets, credentials, generated environments, or caches.
 - Add tests for success, boundary, and failure behavior.

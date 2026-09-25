@@ -28,6 +28,10 @@ included correctly.
 
 ## Dataset lifecycle
 
+For the day-by-day collection, curation, adversarial distractor, complexity,
+and scaffolding procedure, see
+[Prod-support daily data collection](prod-support-data-collection.md).
+
 ```text
 production Airflow source
         |

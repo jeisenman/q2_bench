@@ -1,5 +1,8 @@
 # Prod-support benchmark data
 
+The complete daily operating procedure is documented in
+[`docs/prod-support-data-collection.md`](../../../../../../docs/prod-support-data-collection.md).
+
 Each operational date has a redacted Airflow evidence snapshot under the
 ignored `var/benchmark_data/prod_support/<date>/` directory.
 

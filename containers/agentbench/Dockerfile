@@ -1,6 +1,8 @@
 FROM ghcr.io/astral-sh/uv:0.8.15-python3.11-bookworm-slim
 
 ENV HOME=/home/agentbench \
+    CODEX_HOME=/home/agentbench/.bedrock_codex \
+    CODEX_SOURCE_HOME=/mnt/codex-host \
     PATH=/workspace/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
@@ -18,13 +20,15 @@ WORKDIR /workspace
 
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
+COPY containers/agentbench/entrypoint.sh /usr/local/bin/agentbench-entrypoint
 
 RUN uv sync --frozen --no-dev \
+    && chmod 755 /usr/local/bin/agentbench-entrypoint \
     && mkdir -p /workspace/var /home/agentbench/.aws \
         /home/agentbench/.bedrock_codex \
     && chown -R agentbench:agentbench /workspace/var /home/agentbench
 
 USER agentbench
 
-ENTRYPOINT ["uv", "run", "--no-sync"]
+ENTRYPOINT ["agentbench-entrypoint"]
 CMD ["agentbench", "--help"]

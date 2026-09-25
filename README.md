@@ -10,6 +10,58 @@ The bundled sample benchmark is **`prod-support`**.
 - Python 3.11 or newer
 - `uv`
 
+## macOS setup and credentials
+
+Install the local tools:
+
+```bash
+xcode-select --install
+brew install uv awscli
+```
+
+Install and start Docker Desktop if you plan to run container evaluations.
+Then clone the repository and create the ignored local credential file:
+
+```bash
+cp .env.example .env
+uv sync
+uv run pre-commit install
+```
+
+Obtain credentials through the approved Q2 access process; do not copy another
+developer's credential files. The repository expects:
+
+- An AWS SSO profile in `~/.aws/config`. The default profile is
+  `Q2Developer-031713251199`; set `AWS_PROFILE` if your assigned profile has a
+  different name.
+- The Q2 CA certificate at `~/.aws/q2-ca-bundle.pem` for container access to
+  AWS services.
+- An initialized Codex home, normally `~/.bedrock_codex`, when running the
+  containerized assistant. Set `CODEX_HOME` if yours is elsewhere.
+- Read-only Airflow credentials in `.env` for production data capture.
+- PrecisionLender Resource Discovery OAuth values in `.env` only for workflows
+  that use that connector.
+
+Fill in `.env` locally. Airflow currently requires the established variable
+names `USAIRFLORUSER`, `USAIRFLOWPASSWORD`, `CAAIRFLORUSER`, and
+`CAAIRFLOWPASSWORD`; `AIRFLOR` is the intentional legacy spelling. Leave
+credentials for unused connectors blank.
+
+Before Docker commands that use AWS, export the host configuration and verify
+SSO access:
+
+```bash
+export CODEX_HOME="${CODEX_HOME:-$HOME/.bedrock_codex}"
+export AWS_PROFILE="${AWS_PROFILE:-Q2Developer-031713251199}"
+aws sso login --profile "$AWS_PROFILE"
+aws sts get-caller-identity --profile "$AWS_PROFILE"
+docker compose config --quiet
+```
+
+The `.env` file, AWS directory, and Codex configuration must remain untracked.
+Never put credential values in README files, Compose configuration, captured
+datasets, or commits.
+
 ## Install
 
 ```bash
@@ -103,7 +155,10 @@ docker compose run --rm --no-deps evaluation
 
 The host `var/` directory is mounted at `/workspace/var`. AWS and Codex
 configuration are mounted read-only at `/home/agentbench/.aws` and
-`/home/agentbench/.bedrock_codex`; credentials are never copied into the image.
+`/mnt/codex-host`. At startup, Codex configuration is copied into an ephemeral
+writable `CODEX_HOME` backed by container `tmpfs`. The ignored repository
+`.env` is injected for connector credentials; credentials are never copied
+into the image or persisted after the container exits.
 Only cases with curated failure IDs and diagnoses can be published.
 
 The `assistant-init` service creates an MLflow AI Gateway endpoint named
