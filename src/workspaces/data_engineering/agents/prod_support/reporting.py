@@ -24,13 +24,37 @@ def format_report(
     """Render a deterministic regional production-support report."""
     diagnosis_by_id = {item.failure_id: item for item in diagnoses}
     lines = [
-        "URLs to validate",
-        f"- {airflow_failure_url(Region.US_01, operational_date, reference_date)}",
-        f"- {airflow_failure_url(Region.CA_02, operational_date, reference_date)}",
-        "",
-        "Message for Data Internal Channel",
-        f":bangbang: PROD SUPPORT {operational_date.isoformat()} :bangbang:",
+        "Message for Developer",
+        (
+            "- US Cluster failures: "
+            f"{airflow_failure_url(Region.US_01, operational_date, reference_date)}"
+        ),
+        (
+            "- CA Cluster failures: "
+            f"{airflow_failure_url(Region.CA_02, operational_date, reference_date)}"
+        ),
+        (
+            "- Terminology: DV means Distinctness Validation. "
+            "MI means Market Insights; MI3 means Market Insights 3."
+        ),
     ]
+    for failure in failures:
+        diagnosis = diagnosis_by_id[failure.failure_id]
+        evidence = (
+            diagnosis.evidence[0] if diagnosis.evidence else "no terminal evidence"
+        )
+        lines.append(
+            f"- {failure.region.value} {failure.dag_id} / {failure.task_id}: "
+            f"{diagnosis.kind.value}; evidence: {evidence}"
+        )
+    lines.extend(
+        [
+            "",
+            "Message for Prod Support",
+            "",
+            f":bangbang: PROD SUPPORT {operational_date.isoformat()} :bangbang:",
+        ]
+    )
     for region, label in ((Region.US_01, "US"), (Region.CA_02, "CA")):
         regional = tuple(item for item in failures if item.region is region)
         lines.append(label)

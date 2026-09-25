@@ -128,6 +128,10 @@ def test_trace_helpers_and_schema(tmp_path) -> None:
     )
 
     assert matrix._token_usage(events) == (3, 2)
+    alternate = matrix._json_lines(
+        '{"usage": {"prompt_tokens": 5, "completion_tokens": 4}}'
+    )
+    assert matrix._token_usage(alternate) == (5, 4)
     assert matrix._judge_schema()["type"] == "object"
     assert matrix._load_baselines(tmp_path / "missing.json") == {}
     invalid = tmp_path / "invalid.json"

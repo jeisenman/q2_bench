@@ -315,8 +315,12 @@ def _token_usage(events: tuple[dict[str, Any], ...]) -> tuple[int, int]:
     for event in events:
         usage = event.get("usage")
         if isinstance(usage, dict):
-            input_tokens += int(usage.get("input_tokens", 0))
-            output_tokens += int(usage.get("output_tokens", 0))
+            input_tokens += int(
+                usage.get("input_tokens", usage.get("prompt_tokens", 0)) or 0
+            )
+            output_tokens += int(
+                usage.get("output_tokens", usage.get("completion_tokens", 0)) or 0
+            )
     return input_tokens, output_tokens
 
 

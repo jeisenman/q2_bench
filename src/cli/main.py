@@ -13,18 +13,23 @@ from adapters.airflow import AirflowApiSource
 from adapters.inbound import MatrixInboundAdapter
 from adapters.mlflow import (
     BedrockAssistantConfigurator,
+    CodexAssistantConfigurator,
     MlflowExperimentAdapter,
     UrlJsonTransport,
     load_recorded_evaluation,
     publish_matrix_results,
     publish_recorded_evaluation,
+    register_agent_definition,
 )
 from cli.prod_support_replay import (
     load_replay_case,
     run_replay_case,
     write_recorded_outcome,
 )
-from workspaces.data_engineering.agents.prod_support import capture_day
+from workspaces.data_engineering.agents.prod_support import (
+    PROD_SUPPORT_DEFINITION,
+    capture_day,
+)
 from workspaces.data_engineering.benchmarks import (
     default_catalog,
     load_matrix_manifest,
@@ -80,12 +85,32 @@ def initialize(tracking_uri: str, artifact_root: Path) -> None:
         click.echo(f"{benchmark.display_name}\t{run_id}")
 
 
+@cli.command("register-agent")
+@click.argument("agent", type=click.Choice(["prod-support"]))
+@click.option("--tracking-uri", default=DEFAULT_TRACKING_URI, show_default=True)
+def register_agent(agent: str, tracking_uri: str) -> None:
+    """Register an immutable agent definition in MLflow."""
+    del agent
+    run_id, version = register_agent_definition(
+        PROD_SUPPORT_DEFINITION,
+        tracking_uri=tracking_uri,
+        experiment_name="production_operations",
+    )
+    click.echo(f"prod-support\tv{PROD_SUPPORT_DEFINITION.version}\t{version}\t{run_id}")
+
+
 @cli.command("configure-assistant")
 @click.option("--tracking-uri", default="http://mlflow:5000", show_default=True)
 @click.option(
-    "--model",
-    default="us.anthropic.claude-sonnet-4-6",
+    "--provider",
+    type=click.Choice(["codex", "bedrock"]),
+    default="codex",
     show_default=True,
+)
+@click.option(
+    "--model",
+    default=None,
+    help="Provider model; Codex defaults to its configured model.",
 )
 @click.option("--region", default="us-east-2", show_default=True)
 @click.option(
@@ -96,18 +121,28 @@ def initialize(tracking_uri: str, artifact_root: Path) -> None:
 )
 def configure_assistant(
     tracking_uri: str,
-    model: str,
+    provider: str,
+    model: str | None,
     region: str,
     config_path: Path,
 ) -> None:
-    """Configure the MLflow UI assistant to use Amazon Bedrock."""
-    configurator = BedrockAssistantConfigurator(UrlJsonTransport(tracking_uri))
-    endpoint = configurator.configure(
-        model=model,
-        region=region,
-        config_path=config_path,
-    )
-    click.echo(f"{endpoint}\t{model}\t{config_path}")
+    """Configure the selected MLflow UI assistant provider."""
+    if provider == "codex":
+        selected_model = model or "default"
+        selected = CodexAssistantConfigurator().configure(
+            model=selected_model,
+            config_path=config_path,
+        )
+    else:
+        selected_model = model or "us.anthropic.claude-sonnet-4-6"
+        selected = BedrockAssistantConfigurator(
+            UrlJsonTransport(tracking_uri)
+        ).configure(
+            model=selected_model,
+            region=region,
+            config_path=config_path,
+        )
+    click.echo(f"{selected}\t{selected_model}\t{config_path}")
 
 
 @cli.command("capture-prod-support")

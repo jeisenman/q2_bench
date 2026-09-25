@@ -4,8 +4,25 @@ import pytest
 
 from adapters.mlflow.assistant import (
     BedrockAssistantConfigurator,
+    CodexAssistantConfigurator,
     MlflowAssistantConfigurationError,
 )
+
+
+def test_configure_selects_native_codex_provider(tmp_path: Path) -> None:
+    config_path = tmp_path / "assistant" / "config.json"
+
+    provider = CodexAssistantConfigurator().configure(
+        model="default",
+        config_path=config_path,
+    )
+
+    config = config_path.read_text(encoding="utf-8")
+    assert provider == "codex"
+    assert '"codex"' in config
+    assert '"model": "default"' in config
+    assert '"selected": true' in config
+    assert '"mlflow_gateway"' not in config
 
 
 class FakeTransport:

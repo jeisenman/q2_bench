@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 from datetime import UTC, datetime
 
@@ -14,6 +15,7 @@ from workspaces.data_engineering.agents.prod_support.dates import (
 )
 from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
+    FailureDiagnosis,
     ProdSupportOutcome,
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
@@ -30,11 +32,14 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
     name="prod-support",
     description="Discover and diagnose production Airflow failures.",
     instructions=(
-        "Resolve the operational UTC cutoff, discover failures by end_date, "
-        "inspect exact task logs, classify only explicit evidence, and render "
-        "one regional production-support report covering US and CA. Never "
-        "perform mutations or bounce infrastructure; remediation may only be "
-        "suggested for operator approval."
+        "Run the deterministic replay workflow before repository exploration. "
+        "Resolve dates from the request, parse every relevant Airflow record "
+        "programmatically, and cite exact task-log evidence. Investigate US and "
+        "CA concurrently. Use Airflow for batch evidence and query OMS only "
+        "with exact identifiers when corroboration is required. Diagnose "
+        "independently before reading curated expectations. Keep tool output "
+        "targeted, run the repository quality check when changing code, and "
+        "never mutate production systems."
     ),
     tools=(DISCOVER_FAILURES, FETCH_TASK_LOG, CLASSIFY_FAILURE),
     version="2",
@@ -81,26 +86,33 @@ class ProdSupportAgent:
         failures = tuple(
             failure for failure in candidates if failure.end_at >= window.failed_since
         )
-        hydrated: list[AirflowFailure] = []
-        diagnoses = []
-        for failure in failures:
-            log = failure.log or await self._source.fetch_log(failure)
-            complete = _with_log(failure, log)
-            hydrated.append(complete)
-            diagnoses.append(classify_log(complete, log))
+        investigated = await asyncio.gather(
+            *(self._investigate_failure(failure) for failure in failures)
+        )
+        hydrated = tuple(item[0] for item in investigated)
+        diagnoses = tuple(item[1] for item in investigated)
         report = format_report(
             window.operational_date,
-            tuple(hydrated),
-            tuple(diagnoses),
+            hydrated,
+            diagnoses,
             reference_date=reference_time.date(),
         )
         return ProdSupportOutcome(
             operational_date=window.operational_date,
             failed_since=window.failed_since,
-            failures=tuple(hydrated),
-            diagnoses=tuple(diagnoses),
+            failures=hydrated,
+            diagnoses=diagnoses,
             report=report,
         )
+
+    async def _investigate_failure(
+        self,
+        failure: AirflowFailure,
+    ) -> tuple[AirflowFailure, FailureDiagnosis]:
+        """Hydrate and classify one failure independently."""
+        log = failure.log or await self._source.fetch_log(failure)
+        complete = _with_log(failure, log)
+        return complete, classify_log(complete, log)
 
 
 def _with_log(failure: AirflowFailure, log: str) -> AirflowFailure:

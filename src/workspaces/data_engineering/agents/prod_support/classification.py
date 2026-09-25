@@ -20,6 +20,16 @@ TIMEOUT_MARKERS = (
     "execution_timeout",
 )
 MEMORY_PRESSURE_MARKERS = ("memory pressure", "memory limit")
+EVIDENCE_MARKERS = (
+    *DISTINCTNESS_MARKERS,
+    *OOM_MARKERS,
+    *TIMEOUT_MARKERS,
+    "exit -9",
+    "SIGKILL",
+    "Traceback",
+    "Exception",
+    "ValueError",
+)
 
 
 def classify_log(failure: AirflowFailure, log: str) -> FailureDiagnosis:
@@ -54,5 +64,10 @@ def _diagnosis(
     confidence: str,
     log: str,
 ) -> FailureDiagnosis:
-    evidence = tuple(line.strip() for line in log.splitlines() if line.strip())[-3:]
+    normalized = log.replace("\\n", "\n")
+    lines = tuple(line.strip() for line in normalized.splitlines() if line.strip())
+    matching = tuple(
+        line for line in lines if any(marker in line for marker in EVIDENCE_MARKERS)
+    )
+    evidence = (matching or lines[-3:])[:3]
     return FailureDiagnosis(failure.failure_id, kind, confidence, evidence)

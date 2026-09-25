@@ -81,10 +81,12 @@ services:
     command:
       - agentbench
       - configure-assistant
+      - --provider
+      - codex
       - --tracking-uri
       - http://mlflow:5000
       - --model
-      - ${BEDROCK_ASSISTANT_MODEL:-us.anthropic.claude-sonnet-4-6}
+      - ${CODEX_ASSISTANT_MODEL:-default}
       - --region
       - ${AWS_REGION:-us-east-2}
       - --config-path

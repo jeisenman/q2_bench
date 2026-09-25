@@ -1,4 +1,4 @@
-"""Configure the MLflow UI assistant with an Amazon Bedrock gateway."""
+"""Configure the MLflow UI assistant provider."""
 
 from __future__ import annotations
 
@@ -94,6 +94,18 @@ class UrlJsonTransport:
                 "expected a JSON object",
             )
         return raw
+
+
+@dataclass(frozen=True, slots=True)
+class CodexAssistantConfigurator:
+    """Select MLflow's native Codex assistant provider."""
+
+    provider_name: str = "codex"
+
+    def configure(self, *, model: str, config_path: Path) -> str:
+        """Persist Codex as the selected MLflow assistant provider."""
+        _write_assistant_config(config_path, self.provider_name, model)
+        return self.provider_name
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,24 +214,29 @@ class BedrockAssistantConfigurator:
         )
 
     def _write_assistant_config(self, path: Path) -> None:
-        config = {
-            "projects": {},
-            "providers": {
-                "mlflow_gateway": {
-                    "model": self.endpoint_name,
-                    "selected": True,
-                    "base_url": None,
-                    "permissions": {
-                        "allow_edit_files": False,
-                        "allow_read_docs": True,
-                        "full_access": False,
-                    },
-                    "skills": {"type": "global", "custom_path": None},
-                }
-            },
-        }
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+        _write_assistant_config(path, "mlflow_gateway", self.endpoint_name)
+
+
+def _write_assistant_config(path: Path, provider: str, model: str) -> None:
+    """Persist one selected MLflow assistant provider."""
+    config = {
+        "projects": {},
+        "providers": {
+            provider: {
+                "model": model,
+                "selected": True,
+                "base_url": None,
+                "permissions": {
+                    "allow_edit_files": False,
+                    "allow_read_docs": True,
+                    "full_access": False,
+                },
+                "skills": {"type": "global", "custom_path": None},
+            }
+        },
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
 
 def _find_named(

@@ -164,11 +164,14 @@ support the nested user namespaces it requires; Docker still mounts the source
 workspace read-only and exposes only `var/` as writable.
 Only cases with curated failure IDs and diagnoses can be published.
 
-The `assistant-init` service creates an MLflow AI Gateway endpoint named
-`bedrock-assistant`, using the mounted AWS profile and default credential
-chain. It selects that endpoint for the MLflow UI assistant and enables
-assistant requests from the host browser. Override the default model with
-`BEDROCK_ASSISTANT_MODEL`.
+The `assistant-init` service selects MLflow's native Codex provider by default,
+using the Codex configuration copied into the container at startup. Override
+its model with `CODEX_ASSISTANT_MODEL`. Bedrock remains available explicitly:
+
+```bash
+docker compose run --rm --no-deps assistant-init \
+  agentbench configure-assistant --provider bedrock
+```
 
 ## Agent architecture
 
