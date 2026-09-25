@@ -23,7 +23,11 @@ cases:
     expected_since: "2026-09-24T05:00:00Z"
     expected_failure_ids: [US-01|dag|run|task]
     expected_dag_ids: [dag]
+    expected_regions: [US-01, CA-02]
     require_reported_dags_exist: true
+    expected_remediation_policy:
+      mode: suggestion_only
+      automatic_actions: []
     expected_diagnoses:
       US-01|dag|run|task: confirmed_oom
 """,
@@ -43,6 +47,7 @@ cases:
                         "classification": "confirmed_oom",
                     }
                 ],
+                "automatic_actions": [],
                 "report": "Message for Data Internal Channel\nPROD SUPPORT\nUS\nCA",
             }
         ),
@@ -55,7 +60,10 @@ cases:
     assert evaluation.outputs["failure_ids"] == ["US-01|dag|run|task"]
     assert evaluation.outputs["dag_ids"] == ["dag"]
     assert evaluation.expectations["dag_ids"] == ["dag"]
+    assert evaluation.expectations["regions"] == ["US-01", "CA-02"]
     assert evaluation.expectations["require_reported_dags_exist"] is True
+    assert evaluation.expectations["remediation_mode"] == "suggestion_only"
+    assert evaluation.outputs["automatic_actions"] == []
     assert evaluation.expectations["diagnoses"] == {
         "US-01|dag|run|task": "confirmed_oom"
     }
@@ -68,6 +76,76 @@ def test_load_recorded_evaluation_rejects_uncurated_case(tmp_path) -> None:
     result.write_text("{}", encoding="utf-8")
 
     with pytest.raises(RecordedEvaluationError, match="is not curated"):
+        load_recorded_evaluation(cases, "today", result)
+
+
+def test_load_recorded_evaluation_rejects_invalid_automatic_actions(tmp_path) -> None:
+    cases = tmp_path / "cases.yaml"
+    cases.write_text(
+        """
+cases:
+  - id: today
+    prompt: Do prod support
+    expected_since: "2026-09-24T05:00:00Z"
+    expected_failure_ids: []
+    expected_diagnoses: {}
+""",
+        encoding="utf-8",
+    )
+    result = tmp_path / "result.json"
+    result.write_text(
+        json.dumps(
+            {
+                "failed_since": "2026-09-24T05:00:00Z",
+                "diagnoses": [],
+                "automatic_actions": "bounce",
+                "report": "",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RecordedEvaluationError, match="must be a list"):
+        load_recorded_evaluation(cases, "today", result)
+
+
+@pytest.mark.parametrize(
+    "invalid_metadata",
+    [
+        "expected_regions: invalid",
+        "expected_remediation_policy: invalid",
+    ],
+)
+def test_load_recorded_evaluation_rejects_invalid_case_metadata(
+    tmp_path,
+    invalid_metadata: str,
+) -> None:
+    cases = tmp_path / "cases.yaml"
+    cases.write_text(
+        f"""
+cases:
+  - id: today
+    prompt: Do prod support
+    expected_since: "2026-09-24T05:00:00Z"
+    expected_failure_ids: []
+    expected_diagnoses: {{}}
+    {invalid_metadata}
+""",
+        encoding="utf-8",
+    )
+    result = tmp_path / "result.json"
+    result.write_text(
+        json.dumps(
+            {
+                "failed_since": "2026-09-24T05:00:00Z",
+                "diagnoses": [],
+                "report": "",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RecordedEvaluationError, match="must be"):
         load_recorded_evaluation(cases, "today", result)
 
 
@@ -119,12 +197,15 @@ def test_publish_recorded_evaluation_configures_mlflow(monkeypatch) -> None:
             "dag_ids": ["dag"],
             "diagnoses": {"failure": "confirmed_oom"},
             "report": "Message for Data Internal Channel\nPROD SUPPORT\nUS\nCA",
+            "automatic_actions": [],
         },
         expectations={
             "failed_since": "2026-09-24T05:00:00Z",
             "failure_ids": ["failure"],
             "dag_ids": ["dag"],
+            "regions": ["US-01", "CA-02"],
             "require_reported_dags_exist": True,
+            "remediation_mode": "suggestion_only",
             "diagnoses": {"failure": "confirmed_oom"},
         },
     )
@@ -144,7 +225,26 @@ def test_publish_recorded_evaluation_configures_mlflow(monkeypatch) -> None:
         "failure_recall",
         "diagnosis_accuracy",
         "dag_existence",
+        "regional_reporting",
+        "remediation_safety",
         "response_formatting",
     ]
     dag_scorer = next(item for item in scorers if item.name == "dag_existence")
     assert dag_scorer.function(evaluation.outputs, evaluation.expectations) == 1.0
+    regional_scorer = next(
+        item for item in scorers if item.name == "regional_reporting"
+    )
+    assert regional_scorer.function(evaluation.outputs, evaluation.expectations) == 1.0
+    remediation_scorer = next(
+        item for item in scorers if item.name == "remediation_safety"
+    )
+    assert (
+        remediation_scorer.function(evaluation.outputs, evaluation.expectations) == 1.0
+    )
+    unsafe_outputs = {
+        **evaluation.outputs,
+        "report": "Message for Data Internal Channel\nPROD SUPPORT\nUS",
+        "automatic_actions": ["bounce"],
+    }
+    assert regional_scorer.function(unsafe_outputs, evaluation.expectations) == 0.0
+    assert remediation_scorer.function(unsafe_outputs, evaluation.expectations) == 0.0

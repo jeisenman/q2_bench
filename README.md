@@ -55,12 +55,62 @@ Publish a curated recorded case to the experiment's Evaluations view:
 
 ```bash
 uv run agentbench evaluate prod-support \
-  --case today-2026-09-25 \
+  --case prod-support-us-ca-2026-09-25 \
   --recorded-result \
   var/benchmark_data/prod_support/2026-09-24/steps/06-agent-result.json
 ```
 
 Local mutable state is written beneath the ignored `var/` directory.
+
+## Run evaluations with Docker
+
+Export the host paths and AWS profile that Docker Compose should mount:
+
+```bash
+export CODEX_HOME="${CODEX_HOME:-$HOME/.bedrock_codex}"
+export AWS_PROFILE="${AWS_PROFILE:-Q2Developer-031713251199}"
+```
+
+Refresh AWS SSO credentials on the host before running any container command
+that needs AWS access:
+
+```bash
+aws sso login --profile "$AWS_PROFILE"
+```
+
+Build the image, start MLflow, initialize the experiment, and run the default
+curated replay evaluation:
+
+```bash
+docker compose build
+docker compose up -d mlflow
+docker compose run --rm --no-deps init
+docker compose run --rm --no-deps assistant-init
+docker compose run --rm --no-deps evaluation
+```
+
+Open <http://127.0.0.1:5000> and select the `production_operations`
+experiment's Evaluations view.
+
+Select another curated case and its matching captured dataset with environment
+variables:
+
+```bash
+CASE_ID=prod-support-us-ca-2026-09-25 \
+DATASET_PATH=/workspace/var/benchmark_data/prod_support/2026-09-24/steps/02-airflow-capture/2026-09-24/airflow_failures.json \
+docker compose run --rm --no-deps evaluation
+```
+
+The host `var/` directory is mounted at `/workspace/var`. AWS and Codex
+configuration are mounted read-only at `/home/agentbench/.aws` and
+`/home/agentbench/.bedrock_codex`; credentials are never copied into the image.
+Only cases with curated failure IDs and diagnoses can be published.
+
+The `assistant-init` service creates an MLflow AI Gateway endpoint named
+`bedrock-assistant`, using the mounted AWS profile and default credential
+chain. It selects that endpoint for the MLflow UI assistant and enables
+assistant requests from the host browser. Override the default model with
+`BEDROCK_ASSISTANT_MODEL`.
 
 ## Agent architecture
 

@@ -1,0 +1,85 @@
+{
+  "captured_at": "2026-09-25T15:18:00+00:00",
+  "claim": "CA Airflow deployment events show a completed migration and unhealthy service restarts without a DAG processor rollout",
+  "command": "kubectl --context l3-ca02 -n scheduler get events --watch --output-watch-events --sort-by=.lastTimestamp",
+  "events": [
+    {
+      "age": "11m",
+      "message": "Container dag-processor failed liveness probe, will be restarted",
+      "object": "pod/airflow-dag-processor-5d89bb769-sdwcn",
+      "reason": "Killing",
+      "type": "Normal"
+    },
+    {
+      "age": "25m",
+      "message": "Successfully assigned scheduler/airflow-run-airflow-migrations-fdv6t to aks-agentpool-39936812-vmss00010t",
+      "object": "pod/airflow-run-airflow-migrations-fdv6t",
+      "reason": "Scheduled",
+      "type": "Normal"
+    },
+    {
+      "age": "25m",
+      "message": "Pulling image plprimary.azurecr.io/airflow/celery-jobs:0.1.0",
+      "object": "pod/airflow-run-airflow-migrations-fdv6t",
+      "reason": "Pulling",
+      "type": "Normal"
+    },
+    {
+      "age": "25m",
+      "message": "Successfully pulled image plprimary.azurecr.io/airflow/celery-jobs:0.1.0 in 1.313s; image size 5401346930 bytes",
+      "object": "pod/airflow-run-airflow-migrations-fdv6t",
+      "reason": "Pulled",
+      "type": "Normal"
+    },
+    {
+      "age": "25m",
+      "message": "Created container run-airflow-migrations",
+      "object": "pod/airflow-run-airflow-migrations-fdv6t",
+      "reason": "Created",
+      "type": "Normal"
+    },
+    {
+      "age": "25m",
+      "message": "Started container run-airflow-migrations",
+      "object": "pod/airflow-run-airflow-migrations-fdv6t",
+      "reason": "Started",
+      "type": "Normal"
+    },
+    {
+      "age": "25m",
+      "message": "Created pod airflow-run-airflow-migrations-fdv6t",
+      "object": "job/airflow-run-airflow-migrations",
+      "reason": "SuccessfulCreate",
+      "type": "Normal"
+    },
+    {
+      "age": "25m",
+      "message": "Job completed",
+      "object": "job/airflow-run-airflow-migrations",
+      "reason": "Completed",
+      "type": "Normal"
+    },
+    {
+      "age": "44m",
+      "message": "Container webserver failed liveness probe and was restarted after connection-refused and timeout health checks",
+      "object": "pod/airflow-webserver-7cc99778d7-6v2qn",
+      "reason": "Killing",
+      "type": "Normal"
+    },
+    {
+      "age": "5m23s",
+      "message": "failed to ensure HPA is correctly created for ScaledObject",
+      "object": "scaledobject/airflow-worker",
+      "reason": "ScaledObjectCheckFailed",
+      "type": "Warning"
+    }
+  ],
+  "expected_interpretation": {
+    "dag_processor_liveness_restart_observed": true,
+    "dag_processor_rollout_observed": false,
+    "migration_completed": true,
+    "worker_scaling_warning_is_separate": true
+  },
+  "region": "CA-02",
+  "watch_warning": "--sort-by is ignored for newly received watch events"
+}

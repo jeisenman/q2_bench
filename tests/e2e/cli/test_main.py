@@ -50,7 +50,9 @@ def test_evaluate_publishes_recorded_case(monkeypatch, tmp_path: Path) -> None:
         "load_recorded_evaluation",
         lambda cases, case_id, result: (
             loaded
-            if case_id == "today-2026-09-25" and result == recorded and cases
+            if case_id == "prod-support-us-ca-2026-09-25"
+            and result == recorded
+            and cases
             else None
         ),
     )
@@ -71,11 +73,74 @@ def test_evaluate_publishes_recorded_case(monkeypatch, tmp_path: Path) -> None:
             "evaluate",
             "prod-support",
             "--case",
-            "today-2026-09-25",
+            "prod-support-us-ca-2026-09-25",
             "--recorded-result",
             str(recorded),
         ],
     )
 
     assert result.exit_code == 0
-    assert result.output == "today-2026-09-25\tevaluation-run-1\n"
+    assert result.output == "prod-support-us-ca-2026-09-25\tevaluation-run-1\n"
+
+
+def test_replay_evaluate_runs_and_publishes_case(monkeypatch, tmp_path: Path) -> None:
+    dataset = tmp_path / "dataset.json"
+    dataset.write_text("{}", encoding="utf-8")
+    output = tmp_path / "result.json"
+    case = object()
+    outcome = object()
+    evaluation = object()
+    monkeypatch.setattr(
+        main,
+        "load_replay_case",
+        lambda _cases, _case_id: case,
+    )
+    monkeypatch.setattr(
+        main,
+        "run_replay_case",
+        lambda loaded, path: outcome if loaded is case and path == dataset else None,
+    )
+    monkeypatch.setattr(
+        main,
+        "write_recorded_outcome",
+        lambda loaded, path: path if loaded is outcome and path == output else None,
+    )
+    monkeypatch.setattr(
+        main,
+        "load_recorded_evaluation",
+        lambda cases, case_id, path: (
+            evaluation
+            if case_id == "prod-support-us-ca-2026-09-25" and path == output and cases
+            else None
+        ),
+    )
+    monkeypatch.setattr(
+        main,
+        "publish_recorded_evaluation",
+        lambda loaded, **kwargs: (
+            "evaluation-run-2"
+            if loaded is evaluation and kwargs["tracking_uri"] == "http://mlflow:5000"
+            else ""
+        ),
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "replay-evaluate",
+            "prod-support",
+            "--case",
+            "prod-support-us-ca-2026-09-25",
+            "--dataset",
+            str(dataset),
+            "--output",
+            str(output),
+            "--tracking-uri",
+            "http://mlflow:5000",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.output == (
+        f"prod-support-us-ca-2026-09-25\tevaluation-run-2\t{output}\n"
+    )

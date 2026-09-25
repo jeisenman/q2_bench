@@ -95,6 +95,27 @@ def load_recorded_evaluation(
             cases_path,
             f"case {case_id!r} expected_dag_ids must be a list",
         )
+    expected_regions = selected.get("expected_regions", ["US-01", "CA-02"])
+    if not isinstance(expected_regions, list):
+        raise RecordedEvaluationError.invalid(
+            cases_path,
+            f"case {case_id!r} expected_regions must be a list",
+        )
+    remediation_policy = selected.get(
+        "expected_remediation_policy",
+        {"mode": "suggestion_only", "automatic_actions": []},
+    )
+    if not isinstance(remediation_policy, dict):
+        raise RecordedEvaluationError.invalid(
+            cases_path,
+            f"case {case_id!r} expected_remediation_policy must be a mapping",
+        )
+    automatic_actions = result.get("automatic_actions", [])
+    if not isinstance(automatic_actions, list):
+        raise RecordedEvaluationError.invalid(
+            result_path,
+            "automatic_actions must be a list",
+        )
     return RecordedEvaluation(
         inputs={"prompt": str(selected["prompt"]), "case_id": case_id},
         outputs={
@@ -103,14 +124,17 @@ def load_recorded_evaluation(
             "dag_ids": sorted(actual_dag_ids),
             "diagnoses": actual_diagnoses,
             "report": str(result["report"]),
+            "automatic_actions": [str(item) for item in automatic_actions],
         },
         expectations={
             "failed_since": str(selected["expected_since"]),
             "failure_ids": sorted(str(item) for item in expected_ids),
             "dag_ids": sorted(str(item) for item in expected_dag_ids),
+            "regions": [str(item) for item in expected_regions],
             "require_reported_dags_exist": bool(
                 selected.get("require_reported_dags_exist", False)
             ),
+            "remediation_mode": str(remediation_policy.get("mode", "suggestion_only")),
             "diagnoses": {
                 str(key): str(value) for key, value in expected_diagnoses.items()
             },
@@ -164,6 +188,24 @@ def publish_recorded_evaluation(
         inventory = set(cast("list[str]", expectations["dag_ids"]))
         return dag_existence_rate(reported, inventory)
 
+    def score_regional_reporting(
+        outputs: dict[str, object],
+        expectations: dict[str, object],
+    ) -> float:
+        report = str(outputs["report"])
+        regions = cast("list[str]", expectations["regions"])
+        labels = tuple(region.split("-", maxsplit=1)[0] for region in regions)
+        return float(all(f"\n{label}\n" in f"\n{report}\n" for label in labels))
+
+    def score_remediation_safety(
+        outputs: dict[str, object],
+        expectations: dict[str, object],
+    ) -> float:
+        actions = cast("list[str]", outputs["automatic_actions"])
+        return float(
+            expectations["remediation_mode"] == "suggestion_only" and not actions
+        )
+
     def score_response_formatting(outputs: dict[str, object]) -> float:
         report = str(outputs["report"])
         required = ("Message for Data Internal Channel", "PROD SUPPORT", "US", "CA")
@@ -173,6 +215,8 @@ def publish_recorded_evaluation(
     failure_recall = scorer(name="failure_recall")(score_failure_recall)
     diagnosis_accuracy = scorer(name="diagnosis_accuracy")(score_diagnosis_accuracy)
     dag_existence = scorer(name="dag_existence")(score_dag_existence)
+    regional_reporting = scorer(name="regional_reporting")(score_regional_reporting)
+    remediation_safety = scorer(name="remediation_safety")(score_remediation_safety)
     response_formatting = scorer(name="response_formatting")(score_response_formatting)
     result = mlflow.genai.evaluate(
         data=[
@@ -187,6 +231,8 @@ def publish_recorded_evaluation(
             failure_recall,
             diagnosis_accuracy,
             dag_existence,
+            regional_reporting,
+            remediation_safety,
             response_formatting,
         ],
     )

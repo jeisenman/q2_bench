@@ -60,24 +60,27 @@ cannot contain production evidence as of 2026-09-25.
 - Diagnosis accuracy: evidence-based classification from exact logs.
 - Response formatting: required date and regional report structure.
 
-The `current-ca-dags-exist-2026-09-25` case captures all 35 CA DAG records,
-including inactive serialized records. At capture time CA returned no failed
-task instances since `2026-09-24T05:00:00Z`; the case therefore expects an
-empty failure set and rejects invented or stale DAG IDs.
+The `prod-support-us-ca-2026-09-25` case is the single curated benchmark for
+the operational window. Its prompt is `Do prod support`, and the resulting
+report must cover US and CA together. It replaces the former US-only,
+CA-only, and uncurated default cases.
 
-The captured production inventory also establishes exact regional expectations
-for `l3-main-*` graphs: 78 in US Production and 6 in CA Production. Count
-scoring requires an exact match per region, so both missing and unexpected
-graphs reduce the benchmark score.
+The case reuses the existing captured failure dataset. US contributes seven
+expected failures and their curated diagnoses. CA contributes no task failures
+for the same cutoff, but its 35 captured DAG records and infrastructure
+evidence remain part of the regional assessment. No production data was
+recaptured for this refactor.
 
-The same case includes a curated infrastructure evidence bundle. Airflow's
-health endpoint confirms that the CA DAG processor is unhealthy and that its
-last heartbeat was `2026-09-15T02:01:11.656938Z`, while the scheduler remained
-healthy on September 25. Queries against `pl-oms-ca-primary` returned no
-matching DAG-processor records and no container, pod, or heartbeat ingestion
-for the inspected period. The benchmark records that distinction explicitly:
-the failure is confirmed by Airflow health, while OMS exposes a telemetry gap
-rather than corroborating the claim.
+The captured inventories establish exact regional expectations for
+`l3-main-*` graphs: 78 in US Production and 6 in CA Production. The US
+infrastructure evidence is healthy, while Airflow confirms that the CA DAG
+processor is unhealthy and OMS has a telemetry gap rather than corroborating
+the failure.
+
+Remediation is suggestion-only. The agent and benchmark record no automatic
+actions and never bounce infrastructure. Missing DAGs, unavailable processor
+logs, and repeated restarts may justify suggesting a DAG-processor bounce for
+operator approval.
 
 Real captures are ignored by Git because they may contain sensitive production
 data. Redaction is applied automatically, but every capture still requires

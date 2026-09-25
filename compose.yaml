@@ -1,0 +1,102 @@
+name: agentsdk
+
+x-agentbench: &agentbench
+  build:
+    context: .
+    dockerfile: containers/agentbench/Dockerfile
+  image: agentsdk-agentbench:local
+  working_dir: /workspace
+  environment:
+    AWS_CA_BUNDLE: /home/agentbench/.aws/q2-ca-bundle.pem
+    AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-2}
+    AWS_PROFILE: ${AWS_PROFILE:-Q2Developer-031713251199}
+    AWS_REGION: ${AWS_REGION:-us-east-2}
+    CODEX_HOME: /home/agentbench/.bedrock_codex
+    HOME: /home/agentbench
+  volumes:
+    - ./var:/workspace/var
+    - ${HOME}/.aws:/home/agentbench/.aws:ro
+    - ${CODEX_HOME}:/home/agentbench/.bedrock_codex:ro
+    - ./var/mlflow/assistant:/home/agentbench/.mlflow/assistant
+
+services:
+  mlflow:
+    <<: *agentbench
+    environment:
+      AWS_CA_BUNDLE: /home/agentbench/.aws/q2-ca-bundle.pem
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-2}
+      AWS_PROFILE: ${AWS_PROFILE:-Q2Developer-031713251199}
+      AWS_REGION: ${AWS_REGION:-us-east-2}
+      CODEX_HOME: /home/agentbench/.bedrock_codex
+      HOME: /home/agentbench
+      MLFLOW_ENABLE_REMOTE_ASSISTANT: "true"
+    command:
+      - mlflow
+      - server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --allowed-hosts
+      - mlflow,mlflow:*,localhost,localhost:*,127.0.0.1,127.0.0.1:*
+      - --backend-store-uri
+      - sqlite:////workspace/var/mlflow/backend.db
+      - --default-artifact-root
+      - /workspace/var/mlflow/artifacts
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  init:
+    <<: *agentbench
+    command:
+      - agentbench
+      - init
+      - --tracking-uri
+      - http://mlflow:5000
+      - --artifact-root
+      - /workspace/var/mlflow/artifacts
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+  assistant-init:
+    <<: *agentbench
+    command:
+      - agentbench
+      - configure-assistant
+      - --tracking-uri
+      - http://mlflow:5000
+      - --model
+      - ${BEDROCK_ASSISTANT_MODEL:-us.anthropic.claude-sonnet-4-6}
+      - --region
+      - ${AWS_REGION:-us-east-2}
+      - --config-path
+      - /home/agentbench/.mlflow/assistant/config.json
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+  evaluation:
+    <<: *agentbench
+    command:
+      - agentbench
+      - replay-evaluate
+      - prod-support
+      - --case
+      - ${CASE_ID:-prod-support-us-ca-2026-09-25}
+      - --dataset
+      - ${DATASET_PATH:-/workspace/var/benchmark_data/prod_support/2026-09-24/steps/02-airflow-capture/2026-09-24/airflow_failures.json}
+      - --tracking-uri
+      - http://mlflow:5000
+    depends_on:
+      init:
+        condition: service_completed_successfully

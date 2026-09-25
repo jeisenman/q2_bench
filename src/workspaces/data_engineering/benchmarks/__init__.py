@@ -5,6 +5,11 @@ from workspaces.data_engineering.benchmarks.catalog import (
     BenchmarkManifestError,
     default_catalog,
 )
+from workspaces.data_engineering.benchmarks.infrastructure import (
+    DagProcessorAssessment,
+    DagProcessorObservation,
+    assess_dag_processor,
+)
 from workspaces.data_engineering.benchmarks.models import (
     Benchmark,
     MlflowMapping,
@@ -28,10 +33,13 @@ __all__ = [
     "BenchmarkCatalog",
     "BenchmarkManifestError",
     "ComputeKind",
+    "DagProcessorAssessment",
+    "DagProcessorObservation",
     "MlflowMapping",
     "TaskObservation",
     "ToolStep",
     "TrajectoryScore",
+    "assess_dag_processor",
     "build_efficiency_judge_prompt",
     "dag_existence_rate",
     "default_catalog",

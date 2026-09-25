@@ -1,0 +1,53 @@
+{
+  "captured_at": "2026-09-25T15:22:25.409249+00:00",
+  "claim": "US Airflow infrastructure is healthy and actively processing DAGs",
+  "evidence": {
+    "airflow_dag_inventory": {
+      "active_dag_count": 209,
+      "active_l3_main_dag_count": 153,
+      "inactive_dag_count": 8,
+      "only_active": false,
+      "total_dag_count": 217
+    },
+    "airflow_health": {
+      "dag_processor": {
+        "latest_heartbeat": "2026-09-25T15:22:25.409249+00:00",
+        "status": "healthy"
+      },
+      "metadatabase": {
+        "status": "healthy"
+      },
+      "scheduler": {
+        "latest_heartbeat": "2026-09-25T15:22:25.169619+00:00",
+        "status": "healthy"
+      }
+    },
+    "kubernetes": {
+      "dag_processor": {
+        "pod": "airflow-dag-processor-794b8c4459-2gntp",
+        "ready": "2/2",
+        "status": "Running"
+      },
+      "namespace": "scheduler",
+      "scheduler": {
+        "pod": "airflow-scheduler-69d68b8c8d-cpsfg",
+        "ready": "2/2",
+        "status": "Running"
+      },
+      "webserver": {
+        "pod": "airflow-webserver-7d669c7477-6wr6c",
+        "ready": "1/1",
+        "status": "Running"
+      }
+    }
+  },
+  "expected_interpretation": {
+    "dag_processor_healthy": true,
+    "dags_active": true,
+    "metadatabase_healthy": true,
+    "scheduler_healthy": true
+  },
+  "mutation_performed": false,
+  "region": "US-01",
+  "verdict": "healthy"
+}

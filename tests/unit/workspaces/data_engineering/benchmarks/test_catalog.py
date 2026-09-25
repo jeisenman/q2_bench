@@ -34,8 +34,9 @@ def test_catalog_reports_unknown_id() -> None:
         default_catalog().get("missing.benchmark")
 
 
-def test_current_ca_case_requires_reported_dags_to_exist() -> None:
-    captured_dag_count = 35
+def test_prod_support_case_combines_us_and_ca_expectations() -> None:
+    captured_ca_dag_count = 35
+    expected_us_failure_count = 7
     cases_path = (
         Path(__file__).parents[5]
         / "src/workspaces/data_engineering/benchmarks/groups"
@@ -43,49 +44,47 @@ def test_current_ca_case_requires_reported_dags_to_exist() -> None:
     )
     configured = yaml.safe_load(cases_path.read_text(encoding="utf-8"))["cases"]
     case = next(
-        item for item in configured if item["id"] == "current-ca-dags-exist-2026-09-25"
+        item for item in configured if item["id"] == "prod-support-us-ca-2026-09-25"
     )
 
-    assert case["region"] == "CA-02"
+    assert case["prompt"] == "Do prod support"
+    assert case["expected_regions"] == ["US-01", "CA-02"]
+    assert case["expected_failure_counts"] == {
+        "US-01": expected_us_failure_count,
+        "CA-02": 0,
+    }
+    assert len(case["expected_failure_ids"]) == expected_us_failure_count
     assert case["require_reported_dags_exist"] is True
-    assert len(case["expected_dag_ids"]) == captured_dag_count
-    assert case["expected_failure_ids"] == []
+    assert len(case["expected_dag_ids"]) > captured_ca_dag_count
     assert case["expected_l3_main_graph_counts"] == {"US-01": 78, "CA-02": 6}
-    evidence_path = cases_path.parent / case["infrastructure_evidence_uri"]
-    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-    assert evidence["evidence"]["airflow_health"]["dag_processor"]["status"] == (
-        "unhealthy"
-    )
-    assert evidence["evidence"]["oms"]["corroborates_claim"] is False
-    assert evidence["evidence"]["airflow_dag_inventory"]["l3_main_graph_counts"] == {
+    assert case["expected_infrastructure_statuses"] == {
+        "US-01": "healthy",
+        "CA-02": "dag_processor_unhealthy",
+    }
+    assert case["expected_remediation_policy"] == {
+        "mode": "suggestion_only",
+        "automatic_bounce": False,
+        "automatic_actions": [],
+        "suggest_bounce_on_missing_dags_logs_and_restarts": True,
+    }
+
+    evidence_by_region = {
+        region: json.loads(
+            (cases_path.parent / relative_path).read_text(encoding="utf-8")
+        )
+        for region, relative_path in case["infrastructure_evidence_uris"].items()
+    }
+    assert evidence_by_region["US-01"]["verdict"] == "healthy"
+    ca_evidence = evidence_by_region["CA-02"]["evidence"]
+    assert ca_evidence["airflow_health"]["dag_processor"]["status"] == "unhealthy"
+    assert ca_evidence["oms"]["corroborates_claim"] is False
+    assert ca_evidence["airflow_dag_inventory"]["l3_main_graph_counts"] == {
         "US-01": 78,
         "CA-02": 6,
     }
-    assert evidence["verdict"] == "confirmed_by_airflow_health_not_correlated_in_oms"
-
-
-def test_today_case_includes_healthy_us_infrastructure_evidence() -> None:
-    expected_active_dags = 209
-    expected_active_l3_main_dags = 153
-    cases_path = (
-        Path(__file__).parents[5]
-        / "src/workspaces/data_engineering/benchmarks/groups"
-        / "production_operations/prod_support/cases.yaml"
-    )
-    configured = yaml.safe_load(cases_path.read_text(encoding="utf-8"))["cases"]
-    case = next(item for item in configured if item["id"] == "today-2026-09-25")
-
-    evidence_path = cases_path.parent / case["infrastructure_evidence_uri"]
-    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-
-    assert case["expected_infrastructure_status"] == "healthy"
-    assert case["expected_active_dag_count"] == expected_active_dags
-    assert case["expected_active_l3_main_dag_count"] == expected_active_l3_main_dags
-    assert evidence["evidence"]["airflow_health"]["dag_processor"]["status"] == (
-        "healthy"
-    )
-    assert (
-        evidence["evidence"]["airflow_dag_inventory"]["active_dag_count"]
-        == expected_active_dags
-    )
-    assert evidence["verdict"] == "healthy"
+    removed_ids = {
+        "current-ca-dags-exist-2026-09-25",
+        "today-2026-09-25",
+        "default-2026-09-25",
+    }
+    assert removed_ids.isdisjoint(item["id"] for item in configured)

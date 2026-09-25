@@ -1,7 +1,7 @@
 schema_version: 1
 benchmark_id: data_engineering.production_operations.prod_support
 display_name: prod-support
-version: 1.0.0
+version: 1.1.0
 group: production_operations
 description: Evaluate an agent's response to a production data pipeline support issue.
 dataset:
@@ -12,4 +12,7 @@ evaluation:
     - query_translation
     - failure_recall
     - diagnosis_accuracy
+    - dag_existence
+    - regional_reporting
+    - remediation_safety
     - response_formatting

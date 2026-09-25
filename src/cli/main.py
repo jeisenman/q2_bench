@@ -10,9 +10,16 @@ import click
 
 from adapters.airflow import AirflowApiSource
 from adapters.mlflow import (
+    BedrockAssistantConfigurator,
     MlflowExperimentAdapter,
+    UrlJsonTransport,
     load_recorded_evaluation,
     publish_recorded_evaluation,
+)
+from cli.prod_support_replay import (
+    load_replay_case,
+    run_replay_case,
+    write_recorded_outcome,
 )
 from workspaces.data_engineering.agents.prod_support import capture_day
 from workspaces.data_engineering.benchmarks import default_catalog
@@ -23,6 +30,7 @@ PROD_SUPPORT_CASES = Path(
     "src/workspaces/data_engineering/benchmarks/groups/"
     "production_operations/prod_support/cases.yaml"
 )
+DEFAULT_ASSISTANT_CONFIG = Path.home() / ".mlflow/assistant/config.json"
 
 
 @click.group()
@@ -60,6 +68,36 @@ def initialize(tracking_uri: str, artifact_root: Path) -> None:
             artifact_location=artifact_uri,
         )
         click.echo(f"{benchmark.display_name}\t{run_id}")
+
+
+@cli.command("configure-assistant")
+@click.option("--tracking-uri", default="http://mlflow:5000", show_default=True)
+@click.option(
+    "--model",
+    default="us.anthropic.claude-sonnet-4-6",
+    show_default=True,
+)
+@click.option("--region", default="us-east-2", show_default=True)
+@click.option(
+    "--config-path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=DEFAULT_ASSISTANT_CONFIG,
+    show_default=True,
+)
+def configure_assistant(
+    tracking_uri: str,
+    model: str,
+    region: str,
+    config_path: Path,
+) -> None:
+    """Configure the MLflow UI assistant to use Amazon Bedrock."""
+    configurator = BedrockAssistantConfigurator(UrlJsonTransport(tracking_uri))
+    endpoint = configurator.configure(
+        model=model,
+        region=region,
+        config_path=config_path,
+    )
+    click.echo(f"{endpoint}\t{model}\t{config_path}")
 
 
 @cli.command("capture-prod-support")
@@ -117,6 +155,45 @@ def evaluate_benchmark(
         tracking_uri=tracking_uri,
     )
     click.echo(f"{case_id}\t{run_id}")
+
+
+@cli.command("replay-evaluate")
+@click.argument("benchmark", type=click.Choice(["prod-support"]))
+@click.option("--case", "case_id", required=True)
+@click.option(
+    "--dataset",
+    type=click.Path(dir_okay=False, path_type=Path),
+    required=True,
+)
+@click.option(
+    "--output",
+    type=click.Path(dir_okay=False, path_type=Path),
+)
+@click.option("--tracking-uri", default=DEFAULT_TRACKING_URI, show_default=True)
+def replay_evaluate_benchmark(
+    benchmark: str,
+    case_id: str,
+    dataset: Path,
+    output: Path | None,
+    tracking_uri: str,
+) -> None:
+    """Run one curated replay case and publish its MLflow evaluation."""
+    del benchmark
+    case = load_replay_case(PROD_SUPPORT_CASES, case_id)
+    outcome = run_replay_case(case, dataset)
+    result_path = output or Path("var/mlflow/evaluations") / f"{case_id}.json"
+    write_recorded_outcome(outcome, result_path)
+    evaluation = load_recorded_evaluation(
+        PROD_SUPPORT_CASES,
+        case_id,
+        result_path,
+    )
+    run_id = publish_recorded_evaluation(
+        evaluation,
+        experiment_name="production_operations",
+        tracking_uri=tracking_uri,
+    )
+    click.echo(f"{case_id}\t{run_id}\t{result_path}")
 
 
 def main() -> None:

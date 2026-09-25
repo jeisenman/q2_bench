@@ -32,7 +32,9 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
     instructions=(
         "Resolve the operational UTC cutoff, discover failures by end_date, "
         "inspect exact task logs, classify only explicit evidence, and render "
-        "the regional production-support report. Never perform mutations."
+        "one regional production-support report covering US and CA. Never "
+        "perform mutations or bounce infrastructure; remediation may only be "
+        "suggested for operator approval."
     ),
     tools=(DISCOVER_FAILURES, FETCH_TASK_LOG, CLASSIFY_FAILURE),
     version="2",
