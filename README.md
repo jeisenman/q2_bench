@@ -159,6 +159,9 @@ configuration are mounted read-only at `/home/agentbench/.aws` and
 writable `CODEX_HOME` backed by container `tmpfs`. The ignored repository
 `.env` is injected for connector credentials; credentials are never copied
 into the image or persisted after the container exits.
+Containerized Codex uses its no-sandbox mode because Docker Desktop does not
+support the nested user namespaces it requires; Docker still mounts the source
+workspace read-only and exposes only `var/` as writable.
 Only cases with curated failure IDs and diagnoses can be published.
 
 The `assistant-init` service creates an MLflow AI Gateway endpoint named

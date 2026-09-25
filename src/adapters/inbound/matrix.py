@@ -236,13 +236,16 @@ class _CommandOptions:
 
 
 def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]:
+    sandbox = (
+        "danger-full-access" if options.runtime == "container" else options.sandbox
+    )
     command = [
         "--model",
         profile.model,
         "-c",
         f'model_reasoning_effort="{profile.reasoning_effort}"',
         "--sandbox",
-        options.sandbox,
+        sandbox,
         "--ask-for-approval",
         "never",
         "--cd",
