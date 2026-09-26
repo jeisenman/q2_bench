@@ -233,6 +233,11 @@ Production mode fails immediately when any required US or CA Airflow credential
 is missing. It discovers failed task instances and reads exact task logs; it
 does not retry jobs or mutate production systems.
 
+The tool's `output` is delivery-ready and contains `URLs to validate`, `Message
+for developer`, a fenced Markdown `Message for Data Internal Channel`, and
+`Follow Up` sections. The response also exposes the URLs as `validation_urls`
+while retaining the separate channel-specific report fields.
+
 The required `.env` names are `USAIRFLORUSER`, `USAIRFLOWPASSWORD`,
 `CAAIRFLORUSER`, and `CAAIRFLOWPASSWORD`. Credential values are injected at
 runtime and are not copied into the image.

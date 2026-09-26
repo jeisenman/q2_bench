@@ -16,6 +16,8 @@ from workspaces.data_engineering.agents.prod_support import (
     ReplayAirflowFailureSource,
 )
 
+EXPECTED_REGION_COUNT = 2
+
 
 def test_mcp_tool_runs_prod_support_agent() -> None:
     result = asyncio.run(
@@ -28,11 +30,16 @@ def test_mcp_tool_runs_prod_support_agent() -> None:
 
     assert result["correlation_id"] == "incident-1"
     assert "PROD SUPPORT" in result["output"]
+    assert result["output"].startswith("URLs to validate\n- https://")
+    assert "Message for developer:" in result["output"]
+    assert "Message for Data Internal Channel:\n```markdown\n" in result["output"]
+    assert "Follow Up:\nNo Airflow task retries" in result["output"]
     assert "- Good" in result["output"]
     assert result["developer_report"].startswith("Message for Developer")
     assert result["data_internal_report"].startswith(
         "Message for Data Internal Channel"
     )
+    assert len(result["validation_urls"]) == EXPECTED_REGION_COUNT
     assert result["follow_up"] == (
         "No Airflow task retries are suggested for this operational window."
     )

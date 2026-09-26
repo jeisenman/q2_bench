@@ -18,6 +18,7 @@ from workspaces.data_engineering.agents.prod_support import (
     ProdSupportAgent,
     ReplayAirflowFailureSource,
 )
+from workspaces.data_engineering.agents.prod_support.models import ProdSupportOutcome
 
 SERVER_NAME = "prod-support"
 SOURCE_ENV = "PROD_SUPPORT_SOURCE"
@@ -78,6 +79,61 @@ def _source() -> AirflowFailureSource:
 agent = ProdSupportAgent(_source())
 
 
+def _validation_urls(developer_report: str) -> tuple[str, ...]:
+    """Extract Airflow validation URLs from the developer report."""
+    return tuple(
+        url
+        for line in developer_report.splitlines()
+        if (url := _url_from_report_line(line)) is not None
+    )
+
+
+def _developer_message(developer_report: str) -> str:
+    """Remove the report heading and validation URLs from the developer text."""
+    return "\n".join(
+        line
+        for line in developer_report.splitlines()
+        if line != "Message for Developer" and _url_from_report_line(line) is None
+    ).strip()
+
+
+def _url_from_report_line(line: str) -> str | None:
+    """Return a URL embedded in a developer-report line, if present."""
+    if not line.startswith("- ") or "http" not in line:
+        return None
+    return line[line.index("http") :].strip()
+
+
+def _data_internal_message(data_internal_report: str) -> str:
+    """Remove the channel heading before placing the message in a code block."""
+    return data_internal_report.removeprefix(
+        "Message for Data Internal Channel\n"
+    ).strip()
+
+
+def _format_mcp_output(outcome: ProdSupportOutcome) -> str:
+    """Render the MCP-facing response with explicit delivery sections."""
+    urls = _validation_urls(outcome.developer_report)
+    url_lines = "\n".join(f"- {url}" for url in urls)
+    return "\n".join(
+        (
+            "URLs to validate",
+            url_lines,
+            "",
+            "Message for developer:",
+            _developer_message(outcome.developer_report),
+            "",
+            "Message for Data Internal Channel:",
+            "```markdown",
+            _data_internal_message(outcome.data_internal_report),
+            "```",
+            "",
+            "Follow Up:",
+            outcome.follow_up,
+        )
+    )
+
+
 @server.tool(
     name="run_prod_support",
     description="Investigate a production data-engineering incident.",
@@ -96,10 +152,11 @@ async def run_prod_support(
     )
     outcome = await agent.investigate(request.prompt)
     return {
-        "output": outcome.report,
+        "output": _format_mcp_output(outcome),
         "developer_report": outcome.developer_report,
         "data_internal_report": outcome.data_internal_report,
         "follow_up": outcome.follow_up,
+        "validation_urls": _validation_urls(outcome.developer_report),
         "correlation_id": request.correlation_id,
         "tool_calls": tuple(tool.name for tool in agent.definition.tools),
         "attributes": {
