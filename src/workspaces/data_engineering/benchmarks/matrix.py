@@ -9,6 +9,11 @@ from typing import Any
 
 import yaml
 
+from workspaces.data_engineering.benchmarks.agent_configurations import (
+    AgentConfigurationManifestError,
+    load_agent_configurations,
+)
+
 
 class MatrixManifestError(ValueError):
     """Raised when a benchmark matrix manifest is invalid."""
@@ -72,39 +77,71 @@ class MatrixManifest:
     rubric: tuple[RubricCriterion, ...]
 
 
-def load_matrix_manifest(path: Path) -> MatrixManifest:
-    """Load and validate one matrix manifest."""
-    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+def load_matrix_run(
+    benchmark_path: Path,
+    agent_configurations_path: Path,
+    cases_path: Path,
+    case_id: str,
+    configuration_ids: tuple[str, ...] = (),
+) -> MatrixManifest:
+    """Compose one matrix run from benchmark, agent, and case definitions."""
+    raw = yaml.safe_load(benchmark_path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict) or raw.get("schema_version") != 1:
-        raise MatrixManifestError.invalid(path, "schema_version must be 1")
-    execution = _mapping(raw, "execution", path)
-    candidates = raw.get("candidates")
-    rubric = raw.get("rubric")
-    if not isinstance(candidates, list) or not candidates:
         raise MatrixManifestError.invalid(
-            path,
-            "candidates must be a non-empty list",
+            benchmark_path,
+            "schema_version must be 1",
         )
+    execution = _mapping(raw, "execution", benchmark_path)
+    rubric = raw.get("rubric")
     if not isinstance(rubric, list) or not rubric:
-        raise MatrixManifestError.invalid(path, "rubric must be a non-empty list")
-    profiles = tuple(_profile(item, path) for item in candidates)
-    if len({item.profile for item in profiles}) != len(profiles):
-        raise MatrixManifestError.invalid(path, "candidate profiles must be unique")
+        raise MatrixManifestError.invalid(
+            benchmark_path,
+            "rubric must be a non-empty list",
+        )
+    try:
+        registry = load_agent_configurations(agent_configurations_path)
+        selected_raw = (
+            tuple(registry.select(profile) for profile in configuration_ids)
+            if configuration_ids
+            else registry.candidates()
+        )
+    except AgentConfigurationManifestError as error:
+        raise MatrixManifestError(str(error)) from error
+    selected = tuple(
+        parse_model_profile(profile, agent_configurations_path)
+        for profile in selected_raw
+    )
+    if not selected:
+        raise MatrixManifestError.invalid(
+            agent_configurations_path,
+            "at least one candidate configuration is required",
+        )
+    case = _load_case(cases_path, case_id)
+    try:
+        judge_raw = registry.select(_text(raw, "judge_configuration", benchmark_path))
+    except AgentConfigurationManifestError as error:
+        raise MatrixManifestError(str(error)) from error
+    judge = parse_model_profile(judge_raw, agent_configurations_path)
+    if judge.role != "judge":
+        raise MatrixManifestError.invalid(
+            agent_configurations_path,
+            "judge_configuration must reference a judge profile",
+        )
     return MatrixManifest(
-        matrix_id=_text(raw, "matrix_id", path),
-        suite=_text(raw, "suite", path),
-        benchmark=_text(raw, "benchmark", path),
-        experiment_name=_text(raw, "experiment_name", path),
-        dataset=Path(_text(raw, "dataset", path)),
-        case_id=_text(raw, "case_id", path),
+        matrix_id=_text(raw, "matrix_id", benchmark_path),
+        suite=_text(raw, "suite", benchmark_path),
+        benchmark=_text(raw, "benchmark", benchmark_path),
+        experiment_name=_text(raw, "experiment_name", benchmark_path),
+        dataset=Path(_text(case, "dataset_uri", cases_path)),
+        case_id=case_id,
         runtime=str(execution.get("runtime", "process")),
         container_image=str(execution.get("container_image", "")),
-        parallelism=int(execution.get("parallelism", len(profiles))),
+        parallelism=int(execution.get("parallelism", len(selected))),
         sandbox=str(execution.get("sandbox", "read-only")),
         artifact_root=Path(str(execution.get("artifact_root", "var/benchmark_matrix"))),
-        judge=_profile(_mapping(raw, "judge", path), path),
-        candidates=profiles,
-        rubric=tuple(_criterion(item, path) for item in rubric),
+        judge=judge,
+        candidates=selected,
+        rubric=tuple(_criterion(item, benchmark_path) for item in rubric),
     )
 
 
@@ -185,7 +222,8 @@ def _text(raw: dict[str, Any], field: str, path: Path) -> str:
     return value
 
 
-def _profile(raw: object, path: Path) -> ModelProfile:
+def parse_model_profile(raw: object, path: Path) -> ModelProfile:
+    """Parse one reusable model profile."""
     if not isinstance(raw, dict):
         raise MatrixManifestError.invalid(path, "model profile must be a mapping")
     return ModelProfile(
@@ -219,6 +257,19 @@ def _string_tuple(raw: object, path: Path) -> tuple[str, ...]:
     ):
         raise MatrixManifestError.invalid(path, "capabilities must be a string list")
     return tuple(raw)
+
+
+def _load_case(path: Path, case_id: str) -> dict[str, Any]:
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict) or raw.get("schema_version") != 1:
+        raise MatrixManifestError.invalid(path, "schema_version must be 1")
+    cases = raw.get("cases")
+    if not isinstance(cases, list):
+        raise MatrixManifestError.invalid(path, "cases must be a list")
+    for case in cases:
+        if isinstance(case, dict) and case.get("id") == case_id:
+            return case
+    raise MatrixManifestError.invalid(path, f"unknown case: {case_id}")
 
 
 def _criterion(raw: object, path: Path) -> RubricCriterion:

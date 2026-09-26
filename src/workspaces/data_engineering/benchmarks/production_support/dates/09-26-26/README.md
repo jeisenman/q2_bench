@@ -30,7 +30,20 @@ Run the matrix:
 
 ```bash
 uv run agentbench run-matrix \
-  --manifest src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/matrix.yaml \
+  --benchmark src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/evaluation.yaml \
+  --cases src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/cases.yaml \
+  --case prod-support-us-ca-operational-2026-09-25 \
+  --execute
+```
+
+Run only the Sol Light controller with Luna High workers:
+
+```bash
+uv run agentbench run-matrix \
+  --benchmark src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/evaluation.yaml \
+  --cases src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/cases.yaml \
+  --case prod-support-us-ca-operational-2026-09-25 \
+  --configuration sol-light-luna-high-workers \
   --execute
 ```
 

@@ -21,7 +21,7 @@ def test_benchmarks_lists_visible_benchmarks() -> None:
 
 
 def test_run_matrix_defaults_to_a_grouped_dry_run() -> None:
-    candidate_count = 7
+    candidate_count = 8
     result = CliRunner().invoke(cli, ["run-matrix"])
 
     assert result.exit_code == 0
@@ -29,7 +29,19 @@ def test_run_matrix_defaults_to_a_grouped_dry_run() -> None:
         result.output.count('"matrix_id": "prod-support-09-25-26"') == candidate_count
     )
     assert '"profile": "sol-light"' in result.output
-    assert '"judge_profile": "sol-xhigh"' in result.output
+    assert '"judge_profile": "sol-xhigh-judge"' in result.output
+
+
+def test_run_matrix_selects_registered_configuration() -> None:
+    result = CliRunner().invoke(
+        cli,
+        ["run-matrix", "--configuration", "sol-light-luna-high-workers"],
+    )
+
+    assert result.exit_code == 0
+    assert result.output.count('"profile"') == 1
+    assert '"profile": "sol-light-luna-high-workers"' in result.output
+    assert '"workers": ["luna-high"]' in result.output
 
 
 def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:

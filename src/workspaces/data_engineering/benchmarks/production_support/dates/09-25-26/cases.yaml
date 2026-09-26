@@ -3,6 +3,7 @@ cases:
   - id: prod-support-us-ca-2026-09-25
     reference_time: "2026-09-25T16:00:00Z"
     prompt: Do prod support
+    dataset_uri: var/benchmark_data/prod_support/2026-09-24/steps/02-airflow-capture/2026-09-24/airflow_failures.json
     expected_regions:
       - US-01
       - CA-02

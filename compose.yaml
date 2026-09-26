@@ -82,7 +82,7 @@ services:
       - agentbench
       - configure-assistant
       - --provider
-      - codex
+      - ${MLFLOW_ASSISTANT_PROVIDER:-bedrock}
       - --tracking-uri
       - http://mlflow:5000
       - --model

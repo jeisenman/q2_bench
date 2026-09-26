@@ -1,5 +1,9 @@
 """Data-engineering benchmark catalog exports."""
 
+from workspaces.data_engineering.benchmarks.agent_configurations import (
+    AgentConfigurationManifest,
+    load_agent_configurations,
+)
 from workspaces.data_engineering.benchmarks.catalog import (
     BenchmarkCatalog,
     BenchmarkManifestError,
@@ -17,7 +21,7 @@ from workspaces.data_engineering.benchmarks.matrix import (
     RubricCriterion,
     build_candidate_prompt,
     build_matrix_judge_prompt,
-    load_matrix_manifest,
+    load_matrix_run,
 )
 from workspaces.data_engineering.benchmarks.models import (
     Benchmark,
@@ -38,6 +42,7 @@ from workspaces.data_engineering.benchmarks.quality import (
 )
 
 __all__ = [
+    "AgentConfigurationManifest",
     "Benchmark",
     "BenchmarkCatalog",
     "BenchmarkManifestError",
@@ -62,6 +67,7 @@ __all__ = [
     "evaluate_trajectory",
     "failure_recall",
     "filter_failures",
-    "load_matrix_manifest",
+    "load_agent_configurations",
+    "load_matrix_run",
     "regional_count_accuracy",
 ]

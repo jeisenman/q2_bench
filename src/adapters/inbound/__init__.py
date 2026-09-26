@@ -4,8 +4,8 @@ from adapters.inbound.matrix import (
     CandidateRun,
     JudgedRun,
     MatrixInboundAdapter,
-    MatrixRunError,
 )
+from adapters.inbound.matrix_runtime import MatrixRunError
 
 __all__ = [
     "CandidateRun",

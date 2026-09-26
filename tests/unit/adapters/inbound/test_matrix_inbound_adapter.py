@@ -11,18 +11,27 @@ from adapters.inbound import (
     MatrixInboundAdapter,
     MatrixRunError,
     matrix,
+    matrix_runtime,
 )
-from workspaces.data_engineering.benchmarks import load_matrix_manifest
+from workspaces.data_engineering.benchmarks import load_matrix_run
 
-MATRIX_PATH = (
-    Path(__file__).parents[4]
+ROOT = Path(__file__).parents[4]
+AGENTS_PATH = ROOT / "src/workspaces/data_engineering/benchmarks/agent-manifest.yaml"
+BENCHMARK_PATH = (
+    ROOT
     / "src/workspaces/data_engineering/benchmarks/production_support"
-    / "dates/09-25-26/matrix.yaml"
+    / "dates/09-25-26/evaluation.yaml"
 )
-CANDIDATE_COUNT = 7
+CASES_PATH = BENCHMARK_PATH.with_name("cases.yaml")
+CASE_ID = "prod-support-us-ca-2026-09-25"
+CANDIDATE_COUNT = 8
 INPUT_TOKENS = 11
 JUDGE_SCORE = 0.75
 OUTPUT_TOKENS = 7
+
+
+def load_run():
+    return load_matrix_run(BENCHMARK_PATH, AGENTS_PATH, CASES_PATH, CASE_ID)
 
 
 def candidate(root: Path, profile: str) -> CandidateRun:
@@ -54,23 +63,31 @@ def judged(root: Path, profile: str) -> JudgedRun:
 
 def test_adapter_runs_profiles_and_reuses_baselines(monkeypatch, tmp_path) -> None:
     manifest = replace(
-        load_matrix_manifest(MATRIX_PATH),
+        load_run(),
         artifact_root=tmp_path,
     )
-    observed_baselines: list[dict[str, object] | None] = []
+    observed_baselines: dict[str, dict[str, object] | None] = {}
     (tmp_path / "comparison.json").write_text(
         '{"results": [{"profile": "sol-light", "elapsed_seconds": 2}]}',
         encoding="utf-8",
     )
 
-    def fake_candidate(_manifest, profile, *, workspace, root):
-        assert workspace == Path.cwd()
-        return candidate(root, profile.profile)
+    def fake_candidate(_manifest, profile, context):
+        assert context.workspace != Path.cwd()
+        assert context.auth_source.is_dir()
+        return candidate(context.root, profile.profile)
 
-    def fake_judge(_manifest, item, *, workspace, root, baseline):
-        assert workspace == Path.cwd()
-        observed_baselines.append(baseline)
-        return judged(root, item.profile)
+    def fake_judge(
+        _manifest,
+        item,
+        context,
+        *,
+        baseline,
+    ):
+        assert context.workspace != Path.cwd()
+        assert context.auth_source.is_dir()
+        observed_baselines[item.profile] = baseline
+        return judged(context.root, item.profile)
 
     monkeypatch.setattr(matrix, "_run_candidate", fake_candidate)
     monkeypatch.setattr(matrix, "_judge_candidate", fake_judge)
@@ -78,7 +95,7 @@ def test_adapter_runs_profiles_and_reuses_baselines(monkeypatch, tmp_path) -> No
     results = MatrixInboundAdapter(Path.cwd()).run(manifest)
 
     assert len(results) == CANDIDATE_COUNT
-    assert observed_baselines[1] == {
+    assert observed_baselines["sol-light"] == {
         "profile": "sol-light",
         "elapsed_seconds": 2,
     }
@@ -87,24 +104,30 @@ def test_adapter_runs_profiles_and_reuses_baselines(monkeypatch, tmp_path) -> No
 
 
 def test_command_builds_container_and_process_variants(tmp_path) -> None:
-    workspace = tmp_path.resolve()
-    (workspace / ".env").write_text("EXAMPLE=value\n", encoding="utf-8")
-    target = workspace / "var" / "final.md"
-    profile = load_matrix_manifest(MATRIX_PATH).candidates[0]
-    container = matrix._codex_command(
+    workspace = (tmp_path / "workspace").resolve()
+    workspace.mkdir()
+    output = tmp_path / "output"
+    output.mkdir()
+    auth_source = tmp_path / "auth"
+    auth_source.mkdir()
+    target = output / "final.md"
+    profile = load_run().candidates[0]
+    container = matrix_runtime._codex_command(
         profile,
-        matrix._CommandOptions(
+        matrix_runtime._CommandOptions(
             workspace=workspace,
             sandbox="read-only",
             final_path=target,
             json_output=True,
             runtime="container",
             container_image="image",
+            output_root=output,
+            auth_source=auth_source,
         ),
     )
-    process = matrix._codex_command(
+    process = matrix_runtime._codex_command(
         profile,
-        matrix._CommandOptions(
+        matrix_runtime._CommandOptions(
             workspace=workspace,
             sandbox="read-only",
             final_path=target,
@@ -113,11 +136,23 @@ def test_command_builds_container_and_process_variants(tmp_path) -> None:
     )
 
     assert container[:2] == ["docker", "run"]
-    assert container[container.index("--env-file") + 1] == str(workspace / ".env")
+    assert "--env-file" not in container
     assert container[container.index("--sandbox") + 1] == "danger-full-access"
+    assert container[container.index("--profile") + 1] == "bedrock"
+    assert "--read-only" in container
+    assert "--skip-git-repo-check" in container
+    assert container[container.index("--cap-drop") + 1] == "ALL"
+    assert "no-new-privileges" in container
+    assert f"{workspace.resolve()}:/evaluation:ro" in container
+    assert f"{output.resolve()}:/output" in container
+    assert f"{auth_source.resolve()}:/mnt/codex-host:ro" in container
+    assert "AWS_PROFILE=benchmark" in container
+    assert "AWS_SHARED_CREDENTIALS_FILE=/run/agent-auth/credentials" in container
+    assert not any("/.aws:" in item for item in container)
+    assert not any(":/workspace:ro" in item for item in container)
     assert "/mnt/codex-host:ro" in " ".join(container)
     assert "--tmpfs" in container
-    assert "/workspace/var/final.md" in container
+    assert "/output/final.md" in container
     assert "--json" in container
     assert process[0] == "codex"
 
@@ -140,7 +175,7 @@ def test_trace_helpers_and_schema(tmp_path) -> None:
 
 
 def test_container_path_must_be_inside_workspace(tmp_path) -> None:
-    options = matrix._CommandOptions(
+    options = matrix_runtime._CommandOptions(
         workspace=tmp_path / "workspace",
         sandbox="read-only",
         final_path=tmp_path / "output",
@@ -150,7 +185,129 @@ def test_container_path_must_be_inside_workspace(tmp_path) -> None:
     )
 
     with pytest.raises(MatrixRunError, match="inside workspace"):
-        matrix._runtime_path(tmp_path / "outside", options)
+        matrix_runtime._runtime_path(tmp_path / "outside", options)
+
+
+def test_candidate_workspace_rejects_traversal(tmp_path) -> None:
+    with (
+        pytest.raises(MatrixRunError, match="workspace-relative"),
+        matrix_runtime._candidate_workspace(tmp_path, Path("../hidden")),
+    ):
+        pass
+
+
+def test_candidate_workspace_stages_only_selected_dataset(tmp_path) -> None:
+    dataset = Path("var/evidence.json")
+    source = tmp_path / dataset
+    source.parent.mkdir(parents=True)
+    source.write_text('{"records": []}', encoding="utf-8")
+
+    with matrix_runtime._candidate_workspace(tmp_path, dataset) as workspace:
+        staged = workspace / dataset
+        assert staged.read_text(encoding="utf-8") == '{"records": []}'
+        assert tuple(workspace.iterdir()) == (workspace / "var",)
+
+
+def test_candidate_workspace_rejects_missing_dataset(tmp_path) -> None:
+    with (
+        pytest.raises(MatrixRunError, match="does not exist"),
+        matrix_runtime._candidate_workspace(tmp_path, Path("missing.json")),
+    ):
+        pass
+
+
+def test_codex_auth_source_refreshes_temporary_credentials(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    codex_home = tmp_path / "codex"
+    runtime = codex_home / ".runtime"
+    runtime.mkdir(parents=True)
+    (codex_home / "config.toml").write_text(
+        '[model_providers.amazon-bedrock.aws]\nprofile = "source-profile"\n',
+        encoding="utf-8",
+    )
+    (runtime / "netskope-ca-bundle.pem").write_text(
+        "certificate",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    monkeypatch.setattr(
+        matrix_runtime.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps(
+                {
+                    "AccessKeyId": "access",
+                    "SecretAccessKey": "secret",
+                    "SessionToken": "session",
+                }
+            ),
+        ),
+    )
+
+    with matrix_runtime._codex_auth_source() as auth:
+        credentials = (auth / ".runtime/aws-credentials").read_text(encoding="utf-8")
+        assert "[benchmark]" in credentials
+        assert "aws_access_key_id=access" in credentials
+        assert not (auth / ".runtime/aws-sts-credentials.json").exists()
+
+
+def test_codex_auth_source_rejects_empty_home(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path))
+
+    with (
+        pytest.raises(MatrixRunError, match="no allowlisted"),
+        matrix_runtime._codex_auth_source(),
+    ):
+        pass
+
+
+def test_container_rejects_permissive_sandbox(tmp_path) -> None:
+    options = matrix_runtime._CommandOptions(
+        workspace=tmp_path,
+        sandbox="danger-full-access",
+        final_path=tmp_path / "final.md",
+        json_output=False,
+        runtime="container",
+        container_image="image",
+        output_root=tmp_path,
+        auth_source=tmp_path,
+    )
+
+    with pytest.raises(MatrixRunError, match="sandbox must be read-only"):
+        matrix_runtime._codex_command(load_run().candidates[0], options)
+
+
+def test_container_requires_isolated_mounts(tmp_path) -> None:
+    options = matrix_runtime._CommandOptions(
+        workspace=tmp_path,
+        sandbox="read-only",
+        final_path=tmp_path / "final.md",
+        json_output=False,
+        runtime="container",
+        container_image="image",
+    )
+
+    with pytest.raises(MatrixRunError, match="output_root and auth_source"):
+        matrix_runtime._codex_command(load_run().candidates[0], options)
+
+
+def test_aws_credentials_require_bedrock_profile(tmp_path) -> None:
+    (tmp_path / "config.toml").write_text("", encoding="utf-8")
+
+    with pytest.raises(MatrixRunError, match="missing an AWS profile"):
+        matrix_runtime._write_aws_credentials(tmp_path)
+
+
+def test_candidate_rejects_unsafe_profile(tmp_path) -> None:
+    manifest = replace(load_run(), artifact_root=tmp_path)
+    profile = replace(manifest.candidates[0], profile="../escape")
+    context = matrix._ExecutionContext(tmp_path, tmp_path, tmp_path)
+
+    with pytest.raises(MatrixRunError, match="unsafe matrix profile"):
+        matrix._run_candidate(manifest, profile, context)
 
 
 def test_process_errors_are_actionable() -> None:
@@ -161,7 +318,7 @@ def test_process_errors_are_actionable() -> None:
 
 def test_candidate_process_persists_trace_and_usage(monkeypatch, tmp_path) -> None:
     manifest = replace(
-        load_matrix_manifest(MATRIX_PATH),
+        load_run(),
         artifact_root=tmp_path,
         runtime="process",
     )
@@ -183,8 +340,7 @@ def test_candidate_process_persists_trace_and_usage(monkeypatch, tmp_path) -> No
     result = matrix._run_candidate(
         manifest,
         manifest.candidates[0],
-        workspace=Path.cwd(),
-        root=tmp_path,
+        matrix._ExecutionContext(Path.cwd(), tmp_path, tmp_path),
     )
 
     assert result.final_message == "candidate report"
@@ -195,7 +351,7 @@ def test_candidate_process_persists_trace_and_usage(monkeypatch, tmp_path) -> No
 
 def test_judge_process_returns_structured_assessment(monkeypatch, tmp_path) -> None:
     manifest = replace(
-        load_matrix_manifest(MATRIX_PATH),
+        load_run(),
         artifact_root=tmp_path,
         runtime="process",
     )
@@ -218,8 +374,7 @@ def test_judge_process_returns_structured_assessment(monkeypatch, tmp_path) -> N
     result = matrix._judge_candidate(
         manifest,
         item,
-        workspace=Path.cwd(),
-        root=tmp_path,
+        matrix._ExecutionContext(Path.cwd(), tmp_path, tmp_path),
         baseline={"elapsed_seconds": 2},
     )
 

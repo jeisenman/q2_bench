@@ -55,7 +55,7 @@ src/workspaces/data_engineering/benchmarks/production_support/
     └── MM-DD-YY/                         immutable reviewed snapshot
         ├── suite.yaml
         ├── cases.yaml
-        ├── matrix.yaml
+        ├── evaluation.yaml
         ├── capabilities/
         │   ├── date_resolution.yaml
         │   ├── failure_discovery.yaml
@@ -83,7 +83,7 @@ previous=src/workspaces/data_engineering/benchmarks/production_support/dates/09-
 next=src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26
 mkdir -p "$next/capabilities" "$next/evidence"
 cp "$previous/suite.yaml" "$next/suite.yaml"
-cp "$previous/matrix.yaml" "$next/matrix.yaml"
+cp "$previous/evaluation.yaml" "$next/evaluation.yaml"
 cp "$previous"/capabilities/*.yaml "$next/capabilities/"
 ```
 
@@ -280,7 +280,8 @@ Replace placeholders with reviewed values. A zero count is valid only when the
 source was successfully queried and the captured evidence proves zero.
 
 Update `suite.yaml` to register the curated case and fixtures. Update
-`matrix.yaml` to point at the new dataset and use a unique matrix ID. Do not
+`evaluation.yaml` to use a unique matrix ID. Keep the dataset URI in the
+selected case and agent combinations in the shared `agent-manifest.yaml`. Do not
 edit an older suite to make it match new behavior; create a new dated suite.
 
 ### 9. Replay and verify

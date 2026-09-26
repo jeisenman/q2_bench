@@ -6,6 +6,7 @@ import asyncio
 import json
 from datetime import date, datetime
 from pathlib import Path
+from typing import cast
 
 import click
 
@@ -32,7 +33,7 @@ from workspaces.data_engineering.agents.prod_support import (
 )
 from workspaces.data_engineering.benchmarks import (
     default_catalog,
-    load_matrix_manifest,
+    load_matrix_run,
 )
 
 DEFAULT_TRACKING_URI = "sqlite:///var/mlflow/backend.db"
@@ -42,10 +43,18 @@ PROD_SUPPORT_CASES = Path(
     "production_support/dates/09-25-26/cases.yaml"
 )
 DEFAULT_ASSISTANT_CONFIG = Path.home() / ".mlflow/assistant/config.json"
-DEFAULT_MATRIX_MANIFEST = Path(
-    "src/workspaces/data_engineering/benchmarks/production_support/"
-    "dates/09-25-26/matrix.yaml"
+DEFAULT_AGENT_CONFIGURATIONS = Path(
+    "src/workspaces/data_engineering/benchmarks/agent-manifest.yaml"
 )
+DEFAULT_MATRIX_BENCHMARK = Path(
+    "src/workspaces/data_engineering/benchmarks/production_support/"
+    "dates/09-25-26/evaluation.yaml"
+)
+DEFAULT_MATRIX_CASES = Path(
+    "src/workspaces/data_engineering/benchmarks/production_support/"
+    "dates/09-25-26/cases.yaml"
+)
+DEFAULT_MATRIX_CASE = "prod-support-us-ca-2026-09-25"
 
 
 @click.group()
@@ -243,10 +252,30 @@ def replay_evaluate_benchmark(
 
 @cli.command("run-matrix")
 @click.option(
-    "--manifest",
+    "--benchmark",
     type=click.Path(dir_okay=False, path_type=Path),
-    default=DEFAULT_MATRIX_MANIFEST,
+    default=DEFAULT_MATRIX_BENCHMARK,
     show_default=True,
+)
+@click.option(
+    "--agent-manifest",
+    "agent_manifest",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=DEFAULT_AGENT_CONFIGURATIONS,
+    show_default=True,
+)
+@click.option(
+    "--cases",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=DEFAULT_MATRIX_CASES,
+    show_default=True,
+)
+@click.option("--case", "case_id", default=DEFAULT_MATRIX_CASE, show_default=True)
+@click.option(
+    "--configuration",
+    "configuration_ids",
+    multiple=True,
+    help="Registered agent configuration to run; repeat to compare selected profiles.",
 )
 @click.option(
     "--execute/--dry-run",
@@ -254,13 +283,22 @@ def replay_evaluate_benchmark(
     help="Invoke configured Codex candidates and judge; default prints the plan.",
 )
 @click.option("--tracking-uri", default=DEFAULT_TRACKING_URI, show_default=True)
-def run_benchmark_matrix(
-    manifest: Path,
-    execute: bool,
-    tracking_uri: str,
-) -> None:
+def run_benchmark_matrix(**values: object) -> None:
     """Run or inspect a grouped prod-support model matrix."""
-    configured = load_matrix_manifest(manifest)
+    benchmark = cast(Path, values["benchmark"])
+    agent_manifest = cast(Path, values["agent_manifest"])
+    cases = cast(Path, values["cases"])
+    case_id = cast(str, values["case_id"])
+    configuration_ids = cast(tuple[str, ...], values["configuration_ids"])
+    execute = cast(bool, values["execute"])
+    tracking_uri = cast(str, values["tracking_uri"])
+    configured = load_matrix_run(
+        benchmark,
+        agent_manifest,
+        cases,
+        case_id,
+        configuration_ids,
+    )
     adapter = MatrixInboundAdapter(Path.cwd())
     if not execute:
         for planned_run in adapter.plan(configured):

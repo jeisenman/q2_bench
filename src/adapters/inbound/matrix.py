@@ -11,6 +11,14 @@ from time import monotonic
 from typing import Any
 
 from adapters.inbound.matrix_results import write_comparison
+from adapters.inbound.matrix_runtime import (
+    SAFE_PROFILE,
+    MatrixRunError,
+    _candidate_workspace,
+    _codex_auth_source,
+    _codex_command,
+    _CommandOptions,
+)
 from workspaces.data_engineering.benchmarks.matrix import (
     MatrixManifest,
     ModelProfile,
@@ -20,30 +28,6 @@ from workspaces.data_engineering.benchmarks.matrix import (
 
 COMMAND_TIMEOUT_SECONDS = 1800
 TRACE_PROMPT_LIMIT = 50_000
-
-
-class MatrixRunError(RuntimeError):
-    """Raised when a candidate or judge process fails."""
-
-    @classmethod
-    def process_failed(cls, name: str, returncode: int) -> MatrixRunError:
-        """Create an error for a failed candidate or judge process."""
-        return cls(f"{name} failed with exit code {returncode}")
-
-    @classmethod
-    def invalid_judgment(cls, profile: str) -> MatrixRunError:
-        """Create an error for malformed judge output."""
-        return cls(f"judge returned invalid JSON for {profile}")
-
-    @classmethod
-    def judge_failed(cls, profile: str, returncode: int) -> MatrixRunError:
-        """Create an error for a failed judge process."""
-        return cls(f"judge for {profile} failed with exit code {returncode}")
-
-    @classmethod
-    def path_outside_workspace(cls, path: Path) -> MatrixRunError:
-        """Create an error for a path unavailable to a worker container."""
-        return cls(f"container path must be inside workspace: {path}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +52,13 @@ class JudgedRun:
     overall_score: float
     assessment: dict[str, object]
     assessment_path: Path
+
+
+@dataclass(frozen=True, slots=True)
+class _ExecutionContext:
+    workspace: Path
+    root: Path
+    auth_source: Path
 
 
 class MatrixInboundAdapter:
@@ -97,30 +88,36 @@ class MatrixInboundAdapter:
     def run(self, manifest: MatrixManifest) -> tuple[JudgedRun, ...]:
         """Run candidates concurrently, judge them, and persist comparisons."""
         root = manifest.artifact_root
+        if root.is_symlink():
+            message = f"matrix artifact root may not be a symlink: {root}"
+            raise MatrixRunError(message)
         root.mkdir(parents=True, exist_ok=True)
         baselines = _load_baselines(root / "comparison.json")
-        with ThreadPoolExecutor(max_workers=manifest.parallelism) as executor:
-            candidates = tuple(
-                executor.map(
-                    lambda profile: _run_candidate(
-                        manifest,
-                        profile,
-                        workspace=self._workspace,
-                        root=root,
-                    ),
-                    manifest.candidates,
+        with (
+            _candidate_workspace(self._workspace, manifest.dataset) as runtime,
+            _codex_auth_source() as auth_source,
+        ):
+            context = _ExecutionContext(runtime, root, auth_source)
+            with ThreadPoolExecutor(max_workers=manifest.parallelism) as executor:
+                candidates = tuple(
+                    executor.map(
+                        lambda profile: _run_candidate(
+                            manifest,
+                            profile,
+                            context,
+                        ),
+                        manifest.candidates,
+                    )
                 )
+            judged = tuple(
+                _judge_candidate(
+                    manifest,
+                    candidate,
+                    context,
+                    baseline=baselines.get(candidate.profile),
+                )
+                for candidate in candidates
             )
-        judged = tuple(
-            _judge_candidate(
-                manifest,
-                candidate,
-                workspace=self._workspace,
-                root=root,
-                baseline=baselines.get(candidate.profile),
-            )
-            for candidate in candidates
-        )
         write_comparison(manifest, judged, root / "comparison.json")
         return judged
 
@@ -128,23 +125,29 @@ class MatrixInboundAdapter:
 def _run_candidate(
     manifest: MatrixManifest,
     profile: ModelProfile,
-    *,
-    workspace: Path,
-    root: Path,
+    context: _ExecutionContext,
 ) -> CandidateRun:
-    profile_root = root / profile.profile
+    if SAFE_PROFILE.fullmatch(profile.profile) is None:
+        message = f"unsafe matrix profile name: {profile.profile}"
+        raise MatrixRunError(message)
+    profile_root = context.root / profile.profile
+    if profile_root.is_symlink():
+        message = f"matrix profile output may not be a symlink: {profile_root}"
+        raise MatrixRunError(message)
     profile_root.mkdir(parents=True, exist_ok=True)
     final_path = profile_root / "final.md"
     trace_path = profile_root / "trace.jsonl"
     command = _codex_command(
         profile,
         _CommandOptions(
-            workspace=workspace,
+            workspace=context.workspace,
             sandbox=manifest.sandbox,
             final_path=final_path,
             json_output=True,
             runtime=manifest.runtime,
             container_image=manifest.container_image,
+            output_root=profile_root,
+            auth_source=context.auth_source,
         ),
     )
     started = monotonic()
@@ -177,13 +180,12 @@ def _run_candidate(
 def _judge_candidate(
     manifest: MatrixManifest,
     candidate: CandidateRun,
+    context: _ExecutionContext,
     *,
-    workspace: Path,
-    root: Path,
     baseline: dict[str, object] | None,
 ) -> JudgedRun:
-    profile_root = root / candidate.profile
-    schema_path = root / "judge-schema.json"
+    profile_root = context.root / candidate.profile
+    schema_path = profile_root / "judge-schema.json"
     schema_path.write_text(json.dumps(_judge_schema(), indent=2), encoding="utf-8")
     assessment_path = profile_root / "judge.json"
     trace = {
@@ -199,13 +201,15 @@ def _judge_candidate(
     command = _codex_command(
         manifest.judge,
         _CommandOptions(
-            workspace=workspace,
+            workspace=context.workspace,
             sandbox="read-only",
             final_path=assessment_path,
             json_output=False,
             schema_path=schema_path,
             runtime=manifest.runtime,
             container_image=manifest.container_image,
+            output_root=profile_root,
+            auth_source=context.auth_source,
         ),
     )
     process = subprocess.run(
@@ -226,79 +230,6 @@ def _judge_candidate(
         assessment=assessment,
         assessment_path=assessment_path,
     )
-
-
-@dataclass(frozen=True, slots=True)
-class _CommandOptions:
-    workspace: Path
-    sandbox: str
-    final_path: Path
-    json_output: bool
-    schema_path: Path | None = None
-    runtime: str = "process"
-    container_image: str = ""
-
-
-def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]:
-    sandbox = (
-        "danger-full-access" if options.runtime == "container" else options.sandbox
-    )
-    command = [
-        "--model",
-        profile.model,
-        "-c",
-        f'model_reasoning_effort="{profile.reasoning_effort}"',
-        "--sandbox",
-        sandbox,
-        "--ask-for-approval",
-        "never",
-        "--cd",
-        _runtime_path(options.workspace, options),
-        "exec",
-        "--ephemeral",
-        "--output-last-message",
-        _runtime_path(options.final_path, options),
-    ]
-    if options.json_output:
-        command.append("--json")
-    if options.schema_path is not None:
-        command.extend(("--output-schema", _runtime_path(options.schema_path, options)))
-    if options.runtime != "container":
-        return ["codex", *command]
-    env_file = options.workspace / ".env"
-    return [
-        "docker",
-        "run",
-        "--rm",
-        *(["--env-file", str(env_file)] if env_file.is_file() else []),
-        "--env",
-        "SSL_CERT_FILE=/home/agentbench/.aws/q2-ca-bundle.pem",
-        "--tmpfs",
-        "/home/agentbench/.bedrock_codex:uid=1000,gid=1000,mode=0700",
-        "--volume",
-        f"{options.workspace}:/workspace:ro",
-        "--volume",
-        f"{options.workspace / 'var'}:/workspace/var",
-        "--volume",
-        f"{Path.home() / '.bedrock_codex'}:/mnt/codex-host:ro",
-        "--volume",
-        f"{Path.home() / '.aws'}:/home/agentbench/.aws:ro",
-        "--workdir",
-        "/workspace",
-        options.container_image,
-        "codex",
-        *command,
-    ]
-
-
-def _runtime_path(path: Path, options: _CommandOptions) -> str:
-    if options.runtime != "container":
-        return str(path)
-    try:
-        relative = path.resolve().relative_to(options.workspace.resolve())
-    except ValueError as error:
-        raise MatrixRunError.path_outside_workspace(path) from error
-    return str(Path("/workspace") / relative)
 
 
 def _json_lines(value: str) -> tuple[dict[str, Any], ...]:

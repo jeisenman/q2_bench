@@ -18,7 +18,9 @@ uv run agentbench replay-evaluate prod-support \
 
 ```bash
 uv run agentbench run-matrix \
-  --manifest src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26/matrix.yaml \
+  --benchmark src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26/evaluation.yaml \
+  --cases src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26/cases.yaml \
+  --case prod-support-us-ca-2026-09-25 \
   --execute
 ```
 

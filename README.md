@@ -164,13 +164,13 @@ support the nested user namespaces it requires; Docker still mounts the source
 workspace read-only and exposes only `var/` as writable.
 Only cases with curated failure IDs and diagnoses can be published.
 
-The `assistant-init` service selects MLflow's native Codex provider by default,
-using the Codex configuration copied into the container at startup. Override
-its model with `CODEX_ASSISTANT_MODEL`. Bedrock remains available explicitly:
+The `assistant-init` service selects the remote-safe MLflow Gateway backed by
+Bedrock by default. AWS credentials remain server-side and are never exposed
+to the browser. Override the provider with `MLFLOW_ASSISTANT_PROVIDER`; Codex
+remains available for localhost-only use:
 
 ```bash
-docker compose run --rm --no-deps assistant-init \
-  agentbench configure-assistant --provider bedrock
+MLFLOW_ASSISTANT_PROVIDER=codex docker compose run --rm --no-deps assistant-init
 ```
 
 ## Agent architecture
@@ -243,6 +243,21 @@ and run:
 ```bash
 PROD_SUPPORT_SOURCE=production uv run prod-support-mcp
 ```
+
+Run the opt-in, read-only production connectivity checks with:
+
+```bash
+RUN_PROD_SUPPORT_PRODUCTION_TESTS=1 \
+uv run --env-file .env pytest \
+  tests/integration/adapters/test_prod_support_production.py \
+  -m production --no-cov
+```
+
+The checks authenticate and issue a bounded failed-task query independently
+against the US and CA Airflow APIs. They fail when credentials are missing or a
+region cannot be reached. The current production MCP has no runtime adapters
+for OMS, cluster health, or Resource Discovery, so those providers are not part
+of this connectivity suite.
 
 For deterministic replay, configure a captured dataset:
 

@@ -3,62 +3,13 @@ matrix_id: prod-support-09-26-26
 suite: 09-26-26
 benchmark: production-support
 experiment_name: production_operations
-dataset: var/benchmark_data/prod_support/2026-09-25/airflow_failures.json
-case_id: prod-support-us-ca-operational-2026-09-25
 execution:
   runtime: container
   container_image: agentsdk-agentbench:local
   parallelism: 6
   sandbox: read-only
   artifact_root: var/benchmark_matrix/prod-support-09-26-26
-judge:
-  profile: sol-xhigh
-  model: openai.gpt-5.6-sol
-  reasoning_effort: xhigh
-  role: judge
-  capabilities:
-    - evidence_grounding
-    - capability_attribution
-    - comparative_scoring
-candidates:
-  - profile: sol-controller-luna-xhigh-workers
-    model: openai.gpt-5.6-sol
-    reasoning_effort: xhigh
-    role: controller
-    capabilities:
-      - task_decomposition
-      - parallel_coordination
-      - evidence_synthesis
-      - final_reporting
-    workers:
-      - profile: luna-xhigh
-        model: openai.gpt-5.6-luna
-        reasoning_effort: xhigh
-        max_parallel: 6
-        capabilities:
-          - failure_discovery
-          - airflow_log_analysis
-          - oms_investigation
-          - cluster_health
-          - resource_routing
-  - profile: sol-light
-    model: openai.gpt-5.6-sol
-    reasoning_effort: low
-  - profile: terra-medium
-    model: openai.gpt-5.6-terra
-    reasoning_effort: medium
-  - profile: luna-xhigh
-    model: openai.gpt-5.6-luna
-    reasoning_effort: xhigh
-  - profile: luna-high
-    model: openai.gpt-5.6-luna
-    reasoning_effort: high
-  - profile: luna-medium
-    model: openai.gpt-5.6-luna
-    reasoning_effort: medium
-  - profile: luna-low
-    model: openai.gpt-5.6-luna
-    reasoning_effort: low
+judge_configuration: sol-xhigh-judge
 rubric:
   - id: prior_run_log_fallback
     weight: 2.5

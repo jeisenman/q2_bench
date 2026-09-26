@@ -56,7 +56,9 @@ investigated. The workflow has no externally visible write effects.
 Unit tests under `tests/unit/workspaces/data_engineering/agents/` cover dates,
 classification, OMS routing, reporting, and workload behavior. Integration tests
 exercise Airflow adapters, and production-support benchmark cases verify the
-complete report contract.
+complete report contract. Opt-in production integration tests authenticate and
+issue bounded, read-only failure queries independently against the US and CA
+Airflow APIs.
 
 ## Change policy
 

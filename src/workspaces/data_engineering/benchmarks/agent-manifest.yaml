@@ -1,0 +1,68 @@
+schema_version: 1
+configurations:
+  - profile: sol-xhigh-judge
+    model: openai.gpt-5.6-sol
+    reasoning_effort: xhigh
+    role: judge
+    capabilities:
+      - evidence_grounding
+      - capability_attribution
+      - comparative_scoring
+  - profile: sol-controller-luna-xhigh-workers
+    model: openai.gpt-5.6-sol
+    reasoning_effort: xhigh
+    role: controller
+    capabilities:
+      - task_decomposition
+      - parallel_coordination
+      - evidence_synthesis
+      - final_reporting
+    workers:
+      - profile: luna-xhigh
+        model: openai.gpt-5.6-luna
+        reasoning_effort: xhigh
+        max_parallel: 6
+        capabilities:
+          - failure_discovery
+          - airflow_log_analysis
+          - oms_investigation
+          - cluster_health
+          - resource_routing
+  - profile: sol-light-luna-high-workers
+    model: openai.gpt-5.6-sol
+    reasoning_effort: low
+    role: controller
+    capabilities:
+      - task_decomposition
+      - parallel_coordination
+      - evidence_synthesis
+      - final_reporting
+    workers:
+      - profile: luna-high
+        model: openai.gpt-5.6-luna
+        reasoning_effort: high
+        max_parallel: 6
+        capabilities:
+          - failure_discovery
+          - airflow_log_analysis
+          - oms_investigation
+          - cluster_health
+          - resource_routing
+  - profile: sol-light
+    model: openai.gpt-5.6-sol
+    reasoning_effort: low
+  - profile: terra-medium
+    model: openai.gpt-5.6-terra
+    reasoning_effort: medium
+  - profile: luna-xhigh
+    model: openai.gpt-5.6-luna
+    reasoning_effort: xhigh
+  - profile: luna-high
+    model: openai.gpt-5.6-luna
+    reasoning_effort: high
+  - profile: luna-medium
+    model: openai.gpt-5.6-luna
+    reasoning_effort: medium
+  - profile: luna-low
+    model: openai.gpt-5.6-luna
+    reasoning_effort: low

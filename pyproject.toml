@@ -22,6 +22,7 @@ dev = [
     "pre-commit>=4.3",
     "pytest>=8.4",
     "pytest-cov>=7.0",
+    "pytest-xdist>=3.8",
     "ruff>=0.13",
     "types-pyyaml>=6.0",
 ]
@@ -83,6 +84,9 @@ files = ["src"]
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers --cov=src --cov-report=term-missing"
 testpaths = ["tests"]
+markers = [
+    "production: read-only checks against explicitly enabled production resources",
+]
 
 [tool.coverage.run]
 branch = true
