@@ -102,3 +102,29 @@ def test_adapter_rejects_symlinked_artifact_root(tmp_path) -> None:
 
     with pytest.raises(MatrixRunError, match="artifact root may not be a symlink"):
         matrix.MatrixInboundAdapter(tmp_path).run(manifest)
+
+
+def test_output_write_rejects_candidate_created_symlink(tmp_path) -> None:
+    profile_root = tmp_path / "profile"
+    profile_root.mkdir()
+    outside = tmp_path / "outside.log"
+    outside.write_text("preserve", encoding="utf-8")
+    trace = profile_root / "trace.jsonl"
+    trace.symlink_to(outside)
+
+    with pytest.raises(MatrixRunError, match="output may not be a symlink"):
+        matrix._write_output(trace, "candidate output", profile_root)
+
+    assert outside.read_text(encoding="utf-8") == "preserve"
+
+
+def test_output_read_rejects_candidate_created_symlink(tmp_path) -> None:
+    profile_root = tmp_path / "profile"
+    profile_root.mkdir()
+    outside = tmp_path / "outside.md"
+    outside.write_text("hidden", encoding="utf-8")
+    final = profile_root / "final.md"
+    final.symlink_to(outside)
+
+    with pytest.raises(MatrixRunError, match="output may not be a symlink"):
+        matrix._read_output(final, profile_root)

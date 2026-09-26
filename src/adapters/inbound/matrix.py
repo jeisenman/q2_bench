@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -159,8 +160,8 @@ def _run_candidate(
         timeout=COMMAND_TIMEOUT_SECONDS,
     )
     elapsed = monotonic() - started
-    trace_path.write_text(process.stdout, encoding="utf-8")
-    (profile_root / "stderr.log").write_text(process.stderr, encoding="utf-8")
+    _write_output(trace_path, process.stdout, profile_root)
+    _write_output(profile_root / "stderr.log", process.stderr, profile_root)
     if process.returncode != 0:
         raise MatrixRunError.process_failed(profile.profile, process.returncode)
     events = _json_lines(process.stdout)
@@ -170,7 +171,7 @@ def _run_candidate(
         model=profile.model,
         reasoning_effort=profile.reasoning_effort,
         elapsed_seconds=elapsed,
-        final_message=final_path.read_text(encoding="utf-8"),
+        final_message=_read_output(final_path, profile_root),
         trace_path=trace_path,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
@@ -186,7 +187,11 @@ def _judge_candidate(
 ) -> JudgedRun:
     profile_root = context.root / candidate.profile
     schema_path = profile_root / "judge-schema.json"
-    schema_path.write_text(json.dumps(_judge_schema(), indent=2), encoding="utf-8")
+    _write_output(
+        schema_path,
+        json.dumps(_judge_schema(), indent=2),
+        profile_root,
+    )
     assessment_path = profile_root / "judge.json"
     trace = {
         "profile": candidate.profile,
@@ -196,7 +201,7 @@ def _judge_candidate(
         "input_tokens": candidate.input_tokens,
         "output_tokens": candidate.output_tokens,
         "final_message": candidate.final_message,
-        "events": candidate.trace_path.read_text(encoding="utf-8")[:TRACE_PROMPT_LIMIT],
+        "events": _read_output(candidate.trace_path, profile_root)[:TRACE_PROMPT_LIMIT],
     }
     command = _codex_command(
         manifest.judge,
@@ -221,7 +226,7 @@ def _judge_candidate(
     )
     if process.returncode != 0:
         raise MatrixRunError.judge_failed(candidate.profile, process.returncode)
-    assessment = json.loads(assessment_path.read_text(encoding="utf-8"))
+    assessment = json.loads(_read_output(assessment_path, profile_root))
     if not isinstance(assessment, dict):
         raise MatrixRunError.invalid_judgment(candidate.profile)
     return JudgedRun(
@@ -230,6 +235,41 @@ def _judge_candidate(
         assessment=assessment,
         assessment_path=assessment_path,
     )
+
+
+def _write_output(path: Path, value: str, root: Path) -> None:
+    """Write one output without following candidate-created symlinks."""
+    _validate_output_path(path, root)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(path, flags, 0o600)
+    except OSError as error:
+        message = f"matrix output is not a safe regular file: {path}"
+        raise MatrixRunError(message) from error
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        stream.write(value)
+
+
+def _read_output(path: Path, root: Path) -> str:
+    """Read one candidate output after rejecting symlinks and escapes."""
+    _validate_output_path(path, root)
+    if not path.is_file() or path.is_symlink():
+        message = f"matrix output is not a safe regular file: {path}"
+        raise MatrixRunError(message)
+    return path.read_text(encoding="utf-8")
+
+
+def _validate_output_path(path: Path, root: Path) -> None:
+    if path.is_symlink():
+        message = f"matrix output may not be a symlink: {path}"
+        raise MatrixRunError(message)
+    try:
+        path.parent.resolve().relative_to(root.resolve())
+    except ValueError as error:
+        message = f"matrix output resolves outside profile root: {path}"
+        raise MatrixRunError(message) from error
 
 
 def _json_lines(value: str) -> tuple[dict[str, Any], ...]:

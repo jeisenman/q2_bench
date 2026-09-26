@@ -21,7 +21,7 @@ def test_benchmarks_lists_visible_benchmarks() -> None:
 
 
 def test_run_matrix_defaults_to_a_grouped_dry_run() -> None:
-    candidate_count = 8
+    candidate_count = 9
     result = CliRunner().invoke(cli, ["run-matrix"])
 
     assert result.exit_code == 0

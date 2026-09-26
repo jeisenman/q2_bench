@@ -158,6 +158,32 @@ def build_candidate_prompt(
         f"Your role: {selected.role}.",
         f"Your measured capabilities: {', '.join(selected.capabilities) or 'all'}.",
         "Use read-only automation and inspect exact Airflow task logs.",
+        "Investigate every failure, including jobs omitted from audience-facing "
+        "messages. Do not partition workers into arbitrary record ranges; assign "
+        "independent operational capabilities and run independent evidence queries "
+        "concurrently.",
+        "Required operational workflow:",
+        "1. If the latest task log is unavailable or non-diagnostic, page backward "
+        "through prior runs of the same DAG and task and cite the first terminal "
+        "evidence. Never change task identity.",
+        "2. Provide US and CA Airflow failure links bounded by both the lower and "
+        "upper end-date limits for the operational day.",
+        "3. For each Spark workload, start exact Airflow-log and OMS queries "
+        "concurrently. If Airflow proves AirflowTaskTimeout, cancel pending OMS "
+        "work and classify the timeout without waiting.",
+        "4. Check KEDA ScaledObjects and pod health in both regions. Include explicit "
+        "US Cluster Health and CA Cluster Health lines, or identify the exact "
+        "missing evidence.",
+        "5. Resolve every resend client through resource discovery. Give client, "
+        "resend date, unique event count, and selected application on separate lines.",
+        "6. When a resend exceeds 100 unique events, call it out in both the "
+        "Developer and Data Internal messages.",
+        "7. Investigate all failures, but omit configured maintenance and subscriber "
+        "jobs from the Data Internal message.",
+        "8. Group the Developer report naturally by job and provide an evidence-backed "
+        "root cause or a precise evidence gap for every reported failure.",
+        "Before returning, audit the final report against all eight workflow items. "
+        "Do not claim a check was performed without trace evidence.",
         "Do not mutate production systems. Return the final report only.",
     ]
     if selected.workers:

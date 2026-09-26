@@ -47,6 +47,17 @@ uv run agentbench run-matrix \
   --execute
 ```
 
+Run the evolved medium-reasoning Sol controller with Luna High workers:
+
+```bash
+uv run agentbench run-matrix \
+  --benchmark src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/evaluation.yaml \
+  --cases src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/cases.yaml \
+  --case prod-support-us-ca-operational-2026-09-25 \
+  --configuration sol-medium-luna-high-workers \
+  --execute
+```
+
 Exercise the OMS cancellation fixture without sleeping:
 
 ```bash

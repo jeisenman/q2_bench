@@ -20,7 +20,9 @@ describes the agent-visible tools, and `evaluation.py` scores benchmark
 outcomes. The package public API is exported deliberately from `__init__.py`.
 
 Each failure is investigated independently with `asyncio.gather`; shared
-mutable state is not used.
+mutable state is not used. Controller-led benchmark execution assigns workers
+by operational capability and audits the final report against required
+fallback, cluster-health, routing, and audience-delivery steps.
 
 ## Dependencies
 
@@ -43,7 +45,10 @@ mutable state is not used.
 5. Classify each hydrated failure from its log evidence.
 6. Render separate Developer and Data Internal reports.
 7. Generate a suggestion-only follow-up; never perform retries automatically.
-8. Return the reports, follow-up, correlation ID, tool names, and operational
+8. For controller-led execution, verify prior-log fallback, bounded links,
+   concurrent Spark evidence, timeout cancellation, regional cluster health,
+   resend routing, escalation, and channel filtering before final delivery.
+9. Return the reports, follow-up, correlation ID, tool names, and operational
    attributes.
 
 Invalid dates, non-404 log failures, and invalid query parameters fail

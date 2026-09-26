@@ -41,14 +41,21 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
         "Run the deterministic replay workflow before repository exploration. "
         "Resolve dates from the request, parse every relevant Airflow record "
         "programmatically, and cite exact task-log evidence. Investigate US and "
-        "CA concurrently. Use Airflow for batch evidence and query OMS only "
-        "with exact identifiers when corroboration is required. Diagnose "
+        "CA concurrently. Assign parallel workers by operational capability, not "
+        "arbitrary record ranges. Use Airflow for batch evidence and query OMS only "
+        "with exact identifiers when corroboration is required. For Spark workloads, "
+        "start exact Airflow and OMS evidence queries concurrently; cancel pending "
+        "OMS work when Airflow proves AirflowTaskTimeout. Diagnose "
         "independently before reading curated expectations. Keep tool output "
         "targeted. Build OMS queries from parameterized client, run, task, "
         "attempt, and the task's full UTC calendar day. Inspect the Airflow "
         "operator before routing evidence: query regional DI_Scheduling_CL "
-        "only for confirmed Spark workloads. Treat exit code -9 as "
-        "unknown_resource_termination: likely OOMed, and make a fix ticket "
+        "only for confirmed Spark workloads. Page backward through the same DAG "
+        "and task when the latest log is unavailable or non-diagnostic. Report "
+        "bounded Airflow links, US and CA KEDA and pod health, resource-discovered "
+        "resend applications, per-client dates and counts, large-resend escalation "
+        "for both audiences, and channel-specific omission policy. Treat exit code "
+        "-9 as unknown_resource_termination: likely OOMed, and make a fix ticket "
         "when the attempt is greater than five. "
         "Run the repository quality check when changing code, and "
         "never mutate production systems."
@@ -60,7 +67,7 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
         QUERY_OMS_JOB,
         CLASSIFY_FAILURE,
     ),
-    version="4",
+    version="5",
 )
 
 

@@ -83,6 +83,18 @@ def test_agent_normalizes_framework_result() -> None:
     assert result.attributes[-1] == ("failure_count", 0)
 
 
+def test_agent_definition_requires_operational_delivery_workflow() -> None:
+    definition = ProdSupportAgent(FakeAirflow(())).definition
+
+    assert (
+        "Assign parallel workers by operational capability" in definition.instructions
+    )
+    assert "cancel pending OMS work" in definition.instructions
+    assert "Page backward through the same DAG and task" in definition.instructions
+    assert "US and CA KEDA and pod health" in definition.instructions
+    assert definition.version == "5"
+
+
 def test_agent_reports_missing_task_log_as_developer_evidence_gap() -> None:
     missing_log = failure(24, "")
     agent = ProdSupportAgent(

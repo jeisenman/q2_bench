@@ -42,6 +42,7 @@ def test_loads_prod_support_matrix_profiles_and_judge() -> None:
     assert [item.profile for item in manifest.candidates] == [
         "sol-controller-luna-xhigh-workers",
         "sol-light-luna-high-workers",
+        "sol-medium-luna-high-workers",
         "sol-light",
         "terra-medium",
         "luna-xhigh",
@@ -79,6 +80,11 @@ def test_matrix_prompts_include_rubric_and_local_evidence() -> None:
     assert "read-only" in candidate
     assert "luna-xhigh" in candidate
     assert "airflow_log_analysis" in candidate
+    assert "page backward through prior runs of the same DAG and task" in candidate
+    assert "start exact Airflow-log and OMS queries concurrently" in candidate
+    assert "US Cluster Health and CA Cluster Health" in candidate
+    assert "resend exceeds 100 unique events" in candidate
+    assert "Do not claim a check was performed without trace evidence" in candidate
     assert "automation" in judge
     assert "capability_scores" in judge
     assert "Earlier comparable trace" in judge
