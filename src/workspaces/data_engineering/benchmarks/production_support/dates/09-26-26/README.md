@@ -70,6 +70,21 @@ uv run python \
 The Airflow capture contains 59 in-window failures: 14 US and 45 CA, plus six
 prior-day distractors.
 
+Current production health was checked read-only on 2026-09-26 at approximately
+17:04 UTC. US Airflow application pods appeared healthy and reported 209 active
+DAGs. CA reported healthy application and DAG parsing with 34 active DAGs after
+a 30-second retry, while one retired DAG-processor replica remained unready
+with 13 restarts. KEDA status remains unavailable in both regions because the
+configured identity cannot list ScaledObjects. These observations are current
+state and are not a replacement for the historical 2026-09-25 failure evidence.
+
+The Bremer Bank
+`relationship_signals_time_series_agg_cp_to_snowflake` failure is intentionally
+carried forward from the 09-25-26 suite. The candidate receives the same
+recorded attempt-9 exit `-9` and non-corroborating OMS evidence in
+`assets/relationship_signals_prior_day.json`. It remains prior-day context and
+does not increase the 2026-09-25 in-window failure count.
+
 This snapshot remains uncurated until these gaps are reviewed:
 
 - The supplied `AirflowTaskTimeout` text must be recaptured from the exact

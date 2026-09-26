@@ -180,26 +180,22 @@ def test_new_prod_support_snapshot_versions_september_25_data() -> None:
     suite = yaml.safe_load((suite_root / "suite.yaml").read_text(encoding="utf-8"))
     cases = yaml.safe_load((suite_root / "cases.yaml").read_text(encoding="utf-8"))
     case = cases["cases"][0]
-    expectations = yaml.safe_load(
-        (suite_root / "hidden/case_expectations.yaml").read_text(encoding="utf-8")
+    previous_root = suite_root.with_name("09-25-26")
+    previous_cases = yaml.safe_load(
+        (previous_root / "cases.yaml").read_text(encoding="utf-8")
     )
+    previous_case = previous_cases["cases"][0]
 
     assert suite["suite_date"] == "2026-09-26"
     assert suite["operational_date"] == "2026-09-25"
     assert suite["layers"]["system"]["cases"] == [
         "prod-support-us-ca-operational-2026-09-25"
     ]
-    assert expectations["expected_capture_counts"] == {
-        "US-01": 14,
-        "CA-02": 45,
-        "prior_day_distractors": 6,
-    }
-    assert "expected_capture_counts" not in case
-    assert "expected_cluster_links" not in case
-    for link in expectations["expected_cluster_links"].values():
-        assert "_flt_1_end_date=2026-09-26" in link
-        assert "_flt_2_end_date=2026-09-25" in link
-        assert "_flt_3_state=failed" in link
+    assert set(previous_case).issubset(case)
+    assert case["expected_failure_counts"] == {}
+    assert case["expected_cluster_links"] == {}
+    assert case["expected_developer_message"] is None
+    assert case["expected_prod_support_message"] is None
 
     fixtures = suite["layers"]["capabilities"]["fixtures"]
     assert "capabilities/spark_evidence.yaml" in fixtures
@@ -244,6 +240,28 @@ def test_new_snapshot_requires_parallel_timeout_and_resend_routing() -> None:
     ]
     assert resend["cases"][0]["require_resource_discovery_skill"] is True
     assert resend["cases"][0]["large_resend_threshold"] == LARGE_RESEND_THRESHOLD
+    assert (
+        resend["cases"][0][
+            "require_explicit_unresolved_status_without_reviewed_mapping"
+        ]
+        is True
+    )
+
+
+def test_new_snapshot_judge_punishes_missing_health_and_unresolved_routing() -> None:
+    root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates/09-26-26"
+    )
+    evaluation = yaml.safe_load((root / "evaluation.yaml").read_text(encoding="utf-8"))
+    rubric = {item["id"]: item for item in evaluation["rubric"]}
+
+    assert "either cluster-health bullet" in rubric["cluster_health"]["punish"]
+    assert "DAG processor restart count" in rubric["cluster_health"]["punish"]
+    assert (
+        "routing remains unresolved" in (rubric["resource_discovery_routing"]["punish"])
+    )
 
 
 def test_new_snapshot_models_prior_run_log_fallback_without_fake_provenance() -> None:
@@ -268,3 +286,24 @@ def test_new_snapshot_models_prior_run_log_fallback_without_fake_provenance() ->
     assert evidence["provenance"] == "synthetic"
     assert evidence["runs"][0]["log_status"] == "unavailable"
     assert "AirflowTaskTimeout" in evidence["runs"][1]["log"]
+
+
+def test_new_snapshot_carries_prior_relationship_signals_evidence() -> None:
+    root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates/09-26-26"
+    )
+    cases = yaml.safe_load((root / "cases.yaml").read_text(encoding="utf-8"))
+    asset_path = root / "assets/relationship_signals_prior_day.json"
+    evidence = json.loads(asset_path.read_text(encoding="utf-8"))
+
+    assert (
+        str(asset_path.relative_to(Path(__file__).parents[5]))
+        in (cases["cases"][0]["candidate_inputs"])
+    )
+    assert evidence["evidence_type"] == "prior_day_carry_forward"
+    assert evidence["source_case_id"] == "prod-support-us-ca-2026-09-25"
+    assert evidence["current_operational_date"] == "2026-09-25"
+    assert evidence["oms_evidence"]["corroborating_memory_signal"] is False
+    assert "classification" not in evidence

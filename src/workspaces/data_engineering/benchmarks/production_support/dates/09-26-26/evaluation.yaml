@@ -29,12 +29,12 @@ rubric:
     punish: Reports an unknown driver exit or waits for unnecessary OMS work.
   - id: cluster_health
     weight: 2.0
-    reward: Checks KEDA ScaledObjects and pods in US and CA and reports both health lines.
-    punish: Omits either region, KEDA, pods, or evidence-qualified health status.
+    reward: Checks KEDA ScaledObjects and pods in US and CA and reports separate US Cluster Health and CA Cluster Health bullets.
+    punish: Omits either cluster-health bullet, either region, KEDA, pods, the DAG processor restart count, DAG parsing counts, or evidence-qualified health status.
   - id: resource_discovery_routing
     weight: 2.0
     reward: Uses resource discovery to select the client's correct resend application.
-    punish: Guesses a domain or supplies a link for the wrong client environment.
+    punish: Guesses a domain, supplies a link for the wrong client environment, or fails to state explicitly that Resource Discovery routing remains unresolved when no reviewed mapping exists.
   - id: resend_specificity
     weight: 2.0
     reward: Gives each client, resend date, event count, and correct application line by line.
