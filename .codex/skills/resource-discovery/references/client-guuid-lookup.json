@@ -55,7 +55,7 @@
   },
   "1f06da19-2f61-401c-a1b7-38902e4f3543": {
     "api_status": "unique-match",
-    "last_checked": "2026-08-30",
+    "last_checked": "2026-09-26",
     "name": "Scotiabank",
     "source": "resource-discovery-api"
   },
@@ -215,6 +215,12 @@
     "name": "Citizens Bank - Validation",
     "source": "resource-discovery-api"
   },
+  "b4916353-ef8a-4af8-9601-74305858e905": {
+    "api_status": "unique-match",
+    "last_checked": "2026-09-26",
+    "name": "Scotiabank - Data Validation",
+    "source": "resource-discovery-api"
+  },
   "be9a26dc-5d2a-4962-8e63-2665eea43266": {
     "api_status": "unique-match",
     "last_checked": "2026-08-26",
@@ -258,7 +264,7 @@
   },
   "fbfcd207-8a85-4f28-a787-3ed1e2736f28": {
     "api_status": "unique-match",
-    "last_checked": "2026-08-29",
+    "last_checked": "2026-09-26",
     "name": "CIBC Canada",
     "source": "resource-discovery-api"
   }
