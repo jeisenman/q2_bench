@@ -33,6 +33,8 @@ fallback, cluster-health, routing, and audience-delivery steps.
   workload routing is required.
 - `ResourceDiscoveryInvoker`: injected agent boundary used to resolve unique
   resend clients through the read-only Resource Discovery agent.
+- Production MCP composition: injects the genuine Resource Discovery API
+  adapter only in explicit production mode and fails on missing credentials.
 - Airflow and OMS: external read-only evidence systems reached through adapters
   outside this package.
 - Runtime configuration: supplied by the selected adapters; the domain agent
@@ -70,7 +72,7 @@ classification, OMS routing, reporting, and workload behavior. Integration tests
 exercise Airflow adapters, and production-support benchmark cases verify the
 complete report contract. Opt-in production integration tests authenticate and
 issue bounded, read-only failure queries independently against the US and CA
-Airflow APIs.
+Airflow APIs and can verify a genuine Resource Discovery lookup.
 
 ## Change policy
 

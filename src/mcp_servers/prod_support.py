@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import datetime
 from pathlib import Path
@@ -11,6 +12,8 @@ from uuid import uuid4
 from mcp.server.mcpserver import MCPServer
 
 from adapters.airflow import AirflowApiSource
+from adapters.local import filter_prod_support_updates, load_prod_support_updates
+from adapters.resource_discovery import ResourceDiscoveryApiSource
 from domain import AgentRequest
 from workspaces.data_engineering.agents.prod_support import (
     AirflowFailure,
@@ -19,6 +22,9 @@ from workspaces.data_engineering.agents.prod_support import (
     ReplayAirflowFailureSource,
 )
 from workspaces.data_engineering.agents.prod_support.models import ProdSupportOutcome
+from workspaces.data_engineering.agents.resource_discovery import (
+    ResourceDiscoveryAgent,
+)
 
 SERVER_NAME = "prod-support"
 SOURCE_ENV = "PROD_SUPPORT_SOURCE"
@@ -76,7 +82,14 @@ def _source() -> AirflowFailureSource:
     raise ValueError(message)
 
 
-agent = ProdSupportAgent(_source())
+def _resource_discovery() -> ResourceDiscoveryAgent | None:
+    """Select genuine Resource Discovery only for explicit production mode."""
+    if os.environ.get(SOURCE_ENV) != "production":
+        return None
+    return ResourceDiscoveryAgent(ResourceDiscoveryApiSource.from_environment())
+
+
+agent = ProdSupportAgent(_source(), resource_discovery=_resource_discovery())
 
 
 def _validation_urls(developer_report: str) -> tuple[str, ...]:
@@ -176,6 +189,39 @@ async def run_prod_support(
 async def prod_support_definition() -> str:
     """Return the agent definition for MCP resource clients."""
     return agent.definition.description
+
+
+@server.resource(
+    "support://prod-support/updates",
+    name="genuine production-support updates",
+    description="Validated read-only updates from pl-data-plugins.",
+)
+async def prod_support_updates() -> str:
+    """Return the genuine support feed as deterministic JSON."""
+    return json.dumps(load_prod_support_updates(), indent=2, sort_keys=True)
+
+
+@server.tool(
+    name="list_prod_support_updates",
+    description="Read genuine support updates with optional exact filters.",
+)
+async def list_prod_support_updates(
+    client: str | None = None,
+    status: str | None = None,
+    environment: str | None = None,
+) -> dict[str, object]:
+    """Return filtered records from the genuine read-only JSON feed."""
+    updates = filter_prod_support_updates(
+        load_prod_support_updates(),
+        client=client,
+        status=status,
+        environment=environment,
+    )
+    return {
+        "source": "pl-data-plugins/product_support_updates.json",
+        "count": len(updates),
+        "updates": updates,
+    }
 
 
 @server.prompt(

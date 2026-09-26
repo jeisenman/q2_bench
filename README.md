@@ -221,6 +221,12 @@ Run the bundled stdio MCP server directly:
 uv run prod-support-mcp
 ```
 
+The server exposes `support://prod-support/updates` and the
+`list_prod_support_updates` tool from the genuine
+`~/projects/pl-data-plugins/product_support_updates.json` feed. Override that
+local path with `PROD_SUPPORT_UPDATES_PATH`; reads are validated and never
+modify the source file.
+
 The `run_prod_support` tool uses a safe empty source by default. The Compose
 service loads established regional Airflow credentials from the ignored
 repository `.env` and explicitly selects the read-only production source:
@@ -230,17 +236,22 @@ docker compose run --rm --no-deps prod-support-mcp
 ```
 
 Production mode fails immediately when any required US or CA Airflow credential
-is missing. It discovers failed task instances and reads exact task logs; it
-does not retry jobs or mutate production systems.
+or Resource Discovery credential is missing. It discovers failed task
+instances, reads exact task logs, and resolves resend clients through genuine
+Resource Discovery API records. It does not retry jobs or mutate production
+systems.
 
 The tool's `output` is delivery-ready and contains `URLs to validate`, `Message
 for developer`, a fenced Markdown `Message for Data Internal Channel`, and
 `Follow Up` sections. The response also exposes the URLs as `validation_urls`
 while retaining the separate channel-specific report fields.
 
-The required `.env` names are `USAIRFLORUSER`, `USAIRFLOWPASSWORD`,
-`CAAIRFLORUSER`, and `CAAIRFLOWPASSWORD`. Credential values are injected at
-runtime and are not copied into the image.
+The required Airflow `.env` names are `USAIRFLORUSER`,
+`USAIRFLOWPASSWORD`, `CAAIRFLORUSER`, and `CAAIRFLOWPASSWORD`. Resource
+Discovery additionally requires `RESOURCE_DISCOVERY_BASE_URL`,
+`RESOURCE_DISCOVERY_TENANT_ID`, `RESOURCE_DISCOVERY_CLIENT_ID`,
+`RESOURCE_DISCOVERY_CLIENT_SECRET`, and `RESOURCE_DISCOVERY_SCOPE`. Credential
+values are injected at runtime and are not copied into the image.
 
 For a host-side stdio server, load the same `.env` into the process environment
 and run:
@@ -259,10 +270,10 @@ uv run --env-file .env pytest \
 ```
 
 The checks authenticate and issue a bounded failed-task query independently
-against the US and CA Airflow APIs. They fail when credentials are missing or a
-region cannot be reached. The current production MCP has no runtime adapters
-for OMS, cluster health, or Resource Discovery, so those providers are not part
-of this connectivity suite.
+against the US and CA Airflow APIs. They also authenticate to Resource
+Discovery and perform a read-only lookup when
+`RESOURCE_DISCOVERY_TEST_CLIENT_ID` is supplied. They fail when required
+credentials are missing or a configured provider cannot be reached.
 
 For deterministic replay, configure a captured dataset:
 
@@ -272,8 +283,8 @@ PROD_SUPPORT_DATASET=var/benchmark_data/prod_support/2026-09-25/airflow_failures
 uv run prod-support-mcp
 ```
 
-OMS, cluster-health, and Resource Discovery providers still require approved
-adapters before those evidence paths can run through MCP.
+OMS and cluster-health providers still require approved adapters before those
+evidence paths can run through MCP.
 
 ## Project layout
 

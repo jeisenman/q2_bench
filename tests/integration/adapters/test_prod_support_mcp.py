@@ -5,15 +5,22 @@ from pathlib import Path
 import pytest
 
 from adapters.airflow import AirflowApiSource
+from adapters.resource_discovery import ResourceDiscoveryApiSource
 from mcp_servers.prod_support import (
     EmptyAirflowFailureSource,
+    _resource_discovery,
     _source,
+    list_prod_support_updates,
     prod_support_definition,
     prod_support_prompt,
+    prod_support_updates,
     run_prod_support,
 )
 from workspaces.data_engineering.agents.prod_support import (
     ReplayAirflowFailureSource,
+)
+from workspaces.data_engineering.agents.resource_discovery import (
+    ResourceDiscoveryAgent,
 )
 
 EXPECTED_REGION_COUNT = 2
@@ -62,6 +69,39 @@ def test_mcp_resource_and_prompt_describe_agent() -> None:
     assert "Request: Pipeline failed." in prompt
 
 
+def test_mcp_exposes_configured_support_updates(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "product_support_updates.json"
+    source.write_text(
+        json.dumps(
+            {
+                "updates": [
+                    {
+                        "client": "Example Bank",
+                        "date": "2026-09-26",
+                        "environment": "production",
+                        "job": "daily-load",
+                        "message_ts": "1.0",
+                        "permalink": "https://example.test/message",
+                        "status": "resolved",
+                        "summary": "Recovered.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PROD_SUPPORT_UPDATES_PATH", str(source))
+
+    resource = json.loads(asyncio.run(prod_support_updates()))
+    result = asyncio.run(list_prod_support_updates(status="RESOLVED"))
+
+    assert resource["updates"][0]["client"] == "Example Bank"
+    assert result["count"] == 1
+
+
 def test_mcp_source_uses_production_airflow(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -70,9 +110,17 @@ def test_mcp_source_uses_production_airflow(
     monkeypatch.setenv("USAIRFLOWPASSWORD", "us-password")
     monkeypatch.setenv("CAAIRFLORUSER", "ca-user")
     monkeypatch.setenv("CAAIRFLOWPASSWORD", "ca-password")
+    monkeypatch.setenv("RESOURCE_DISCOVERY_BASE_URL", "https://resources.test")
+    monkeypatch.setenv("RESOURCE_DISCOVERY_TENANT_ID", "tenant")
+    monkeypatch.setenv("RESOURCE_DISCOVERY_CLIENT_ID", "client")
+    monkeypatch.setenv("RESOURCE_DISCOVERY_CLIENT_SECRET", "secret")
+    monkeypatch.setenv("RESOURCE_DISCOVERY_SCOPE", "scope")
     monkeypatch.delenv("PROD_SUPPORT_DATASET", raising=False)
 
     assert isinstance(_source(), AirflowApiSource)
+    resource_discovery = _resource_discovery()
+    assert isinstance(resource_discovery, ResourceDiscoveryAgent)
+    assert isinstance(resource_discovery._source, ResourceDiscoveryApiSource)
 
 
 def test_mcp_source_uses_explicit_replay_dataset(
@@ -94,6 +142,7 @@ def test_mcp_source_defaults_to_safe_empty(
     monkeypatch.delenv("PROD_SUPPORT_DATASET", raising=False)
 
     assert isinstance(_source(), EmptyAirflowFailureSource)
+    assert _resource_discovery() is None
 
 
 @pytest.mark.parametrize(

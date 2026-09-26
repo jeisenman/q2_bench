@@ -9,7 +9,12 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from adapters.airflow import AirflowApiSource, AirflowRegionConfig
+from adapters.resource_discovery import ResourceDiscoveryApiSource
 from workspaces.data_engineering.agents.prod_support.models import Region
+from workspaces.data_engineering.agents.resource_discovery import (
+    IdentifierKind,
+    ResourceIdentifier,
+)
 
 ENABLE_ENV = "RUN_PROD_SUPPORT_PRODUCTION_TESTS"
 REGION_SETTINGS = (
@@ -58,3 +63,17 @@ def test_prod_support_can_query_production_airflow_region(
     failures = asyncio.run(source.discover_failures(cutoff))
 
     assert all(failure.region is region for failure in failures)
+
+
+def test_prod_support_can_query_resource_discovery() -> None:
+    """Authenticate and execute one genuine read-only client lookup."""
+    client_id = os.environ.get("RESOURCE_DISCOVERY_TEST_CLIENT_ID")
+    if not client_id:
+        pytest.fail("missing RESOURCE_DISCOVERY_TEST_CLIENT_ID")
+    source = ResourceDiscoveryApiSource.from_environment()
+
+    records = asyncio.run(
+        source.lookup(ResourceIdentifier(IdentifierKind.CLIENT_ID, client_id))
+    )
+
+    assert isinstance(records, tuple)
