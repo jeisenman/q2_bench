@@ -1,0 +1,63 @@
+schema_version: 1
+cases:
+  - id: prod-support-us-ca-operational-2026-09-25
+    reference_time: "2026-09-26T16:00:00Z"
+    prompt: Do today's prod support
+    operational_date: "2026-09-25"
+    dataset_uri: var/benchmark_data/prod_support/2026-09-25/airflow_failures.json
+    expected_regions: [US-01, CA-02]
+    expected_api_window:
+      end_date_gte: "2026-09-25T05:00:00Z"
+      end_date_lt: "2026-09-26T05:00:00Z"
+    expected_ui_window:
+      end_date_gte: "2026-09-25T09:00:00Z"
+      end_date_lt: "2026-09-26T09:00:00Z"
+    expected_cluster_links:
+      US-01: "https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-26T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#"
+      CA-02: "https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-26T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#"
+    expected_capture_counts:
+      US-01: 14
+      CA-02: 45
+      prior_day_distractors: 6
+    required_investigations:
+      - inspect every relevant Airflow task log
+      - page to prior runs of the same DAG and task when the latest log is unavailable or non-diagnostic
+      - inspect Airflow and OMS concurrently for every Spark job
+      - cancel pending OMS work when Airflow proves a timeout
+      - check KEDA ScaledObjects and pods in both regions
+      - resolve every client through resource discovery
+    omitted_from_data_internal:
+      - check_for_subscriber_client_errors
+      - log_cleanup
+      - opportunity_avro_aggregation_backfill
+      - opp_history_backfill
+    required_developer_groups:
+      validate_event_bus_opportunities:
+        clients:
+          - Scotiabank
+          - CIBC Canada
+          - Scotiabank Data Validation
+        remediation: resending events
+    resend_policy:
+      require_correct_application_for_client: true
+      require_resource_discovery: true
+      require_date_per_client: true
+      multiple_clients_are_line_by_line: true
+      large_resend_threshold: 100
+      large_resend_notice_destinations:
+        - developer_message
+        - data_internal_message
+    required_cluster_health_lines:
+      - US Cluster Health
+      - CA Cluster Health
+    require_root_cause_per_reported_failure: true
+    curation_status: awaiting_cluster_and_resource_routing_evidence
+    evidence_gaps:
+      - Exact timeout evidence is user-supplied and must be recaptured from the task attempt.
+      - Current capture does not include complete KEDA evidence for both regions.
+      - Supplied resend URLs require reviewed production client-to-domain mappings.
+    supplemental_replay_fixtures:
+      - asset: assets/multi_run_log_fallback.json
+        status: synthetic
+        purpose: Test prior-run terminal-evidence fallback without production provenance.
+    prohibit_agent_changes: true

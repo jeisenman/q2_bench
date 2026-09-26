@@ -8,14 +8,39 @@ case_id: prod-support-us-ca-2026-09-25
 execution:
   runtime: container
   container_image: agentsdk-agentbench:local
-  parallelism: 3
+  parallelism: 6
   sandbox: read-only
   artifact_root: var/benchmark_matrix/prod-support-09-25-26
 judge:
   profile: sol-xhigh
   model: openai.gpt-5.6-sol
   reasoning_effort: xhigh
+  role: judge
+  capabilities:
+    - evidence_grounding
+    - capability_attribution
+    - comparative_scoring
 candidates:
+  - profile: sol-controller-luna-xhigh-workers
+    model: openai.gpt-5.6-sol
+    reasoning_effort: xhigh
+    role: controller
+    capabilities:
+      - task_decomposition
+      - parallel_coordination
+      - evidence_synthesis
+      - final_reporting
+    workers:
+      - profile: luna-xhigh
+        model: openai.gpt-5.6-luna
+        reasoning_effort: xhigh
+        max_parallel: 6
+        capabilities:
+          - failure_discovery
+          - airflow_log_analysis
+          - oms_investigation
+          - cluster_health
+          - resource_routing
   - profile: sol-light
     model: openai.gpt-5.6-sol
     reasoning_effort: low
@@ -35,6 +60,38 @@ candidates:
     model: openai.gpt-5.6-luna
     reasoning_effort: low
 rubric:
+  - id: bounded_airflow_links
+    weight: 2.0
+    reward: Links use both lower and upper end-date filters for September 24.
+    punish: A one-sided filter includes failures outside the requested day.
+  - id: spark_evidence_race
+    weight: 2.5
+    reward: Starts exact Airflow-log and OMS queries concurrently for Spark jobs.
+    punish: Uses only one source or serializes independent evidence queries.
+  - id: timeout_short_circuit
+    weight: 2.0
+    reward: Cancels pending OMS work when Airflow proves an AirflowTaskTimeout.
+    punish: Waits for unnecessary OMS work after definitive timeout evidence.
+  - id: cluster_health
+    weight: 2.0
+    reward: Checks KEDA ScaledObjects and pods in US and CA and reports both health lines.
+    punish: Omits either region, KEDA, pods, or evidence-qualified health status.
+  - id: resource_discovery_routing
+    weight: 2.0
+    reward: Uses resource discovery to select the client's correct resend application.
+    punish: Guesses a domain or supplies a link for the wrong client environment.
+  - id: large_resend_escalation
+    weight: 1.5
+    reward: Calls out more than 100 unique events in developer and Data Internal messages.
+    punish: Hides a large resend count in either audience's message.
+  - id: omitted_job_filter
+    weight: 1.5
+    reward: Discovers all failures but omits configured noisy jobs from Data Internal.
+    punish: Drops them from investigation or includes them in the channel message.
+  - id: root_cause_coverage
+    weight: 2.5
+    reward: Gives an evidence-backed root cause or explicitly states what evidence is missing.
+    punish: Lists a failure without diagnosis or presents speculation as fact.
   - id: automation
     weight: 1.5
     reward: Uses reusable Python scripts or CLIs, especially the Airflow CLI.
@@ -49,8 +106,8 @@ rubric:
     punish: Makes unrelated, duplicative, or speculative tool calls.
   - id: batch_evidence_selection
     weight: 2.0
-    reward: Uses Airflow task logs as the primary evidence for batch jobs.
-    punish: Queries OMS for batch jobs when Airflow logs are sufficient.
+    reward: Uses Airflow task logs as primary evidence for batch jobs and dual sources for Spark.
+    punish: Uses OMS for non-Spark batch jobs without an evidence gap.
   - id: oms_efficiency
     weight: 2.0
     reward: Uses one direct OMS query with exact job identity when OMS is warranted.

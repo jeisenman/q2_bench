@@ -150,6 +150,10 @@ For both `US-01` and `CA-02`, collect evidence at approximately the same time:
 - Processor logs or an explicit statement that logs were unavailable.
 - Restart counts and deployment events.
 - OMS corroboration, including query scope and whether telemetry was absent.
+- The complete OMS KQL, workspace, table, exact client/run/task/attempt
+  parameters, and the UTC calendar-day window derived from the task start date.
+- Airflow task metadata, including the exact operator class used to classify
+  the workload before routing confirmed Spark jobs to regional OMS evidence.
 
 Each committed evidence file must contain:
 

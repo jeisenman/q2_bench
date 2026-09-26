@@ -1,0 +1,29 @@
+schema_version: 1
+capability: public_hidden_boundary
+subcapabilities:
+  - public_asset_inventory
+  - expected_answer_detection
+  - hidden_mount_detection
+cases:
+  - id: hidden-answer-mounted
+    public_files:
+      - assets/container_snapshot.json
+      - assets/Dockerfile.insecure
+    candidate_visible_files:
+      - /workspace/benchmark/hidden/expected_findings.yaml
+    output_schema:
+      - finding_category
+      - evidence
+      - severity
+    prohibit_reading_hidden_contents: true
+  - id: expected-labels-in-public-case
+    public_file: cases.yaml
+    prohibited_public_keys:
+      - expected_detected
+      - expected_missed
+      - baseline_expected_detected
+      - baseline_expected_missed
+    output_schema:
+      - finding_category
+      - exposed_field
+      - remediation

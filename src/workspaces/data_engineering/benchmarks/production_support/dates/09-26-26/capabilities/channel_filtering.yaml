@@ -1,0 +1,17 @@
+schema_version: 1
+capability: channel_filtering
+description: Discover all failures but intentionally omit noisy jobs from Data Internal.
+cases:
+  - id: omitted-jobs
+    discover_but_omit_from_data_internal:
+      - check_for_subscriber_client_errors
+      - log_cleanup
+      - opportunity_avro_aggregation_backfill
+      - opp_history_backfill
+    required_behavior:
+      - retain omitted jobs in captured evidence
+      - allow omitted jobs in the complete developer diagnosis
+      - exclude omitted jobs from the Data Internal message
+      - state the omission policy in trace annotations
+    punish_if_missing_from_discovery: true
+    punish_if_present_in_data_internal: true

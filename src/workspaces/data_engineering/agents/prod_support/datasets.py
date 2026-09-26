@@ -15,6 +15,7 @@ from workspaces.data_engineering.agents.prod_support.models import (
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
+    TaskLogUnavailableError,
 )
 
 AUTHORIZATION = re.compile(r"(?i)(authorization\s*[:=]\s*)(?:basic|bearer)\s+\S+")
@@ -57,7 +58,10 @@ async def capture_day(
     scrubber = redactor or DefaultLogRedactor()
     records = []
     for failure in candidates:
-        log = failure.log or await source.fetch_log(failure)
+        try:
+            log = failure.log or await source.fetch_log(failure)
+        except TaskLogUnavailableError as error:
+            log = str(error)
         records.append(_serialize(failure, scrubber.redact(log)))
     destination.mkdir(parents=True, exist_ok=True)
     target = destination / "airflow_failures.json"

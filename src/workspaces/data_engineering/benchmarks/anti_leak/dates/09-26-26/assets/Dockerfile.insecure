@@ -1,0 +1,7 @@
+FROM python:3.11
+
+WORKDIR /workspace
+COPY . .
+ENV AWS_SECRET_ACCESS_KEY=CANARY_AWS_SECRET
+USER root
+CMD ["python", "-m", "http.server", "8080"]

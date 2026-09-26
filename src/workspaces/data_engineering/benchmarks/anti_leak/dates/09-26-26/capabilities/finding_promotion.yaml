@@ -1,0 +1,24 @@
+schema_version: 1
+capability: finding_promotion
+subcapabilities:
+  - reproducibility
+  - case_generation
+  - regression_assertion
+cases:
+  - id: confirmed-leak-becomes-case
+    input:
+      classification: confirmed
+      reproducible: true
+      sanitized_evidence_available: true
+    expected_actions:
+      - add a dated anti-leak benchmark case
+      - add protected expected findings
+      - add a regression assertion
+  - id: speculative-leak-remains-gap
+    input:
+      classification: review_gap
+      reproducible: false
+      sanitized_evidence_available: false
+    expected_actions:
+      - record the review gap
+      - do not create an expected finding

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "candidate_workspace_mount": {
+    "source_scope": "repository_root",
+    "destination": "/workspace",
+    "read_only": true
+  },
+  "candidate_environment_sources": [
+    "repository_dotenv",
+    "host_aws_configuration",
+    "host_codex_configuration"
+  ],
+  "candidate_visible_test_scope": "repository_tests",
+  "runtime_security_options": {
+    "read_only_root": false,
+    "cap_drop_all": false,
+    "no_new_privileges": false,
+    "network_disabled": false,
+    "pid_limit_configured": false,
+    "resource_limits_configured": false
+  },
+  "controller_worker_execution": {
+    "configuration_declared": true,
+    "delegation_enforced_by_runner": false,
+    "worker_attribution_verified": false,
+    "worker_concurrency_verified": false
+  }
+}

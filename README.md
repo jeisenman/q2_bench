@@ -221,9 +221,39 @@ Run the bundled stdio MCP server directly:
 uv run prod-support-mcp
 ```
 
-The `run_prod_support` tool uses deterministic local data by default. Replace
-the in-memory adapter at the composition root when connecting an approved
-Databricks, Snowflake, or OMS provider.
+The `run_prod_support` tool uses a safe empty source by default. The Compose
+service loads established regional Airflow credentials from the ignored
+repository `.env` and explicitly selects the read-only production source:
+
+```bash
+docker compose run --rm --no-deps prod-support-mcp
+```
+
+Production mode fails immediately when any required US or CA Airflow credential
+is missing. It discovers failed task instances and reads exact task logs; it
+does not retry jobs or mutate production systems.
+
+The required `.env` names are `USAIRFLORUSER`, `USAIRFLOWPASSWORD`,
+`CAAIRFLORUSER`, and `CAAIRFLOWPASSWORD`. Credential values are injected at
+runtime and are not copied into the image.
+
+For a host-side stdio server, load the same `.env` into the process environment
+and run:
+
+```bash
+PROD_SUPPORT_SOURCE=production uv run prod-support-mcp
+```
+
+For deterministic replay, configure a captured dataset:
+
+```bash
+PROD_SUPPORT_SOURCE=replay \
+PROD_SUPPORT_DATASET=var/benchmark_data/prod_support/2026-09-25/airflow_failures.json \
+uv run prod-support-mcp
+```
+
+OMS, cluster-health, and Resource Discovery providers still require approved
+adapters before those evidence paths can run through MCP.
 
 ## Project layout
 

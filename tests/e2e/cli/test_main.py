@@ -9,15 +9,19 @@ from cli.main import cli
 main = import_module("cli.main")
 
 
-def test_benchmarks_lists_prod_support() -> None:
+def test_benchmarks_lists_visible_benchmarks() -> None:
     result = CliRunner().invoke(cli, ["benchmarks"])
 
     assert result.exit_code == 0
-    assert result.output == "prod-support\tproduction_operations\n"
+    assert result.output == (
+        "anti-leak\tsecurity\n"
+        "prod-support\tproduction_operations\n"
+        "resource-discovery\tresource_operations\n"
+    )
 
 
 def test_run_matrix_defaults_to_a_grouped_dry_run() -> None:
-    candidate_count = 6
+    candidate_count = 7
     result = CliRunner().invoke(cli, ["run-matrix"])
 
     assert result.exit_code == 0
@@ -49,8 +53,10 @@ def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0
-    assert result.output == "prod-support\trun-1\n"
-    assert seeded == ["prod-support"]
+    assert result.output == (
+        "anti-leak\trun-1\nprod-support\trun-1\nresource-discovery\trun-1\n"
+    )
+    assert seeded == ["anti-leak", "prod-support", "resource-discovery"]
 
 
 def test_evaluate_publishes_recorded_case(monkeypatch, tmp_path: Path) -> None:

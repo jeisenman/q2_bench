@@ -10,6 +10,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Protocol
+from urllib.error import HTTPError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
@@ -17,10 +18,26 @@ from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
     Region,
 )
+from workspaces.data_engineering.agents.prod_support.ports import (
+    TaskLogUnavailableError,
+)
+from workspaces.data_engineering.agents.prod_support.workloads import (
+    AirflowTaskMetadata,
+)
 
 
 class AirflowApiError(RuntimeError):
     """Raised when Airflow credentials or API responses are invalid."""
+
+    @classmethod
+    def invalid_task_metadata(cls) -> AirflowApiError:
+        """Return an error for a non-object task response."""
+        return cls("Airflow task metadata response must be an object")
+
+    @classmethod
+    def missing_operator_name(cls) -> AirflowApiError:
+        """Return an error for task metadata without an operator."""
+        return cls("Airflow task metadata response is missing operator_name")
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,12 +164,18 @@ class AirflowApiSource:
                 str(failure.try_number),
             )
         )
-        response = await asyncio.to_thread(
-            self._transport.request,
-            config,
-            "GET",
-            path,
-        )
+        try:
+            response = await asyncio.to_thread(
+                self._transport.request,
+                config,
+                "GET",
+                path,
+            )
+        except HTTPError as error:
+            raise TaskLogUnavailableError(
+                failure.failure_id,
+                error.code,
+            ) from error
         if isinstance(response, str):
             return response
         if isinstance(response, dict):
@@ -161,6 +184,36 @@ class AirflowApiSource:
                 return content
         message = "Airflow task log response must contain text content"
         raise AirflowApiError(message)
+
+    async def fetch_task_metadata(
+        self,
+        failure: AirflowFailure,
+    ) -> AirflowTaskMetadata:
+        """Retrieve operator metadata for deterministic workload routing."""
+        config = self._config_for(failure.region)
+        path = "/api/v1/" + "/".join(
+            quote(part, safe="")
+            for part in ("dags", failure.dag_id, "tasks", failure.task_id)
+        )
+        response = await asyncio.to_thread(
+            self._transport.request,
+            config,
+            "GET",
+            path,
+        )
+        if not isinstance(response, dict):
+            raise AirflowApiError.invalid_task_metadata()
+        operator_name = response.get("operator_name")
+        class_ref = response.get("class_ref")
+        if not isinstance(operator_name, str) and isinstance(class_ref, dict):
+            operator_name = class_ref.get("class_name")
+        if not isinstance(operator_name, str) or not operator_name.strip():
+            raise AirflowApiError.missing_operator_name()
+        return AirflowTaskMetadata(
+            dag_id=failure.dag_id,
+            task_id=failure.task_id,
+            operator_name=operator_name,
+        )
 
     def _discover_region(
         self,
@@ -190,6 +243,13 @@ class AirflowApiSource:
                 return tuple(failures)
             payload["page_offset"] = len(failures)
 
+    def _config_for(self, region: Region) -> AirflowRegionConfig:
+        config = next((item for item in self._regions if item.region is region), None)
+        if config is None:
+            message = f"region is not configured: {region}"
+            raise AirflowApiError(message)
+        return config
+
 
 def _task_instances(response: object) -> tuple[list[dict[str, Any]], int]:
     if not isinstance(response, dict):
@@ -204,14 +264,19 @@ def _task_instances(response: object) -> tuple[list[dict[str, Any]], int]:
 
 
 def _failure(region: Region, value: dict[str, Any]) -> AirflowFailure:
+    end_at = datetime.fromisoformat(str(value["end_date"]).replace("Z", "+00:00"))
+    raw_start = value.get("start_date")
+    start_at = (
+        datetime.fromisoformat(str(raw_start).replace("Z", "+00:00"))
+        if raw_start is not None
+        else end_at
+    )
     return AirflowFailure(
         region=region,
         dag_id=str(value["dag_id"]),
         run_id=str(value["dag_run_id"]),
         task_id=str(value["task_id"]),
-        start_at=datetime.fromisoformat(
-            str(value["start_date"]).replace("Z", "+00:00")
-        ),
-        end_at=datetime.fromisoformat(str(value["end_date"]).replace("Z", "+00:00")),
+        start_at=start_at,
+        end_at=end_at,
         try_number=int(value.get("try_number") or 1),
     )

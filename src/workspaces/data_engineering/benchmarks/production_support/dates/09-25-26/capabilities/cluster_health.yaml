@@ -1,0 +1,20 @@
+schema_version: 1
+capability: cluster_health
+description: Require evidence-based US and CA KEDA and pod health checks.
+cases:
+  - id: both-regions
+    regions: [US-01, CA-02]
+    evidence_uris:
+      US-01: ../evidence/current-us-healthy.json
+      CA-02: ../evidence/current-ca-dag-processor.json
+    required_checks:
+      - command: kubectl get scaledobjects -n scheduler
+        proves: KEDA ScaledObject readiness and scaling state
+      - command: kubectl get pods -n scheduler
+        proves: pod readiness, phase, and restart counts
+    required_developer_lines:
+      - US Cluster Health
+      - CA Cluster Health
+    prohibit_healthy_without_evidence: true
+    evidence_gap:
+      - Existing evidence includes pods but not complete KEDA output.

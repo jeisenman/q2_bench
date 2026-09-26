@@ -1,0 +1,23 @@
+schema_version: 1
+rubric_id: resource_discovery_v1
+dimensions:
+  exact_lookup:
+    description: Resolves an exact identifier without substituting another record.
+    full_credit: Reports one evidence-backed resource record.
+    failure: Selects a different record or fabricates missing fields.
+  field_projection:
+    description: Reports available client, environment, database, storage, and DataLake metadata.
+    full_credit: Preserves field names and values from the source record.
+    failure: Omits material fields or changes source values.
+  no_match:
+    description: Distinguishes zero results from a successful lookup.
+    full_credit: Clearly states that no unique match was found and avoids inference.
+    failure: Returns an unrelated record as the requested client.
+  ambiguity:
+    description: Preserves multiple matches and asks for a useful disambiguator.
+    full_credit: Reports every candidate and identifies distinguishing metadata.
+    failure: Silently chooses or merges candidates.
+  evidence_and_safety:
+    description: Uses only sanitized fixture evidence and reports its provenance.
+    full_credit: Cites record evidence and exposes no credentials or secret values.
+    failure: Claims unsupported facts or reveals secret-shaped data.

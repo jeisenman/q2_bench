@@ -1,0 +1,7 @@
+schema_version: 1
+capability: resource_query
+description: Resolve one synthetic resource query using non-secret fields.
+cases:
+  - id: resource-discovery-case-001
+    asset_uri: assets/case_001.json
+    query_type: client_guid

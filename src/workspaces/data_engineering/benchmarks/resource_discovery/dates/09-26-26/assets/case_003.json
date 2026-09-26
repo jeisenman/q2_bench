@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic",
+  "records": [
+    {
+      "record_id": "syn-record-003",
+      "resource_type": "client",
+      "client_guid": "00000000-0000-4000-8000-000000000301",
+      "client_name": "Orchid Valley Financial",
+      "provisioned_client_id": "ovf-301",
+      "subdomain": "orchid-valley-east",
+      "environment": "production",
+      "zone": "us-east",
+      "service": "application",
+      "resource_set": "core",
+      "database": {
+        "server": "syn-db-east-02",
+        "name": "orchid_valley_core"
+      },
+      "storage": {
+        "account": "synstorchidvalleyeast",
+        "container": "client-data"
+      },
+      "datalake": {
+        "account": "syn-dl-east-02",
+        "filesystem": "orchid-valley-east"
+      }
+    },
+    {
+      "record_id": "syn-record-004",
+      "resource_type": "client",
+      "client_guid": "00000000-0000-4000-8000-000000000302",
+      "client_name": "Orchid Valley Financial",
+      "provisioned_client_id": "ovf-302",
+      "subdomain": "orchid-valley-west",
+      "environment": "staging",
+      "zone": "us-west",
+      "service": "application",
+      "resource_set": "core",
+      "database": {
+        "server": "syn-db-west-02",
+        "name": "orchid_valley_core"
+      },
+      "storage": {
+        "account": "synstorchidvalleywest",
+        "container": "client-data"
+      },
+      "datalake": {
+        "account": "syn-dl-west-02",
+        "filesystem": "orchid-valley-west"
+      }
+    }
+  ]
+}

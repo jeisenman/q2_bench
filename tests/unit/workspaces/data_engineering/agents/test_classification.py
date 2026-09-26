@@ -29,9 +29,24 @@ def failure() -> AirflowFailure:
         ("**TimeoutError: task expired", "oms_confirmed_timeout"),
         ("SIGKILL under memory pressure", "probable_oom"),
         ("process exit -9", "unknown_resource_termination"),
+        (
+            "Traceback: Bash command returned a non-zero exit code -9.",
+            "unknown_resource_termination",
+        ),
         ("Traceback: ValueError", "application_error"),
         ("worker stopped", "unknown"),
     ],
 )
 def test_classify_log(failure: AirflowFailure, log: str, kind: str) -> None:
     assert classify_log(failure, log).kind.value == kind
+
+
+def test_exit_minus_nine_is_reported_as_likely_oom(
+    failure: AirflowFailure,
+) -> None:
+    diagnosis = classify_log(
+        failure,
+        "AirflowException: Bash command returned a non-zero exit code -9.",
+    )
+
+    assert diagnosis.confidence == "likely_oom"

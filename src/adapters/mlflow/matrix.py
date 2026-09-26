@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Protocol
 
 from adapters.inbound import JudgedRun
+from adapters.inbound.matrix_results import capability_scores
 from workspaces.data_engineering.benchmarks import MatrixManifest
 
 
@@ -51,6 +52,7 @@ def publish_matrix_results(
                         "elapsed_seconds": candidate.elapsed_seconds,
                         "input_tokens": candidate.input_tokens,
                         "output_tokens": candidate.output_tokens,
+                        **_capability_metrics(result.assessment),
                     }
                 )
                 mlflow.log_dict(result.assessment, "judge/assessment.json")
@@ -62,3 +64,18 @@ def publish_matrix_results(
 def _log_if_present(mlflow: _ArtifactLogger, path: Path) -> None:
     if path.is_file():
         mlflow.log_artifact(str(path), artifact_path="matrix")
+
+
+def _capability_metric_name(item: dict[str, object]) -> str:
+    role = str(item.get("role", "unknown")).replace("-", "_")
+    capability = str(item.get("capability", "unknown")).replace("-", "_")
+    return f"capability.{role}.{capability}"
+
+
+def _capability_metrics(assessment: dict[str, object]) -> dict[str, float]:
+    metrics: dict[str, float] = {}
+    for item in capability_scores(assessment):
+        score = item.get("score")
+        if isinstance(score, int | float):
+            metrics[_capability_metric_name(item)] = float(score)
+    return metrics

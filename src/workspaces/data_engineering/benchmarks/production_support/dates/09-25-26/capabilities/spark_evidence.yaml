@@ -1,0 +1,29 @@
+schema_version: 1
+capability: spark_evidence
+description: Diagnose Spark failures using parallel Airflow and OMS evidence.
+cases:
+  - id: spark-dual-source-race
+    workload_type: spark
+    execution:
+      start_in_parallel:
+        - exact_airflow_task_log
+        - exact_oms_job_query
+      mock_oms:
+        printed_notice: "Mock OMS query: would wait 10 seconds"
+        actual_sleep_seconds: 0
+      cancellation:
+        when: Airflow log contains explicit AirflowTaskTimeout evidence
+        cancel: exact_oms_job_query
+      required_trace_events:
+        - oms_query_started
+        - airflow_log_started
+    evidence_rules:
+      timeout:
+        required_airflow_text: airflow.exceptions.AirflowTaskTimeout
+        cancel_pending_oms: true
+      no_terminal_cause:
+        await_oms: true
+        prohibit_inferred_oom: true
+      explicit_oom:
+        classification: confirmed_oom
+        require_exact_evidence: true

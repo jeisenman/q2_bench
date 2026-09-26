@@ -1,0 +1,22 @@
+schema_version: 1
+benchmark_id: data_engineering.resource_operations.resource_discovery
+display_name: resource-discovery
+version: 1.0.0
+group: resource_operations
+description: Evaluate deterministic lookup and reporting of synthetic client resources.
+dataset:
+  root: src/workspaces/data_engineering/benchmarks/resource_discovery/dates
+  capture_window_days: 0
+evaluation:
+  layers:
+    - capabilities
+    - system
+  dimensions:
+    - query_accuracy
+    - result_completeness
+    - uncertainty_reporting
+    - evidence_safety
+public_assets:
+  - assets/case_001.json
+  - assets/case_002.json
+  - assets/case_003.json

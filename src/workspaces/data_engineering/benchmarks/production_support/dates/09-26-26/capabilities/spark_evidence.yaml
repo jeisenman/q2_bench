@@ -1,0 +1,34 @@
+schema_version: 1
+capability: spark_evidence
+description: Diagnose Spark failures using parallel Airflow and OMS evidence.
+cases:
+  - id: airflow-timeout-wins-race
+    workload_type: spark
+    execution:
+      start_in_parallel:
+        - exact_airflow_task_log
+        - exact_oms_job_query
+      mock_oms:
+        printed_notice: "Mock OMS query: would wait 10 seconds"
+        actual_sleep_seconds: 0
+      cancellation:
+        when: Airflow log contains explicit AirflowTaskTimeout evidence
+        cancel: exact_oms_job_query
+      required_trace_events:
+        - oms_query_started
+        - airflow_log_started
+        - airflow_timeout_detected
+        - oms_query_cancelled
+    airflow_evidence:
+      - "raise AirflowTaskTimeout(self.error_message)"
+      - "airflow.exceptions.AirflowTaskTimeout: Timeout, PID: 2555323"
+    evidence_status: synthetic_pending_recapture
+    require_timeout_evidence_in_developer_message: true
+  - id: inconclusive-airflow-requires-oms
+    workload_type: spark
+    airflow_evidence:
+      - Driver badly exited without an explicit terminal cause.
+    expected_behavior:
+      - await the already-started exact OMS query
+      - combine Airflow and OMS evidence
+      - do not infer OOM without an explicit memory signal

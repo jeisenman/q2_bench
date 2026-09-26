@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from time import monotonic
 from typing import Any
 
+from adapters.inbound.matrix_results import write_comparison
 from workspaces.data_engineering.benchmarks.matrix import (
     MatrixManifest,
     ModelProfile,
@@ -86,6 +87,9 @@ class MatrixInboundAdapter:
                 "reasoning_effort": item.reasoning_effort,
                 "judge_profile": manifest.judge.profile,
                 "runtime": manifest.runtime,
+                "role": item.role,
+                "capabilities": item.capabilities,
+                "workers": tuple(worker.profile for worker in item.workers),
             }
             for item in manifest.candidates
         )
@@ -117,7 +121,7 @@ class MatrixInboundAdapter:
             )
             for candidate in candidates
         )
-        _write_comparison(manifest, judged, root / "comparison.json")
+        write_comparison(manifest, judged, root / "comparison.json")
         return judged
 
 
@@ -145,7 +149,7 @@ def _run_candidate(
     )
     started = monotonic()
     process = subprocess.run(
-        [*command, build_candidate_prompt(manifest)],
+        [*command, build_candidate_prompt(manifest, profile)],
         check=False,
         capture_output=True,
         text=True,
@@ -335,11 +339,24 @@ def _judge_schema() -> dict[str, object]:
         "required": ["id", "score", "rationale"],
         "additionalProperties": False,
     }
+    capability = {
+        "type": "object",
+        "properties": {
+            "role": {"type": "string"},
+            "model": {"type": "string"},
+            "capability": {"type": "string"},
+            "score": {"type": "number", "minimum": 0, "maximum": 1},
+            "rationale": {"type": "string"},
+        },
+        "required": ["role", "model", "capability", "score", "rationale"],
+        "additionalProperties": False,
+    }
     return {
         "type": "object",
         "properties": {
             "overall_score": {"type": "number", "minimum": 0, "maximum": 1},
             "criteria": {"type": "array", "items": criterion},
+            "capability_scores": {"type": "array", "items": capability},
             "strengths": {"type": "array", "items": {"type": "string"}},
             "violations": {"type": "array", "items": {"type": "string"}},
             "rationale": {"type": "string"},
@@ -348,6 +365,7 @@ def _judge_schema() -> dict[str, object]:
         "required": [
             "overall_score",
             "criteria",
+            "capability_scores",
             "strengths",
             "violations",
             "rationale",
@@ -367,32 +385,3 @@ def _load_baselines(path: Path) -> dict[str, dict[str, object]]:
         for item in raw["results"]
         if isinstance(item, dict) and "profile" in item
     }
-
-
-def _write_comparison(
-    manifest: MatrixManifest,
-    judged: tuple[JudgedRun, ...],
-    path: Path,
-) -> None:
-    comparison = {
-        "matrix_id": manifest.matrix_id,
-        "suite": manifest.suite,
-        "case_id": manifest.case_id,
-        "judge": asdict(manifest.judge),
-        "results": [
-            {
-                "profile": item.candidate.profile,
-                "model": item.candidate.model,
-                "reasoning_effort": item.candidate.reasoning_effort,
-                "score": item.overall_score,
-                "elapsed_seconds": item.candidate.elapsed_seconds,
-                "input_tokens": item.candidate.input_tokens,
-                "output_tokens": item.candidate.output_tokens,
-            }
-            for item in judged
-        ],
-    }
-    path.write_text(
-        json.dumps(comparison, indent=2, sort_keys=True),
-        encoding="utf-8",
-    )

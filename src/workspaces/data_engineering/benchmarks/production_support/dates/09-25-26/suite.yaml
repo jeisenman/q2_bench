@@ -1,5 +1,6 @@
 schema_version: 1
 suite_date: "2026-09-25"
+operational_date: "2026-09-24"
 directory_date_format: MM-DD-YY
 benchmark_id: data_engineering.production_operations.prod_support
 description: Evaluate prod-support behavior using evidence available on 2026-09-25.
@@ -10,6 +11,10 @@ layers:
       - capabilities/date_resolution.yaml
       - capabilities/failure_discovery.yaml
       - capabilities/log_classification.yaml
+      - capabilities/spark_evidence.yaml
+      - capabilities/cluster_health.yaml
+      - capabilities/channel_filtering.yaml
+      - capabilities/resend_routing.yaml
       - capabilities/developer_message.yaml
       - capabilities/prod_support_message.yaml
     dimensions:
@@ -22,6 +27,11 @@ layers:
       - response_formatting
       - developer_message
       - prod_support_message
+      - bounded_query_translation
+      - parallel_evidence_collection
+      - cluster_health
+      - omitted_job_filtering
+      - resource_routing
   coordination:
     description: Test ordered tool use and synthesis across specialist agents.
     dimensions:
@@ -30,6 +40,10 @@ layers:
       - tool_call_efficiency
       - regional_synthesis
       - evidence_handoff
+      - airflow_oms_race
+      - oms_cancellation
+      - resource_discovery_handoff
+      - cluster_health_handoff
   system:
     description: Test the full prompt-to-report workflow against recorded evidence.
     cases:

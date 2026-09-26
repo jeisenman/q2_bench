@@ -1,0 +1,19 @@
+schema_version: 1
+cases:
+  - id: resource-discovery-case-001
+    prompt: Resolve the client by GUID and report its available non-secret resources.
+    asset_uri: assets/case_001.json
+    query:
+      client_guid: 00000000-0000-4000-8000-000000000101
+
+  - id: resource-discovery-case-002
+    prompt: Find the resources for Quartz Meridian Cooperative by client name.
+    asset_uri: assets/case_002.json
+    query:
+      client_name: Quartz Meridian Cooperative
+
+  - id: resource-discovery-case-003
+    prompt: Find resources for Orchid Valley Financial.
+    asset_uri: assets/case_003.json
+    query:
+      client_name: Orchid Valley Financial

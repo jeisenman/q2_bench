@@ -11,6 +11,7 @@ MATRIX_PATH = (
     / "dates/09-25-26/matrix.yaml"
 )
 ARTIFACT_COUNT = 2
+CAPABILITY_SCORE = 0.6
 JUDGE_SCORE = 0.9
 
 
@@ -71,7 +72,17 @@ def test_publishes_parent_and_nested_matrix_runs(monkeypatch, tmp_path) -> None:
     result = JudgedRun(
         candidate,
         JUDGE_SCORE,
-        {"overall_score": JUDGE_SCORE},
+        {
+            "overall_score": JUDGE_SCORE,
+            "capability_scores": [
+                {
+                    "role": "worker",
+                    "model": "luna",
+                    "capability": "log-analysis",
+                    "score": CAPABILITY_SCORE,
+                }
+            ],
+        },
         assessment,
     )
 
@@ -85,4 +96,5 @@ def test_publishes_parent_and_nested_matrix_runs(monkeypatch, tmp_path) -> None:
     assert configured["experiment"] == "production_operations"
     assert configured["runs"][1][2] is True
     assert configured["metrics"]["judge_score"] == JUDGE_SCORE
+    assert configured["metrics"]["capability.worker.log_analysis"] == CAPABILITY_SCORE
     assert len(configured["artifacts"]) == ARTIFACT_COUNT

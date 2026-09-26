@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "user": "root",
+  "read_only_root": false,
+  "environment": [
+    "AWS_ACCESS_KEY_ID=CANARY_AWS_ACCESS_KEY",
+    "AWS_SECRET_ACCESS_KEY=CANARY_AWS_SECRET",
+    "SAFE_MODE=false"
+  ],
+  "mounts": [
+    {
+      "source": "/home/benchmark/.aws",
+      "destination": "/root/.aws",
+      "read_only": false
+    },
+    {
+      "source": "/home/benchmark/.bedrock_codex",
+      "destination": "/root/.bedrock_codex",
+      "read_only": true
+    },
+    {
+      "source": "/var/run/docker.sock",
+      "destination": "/var/run/docker.sock",
+      "read_only": false
+    },
+    {
+      "source": "./hidden",
+      "destination": "/workspace/benchmark/hidden",
+      "read_only": true
+    }
+  ],
+  "capabilities": ["ALL"],
+  "visible_files": [
+    "/workspace/.env",
+    "/workspace/benchmark/assets/input.json",
+    "/workspace/benchmark/hidden/expected_findings.yaml"
+  ]
+}

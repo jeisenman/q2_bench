@@ -26,6 +26,20 @@ class ModelProfile:
     profile: str
     model: str
     reasoning_effort: str
+    role: str = "candidate"
+    capabilities: tuple[str, ...] = ()
+    workers: tuple[WorkerProfile, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerProfile:
+    """One subagent worker configuration controlled by a candidate."""
+
+    profile: str
+    model: str
+    reasoning_effort: str
+    capabilities: tuple[str, ...]
+    max_parallel: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,7 +99,7 @@ def load_matrix_manifest(path: Path) -> MatrixManifest:
         case_id=_text(raw, "case_id", path),
         runtime=str(execution.get("runtime", "process")),
         container_image=str(execution.get("container_image", "")),
-        parallelism=int(execution.get("parallelism", 1)),
+        parallelism=int(execution.get("parallelism", len(profiles))),
         sandbox=str(execution.get("sandbox", "read-only")),
         artifact_root=Path(str(execution.get("artifact_root", "var/benchmark_matrix"))),
         judge=_profile(_mapping(raw, "judge", path), path),
@@ -94,17 +108,34 @@ def load_matrix_manifest(path: Path) -> MatrixManifest:
     )
 
 
-def build_candidate_prompt(manifest: MatrixManifest) -> str:
-    """Build the common candidate instruction for a matrix run."""
-    return "\n".join(
-        (
-            "Run the prod-support benchmark using only local recorded evidence.",
-            f"Case: {manifest.case_id}",
-            f"Dataset: {manifest.dataset}",
-            "Use read-only automation and inspect exact Airflow task logs.",
-            "Do not mutate production systems. Return the final report only.",
+def build_candidate_prompt(
+    manifest: MatrixManifest,
+    profile: ModelProfile | None = None,
+) -> str:
+    """Build candidate instructions, including controller-worker roles."""
+    selected = profile or manifest.candidates[0]
+    lines = [
+        "Run the prod-support benchmark using only local recorded evidence.",
+        f"Case: {manifest.case_id}",
+        f"Dataset: {manifest.dataset}",
+        f"Your role: {selected.role}.",
+        f"Your measured capabilities: {', '.join(selected.capabilities) or 'all'}.",
+        "Use read-only automation and inspect exact Airflow task logs.",
+        "Do not mutate production systems. Return the final report only.",
+    ]
+    if selected.workers:
+        lines.append(
+            "Delegate independent work to these configured subagents and preserve "
+            "their role attribution in the trace:"
         )
-    )
+        lines.extend(
+            f"- {worker.profile}: model={worker.model}, "
+            f"reasoning={worker.reasoning_effort}, "
+            f"max_parallel={worker.max_parallel}, "
+            f"capabilities={','.join(worker.capabilities)}"
+            for worker in selected.workers
+        )
+    return "\n".join(lines)
 
 
 def build_matrix_judge_prompt(
@@ -128,7 +159,8 @@ def build_matrix_judge_prompt(
             "Judge this prod-support agent trace using the weighted rubric.",
             "Score each criterion from 0 to 1. Do not excuse deterministic violations.",
             "Return JSON with overall_score, criteria, strengths, violations, "
-            "and rationale.",
+            "rationale, and capability_scores. Attribute capability scores to "
+            "the controller and worker models declared in the trace.",
             f"Rubric: {json.dumps(criteria, sort_keys=True)}",
             f"Trace: {json.dumps(trace, sort_keys=True)}",
             f"Earlier comparable trace: {json.dumps(baseline or {}, sort_keys=True)}",
@@ -160,7 +192,33 @@ def _profile(raw: object, path: Path) -> ModelProfile:
         profile=_text(raw, "profile", path),
         model=_text(raw, "model", path),
         reasoning_effort=_text(raw, "reasoning_effort", path),
+        role=str(raw.get("role", "candidate")),
+        capabilities=_string_tuple(raw.get("capabilities", []), path),
+        workers=tuple(_worker(item, path) for item in raw.get("workers", [])),
     )
+
+
+def _worker(raw: object, path: Path) -> WorkerProfile:
+    if not isinstance(raw, dict):
+        raise MatrixManifestError.invalid(path, "worker profile must be a mapping")
+    max_parallel = int(raw.get("max_parallel", 1))
+    if max_parallel <= 0:
+        raise MatrixManifestError.invalid(path, "worker max_parallel must be positive")
+    return WorkerProfile(
+        profile=_text(raw, "profile", path),
+        model=_text(raw, "model", path),
+        reasoning_effort=_text(raw, "reasoning_effort", path),
+        capabilities=_string_tuple(raw.get("capabilities", []), path),
+        max_parallel=max_parallel,
+    )
+
+
+def _string_tuple(raw: object, path: Path) -> tuple[str, ...]:
+    if not isinstance(raw, list) or not all(
+        isinstance(item, str) and item.strip() for item in raw
+    ):
+        raise MatrixManifestError.invalid(path, "capabilities must be a string list")
+    return tuple(raw)
 
 
 def _criterion(raw: object, path: Path) -> RubricCriterion:

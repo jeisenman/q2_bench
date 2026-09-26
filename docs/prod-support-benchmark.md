@@ -62,7 +62,8 @@ production_support/
 ├── dataset/
 │   └── README.md
 └── dates/
-    └── 09-25-26/
+    ├── 09-25-26/
+    └── 09-26-26/
         ├── suite.yaml
         ├── cases.yaml
         └── evidence/
@@ -82,8 +83,25 @@ evaluation layers:
 New benchmark snapshots belong in a new `MM-DD-YY` directory rather than
 mutating a prior suite.
 
-The 2026-09-26 dataset is marked as future in the case catalog because it
-cannot contain production evidence as of 2026-09-25.
+The `09-26-26` snapshot evaluates the September 25 operational day. It uses
+the capture at `var/benchmark_data/prod_support/2026-09-25/` and preserves the
+older `09-25-26` snapshot unchanged for reproducible comparisons.
+
+Airflow UI links must use a bounded interval. In the Flask-AppBuilder task
+instance view, `_flt_1_end_date` is the upper, less-than bound and
+`_flt_2_end_date` is the lower, greater-than bound. A link with only one bound
+is incorrect because it includes failures outside the requested day.
+
+For Spark failures, the benchmark requires the agent to start exact Airflow
+task-log and OMS queries concurrently. Explicit `AirflowTaskTimeout` evidence
+wins the race and permits cancellation of the pending OMS query. The replay
+fixture prints that OMS would take ten seconds but never sleeps.
+
+The same snapshot requires US and CA cluster-health lines backed by both KEDA
+ScaledObject and pod checks. Event resend recommendations must use resource
+discovery to select the correct application, list each client and resend date
+on its own line, and call out more than 100 unique events in both developer
+and Data Internal messages.
 
 ## Evaluation dimensions
 

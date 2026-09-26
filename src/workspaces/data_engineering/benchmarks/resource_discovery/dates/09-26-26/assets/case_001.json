@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic",
+  "records": [
+    {
+      "record_id": "syn-record-001",
+      "resource_type": "client",
+      "client_guid": "00000000-0000-4000-8000-000000000101",
+      "client_name": "Lattice Harbor Cooperative",
+      "provisioned_client_id": "lhc-101",
+      "subdomain": "lattice-harbor",
+      "environment": "production",
+      "zone": "us-east",
+      "service": "application",
+      "resource_set": "core",
+      "database": {
+        "server": "syn-db-east-01",
+        "name": "lattice_harbor_core"
+      },
+      "storage": {
+        "account": "synstlatticeharbor01",
+        "container": "client-data"
+      },
+      "datalake": {
+        "account": "syn-dl-east-01",
+        "filesystem": "lattice-harbor"
+      }
+    }
+  ]
+}

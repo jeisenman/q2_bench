@@ -1,0 +1,15 @@
+schema_version: 1
+capability: container_security
+subcapabilities:
+  - runtime_user
+  - root_filesystem_mode
+  - linux_capabilities
+  - dangerous_mounts
+cases:
+  - id: permissive-runtime
+    evidence_uri: ../assets/container_snapshot.json
+    output_schema:
+      - finding_category
+      - evidence
+      - severity
+      - remediation

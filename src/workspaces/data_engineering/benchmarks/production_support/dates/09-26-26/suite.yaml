@@ -1,0 +1,43 @@
+schema_version: 1
+suite_date: "2026-09-26"
+operational_date: "2026-09-25"
+directory_date_format: MM-DD-YY
+benchmark_id: data_engineering.production_operations.prod_support
+description: Evaluate prod-support behavior for the 2026-09-25 operational day.
+layers:
+  capabilities:
+    description: Test deterministic production-support capabilities independently.
+    fixtures:
+      - capabilities/date_resolution.yaml
+      - capabilities/failure_discovery.yaml
+      - capabilities/spark_evidence.yaml
+      - capabilities/prior_run_log_fallback.yaml
+      - capabilities/cluster_health.yaml
+      - capabilities/channel_filtering.yaml
+      - capabilities/resend_routing.yaml
+      - capabilities/developer_message.yaml
+      - capabilities/prod_support_message.yaml
+    dimensions:
+      - bounded_query_translation
+      - failure_recall
+      - parallel_evidence_collection
+      - timeout_diagnosis
+      - historical_log_fallback
+      - cluster_health
+      - omitted_job_filtering
+      - resource_routing
+      - resend_reporting
+      - developer_message
+      - prod_support_message
+  coordination:
+    description: Test parallel evidence collection and evidence-qualified synthesis.
+    dimensions:
+      - airflow_oms_race
+      - oms_cancellation
+      - regional_parallelization
+      - resource_discovery_handoff
+      - cluster_health_handoff
+  system:
+    description: Test the full prompt-to-report workflow against recorded evidence.
+    cases:
+      - prod-support-us-ca-operational-2026-09-25

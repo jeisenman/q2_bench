@@ -7,6 +7,10 @@ cases:
     reference_time: "2026-09-25T12:00:00Z"
     expected_operational_date: "2026-09-24"
     expected_since: "2026-09-24T05:00:00Z"
+    expected_until: "2026-09-25T05:00:00Z"
+    expected_ui_since: "2026-09-24T09:00:00Z"
+    expected_ui_until: "2026-09-25T09:00:00Z"
+    prohibit_one_sided_ui_window: true
   - id: yesterday
     prompt: Do yesterday's prod support
     reference_time: "2026-09-25T12:00:00Z"

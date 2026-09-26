@@ -1,0 +1,28 @@
+schema_version: 1
+capability: controller_orchestration
+subcapabilities:
+  - sol_controller
+  - luna_public_hidden_worker
+  - luna_container_security_worker
+  - parallel_side_process
+cases:
+  - id: sol-controls-luna-side-audit
+    controller:
+      profile: sol
+      responsibilities:
+        - delegate independent checks
+        - reconcile findings
+        - enforce promotion criteria
+    workers:
+      - profile: luna
+        assignment: public_hidden_boundary
+      - profile: luna
+        assignment: container_security
+    execution:
+      concurrent: true
+      blocks_main_work_only_on_confirmed_fail_closed_finding: true
+    expected_trace:
+      - controller_started
+      - luna_public_hidden_started
+      - luna_container_security_started
+      - worker_findings_reconciled

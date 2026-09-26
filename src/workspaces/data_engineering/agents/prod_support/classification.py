@@ -20,11 +20,17 @@ TIMEOUT_MARKERS = (
     "execution_timeout",
 )
 MEMORY_PRESSURE_MARKERS = ("memory pressure", "memory limit")
+EXIT_MINUS_NINE_MARKERS = (
+    "exit -9",
+    "exit code -9",
+    "exit status -9",
+    "return code -9",
+)
 EVIDENCE_MARKERS = (
     *DISTINCTNESS_MARKERS,
     *OOM_MARKERS,
     *TIMEOUT_MARKERS,
-    "exit -9",
+    *EXIT_MINUS_NINE_MARKERS,
     "SIGKILL",
     "Traceback",
     "Exception",
@@ -34,13 +40,17 @@ EVIDENCE_MARKERS = (
 
 def classify_log(failure: AirflowFailure, log: str) -> FailureDiagnosis:
     """Classify a log without inferring unsupported causes."""
+    normalized_log = log.lower()
     if any(marker in log for marker in DISTINCTNESS_MARKERS):
         kind, confidence = FailureKind.DISTINCTNESS, "confirmed"
     elif any(marker in log for marker in OOM_MARKERS):
         kind, confidence = FailureKind.CONFIRMED_OOM, "confirmed"
     elif any(marker in log for marker in TIMEOUT_MARKERS):
         kind, confidence = FailureKind.OMS_CONFIRMED_TIMEOUT, "confirmed"
-    elif "exit -9" in log or "SIGKILL" in log:
+    elif any(marker in normalized_log for marker in EXIT_MINUS_NINE_MARKERS):
+        kind = FailureKind.UNKNOWN_RESOURCE_TERMINATION
+        confidence = "likely_oom"
+    elif "SIGKILL" in log:
         if any(marker in log.lower() for marker in MEMORY_PRESSURE_MARKERS):
             kind, confidence = FailureKind.PROBABLE_OOM, "probable"
         else:

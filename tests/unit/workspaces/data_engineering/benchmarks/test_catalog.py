@@ -10,14 +10,22 @@ from workspaces.data_engineering.benchmarks import (
     default_catalog,
 )
 
+LARGE_RESEND_THRESHOLD = 100
+
 
 def test_default_catalog_contains_visible_prod_support_benchmark() -> None:
-    benchmark = default_catalog().list()[0]
+    catalog = default_catalog()
+    benchmark = catalog.get("data_engineering.production_operations.prod_support")
 
     assert benchmark.display_name == "prod-support"
     assert benchmark.group == "production_operations"
     assert benchmark.mlflow.experiment_name == "production_operations"
     assert benchmark.mlflow.run_tags["benchmark.id"] == benchmark.benchmark_id
+    assert [item.display_name for item in catalog.list()] == [
+        "anti-leak",
+        "prod-support",
+        "resource-discovery",
+    ]
 
 
 def test_catalog_rejects_invalid_manifest(tmp_path: Path) -> None:
@@ -118,6 +126,10 @@ def test_prod_support_suite_registers_capability_fixtures() -> None:
         "capabilities/date_resolution.yaml",
         "capabilities/failure_discovery.yaml",
         "capabilities/log_classification.yaml",
+        "capabilities/spark_evidence.yaml",
+        "capabilities/cluster_health.yaml",
+        "capabilities/channel_filtering.yaml",
+        "capabilities/resend_routing.yaml",
         "capabilities/developer_message.yaml",
         "capabilities/prod_support_message.yaml",
     ]
@@ -127,3 +139,127 @@ def test_prod_support_suite_registers_capability_fixtures() -> None:
         )
         assert fixture["schema_version"] == 1
         assert fixture["cases"]
+
+
+def test_previous_snapshot_uses_bounded_links_and_v2_capabilities() -> None:
+    root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates/09-25-26"
+    )
+    cases = yaml.safe_load((root / "cases.yaml").read_text(encoding="utf-8"))
+    case = cases["cases"][0]
+    suite = yaml.safe_load((root / "suite.yaml").read_text(encoding="utf-8"))
+
+    assert suite["operational_date"] == "2026-09-24"
+    assert case["expected_ui_window"] == {
+        "end_date_gte": "2026-09-24T09:00:00Z",
+        "end_date_lt": "2026-09-25T09:00:00Z",
+    }
+    for link in case["expected_cluster_links"].values():
+        assert "_flt_1_end_date=2026-09-25" in link
+        assert "_flt_2_end_date=2026-09-24" in link
+    assert (
+        "capabilities/spark_evidence.yaml"
+        in (suite["layers"]["capabilities"]["fixtures"])
+    )
+    assert case["omitted_from_data_internal"] == [
+        "check_for_subscriber_client_errors",
+        "log_cleanup",
+        "opportunity_avro_aggregation_backfill",
+        "opp_history_backfill",
+    ]
+
+
+def test_new_prod_support_snapshot_versions_september_25_data() -> None:
+    suite_root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates/09-26-26"
+    )
+    suite = yaml.safe_load((suite_root / "suite.yaml").read_text(encoding="utf-8"))
+    cases = yaml.safe_load((suite_root / "cases.yaml").read_text(encoding="utf-8"))
+    case = cases["cases"][0]
+
+    assert suite["suite_date"] == "2026-09-26"
+    assert suite["operational_date"] == "2026-09-25"
+    assert suite["layers"]["system"]["cases"] == [
+        "prod-support-us-ca-operational-2026-09-25"
+    ]
+    assert case["expected_capture_counts"] == {
+        "US-01": 14,
+        "CA-02": 45,
+        "prior_day_distractors": 6,
+    }
+    for link in case["expected_cluster_links"].values():
+        assert "_flt_1_end_date=2026-09-26" in link
+        assert "_flt_2_end_date=2026-09-25" in link
+        assert "_flt_3_state=failed" in link
+
+    fixtures = suite["layers"]["capabilities"]["fixtures"]
+    assert "capabilities/spark_evidence.yaml" in fixtures
+    assert "capabilities/prior_run_log_fallback.yaml" in fixtures
+    assert "capabilities/cluster_health.yaml" in fixtures
+    assert "capabilities/channel_filtering.yaml" in fixtures
+    assert "capabilities/resend_routing.yaml" in fixtures
+
+
+def test_new_snapshot_requires_parallel_timeout_and_resend_routing() -> None:
+    root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates/09-26-26/capabilities"
+    )
+    spark = yaml.safe_load((root / "spark_evidence.yaml").read_text(encoding="utf-8"))
+    cluster = yaml.safe_load((root / "cluster_health.yaml").read_text(encoding="utf-8"))
+    resend = yaml.safe_load((root / "resend_routing.yaml").read_text(encoding="utf-8"))
+
+    spark_case = spark["cases"][0]
+    assert set(spark_case["execution"]["start_in_parallel"]) == {
+        "exact_airflow_task_log",
+        "exact_oms_job_query",
+    }
+    assert spark_case["execution"]["mock_oms"]["actual_sleep_seconds"] == 0
+    assert spark_case["execution"]["required_trace_events"] == [
+        "oms_query_started",
+        "airflow_log_started",
+        "airflow_timeout_detected",
+        "oms_query_cancelled",
+    ]
+    assert "expected_classification" not in spark_case
+    assert cluster["cases"][0]["required_checks"] == [
+        {
+            "command": "kubectl get scaledobjects -n scheduler",
+            "proves": "KEDA ScaledObject readiness and scaling state",
+        },
+        {
+            "command": "kubectl get pods -n scheduler",
+            "proves": "pod readiness, phase, and restart counts",
+        },
+    ]
+    assert resend["cases"][0]["require_resource_discovery_skill"] is True
+    assert resend["cases"][0]["large_resend_threshold"] == LARGE_RESEND_THRESHOLD
+
+
+def test_new_snapshot_models_prior_run_log_fallback_without_fake_provenance() -> None:
+    root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates/09-26-26"
+    )
+    fixture = yaml.safe_load(
+        (root / "capabilities/prior_run_log_fallback.yaml").read_text(encoding="utf-8")
+    )
+    evidence = json.loads(
+        (root / "assets/multi_run_log_fallback.json").read_text(encoding="utf-8")
+    )
+
+    assert fixture["subcapabilities"] == [
+        "same_task_identity",
+        "reverse_chronological_run_search",
+        "unavailable_log_handling",
+        "terminal_evidence_selection",
+    ]
+    assert evidence["provenance"] == "synthetic"
+    assert evidence["runs"][0]["log_status"] == "unavailable"
+    assert "AirflowTaskTimeout" in evidence["runs"][1]["log"]

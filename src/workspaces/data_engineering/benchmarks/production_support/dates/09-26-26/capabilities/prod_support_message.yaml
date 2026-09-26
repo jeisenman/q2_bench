@@ -1,0 +1,21 @@
+schema_version: 1
+capability: prod_support_message
+description: Render a concise Data Internal message with actionable exceptions.
+cases:
+  - id: september-25-data-internal
+    expectations:
+      required_heading: PROD SUPPORT 2026-09-25
+      required_regions: [US, CA]
+      omit_jobs:
+        - check_for_subscriber_client_errors
+        - log_cleanup
+        - opportunity_avro_aggregation_backfill
+        - opp_history_backfill
+      event_resend_format:
+        one_client_per_line: true
+        include_exact_dates: true
+        include_correct_application: true
+        include_unique_event_count: true
+      large_resend_threshold: 100
+      require_large_resend_warning: true
+      mutation_policy: suggestion_only

@@ -1,0 +1,24 @@
+schema_version: 1
+capability: resend_routing
+description: Route event resends to the correct application using resource discovery.
+cases:
+  - id: application-routing
+    require_resource_discovery_skill: true
+    known_applications:
+      us02: https://us02-app.precisionlender.com/Admin/Troubleshooting/ResendSnapshotsForClient
+      us01: https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendSnapshotsForClient
+      bacprod: https://bacprod.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots
+    requirements:
+      - select the application from the resolved client environment
+      - never guess from client name alone
+      - provide one line per client
+      - provide the exact day or days to resend per client
+      - include each client's unique event count
+    large_resend_threshold: 100
+    when_above_threshold:
+      required_messages:
+        - developer
+        - data_internal
+      required_phrase: more than 100 unique events require resend
+    punish_wrong_application: true
+    punish_grouped_ambiguous_dates: true

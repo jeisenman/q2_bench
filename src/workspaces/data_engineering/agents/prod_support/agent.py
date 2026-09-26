@@ -16,17 +16,23 @@ from workspaces.data_engineering.agents.prod_support.dates import (
 from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
     FailureDiagnosis,
+    FailureKind,
     ProdSupportOutcome,
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
+    TaskLogUnavailableError,
 )
-from workspaces.data_engineering.agents.prod_support.reporting import format_report
+from workspaces.data_engineering.agents.prod_support.reporting import format_reports
 from workspaces.data_engineering.agents.prod_support.tools import (
     CLASSIFY_FAILURE,
     DISCOVER_FAILURES,
     FETCH_TASK_LOG,
+    INSPECT_WORKLOAD,
+    QUERY_OMS_JOB,
 )
+
+TASK_LOG_NOT_FOUND = 404
 
 PROD_SUPPORT_DEFINITION = AgentDefinition(
     name="prod-support",
@@ -38,11 +44,23 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
         "CA concurrently. Use Airflow for batch evidence and query OMS only "
         "with exact identifiers when corroboration is required. Diagnose "
         "independently before reading curated expectations. Keep tool output "
-        "targeted, run the repository quality check when changing code, and "
+        "targeted. Build OMS queries from parameterized client, run, task, "
+        "attempt, and the task's full UTC calendar day. Inspect the Airflow "
+        "operator before routing evidence: query regional DI_Scheduling_CL "
+        "only for confirmed Spark workloads. Treat exit code -9 as "
+        "unknown_resource_termination: likely OOMed, and make a fix ticket "
+        "when the attempt is greater than five. "
+        "Run the repository quality check when changing code, and "
         "never mutate production systems."
     ),
-    tools=(DISCOVER_FAILURES, FETCH_TASK_LOG, CLASSIFY_FAILURE),
-    version="2",
+    tools=(
+        DISCOVER_FAILURES,
+        FETCH_TASK_LOG,
+        INSPECT_WORKLOAD,
+        QUERY_OMS_JOB,
+        CLASSIFY_FAILURE,
+    ),
+    version="4",
 )
 
 
@@ -91,7 +109,7 @@ class ProdSupportAgent:
         )
         hydrated = tuple(item[0] for item in investigated)
         diagnoses = tuple(item[1] for item in investigated)
-        report = format_report(
+        reports = format_reports(
             window.operational_date,
             hydrated,
             diagnoses,
@@ -102,7 +120,10 @@ class ProdSupportAgent:
             failed_since=window.failed_since,
             failures=hydrated,
             diagnoses=diagnoses,
-            report=report,
+            report=reports.combined,
+            developer_report=reports.developer,
+            data_internal_report=reports.data_internal,
+            follow_up=reports.follow_up,
         )
 
     async def _investigate_failure(
@@ -110,7 +131,18 @@ class ProdSupportAgent:
         failure: AirflowFailure,
     ) -> tuple[AirflowFailure, FailureDiagnosis]:
         """Hydrate and classify one failure independently."""
-        log = failure.log or await self._source.fetch_log(failure)
+        try:
+            log = failure.log or await self._source.fetch_log(failure)
+        except TaskLogUnavailableError as error:
+            if error.status_code != TASK_LOG_NOT_FOUND:
+                raise
+            diagnosis = FailureDiagnosis(
+                failure_id=failure.failure_id,
+                kind=FailureKind.UNKNOWN,
+                confidence="evidence_gap",
+                evidence=("Airflow task log unavailable: HTTP 404",),
+            )
+            return failure, diagnosis
         complete = _with_log(failure, log)
         return complete, classify_log(complete, log)
 

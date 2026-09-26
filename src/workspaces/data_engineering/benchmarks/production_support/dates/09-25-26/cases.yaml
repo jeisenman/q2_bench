@@ -7,6 +7,15 @@ cases:
       - US-01
       - CA-02
     expected_since: "2026-09-24T05:00:00Z"
+    expected_api_window:
+      end_date_gte: "2026-09-24T05:00:00Z"
+      end_date_lt: "2026-09-25T05:00:00Z"
+    expected_ui_window:
+      end_date_gte: "2026-09-24T09:00:00Z"
+      end_date_lt: "2026-09-25T09:00:00Z"
+    expected_cluster_links:
+      US-01: "https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#"
+      CA-02: "https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#"
     expected_failure_counts:
       US-01: 7
       CA-02: 0
@@ -28,8 +37,10 @@ cases:
       US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T15:00:00+00:00|check_for_subscriber_client_errors: application_error
     expected_developer_message: |
       Message for Developer
-      - US Cluster failures: https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
-      - CA Cluster failures: https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
+      - US Cluster failures: https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
+      - CA Cluster failures: https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
+      - US Cluster Health: healthy; scheduler, DAG processor, and pods were ready at the evidence timestamp.
+      - CA Cluster Health: DAG processor unhealthy; pod was running with 13 restarts and 0 active DAGs.
       - Terminology: DV means Distinctness Validation. MI means Market Insights; MI3 means Market Insights 3.
       - BoFA (792): Delivery to Promise Other Products failed with explicit OOM evidence; classification: confirmed_oom.
       - Valley National Bank (8b2): Core Account Financial Statements high quality failed on attempt 4 during DV (Distinctness Validation); classification: distinctness.
@@ -68,6 +79,30 @@ cases:
       CA-02: dag_processor_unhealthy
     expected_oms_corroboration:
       CA-02: false
+    required_investigations:
+      - inspect every relevant Airflow task log
+      - inspect Airflow and OMS concurrently for every Spark job
+      - cancel pending OMS work when Airflow proves a timeout
+      - check KEDA ScaledObjects and pods in both regions
+      - resolve every client through resource discovery
+    omitted_from_data_internal:
+      - check_for_subscriber_client_errors
+      - log_cleanup
+      - opportunity_avro_aggregation_backfill
+      - opp_history_backfill
+    resend_policy:
+      require_correct_application_for_client: true
+      require_resource_discovery: true
+      require_date_per_client: true
+      multiple_clients_are_line_by_line: true
+      large_resend_threshold: 100
+      large_resend_notice_destinations:
+        - developer_message
+        - data_internal_message
+    required_cluster_health_lines:
+      - US Cluster Health
+      - CA Cluster Health
+    require_root_cause_per_reported_failure: true
     expected_remediation_policy:
       mode: suggestion_only
       automatic_bounce: false

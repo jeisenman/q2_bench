@@ -85,3 +85,6 @@ class ProdSupportOutcome:
     failures: tuple[AirflowFailure, ...]
     diagnoses: tuple[FailureDiagnosis, ...]
     report: str
+    developer_report: str = ""
+    data_internal_report: str = ""
+    follow_up: str = ""

@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from mcp.server.mcpserver import MCPServer
 
+from adapters.airflow import AirflowApiSource
 from domain import AgentRequest
 from workspaces.data_engineering.agents.prod_support import (
     AirflowFailure,
@@ -19,6 +20,8 @@ from workspaces.data_engineering.agents.prod_support import (
 )
 
 SERVER_NAME = "prod-support"
+SOURCE_ENV = "PROD_SUPPORT_SOURCE"
+DATASET_ENV = "PROD_SUPPORT_DATASET"
 server = MCPServer(
     SERVER_NAME,
     description="Production-support tools for data-engineering incidents.",
@@ -42,10 +45,34 @@ class EmptyAirflowFailureSource:
 
 
 def _source() -> AirflowFailureSource:
-    dataset = os.environ.get("PROD_SUPPORT_DATASET")
-    if dataset:
+    source_mode = os.environ.get(SOURCE_ENV)
+    dataset = os.environ.get(DATASET_ENV)
+    if source_mode is None:
+        return (
+            ReplayAirflowFailureSource(Path(dataset))
+            if dataset
+            else EmptyAirflowFailureSource()
+        )
+    if source_mode == "production":
+        if dataset:
+            message = f"{DATASET_ENV} cannot be set when {SOURCE_ENV}=production"
+            raise ValueError(message)
+        return AirflowApiSource.from_environment()
+    if source_mode == "replay":
+        if not dataset:
+            message = f"{DATASET_ENV} is required when {SOURCE_ENV}=replay"
+            raise ValueError(message)
         return ReplayAirflowFailureSource(Path(dataset))
-    return EmptyAirflowFailureSource()
+    if source_mode == "empty":
+        if dataset:
+            message = f"{DATASET_ENV} cannot be set when {SOURCE_ENV}=empty"
+            raise ValueError(message)
+        return EmptyAirflowFailureSource()
+    message = (
+        f"unsupported {SOURCE_ENV} value {source_mode!r}; "
+        "expected production, replay, or empty"
+    )
+    raise ValueError(message)
 
 
 agent = ProdSupportAgent(_source())
@@ -62,18 +89,25 @@ async def run_prod_support(
 ) -> dict[str, Any]:
     """Run the production-support agent with optional service context."""
     attributes = (("service", service),) if service else ()
-    result = await agent.run(
-        AgentRequest(
-            prompt=prompt,
-            correlation_id=correlation_id or uuid4().hex,
-            attributes=attributes,
-        )
+    request = AgentRequest(
+        prompt=prompt,
+        correlation_id=correlation_id or uuid4().hex,
+        attributes=attributes,
     )
+    outcome = await agent.investigate(request.prompt)
     return {
-        "output": result.output,
-        "correlation_id": result.correlation_id,
-        "tool_calls": result.tool_calls,
-        "attributes": dict(result.attributes),
+        "output": outcome.report,
+        "developer_report": outcome.developer_report,
+        "data_internal_report": outcome.data_internal_report,
+        "follow_up": outcome.follow_up,
+        "correlation_id": request.correlation_id,
+        "tool_calls": tuple(tool.name for tool in agent.definition.tools),
+        "attributes": {
+            **dict(request.attributes),
+            "operational_date": outcome.operational_date.isoformat(),
+            "failed_since": outcome.failed_since.isoformat(),
+            "failure_count": len(outcome.failures),
+        },
     }
 
 

@@ -106,6 +106,88 @@ def test_airflow_source_reads_structured_log_content() -> None:
     assert asyncio.run(source.fetch_log(failure)) == "structured task log"
 
 
+def test_airflow_source_reads_task_operator_metadata() -> None:
+    class MetadataTransport(FakeTransport):
+        def request(
+            self,
+            config: AirflowRegionConfig,
+            method: str,
+            path: str,
+            payload: dict[str, object] | None = None,
+        ) -> object:
+            del config, payload
+            assert method == "GET"
+            assert path == "/api/v1/dags/dag/tasks/task"
+            return {"class_ref": {"class_name": "SparkSubmitOperator"}}
+
+    source = AirflowApiSource(
+        (
+            AirflowRegionConfig(
+                Region.US_01,
+                "https://airflow.example.test",
+                "user",
+                "password",
+            ),
+        ),
+        MetadataTransport(),
+    )
+    failure = AirflowFailure(
+        Region.US_01,
+        "dag",
+        "run",
+        "task",
+        datetime(2026, 9, 25, 5, tzinfo=UTC),
+        datetime(2026, 9, 25, 6, tzinfo=UTC),
+    )
+
+    metadata = asyncio.run(source.fetch_task_metadata(failure))
+
+    assert metadata.operator_name == "SparkSubmitOperator"
+
+
+def test_airflow_source_preserves_failure_without_start_date() -> None:
+    class MissingStartTransport(FakeTransport):
+        def request(
+            self,
+            config: AirflowRegionConfig,
+            method: str,
+            path: str,
+            payload: dict[str, object] | None = None,
+        ) -> object:
+            del config, method, path, payload
+            return {
+                "task_instances": [
+                    {
+                        "dag_id": "dag",
+                        "dag_run_id": "run",
+                        "task_id": "task",
+                        "start_date": None,
+                        "end_date": "2026-09-25T06:00:00Z",
+                        "try_number": 1,
+                    }
+                ],
+                "total_entries": 1,
+            }
+
+    source = AirflowApiSource(
+        (
+            AirflowRegionConfig(
+                Region.CA_02,
+                "https://airflow.example.test",
+                "user",
+                "password",
+            ),
+        ),
+        MissingStartTransport(),
+    )
+
+    failure = asyncio.run(
+        source.discover_failures(datetime(2026, 9, 25, 5, tzinfo=UTC))
+    )[0]
+
+    assert failure.start_at == failure.end_at
+
+
 def test_airflow_source_builds_regions_from_environment(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

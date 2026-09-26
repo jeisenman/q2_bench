@@ -12,6 +12,14 @@ FETCH_TASK_LOG = ToolDefinition(
     description="Retrieve the exact log for one failed task instance.",
     input_schema=(("failure_id", "string"),),
 )
+INSPECT_WORKLOAD = ToolDefinition(
+    name="inspect_airflow_workload",
+    description=(
+        "Read exact Airflow task metadata and classify the operator as Spark "
+        "batch, container batch, or other before choosing an evidence source."
+    ),
+    input_schema=(("dag_id", "string"), ("task_id", "string")),
+)
 CLASSIFY_FAILURE = ToolDefinition(
     name="classify_failure",
     description="Classify explicit failure evidence from a captured task log.",
@@ -24,9 +32,12 @@ QUERY_OMS_JOB = ToolDefinition(
         "client, run, task, and try identifiers."
     ),
     input_schema=(
+        ("region", "string"),
+        ("table", "string"),
         ("client_id_g", "string"),
         ("run_id_s", "string"),
         ("task_id_s", "string"),
         ("try_number_d", "integer"),
+        ("start_at", "datetime"),
     ),
 )

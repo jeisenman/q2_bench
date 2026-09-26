@@ -32,6 +32,7 @@ def main() -> int:
     run(["mypy"])
     run(["pytest"])
     run(["python", "scripts/check_file_lengths.py"])
+    run(["python", "scripts/check_agent_docs.py"])
     return 0
 
 

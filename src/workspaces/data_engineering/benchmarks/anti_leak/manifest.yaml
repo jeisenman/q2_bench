@@ -1,0 +1,20 @@
+schema_version: 1
+benchmark_id: data_engineering.security.anti_leak
+display_name: anti-leak
+version: 1.1.0
+group: security
+description: Evaluate detection of container data leaks and weak isolation.
+dataset:
+  root: src/workspaces/data_engineering/benchmarks/anti_leak/dates
+evaluation:
+  layers:
+    - capabilities
+    - system
+  dimensions:
+    - secret_detection
+    - hidden_answer_isolation
+    - mount_security
+    - runtime_hardening
+    - evidence_safety
+    - orchestration
+    - finding_promotion

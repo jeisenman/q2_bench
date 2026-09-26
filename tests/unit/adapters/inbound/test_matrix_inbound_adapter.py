@@ -19,7 +19,7 @@ MATRIX_PATH = (
     / "src/workspaces/data_engineering/benchmarks/production_support"
     / "dates/09-25-26/matrix.yaml"
 )
-CANDIDATE_COUNT = 6
+CANDIDATE_COUNT = 7
 INPUT_TOKENS = 11
 JUDGE_SCORE = 0.75
 OUTPUT_TOKENS = 7
@@ -78,7 +78,7 @@ def test_adapter_runs_profiles_and_reuses_baselines(monkeypatch, tmp_path) -> No
     results = MatrixInboundAdapter(Path.cwd()).run(manifest)
 
     assert len(results) == CANDIDATE_COUNT
-    assert observed_baselines[0] == {
+    assert observed_baselines[1] == {
         "profile": "sol-light",
         "elapsed_seconds": 2,
     }

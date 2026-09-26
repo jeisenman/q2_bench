@@ -52,7 +52,7 @@ class FakeClient:
         self.created.append(f"{name}:{alias}:{version}")
 
 
-def test_registers_agent_definition_and_v2_alias(monkeypatch) -> None:
+def test_registers_agent_definition_and_current_alias(monkeypatch) -> None:
     FakeClient.existing = False
     FakeClient.created = []
     modules = {
@@ -69,7 +69,7 @@ def test_registers_agent_definition_and_v2_alias(monkeypatch) -> None:
 
     assert (run_id, version) == ("run-2", "2")
     assert FakeClient.created[0] == "prod-support"
-    assert FakeClient.created[-1] == "prod-support:agent-v2:2"
+    assert FakeClient.created[-1] == "prod-support:agent-v4:2"
 
 
 def test_reuses_existing_registered_agent(monkeypatch) -> None:

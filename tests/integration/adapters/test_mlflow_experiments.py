@@ -72,7 +72,9 @@ class FakeMlflowClient:
 
 
 def test_adapter_seeds_prod_support_group_for_mlflow_ui() -> None:
-    benchmark = default_catalog().list()[0]
+    benchmark = default_catalog().get(
+        "data_engineering.production_operations.prod_support"
+    )
     client = FakeMlflowClient()
     adapter = MlflowExperimentAdapter(client)
 
@@ -85,7 +87,9 @@ def test_adapter_seeds_prod_support_group_for_mlflow_ui() -> None:
 
 
 def test_adapter_seeds_visible_prod_support_run_once() -> None:
-    benchmark = default_catalog().list()[0]
+    benchmark = default_catalog().get(
+        "data_engineering.production_operations.prod_support"
+    )
     client = FakeMlflowClient()
     adapter = MlflowExperimentAdapter(client)
 

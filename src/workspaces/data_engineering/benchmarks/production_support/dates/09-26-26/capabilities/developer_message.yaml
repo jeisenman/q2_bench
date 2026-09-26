@@ -1,0 +1,31 @@
+schema_version: 1
+capability: developer_message
+description: Render a complete, human-readable technical handoff.
+cases:
+  - id: september-25-developer-message
+    expectations:
+      required_sections:
+        - US Cluster Health
+        - CA Cluster Health
+        - Failures and root causes
+        - Event resend actions
+      required_grouped_finding:
+        clients:
+          - Scotiabank
+          - CIBC Canada
+          - Scotiabank Data Validation
+        job: validate_event_bus_opportunities
+        remediation: resending events
+      required_timeout_detail:
+        exception: airflow.exceptions.AirflowTaskTimeout
+        message: "Timeout, PID: 2555323"
+      required_failure_fields:
+        - human-readable client
+        - job
+        - complete error
+        - evidence source
+        - root cause or explicit evidence gap
+      prohibited_content:
+        - bare classification labels without explanation
+        - raw client UUIDs without client names
+        - check_for_subscriber_client_errors in Data Internal

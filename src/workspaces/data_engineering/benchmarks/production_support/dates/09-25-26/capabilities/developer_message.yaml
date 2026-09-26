@@ -16,8 +16,8 @@ cases:
       automatic_actions: []
     expectations:
       required_cluster_links:
-        US-01: https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
-        CA-02: https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
+        US-01: https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
+        CA-02: https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
       required_terms:
         DV: Distinctness Validation
         MI: Market Insights
@@ -27,6 +27,8 @@ cases:
         - Valley National Bank failed Distinctness Validation on attempt 4.
         - CA had 0 active DAGs versus 6 expected l3-main graphs.
         - No production mutation was performed.
+        - US Cluster Health was checked using KEDA and pod evidence.
+        - CA Cluster Health was checked using KEDA and pod evidence.
       prohibited_claims:
         - Exit -9 was a confirmed OOM.
         - CA was healthy.

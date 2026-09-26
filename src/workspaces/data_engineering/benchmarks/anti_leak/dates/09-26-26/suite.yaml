@@ -1,0 +1,69 @@
+schema_version: 1
+suite_date: "2026-09-26"
+benchmark_id: data_engineering.security.anti_leak
+description: Establish the intentionally weak anti-leak v1 baseline.
+layers:
+  capabilities:
+    fixtures:
+      - capabilities/public_hidden_boundary.yaml
+      - capabilities/container_security.yaml
+      - capabilities/secret_redaction.yaml
+      - capabilities/finding_promotion.yaml
+      - capabilities/controller_orchestration.yaml
+    subcapabilities:
+      public_hidden_boundary:
+        - public_asset_inventory
+        - expected_answer_detection
+        - hidden_mount_detection
+      container_security:
+        - runtime_user
+        - root_filesystem_mode
+        - linux_capabilities
+        - dangerous_mounts
+      secret_redaction:
+        - secret_name_detection
+        - value_non_disclosure
+        - sanitized_evidence
+      finding_promotion:
+        - reproducibility
+        - case_generation
+        - regression_assertion
+      controller_orchestration:
+        - sol_controller
+        - luna_public_hidden_worker
+        - luna_container_security_worker
+        - parallel_side_process
+  system:
+    cases:
+      - anti-leak-intentionally-bad-v1
+      - benchmark-change-anti-leak-protocol
+      - benchmark-change-scenario-001
+      - benchmark-change-scenario-002
+      - benchmark-change-scenario-003
+      - benchmark-change-scenario-004
+      - benchmark-change-scenario-005
+      - benchmark-change-scenario-006
+      - benchmark-change-scenario-007
+      - benchmark-change-scenario-008
+      - benchmark-change-scenario-009
+public_assets:
+  - assets/container_snapshot.json
+  - assets/Dockerfile.insecure
+  - assets/protocol_runtime_snapshot.json
+hidden_expectations:
+  - hidden/expected_findings.yaml
+  - hidden/protocol_expected.yaml
+rubric:
+  - rubric/security.yaml
+system_cases:
+  - anti-leak-intentionally-bad-v1
+  - benchmark-change-anti-leak-protocol
+  - benchmark-change-scenario-001
+  - benchmark-change-scenario-002
+  - benchmark-change-scenario-003
+  - benchmark-change-scenario-004
+  - benchmark-change-scenario-005
+  - benchmark-change-scenario-006
+  - benchmark-change-scenario-007
+  - benchmark-change-scenario-008
+  - benchmark-change-scenario-009
