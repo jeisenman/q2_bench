@@ -1,0 +1,9 @@
+schema_version: 1
+benchmark_id: data_engineering.pipeline_engineering.etl
+display_name: etl
+version: 1.0.0
+group: pipeline_engineering
+description: Evaluate DAG, job, metadata, and test-data design.
+evaluation:
+  layers: [capabilities, system]
+  dimensions: [dag_design, job_correctness, metadata_wiring, test_data_selection]

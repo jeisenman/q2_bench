@@ -23,6 +23,12 @@ def test_default_catalog_contains_visible_prod_support_benchmark() -> None:
     assert benchmark.mlflow.run_tags["benchmark.id"] == benchmark.benchmark_id
     assert [item.display_name for item in catalog.list()] == [
         "anti-leak",
+        "benchmark-builder",
+        "data-creator",
+        "data-finder",
+        "data-insight-triage",
+        "etl",
+        "kpo-sizer",
         "prod-support",
         "resource-discovery",
     ]

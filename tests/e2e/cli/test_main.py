@@ -15,6 +15,12 @@ def test_benchmarks_lists_visible_benchmarks() -> None:
     assert result.exit_code == 0
     assert result.output == (
         "anti-leak\tsecurity\n"
+        "benchmark-builder\tbenchmark_engineering\n"
+        "data-creator\tdata_operations\n"
+        "data-finder\tdata_operations\n"
+        "data-insight-triage\tproduction_operations\n"
+        "etl\tpipeline_engineering\n"
+        "kpo-sizer\tplanning\n"
         "prod-support\tproduction_operations\n"
         "resource-discovery\tresource_operations\n"
     )
@@ -66,9 +72,27 @@ def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert result.output == (
-        "anti-leak\trun-1\nprod-support\trun-1\nresource-discovery\trun-1\n"
+        "anti-leak\trun-1\n"
+        "benchmark-builder\trun-1\n"
+        "data-creator\trun-1\n"
+        "data-finder\trun-1\n"
+        "data-insight-triage\trun-1\n"
+        "etl\trun-1\n"
+        "kpo-sizer\trun-1\n"
+        "prod-support\trun-1\n"
+        "resource-discovery\trun-1\n"
     )
-    assert seeded == ["anti-leak", "prod-support", "resource-discovery"]
+    assert seeded == [
+        "anti-leak",
+        "benchmark-builder",
+        "data-creator",
+        "data-finder",
+        "data-insight-triage",
+        "etl",
+        "kpo-sizer",
+        "prod-support",
+        "resource-discovery",
+    ]
 
 
 def test_evaluate_publishes_recorded_case(monkeypatch, tmp_path: Path) -> None:
