@@ -1,6 +1,5 @@
 {
   "captured_at": "2026-09-25T15:18:00+00:00",
-  "claim": "CA Airflow deployment events show a completed migration and unhealthy service restarts without a DAG processor rollout",
   "command": "kubectl --context l3-ca02 -n scheduler get events --watch --output-watch-events --sort-by=.lastTimestamp",
   "events": [
     {
@@ -74,12 +73,6 @@
       "type": "Warning"
     }
   ],
-  "expected_interpretation": {
-    "dag_processor_liveness_restart_observed": true,
-    "dag_processor_rollout_observed": false,
-    "migration_completed": true,
-    "worker_scaling_warning_is_separate": true
-  },
   "region": "CA-02",
   "watch_warning": "--sort-by is ignored for newly received watch events"
 }

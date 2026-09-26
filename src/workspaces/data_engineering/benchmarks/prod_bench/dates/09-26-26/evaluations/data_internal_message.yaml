@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-data-internal-message-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: data_internal_message
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/data-internal-message
+judge_configuration: sol-high-judge
+rubric:
+  - id: data_internal_message
+    weight: 1.0
+    reward: Uses the required compact regional format, groups shared jobs and each client's remaining jobs, retains supported high-value causes, applies omissions, and uses no periods.
+    punish: Mixes regions, repeats a client-job pair, fails either grouping rule, includes an omitted job, repeats an implied diagnosis, adds follow-up-only details, uses periods or blank lines, contradicts evidence, or writes the developer message.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

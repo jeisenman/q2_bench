@@ -14,6 +14,7 @@ from workspaces.data_engineering.benchmarks.case_files import (
 )
 
 LARGE_RESEND_THRESHOLD = 100
+DEFAULT_OMISSION_GROUPS = ("d2p", "mi3", "subscriber", "maintenance", "backfill", "cmm")
 
 
 def test_default_catalog_contains_visible_prod_support_benchmark() -> None:
@@ -32,6 +33,7 @@ def test_default_catalog_contains_visible_prod_support_benchmark() -> None:
         "data-insight-triage",
         "etl",
         "kpo-sizer",
+        "prod-bench",
         "prod-support",
         "resource-discovery",
     ]
@@ -78,21 +80,25 @@ def test_prod_support_case_combines_us_and_ca_expectations() -> None:
         "report_heading",
         "operational_window",
     ]
-    assert case["required_output_format"] == {
-        "urls_heading": "URLs to validate",
-        "developer_heading": "Message for developer:",
-        "data_internal_heading": "Message for Data Internal Channel",
-        "prohibit_markdown_section_headings": True,
-        "prohibit_blank_lines_between_bullets": True,
-        "one_client_per_data_internal_bullet": True,
-        "combine_same_client_findings": True,
-        "client_uuid_prefix_length": 3,
-    }
+    output = case["required_output_format"]
+    assert output["data_internal_alert_is_first_line"] is True
+    assert output["prohibit_periods_in_data_internal"] is True
+    assert output["group_same_job_across_clients"] is True
+    assert output["group_multiple_jobs_per_client"] is True
+    assert output["prohibit_cross_region_findings"] is True
+    assert output["prohibit_cluster_status_contradictions"] is True
+    assert output["default_data_internal_omission_groups"] == list(
+        DEFAULT_OMISSION_GROUPS
+    )
+    assert output["validate_event_bus_implies_missing_snapshots"] is True
+    assert output["preferred_explicit_causes"] == [
+        "timeout",
+        "OOM",
+        "distinctness validation errors",
+    ]
     assert case["expected_developer_message"].startswith("Message for developer:\n  -")
     assert case["expected_prod_support_message"].startswith(
-        "Message for Data Internal Channel\n"
-        ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:\n"
-        "US\n- Ongoing\n"
+        ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:\nUS\n- Ongoing\n"
     )
     assert "\n\n" not in case["expected_developer_message"]
     assert "\n\n" not in case["expected_prod_support_message"]
@@ -122,10 +128,15 @@ def test_prod_support_case_combines_us_and_ca_expectations() -> None:
         )
         for region, relative_path in case["infrastructure_evidence_uris"].items()
     }
-    assert evidence_by_region["US-01"]["verdict"] == "healthy"
+    assert (
+        evidence_by_region["US-01"]["evidence"]["airflow_health"]["dag_processor"][
+            "status"
+        ]
+        == "healthy"
+    )
     ca_evidence = evidence_by_region["CA-02"]["evidence"]
     assert ca_evidence["airflow_health"]["dag_processor"]["status"] == "unhealthy"
-    assert ca_evidence["oms"]["corroborates_claim"] is False
+    assert all(item["result_count"] == 0 for item in ca_evidence["oms"]["queries"])
     assert ca_evidence["airflow_dag_inventory"]["l3_main_graph_counts"] == {
         "US-01": 78,
         "CA-02": 6,
@@ -136,21 +147,6 @@ def test_prod_support_case_combines_us_and_ca_expectations() -> None:
         "default-2026-09-25",
     }
     assert removed_ids.isdisjoint(item["id"] for item in configured)
-
-
-def test_prod_support_suite_defines_three_evaluation_layers() -> None:
-    suite_path = (
-        Path(__file__).parents[5]
-        / "src/workspaces/data_engineering/benchmarks"
-        / "production_support/dates/09-25-26/suite.yaml"
-    )
-    suite = yaml.safe_load(suite_path.read_text(encoding="utf-8"))
-
-    assert suite["suite_date"] == "2026-09-25"
-    assert set(suite["layers"]) == {"capabilities", "coordination", "system"}
-    assert "diagnosis_accuracy" in suite["layers"]["capabilities"]["dimensions"]
-    assert "evidence_handoff" in suite["layers"]["coordination"]["dimensions"]
-    assert "prod-support-us-ca-2026-09-25" in suite["layers"]["system"]["cases"]
 
 
 def test_prod_support_suite_registers_capability_fixtures() -> None:
@@ -165,14 +161,19 @@ def test_prod_support_suite_registers_capability_fixtures() -> None:
     assert fixtures == [
         "capabilities/date_resolution.yaml",
         "capabilities/failure_discovery.yaml",
+        "capabilities/client_identity_resolution.yaml",
+        "capabilities/complete_log_retrieval.yaml",
+        "capabilities/evidence_efficiency.yaml",
         "capabilities/log_classification.yaml",
         "capabilities/spark_evidence.yaml",
         "capabilities/prior_run_log_fallback.yaml",
         "capabilities/cluster_health.yaml",
         "capabilities/channel_filtering.yaml",
+        "capabilities/report_configuration.yaml",
         "capabilities/resend_routing.yaml",
         "capabilities/developer_message.yaml",
         "capabilities/prod_support_message.yaml",
+        "capabilities/follow_up_actions.yaml",
     ]
     for relative_path in fixtures:
         fixture = yaml.safe_load(
@@ -182,7 +183,7 @@ def test_prod_support_suite_registers_capability_fixtures() -> None:
         assert fixture["cases"]
 
 
-def test_developer_message_fixtures_require_compact_per_client_output() -> None:
+def test_developer_message_fixtures_require_compact_grouped_output() -> None:
     benchmark_root = (
         Path(__file__).parents[5]
         / "src/workspaces/data_engineering/benchmarks"
@@ -201,8 +202,16 @@ def test_developer_message_fixtures_require_compact_per_client_output() -> None:
         assert expectations["require_compact_bullets"] is True
         assert expectations["prohibit_markdown_section_headings"] is True
         assert expectations["prohibit_blank_lines_between_bullets"] is True
-        assert expectations["require_one_client_or_recurring_issue_per_bullet"] is True
+        assert expectations["group_same_job_across_clients"] is True
+        assert expectations["required_group_shape"] == (
+            "ClientA (123), ClientB (456) failed on <job>"
+        )
         assert expectations["require_one_entry_per_discovered_failure"] is True
+        assert (
+            expectations["require_resource_discovery_name_for_every_client_identifier"]
+            is True
+        )
+        assert expectations["prohibit_bare_uuid_prefixes"] is True
         assert expectations["require_evidence_qualified_causality"] is True
         assert expectations["require_grid_link_per_failed_dag"] is True
 
@@ -212,11 +221,8 @@ def test_developer_message_fixtures_require_compact_per_client_output() -> None:
         )
     )["cases"][0]["expectations"]
     assert "required_grouped_finding" not in current
-    assert [item["client"] for item in current["required_client_findings"]] == [
-        "Scotiabank",
-        "CIBC Canada",
-        "Scotiabank Data Validation",
-    ]
+    assert "required_client_findings" not in current
+    assert "timeout_requirement" not in current
 
 
 def test_previous_snapshot_uses_bounded_links_and_v2_capabilities() -> None:
@@ -233,24 +239,19 @@ def test_previous_snapshot_uses_bounded_links_and_v2_capabilities() -> None:
 
     assert suite["operational_date"] == "2026-09-24"
     assert case["expected_ui_window"] == {
-        "start_date_gte": "2026-09-24T05:00:00Z",
-        "start_date_lt": "2026-09-25T05:00:00Z",
+        "end_date_gte": "2026-09-24T05:00:00Z",
+        "end_date_lt": "2026-09-25T05:00:00Z",
     }
     for link in case["expected_cluster_links"].values():
-        assert "_flt_1_start_date=2026-09-24T05:00:00Z" in link
-        assert "_flt_2_start_date=2026-09-25T05:00:00Z" in link
+        assert "_flt_1_end_date=2026-09-25T05:00:00Z" in link
+        assert "_flt_2_end_date=2026-09-24T05:00:00Z" in link
         assert "_flt_3_state=failed" in link
         assert "%" not in link
     assert (
         "capabilities/spark_evidence.yaml"
         in (suite["layers"]["capabilities"]["fixtures"])
     )
-    assert case["omitted_from_data_internal"] == [
-        "check_for_subscriber_client_errors",
-        "log_cleanup",
-        "opportunity_avro_aggregation_backfill",
-        "opp_history_backfill",
-    ]
+    assert case["omitted_from_data_internal"] == list(DEFAULT_OMISSION_GROUPS)
 
 
 def test_new_prod_support_snapshot_versions_september_25_data() -> None:
@@ -272,9 +273,7 @@ def test_new_prod_support_snapshot_versions_september_25_data() -> None:
     assert suite["layers"]["system"]["cases"] == [
         "prod-support-us-ca-operational-2026-09-25"
     ]
-    assert set(previous_case) == set(case).difference(
-        {"candidate_inputs", "prohibit_agent_changes"}
-    )
+    assert set(previous_case) == set(case)
     assert not any(key.startswith("expected_") for key in case)
 
     fixtures = suite["layers"]["capabilities"]["fixtures"]
@@ -283,6 +282,9 @@ def test_new_prod_support_snapshot_versions_september_25_data() -> None:
     assert "capabilities/cluster_health.yaml" in fixtures
     assert "capabilities/channel_filtering.yaml" in fixtures
     assert "capabilities/resend_routing.yaml" in fixtures
+    assert "capabilities/client_identity_resolution.yaml" in fixtures
+    assert "capabilities/complete_log_retrieval.yaml" in fixtures
+    assert "capabilities/follow_up_actions.yaml" in fixtures
 
 
 def test_new_snapshot_requires_parallel_timeout_and_resend_routing() -> None:
@@ -337,11 +339,9 @@ def test_new_snapshot_judge_punishes_missing_health_and_unresolved_routing() -> 
     evaluation = yaml.safe_load((root / "evaluation.yaml").read_text(encoding="utf-8"))
     rubric = {item["id"]: item for item in evaluation["rubric"]}
 
-    assert "either cluster-health bullet" in rubric["cluster_health"]["punish"]
-    assert "DAG processor restart count" in rubric["cluster_health"]["punish"]
-    assert (
-        "routing remains unresolved" in (rubric["resource_discovery_routing"]["punish"])
-    )
+    assert "follows failure details" in rubric["cluster_health"]["punish"]
+    assert "without concrete symptoms" in rubric["cluster_health"]["punish"]
+    assert "Omits a reviewed link" in rubric["resource_discovery_routing"]["punish"]
 
 
 def test_new_snapshot_models_prior_run_log_fallback_without_fake_provenance() -> None:

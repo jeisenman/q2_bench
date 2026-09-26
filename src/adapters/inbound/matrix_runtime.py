@@ -72,9 +72,6 @@ def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]
     if options.runtime == "container" and options.sandbox != "read-only":
         message = "container matrix sandbox must be read-only"
         raise MatrixRunError(message)
-    codex_sandbox = (
-        "danger-full-access" if options.runtime == "container" else options.sandbox
-    )
     command = [
         "--model",
         profile.model,
@@ -85,7 +82,7 @@ def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]
         "-c",
         'model_providers.amazon-bedrock.aws.profile="benchmark"',
         "--sandbox",
-        codex_sandbox,
+        options.sandbox,
         "--ask-for-approval",
         "never",
         "--cd",
@@ -196,6 +193,9 @@ def _candidate_workspace(
 def _validated_input(workspace_root: Path, relative: Path) -> Path:
     if relative.is_absolute() or ".." in relative.parts:
         message = f"matrix input path must be workspace-relative: {relative}"
+        raise MatrixRunError(message)
+    if any(part.casefold() == "hidden" for part in relative.parts):
+        message = f"matrix input path may not contain hidden data: {relative}"
         raise MatrixRunError(message)
     source = workspace_root / relative
     if _has_symlink_component(workspace_root, relative):

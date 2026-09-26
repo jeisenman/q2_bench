@@ -103,11 +103,23 @@ task-log and OMS queries concurrently. Explicit `AirflowTaskTimeout` evidence
 wins the race and permits cancellation of the pending OMS query. The replay
 fixture prints that OMS would take ten seconds but never sleeps.
 
-The same snapshot requires US and CA cluster-health lines backed by both KEDA
-ScaledObject and pod checks. Event resend recommendations must use resource
-discovery to select the correct application, list each client and resend date
-on its own line, and call out more than 100 unique events in both developer
-and Data Internal messages.
+The same snapshot requires US and CA cluster-health lines first in the
+Developer message, backed by both KEDA ScaledObject and pod checks. Regional
+findings must remain in their source region, and cluster status cannot
+contradict the cited evidence. Data Internal defaults to omitting D2P, MI3,
+subscriber, maintenance, backfill, and CMM groups, with an MCP override that
+replaces those defaults. Event resend recommendations must use Resource
+Discovery to select and link the correct application.
+
+Data Internal minimizes repeated subjects: clients sharing one failed job are
+grouped, while multiple jobs for one client are combined into one client line.
+Validated timeout, OOM, and distinctness failures retain those concise cause
+labels. A `validate_event_bus_opportunities` failure already communicates
+missing snapshots, so the channel message does not repeat that diagnosis.
+
+Follow Ups contains actions only. Omitted jobs do not receive rerun
+suggestions, large resends identify `pd-rix`, and jobs above five attempts link
+the `agent://kpo-sizer/definition` interface without invoking it.
 
 Debug capture currently records the production Airflow boundary only. Resource
 Discovery, infrastructure checks, OMS contracts, prior-run fallback, bounded

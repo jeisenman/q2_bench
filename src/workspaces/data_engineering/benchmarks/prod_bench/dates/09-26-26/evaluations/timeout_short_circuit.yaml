@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-timeout-short-circuit-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: timeout_short_circuit
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/timeout-short-circuit
+judge_configuration: sol-high-judge
+rubric:
+  - id: timeout_short_circuit
+    weight: 1.0
+    reward: Starts both exact sources concurrently, classifies an explicit terminal short-circuit signal, and trace-proves termination of still-pending work.
+    punish: Waits for unnecessary completion, misses explicit terminal evidence, claims cancellation without evidence, or never starts the secondary source.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

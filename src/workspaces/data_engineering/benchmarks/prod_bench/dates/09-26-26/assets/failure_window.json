@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "region": "US-01",
+      "dag_id": "inside-us",
+      "run_id": "manual__2026-09-25T05:00:00+00:00",
+      "task_id": "task_a",
+      "try_number": 1,
+      "state": "failed",
+      "end_date": "2026-09-25T05:00:00Z"
+    },
+    {
+      "region": "CA-02",
+      "dag_id": "inside-ca",
+      "run_id": "manual__2026-09-26T04:59:59+00:00",
+      "task_id": "task_b",
+      "try_number": 2,
+      "state": "failed",
+      "end_date": "2026-09-26T04:59:59Z"
+    },
+    {
+      "region": "US-01",
+      "dag_id": "before-window",
+      "run_id": "manual__2026-09-25T04:59:59+00:00",
+      "task_id": "task_c",
+      "try_number": 1,
+      "state": "failed",
+      "end_date": "2026-09-25T04:59:59Z"
+    },
+    {
+      "region": "CA-02",
+      "dag_id": "at-exclusive-end",
+      "run_id": "manual__2026-09-26T05:00:00+00:00",
+      "task_id": "task_d",
+      "try_number": 1,
+      "state": "failed",
+      "end_date": "2026-09-26T05:00:00Z"
+    }
+  ]
+}

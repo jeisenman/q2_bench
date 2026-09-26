@@ -29,6 +29,39 @@ class FailureKind(StrEnum):
     UNKNOWN = "unknown"
 
 
+class EvidenceSource(StrEnum):
+    """Read-only source used for one diagnosis."""
+
+    UNKNOWN = "unknown"
+    AIRFLOW_EXACT_TASK_ATTEMPT = "airflow_exact_task_attempt"
+    AIRFLOW_PRIOR_SAME_TASK = "airflow_prior_same_task"
+    OMS_EXACT_JOB = "oms_exact_job"
+
+
+class EvidenceStatus(StrEnum):
+    """Completeness of evidence retrieved for one failed task."""
+
+    UNKNOWN = "unknown"
+    TERMINAL = "terminal"
+    NON_DIAGNOSTIC = "non_diagnostic"
+    TRUNCATED = "truncated"
+    UNAVAILABLE = "unavailable"
+
+
+class PriorTaskLogValueError(ValueError):
+    """Raised when prior same-task evidence has invalid identity."""
+
+    @classmethod
+    def empty_run_id(cls) -> PriorTaskLogValueError:
+        """Return an error for an empty prior run identity."""
+        return cls("prior task-log run_id must not be empty")
+
+    @classmethod
+    def invalid_try_number(cls) -> PriorTaskLogValueError:
+        """Return an error for a non-positive prior attempt."""
+        return cls("prior task-log try_number must be positive")
+
+
 @dataclass(frozen=True, slots=True)
 class AirflowFailure:
     """One failed Airflow task instance and its captured evidence."""
@@ -69,6 +102,22 @@ class AirflowFailure:
 
 
 @dataclass(frozen=True, slots=True)
+class PriorTaskLog:
+    """One earlier exact attempt for the same DAG and task."""
+
+    run_id: str
+    try_number: int
+    log: str
+
+    def __post_init__(self) -> None:
+        """Validate prior-attempt identity and evidence."""
+        if not self.run_id.strip():
+            raise PriorTaskLogValueError.empty_run_id()
+        if self.try_number < 1:
+            raise PriorTaskLogValueError.invalid_try_number()
+
+
+@dataclass(frozen=True, slots=True)
 class FailureDiagnosis:
     """Evidence-based diagnosis for one Airflow failure."""
 
@@ -76,6 +125,9 @@ class FailureDiagnosis:
     kind: FailureKind
     confidence: str
     evidence: tuple[str, ...]
+    source: EvidenceSource = EvidenceSource.UNKNOWN
+    status: EvidenceStatus = EvidenceStatus.UNKNOWN
+    original_char_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)

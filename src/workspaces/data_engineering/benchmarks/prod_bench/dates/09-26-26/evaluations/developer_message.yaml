@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-developer-message-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: developer_message
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/developer-message
+judge_configuration: sol-high-judge
+rubric:
+  - id: developer_message
+    weight: 1.0
+    reward: Uses the exact heading, keeps findings region-pure, applies both grouping directions, retains every supplied finding and evidence field, resolves identities, and preserves supported high-value causes.
+    punish: Mixes regions, contradicts evidence, repeats client-job pairs, fails either grouping rule, omits a finding or evidence field, uses raw UUIDs, inserts blank lines, or invents causality.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

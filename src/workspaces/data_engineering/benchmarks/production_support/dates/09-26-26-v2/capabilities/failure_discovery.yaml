@@ -1,0 +1,15 @@
+schema_version: 1
+capability: failure_discovery
+description: Capture the new operational day while retaining prior-day distractors.
+cases:
+  - id: september-25-capture
+    dataset_uri: var/benchmark_data/prod_support/2026-09-25/airflow_failures.json
+    failed_since: "2026-09-25T05:00:00Z"
+    exclude_records_before_since: true
+    require_all_relevant_logs_inspected: true
+    require_failure_identity_fields:
+      - region
+      - dag_id
+      - run_id
+      - task_id
+      - try_number

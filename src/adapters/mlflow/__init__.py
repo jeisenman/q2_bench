@@ -7,6 +7,11 @@ from adapters.mlflow.assistant import (
     MlflowAssistantConfigurationError,
     UrlJsonTransport,
 )
+from adapters.mlflow.codex_tracing import (
+    CodexTracingConfiguration,
+    CodexTracingConfigurationError,
+    CodexTracingConfigurator,
+)
 from adapters.mlflow.experiments import (
     MlflowDependencyError,
     MlflowExperimentAdapter,
@@ -30,6 +35,9 @@ from adapters.mlflow.prod_support_scorers import (
 __all__ = [
     "BedrockAssistantConfigurator",
     "CodexAssistantConfigurator",
+    "CodexTracingConfiguration",
+    "CodexTracingConfigurationError",
+    "CodexTracingConfigurator",
     "MlflowAssistantConfigurationError",
     "MlflowDependencyError",
     "MlflowExperimentAdapter",

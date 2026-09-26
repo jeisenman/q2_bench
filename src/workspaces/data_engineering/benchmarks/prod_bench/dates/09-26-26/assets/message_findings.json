@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "operational_date": "2026-09-25",
+  "findings": [
+    {
+      "region": "US",
+      "client_name": "BoFA",
+      "client_id_prefix": "792",
+      "job": "Delivery to Promise Other Products",
+      "error": "Spark executor memory exhaustion followed by dead-executor shuffle failures",
+      "evidence_source": "exact Airflow task log",
+      "root_cause": "confirmed executor memory exhaustion",
+      "audiences": ["developer", "data_internal"]
+    },
+    {
+      "region": "CA",
+      "client_name": "Scotiabank",
+      "client_id_prefix": "1f0",
+      "job": "validate_event_bus_opportunities",
+      "error": "208 unique missing opportunity snapshots",
+      "evidence_source": "exact Airflow task log",
+      "root_cause": "missing opportunity snapshots",
+      "resend_date": "2026-09-14",
+      "resend_application": "ca02",
+      "audiences": ["developer", "data_internal"]
+    },
+    {
+      "region": "CA",
+      "client_name": "CIBC Canada",
+      "client_id_prefix": "fbf",
+      "job": "validate_event_bus_opportunities",
+      "error": "79 unique missing opportunity snapshots",
+      "evidence_source": "exact Airflow task log",
+      "root_cause": "missing opportunity snapshots",
+      "resend_date": "2026-09-14",
+      "resend_application": "ca02",
+      "audiences": ["developer", "data_internal"]
+    },
+    {
+      "region": "CA",
+      "client_name": "Scotiabank Data Validation",
+      "client_id_prefix": "b49",
+      "job": "validate_event_bus_opportunities",
+      "error": "11 unique missing opportunity snapshots",
+      "evidence_source": "exact Airflow task log",
+      "root_cause": "missing opportunity snapshots",
+      "resend_date": "2026-09-14",
+      "resend_application": "ca02",
+      "audiences": ["developer", "data_internal"]
+    },
+    {
+      "region": "CA",
+      "client_name": "CIBC Canada Validation",
+      "client_id_prefix": "cef",
+      "job": "opportunity_save_history",
+      "error": "dependency-state evidence only",
+      "evidence_source": "exact Airflow task state",
+      "root_cause": "task body did not execute",
+      "audiences": ["developer", "data_internal"]
+    },
+    {
+      "region": "CA",
+      "client_name": "CIBC Canada Validation",
+      "client_id_prefix": "cef",
+      "job": "opportunities_report",
+      "error": "dependency-state evidence only",
+      "evidence_source": "exact Airflow task state",
+      "root_cause": "task body did not execute",
+      "audiences": ["developer", "data_internal"]
+    },
+    {
+      "region": "CA",
+      "client_name": "CIBC Canada Validation",
+      "client_id_prefix": "cef",
+      "job": "relationship_quandrants",
+      "error": "dependency-state evidence only",
+      "evidence_source": "exact Airflow task state",
+      "root_cause": "task body did not execute",
+      "audiences": ["developer", "data_internal"]
+    },
+    {
+      "region": "CA",
+      "client_name": "Unresolved client",
+      "client_id_prefix": "473",
+      "job": "credit_migration_matrix",
+      "error": "dependency-state evidence only",
+      "evidence_source": "exact Airflow task state",
+      "root_cause": "task body did not execute",
+      "audiences": ["developer", "data_internal"]
+    },
+    {
+      "region": "CA",
+      "client_name": "Subscriber validation",
+      "job": "check_for_subscriber_client_errors",
+      "error": "OpportunitySaved schema version 8.9 has a newer version available",
+      "evidence_source": "exact Airflow task log",
+      "root_cause": "stale subscriber schema",
+      "audiences": ["developer"]
+    }
+  ]
+}

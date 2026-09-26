@@ -27,12 +27,9 @@ cases:
         await_oms: true
         prohibit_inferred_oom: true
       explicit_oom:
-        classification: confirmed_oom
+        require_explicit_memory_signal: true
         require_exact_evidence: true
-    airflow_evidence:
-      - "raise AirflowTaskTimeout(self.error_message)"
-      - "airflow.exceptions.AirflowTaskTimeout: Timeout, PID: 2555323"
-    evidence_status: synthetic_pending_recapture
+    evidence_status: supplied_by_case_assets
     require_timeout_evidence_in_developer_message: true
     requirements:
       - preserve exact Airflow and OMS evidence provenance
@@ -60,11 +57,9 @@ cases:
         await_oms: true
         prohibit_inferred_oom: true
       explicit_oom:
-        classification: confirmed_oom
+        require_explicit_memory_signal: true
         require_exact_evidence: true
-    airflow_evidence:
-      - Driver badly exited without an explicit terminal cause.
-    evidence_status: recorded
+    evidence_status: supplied_by_case_assets
     require_timeout_evidence_in_developer_message: false
     requirements:
       - await the already-started exact OMS query

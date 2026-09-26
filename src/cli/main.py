@@ -22,6 +22,8 @@ from adapters.mlflow import (
     publish_recorded_evaluation,
     register_agent_definition,
 )
+from cli.mlflow import configure_codex_tracing
+from cli.prod_support_evidence import summarize_prod_support_evidence
 from cli.prod_support_replay import (
     load_replay_case,
     run_replay_case,
@@ -352,6 +354,10 @@ def run_benchmark_matrix(**values: object) -> None:
 def main() -> None:
     """Run the application CLI."""
     cli()
+
+
+cli.add_command(configure_codex_tracing)
+cli.add_command(summarize_prod_support_evidence)
 
 
 if __name__ == "__main__":

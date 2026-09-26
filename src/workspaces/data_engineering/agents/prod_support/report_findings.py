@@ -1,0 +1,39 @@
+"""Validated findings shared by production-support reporters."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+from domain import AgentResult
+from workspaces.data_engineering.agents.prod_support.cluster_health import (
+    RegionalClusterHealth,
+)
+from workspaces.data_engineering.agents.prod_support.models import (
+    AirflowFailure,
+    FailureDiagnosis,
+)
+from workspaces.data_engineering.agents.prod_support.reporting_config import (
+    ProdSupportReportConfig,
+)
+from workspaces.data_engineering.agents.prod_support.reporting_validation import (
+    validate_report_inputs,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ReportFindings:
+    """Immutable, validated evidence supplied to audience reporters."""
+
+    failures: tuple[AirflowFailure, ...]
+    diagnoses: tuple[FailureDiagnosis, ...]
+    resource_discovery_results: tuple[AgentResult, ...] = ()
+    config: ProdSupportReportConfig = field(default_factory=ProdSupportReportConfig)
+    cluster_health: tuple[RegionalClusterHealth, ...] = ()
+
+    def __post_init__(self) -> None:
+        """Fail closed when findings cannot produce a consistent report."""
+        validate_report_inputs(
+            self.failures,
+            self.diagnoses,
+            self.cluster_health,
+        )

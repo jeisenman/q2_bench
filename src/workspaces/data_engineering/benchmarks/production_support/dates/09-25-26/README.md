@@ -28,24 +28,39 @@ uv run python \
   src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26/assets/mock_oms_query_09_25_26.py
 ```
 
-## v2 requirements
+## v2.5 requirements
 
 - The report heading and 05:00 UTC operational window appear before analysis.
 - US failures, CA failures, and regional cluster health start concurrently.
-- Regional Airflow links use raw ISO-8601 start-date bounds without encoding.
+- Regional Airflow links use raw ISO-8601 end-date bounds without encoding.
 - Every failed DAG receives a bounded grid-view link.
-- Every discovered failure and exact-log lookup remains visible in the trace.
-- Developer output contains one evidence-qualified entry per failure.
+- Every discovered failure receives an exact task-attempt log lookup even when
+  discovery includes non-empty log text.
+- The reusable evidence command emits one bounded record per failure without
+  printing full log bodies.
+- Every client UUID found in a DAG or task identifier is resolved through
+  Resource Discovery before triage and reporting.
+- Developer output groups clients that failed the same job and groups multiple
+  jobs for one client while preserving each failure's diagnosis and evidence.
 - Final messages follow the symlinked `prod-support` reporting skill: compact
-  bullets, no Markdown section headings, and one client per Data Internal line.
+  bullets, no Markdown section headings, resolved client labels, and an
+  alert-first Data Internal message.
 - Spark investigations start exact Airflow and OMS requests concurrently.
 - Definitive Airflow timeout evidence cancels pending OMS work.
-- Developer output includes US and CA Cluster Health lines.
+- Developer output starts with US and CA Cluster Health lines.
 - Cluster health checks KEDA ScaledObjects and pods in both regions.
-- Data Internal omits configured subscriber, maintenance, and backfill jobs.
-- Resource Discovery selects resend applications.
-- Resend guidance is one client per line with exact dates and event counts.
+- Data Internal uses concise, region-pure ongoing bullets. It defaults to omitting
+  D2P, MI3, subscriber, maintenance, backfill, and CMM groups; the MCP
+  `data_internal_omissions` parameter replaces those defaults. Data Internal
+  contains no periods.
+- Resource Discovery selects and links resend applications.
+- Regional findings cannot cross US and CA sections, and cluster-health
+  warnings cannot contradict the overall evidence-backed verdict.
+- Resend guidance includes exact dates and event counts.
 - More than 100 unique resend events are disclosed to both audiences.
+- Follow Ups contains actions only: linked resends or approval-gated,
+  job-grouped reruns. Large resends identify `pd-rix`; non-omitted jobs above
+  five attempts also link the KPO sizing agent interface.
 
 The historical evidence includes pod health but not complete KEDA output.
 That missing evidence remains explicit rather than being inferred.

@@ -115,6 +115,9 @@ def write_recorded_outcome(outcome: ProdSupportOutcome, target: Path) -> Path:
                 "classification": diagnosis.kind.value,
                 "confidence": diagnosis.confidence,
                 "evidence": list(diagnosis.evidence),
+                "evidence_source": diagnosis.source.value,
+                "evidence_status": diagnosis.status.value,
+                "original_log_characters": diagnosis.original_char_count,
             }
         )
     result = {

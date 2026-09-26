@@ -101,6 +101,11 @@
     "name": "First Hawaiian Bank",
     "source": "resource-discovery-api"
   },
+  "47322c85-71cf-45ea-9695-6bdcc1cc1ea9": {
+    "api_status": "no-unique-match",
+    "last_checked": "2026-09-26",
+    "source": "unresolved"
+  },
   "5301628b-e85f-4ff9-b5b3-e8d13c5926a7": {
     "api_status": "unique-match",
     "last_checked": "2026-08-30",
@@ -123,6 +128,12 @@
     "api_status": "unique-match",
     "last_checked": "2026-08-30",
     "name": "Sunflower Bank, NA",
+    "source": "resource-discovery-api"
+  },
+  "63ecb663-1de9-4ed7-a5fb-cae3a6e8c68c": {
+    "api_status": "unique-match",
+    "last_checked": "2026-09-26",
+    "name": "Bank of Hope (Los Angeles, CA)",
     "source": "resource-discovery-api"
   },
   "792f7424-402e-4a7e-b4de-69f811435d9c": {
@@ -161,6 +172,15 @@
     "name": "Synovus Bank (Columbus, GA)",
     "source": "resource-discovery-api"
   },
+  "963c8181-42c4-44a2-9247-d062ab5d5700": {
+    "api_names": [
+      "CIBC US - Data Validation",
+      "CIBC US- Data Validation"
+    ],
+    "api_status": "ambiguous",
+    "last_checked": "2026-09-26",
+    "source": "unresolved"
+  },
   "96c60b8e-d2ca-48ce-a74a-32ee65a35cbc": {
     "api_status": "unique-match",
     "last_checked": "2026-08-20",
@@ -195,6 +215,12 @@
     "api_status": "unique-match",
     "last_checked": "2026-08-21",
     "name": "Bremer Bank, National Association",
+    "source": "resource-discovery-api"
+  },
+  "a9cdadd4-1324-4a7a-842e-fe8fc9fe37f1": {
+    "api_status": "unique-match",
+    "last_checked": "2026-09-26",
+    "name": "First Developer Bank",
     "source": "resource-discovery-api"
   },
   "ab2812e2-2486-4ff1-b8b1-4028570f0241": {
@@ -249,6 +275,12 @@
     "api_status": "no-unique-match",
     "last_checked": "2026-08-06",
     "source": "unresolved"
+  },
+  "cefa3c2a-e1da-4c24-8676-532dc2b59056": {
+    "api_status": "unique-match",
+    "last_checked": "2026-09-26",
+    "name": "CIBC Canada Validation",
+    "source": "resource-discovery-api"
   },
   "dff9e5f7-c60a-4e43-b7a9-845ab44f34d0": {
     "api_status": "unique-match",

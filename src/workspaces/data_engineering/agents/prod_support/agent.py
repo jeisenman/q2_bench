@@ -3,29 +3,43 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
-from datetime import UTC, datetime
-from uuid import UUID
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime, timedelta
+from typing import TypeVar
 
 from domain import AgentDefinition, AgentRequest, AgentResult
-from workspaces.data_engineering.agents.prod_support.classification import (
-    classify_log,
+from workspaces.data_engineering.agents.prod_support.airflow_checker import (
+    AirflowChecker,
+)
+from workspaces.data_engineering.agents.prod_support.cluster_checker import (
+    ClusterChecker,
 )
 from workspaces.data_engineering.agents.prod_support.dates import (
     resolve_query_window,
 )
+from workspaces.data_engineering.agents.prod_support.investigation import (
+    FailureInvestigator,
+    InvestigationServices,
+)
 from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
-    FailureDiagnosis,
-    FailureKind,
     ProdSupportOutcome,
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
+    ClusterHealthSource,
     ResourceDiscoveryInvoker,
-    TaskLogUnavailableError,
 )
-from workspaces.data_engineering.agents.prod_support.reporting import format_reports
+from workspaces.data_engineering.agents.prod_support.reporting import (
+    ProdSupportReportContext,
+    format_reports_with_context,
+)
+from workspaces.data_engineering.agents.prod_support.reporting_config import (
+    ProdSupportReportConfig,
+)
+from workspaces.data_engineering.agents.prod_support.reporting_details import (
+    client_id as extract_client_id,
+)
 from workspaces.data_engineering.agents.prod_support.tools import (
     CLASSIFY_FAILURE,
     DISCOVER_FAILURES,
@@ -35,17 +49,17 @@ from workspaces.data_engineering.agents.prod_support.tools import (
     TRIGGER_RESOURCE_DISCOVERY,
 )
 
-TASK_LOG_NOT_FOUND = 404
-CLIENT_DAG_PREFIX = "l3-main-"
-RESOURCE_DISCOVERY_TASK = "validate_event_bus_opportunities"
-
+InputT = TypeVar("InputT")
+OutputT = TypeVar("OutputT")
 PROD_SUPPORT_DEFINITION = AgentDefinition(
     name="prod-support",
     description="Discover and diagnose production Airflow failures.",
     instructions=(
         "Run the deterministic replay workflow before repository exploration. "
         "Resolve dates from the request, parse every relevant Airflow record "
-        "programmatically, and cite exact task-log evidence. Investigate US and "
+        "programmatically, and cite exact task-log evidence. Resolve every client "
+        "identifier in DAG or task IDs through Resource Discovery before triage or "
+        "reporting. Investigate US and "
         "CA concurrently. Assign parallel workers by operational capability, not "
         "arbitrary record ranges. Use Airflow for batch evidence and query OMS only "
         "with exact identifiers when corroboration is required. For Spark workloads, "
@@ -60,11 +74,28 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
         "bounded Airflow links, US and CA KEDA and pod health, resource-discovered "
         "resend applications, per-client dates and counts, large-resend escalation "
         "for both audiences, and channel-specific omission policy. "
-        "Trigger the Resource Discovery agent for every unique resend client before "
-        "selecting an application; preserve unresolved and ambiguous results. "
-        "Treat exit code -9 as unknown_resource_termination: likely OOMed, and make "
-        "a fix ticket "
-        "when the attempt is greater than five. "
+        "Trigger the Resource Discovery agent for every unique client-scoped "
+        "failure before triage; preserve unresolved and ambiguous results. "
+        "Never mix US and CA findings in the same regional section. Reject a final "
+        "report when a regional finding appears under the other region or when a "
+        "cluster is described as both healthy and unhealthy from the same evidence. "
+        "Group clients that fail on the same job into one report line, and group "
+        "multiple jobs for the same client into one concise client line. Fetch the "
+        "exact task log even when "
+        "discovery includes a non-empty log excerpt. Classify the full log, then "
+        "retain only source, status, original character count, and at most three "
+        "diagnostic lines; never return raw log bodies. Follow-ups must contain "
+        "only actionable resend or approval-gated rerun choices with dates. "
+        "Treat validate_event_bus_opportunities as missing-snapshot validation; "
+        "do not repeat that implication as a verbose diagnosis in Data Internal. "
+        "Prefer explicit timeout, OOM, and distinctness-validation evidence when "
+        "available. Apply typed Data Internal omission groups, omit those jobs from "
+        "rerun follow-ups, escalate resends above 100 events to pd-rix, and link "
+        "failures over five attempts to the KPO sizing agent interface. "
+        "Data Internal must contain no periods. Treat exit code -9 as an unknown "
+        "resource termination unless exact Airflow or OMS evidence corroborates "
+        "memory pressure. Derive cluster status only from primary application, pod, "
+        "and DAG checks; keep access gaps and retired replicas as warnings. "
         "Run the repository quality check when changing code, and "
         "never mutate production systems."
     ),
@@ -76,7 +107,7 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
         CLASSIFY_FAILURE,
         TRIGGER_RESOURCE_DISCOVERY,
     ),
-    version="6",
+    version="11",
 )
 
 
@@ -89,11 +120,22 @@ class ProdSupportAgent:
         *,
         clock: Callable[[], datetime] | None = None,
         resource_discovery: ResourceDiscoveryInvoker | None = None,
+        cluster_health: ClusterHealthSource | None = None,
+        investigation: InvestigationServices | None = None,
     ) -> None:
         """Initialize with either a production or replay Airflow source."""
-        self._source = source
+        services = investigation or InvestigationServices()
         self._clock = clock or (lambda: datetime.now(UTC))
         self._resource_discovery = resource_discovery
+        self._airflow_checker = AirflowChecker(source)
+        self._cluster_checker = ClusterChecker(cluster_health)
+        self._max_parallel = services.max_parallel
+        self._failure_investigator = FailureInvestigator(
+            source,
+            prior_logs=services.prior_logs,
+            task_metadata=services.task_metadata,
+            oms=services.oms,
+        )
 
     @property
     def definition(self) -> AgentDefinition:
@@ -115,29 +157,52 @@ class ProdSupportAgent:
                     "resource_discovery_count",
                     len(outcome.resource_discovery_results),
                 ),
+                (
+                    "evidence_characters_read",
+                    sum(item.original_char_count for item in outcome.diagnoses),
+                ),
+                (
+                    "evidence_characters_retained",
+                    sum(len(item.log) for item in outcome.failures),
+                ),
             ),
         )
 
-    async def investigate(self, prompt: str) -> ProdSupportOutcome:
+    async def investigate(
+        self,
+        prompt: str,
+        *,
+        report_config: ProdSupportReportConfig | None = None,
+    ) -> ProdSupportOutcome:
         """Return structured evidence and reporting for benchmark evaluation."""
         reference_time = self._clock()
         window = resolve_query_window(prompt, reference_time)
-        candidates = await self._source.discover_failures(window.failed_since)
-        failures = tuple(
-            failure for failure in candidates if failure.end_at >= window.failed_since
+        failed_before = window.failed_since + timedelta(days=1)
+        failures, cluster_health = await asyncio.gather(
+            self._airflow_checker.check(window.failed_since, failed_before),
+            self._cluster_checker.check(),
         )
-        investigated = await asyncio.gather(
-            *(self._investigate_failure(failure) for failure in failures)
+        resource_results = await self._trigger_resource_discovery(failures)
+        reportable = tuple(
+            failure
+            for failure in failures
+            if not _ignored_by_resource_discovery(failure, resource_results)
+        )
+        investigated = await self._bounded_map(
+            reportable,
+            self._failure_investigator.investigate,
         )
         hydrated = tuple(item[0] for item in investigated)
         diagnoses = tuple(item[1] for item in investigated)
-        resource_results = await self._trigger_resource_discovery(hydrated)
-        reports = format_reports(
+        reports = format_reports_with_context(
             window.operational_date,
             hydrated,
             diagnoses,
-            reference_date=reference_time.date(),
-            resource_discovery_results=resource_results,
+            context=ProdSupportReportContext(
+                resource_discovery_results=resource_results,
+                config=report_config or ProdSupportReportConfig(),
+                cluster_health=cluster_health,
+            ),
         )
         return ProdSupportOutcome(
             operational_date=window.operational_date,
@@ -155,7 +220,7 @@ class ProdSupportAgent:
         self,
         failures: tuple[AirflowFailure, ...],
     ) -> tuple[AgentResult, ...]:
-        """Resolve unique resend clients through the injected agent."""
+        """Resolve every unique client-scoped failure through the injected agent."""
         if self._resource_discovery is None:
             return ()
         client_ids = tuple(
@@ -163,7 +228,7 @@ class ProdSupportAgent:
                 {
                     client_id
                     for failure in failures
-                    if (client_id := _resend_client_id(failure)) is not None
+                    if (client_id := extract_client_id(failure)) is not None
                 }
             )
         )
@@ -178,54 +243,32 @@ class ProdSupportAgent:
             )
             for client_id in client_ids
         )
-        return tuple(
-            await asyncio.gather(
-                *(self._resource_discovery.run(request) for request in requests)
-            )
-        )
+        return tuple(await self._bounded_map(requests, self._resource_discovery.run))
 
-    async def _investigate_failure(
+    async def _bounded_map(
         self,
-        failure: AirflowFailure,
-    ) -> tuple[AirflowFailure, FailureDiagnosis]:
-        """Hydrate and classify one failure independently."""
-        try:
-            log = failure.log or await self._source.fetch_log(failure)
-        except TaskLogUnavailableError as error:
-            if error.status_code != TASK_LOG_NOT_FOUND:
-                raise
-            diagnosis = FailureDiagnosis(
-                failure_id=failure.failure_id,
-                kind=FailureKind.UNKNOWN,
-                confidence="evidence_gap",
-                evidence=("Airflow task log unavailable: HTTP 404",),
-            )
-            return failure, diagnosis
-        complete = _with_log(failure, log)
-        return complete, classify_log(complete, log)
+        values: tuple[InputT, ...],
+        operation: Callable[[InputT], Awaitable[OutputT]],
+    ) -> tuple[OutputT, ...]:
+        """Run an async operation with repository-safe worker parallelism."""
+        semaphore = asyncio.Semaphore(self._max_parallel)
+
+        async def invoke(value: InputT) -> OutputT:
+            async with semaphore:
+                result = operation(value)
+                return await result
+
+        return tuple(await asyncio.gather(*(invoke(value) for value in values)))
 
 
-def _with_log(failure: AirflowFailure, log: str) -> AirflowFailure:
-    return AirflowFailure(
-        region=failure.region,
-        dag_id=failure.dag_id,
-        run_id=failure.run_id,
-        task_id=failure.task_id,
-        start_at=failure.start_at,
-        end_at=failure.end_at,
-        try_number=failure.try_number,
-        log=log,
+def _ignored_by_resource_discovery(
+    failure: AirflowFailure,
+    results: tuple[AgentResult, ...],
+) -> bool:
+    """Apply an explicit Resource Discovery support-ignore marker."""
+    identifier = extract_client_id(failure)
+    return any(
+        dict(result.attributes).get("identifier_value") == identifier
+        and dict(result.attributes).get("prod_support_ignore") is True
+        for result in results
     )
-
-
-def _resend_client_id(failure: AirflowFailure) -> str | None:
-    """Return a validated client UUID for a resend-routing failure."""
-    if failure.task_id != RESOURCE_DISCOVERY_TASK:
-        return None
-    if not failure.dag_id.startswith(CLIENT_DAG_PREFIX):
-        return None
-    candidate = failure.dag_id.removeprefix(CLIENT_DAG_PREFIX)
-    try:
-        return str(UUID(candidate))
-    except ValueError:
-        return None

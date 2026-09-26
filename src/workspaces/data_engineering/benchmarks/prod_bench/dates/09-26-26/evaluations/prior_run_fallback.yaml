@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-prior-run-fallback-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: prior_run_fallback
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/prior-run-fallback
+judge_configuration: sol-high-judge
+rubric:
+  - id: prior_run_fallback
+    weight: 1.0
+    reward: Selects the newest prior same-DAG and same-task attempt containing terminal evidence and reports its exact identity and qualification.
+    punish: Stops at an unavailable log, selects an older record after valid evidence is found, changes identity, or presents prior evidence as proof of the latest run's cause.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

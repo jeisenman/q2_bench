@@ -90,6 +90,9 @@ class ResourceMetadata:
     database: str | None = None
     storage: str | None = None
     datalake: str | None = None
+    reviewed_production_resend_url: str | None = None
+    routing_source: str | None = None
+    prod_support_ignore: bool = False
 
     def __post_init__(self) -> None:
         """Validate allowlisted metadata without accepting arbitrary fields."""
@@ -108,12 +111,23 @@ class ResourceMetadata:
             ("database", self.database),
             ("storage", self.storage),
             ("datalake", self.datalake),
+            (
+                "reviewed_production_resend_url",
+                self.reviewed_production_resend_url,
+            ),
+            ("routing_source", self.routing_source),
         )
         for field_name, value in fields:
             _require_optional_text(value, field_name)
-        if not any(value is not None for _, value in fields):
+        if (
+            not any(value is not None for _, value in fields)
+            and not self.prod_support_ignore
+        ):
             message = "resource metadata must contain at least one field"
             raise ValueError(message)
+        if not isinstance(self.prod_support_ignore, bool):
+            message = "prod_support_ignore must be a boolean"
+            raise TypeError(message)
 
     @classmethod
     def from_record(cls, record: Mapping[str, object]) -> ResourceMetadata:
@@ -134,13 +148,19 @@ class ResourceMetadata:
             "database",
             "storage",
             "datalake",
+            "reviewed_production_resend_url",
+            "routing_source",
         ):
             value = record.get(field_name)
             if value is not None and not isinstance(value, str):
                 message = f"{field_name} must be a string when present"
                 raise TypeError(message)
             values[field_name] = value
-        return cls(**values)
+        ignore = record.get("prod_support_ignore", False)
+        if not isinstance(ignore, bool):
+            message = "prod_support_ignore must be a boolean when present"
+            raise TypeError(message)
+        return cls(**values, prod_support_ignore=ignore)
 
 
 @dataclass(frozen=True, slots=True)

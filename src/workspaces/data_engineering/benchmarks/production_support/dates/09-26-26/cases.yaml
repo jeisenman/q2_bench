@@ -15,4 +15,13 @@ cases:
       - src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/assets/cluster_health_snapshot.json
       - src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/assets/resource_discovery_snapshot.json
       - src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26/assets/relationship_signals_prior_day.json
+    reporting_contract_version: "2.5"
+    instructions:
+      - Keep every finding under its source region and never mix US and CA
+      - Do not issue contradictory cluster-health verdicts from the same evidence
+      - Group clients sharing one job and group multiple jobs for one client
+      - Keep proven timeout, OOM, and distinctness-validation causes explicit
+      - Treat validate_event_bus_opportunities as missing-snapshot validation
+      - Use Resource Discovery to link each offered resend action
+      - Omit D2P, MI3, subscriber, maintenance, backfill, and CMM by default
     prohibit_agent_changes: true

@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-channel-filtering-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: channel_filtering
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/channel-filtering
+judge_configuration: sol-high-judge
+rubric:
+  - id: channel_filtering
+    weight: 1.0
+    reward: Developer retains every supplied task while Data Internal applies every configured omission and preserves only eligible client-facing tasks.
+    punish: Drops a Developer task, ignores an omission category, diagnoses failures, or formats full messages.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

@@ -214,6 +214,9 @@ def _normalize_record(record: Mapping[str, object]) -> ResourceRecord:
         "storageAccount": "storage",
         "dataLake": "datalake",
         "dataLakeAccount": "datalake",
+        "reviewedProductionResendUrl": "reviewed_production_resend_url",
+        "routingSource": "routing_source",
+        "prodSupportIgnore": "prod_support_ignore",
     }
     return {
         aliases.get(name, name): value
@@ -234,5 +237,8 @@ def _normalize_record(record: Mapping[str, object]) -> ResourceRecord:
             "database",
             "storage",
             "datalake",
+            "reviewed_production_resend_url",
+            "routing_source",
+            "prod_support_ignore",
         }
     }

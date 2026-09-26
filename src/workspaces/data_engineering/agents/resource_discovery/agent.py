@@ -98,6 +98,9 @@ def _metadata_sort_key(metadata: ResourceMetadata) -> tuple[str, ...]:
             metadata.database,
             metadata.storage,
             metadata.datalake,
+            metadata.reviewed_production_resend_url,
+            metadata.routing_source,
+            str(metadata.prod_support_ignore),
         )
     )
 
@@ -152,6 +155,7 @@ class ResourceDiscoveryAgent:
         except Exception as error:
             message = str(error) or "resource discovery source failed"
             raise ResourceDiscoveryError(message) from error
+        unique = search.matches[0] if len(search.matches) == 1 else None
         return AgentResult(
             output=render_search(search),
             correlation_id=request.correlation_id,
@@ -159,7 +163,30 @@ class ResourceDiscoveryAgent:
             attributes=(
                 ("agent_version", "1"),
                 ("identifier_kind", search.identifier.kind.value),
+                ("identifier_value", search.identifier.value),
                 ("status", search.status.value),
                 ("match_count", len(search.matches)),
+                ("client_name", unique.client_name if unique is not None else None),
+                (
+                    "provisioned_client_id",
+                    unique.provisioned_client_id if unique is not None else None,
+                ),
+                ("environment", unique.environment if unique is not None else None),
+                (
+                    "reviewed_production_resend_url",
+                    (
+                        unique.reviewed_production_resend_url
+                        if unique is not None
+                        else None
+                    ),
+                ),
+                (
+                    "routing_source",
+                    unique.routing_source if unique is not None else None,
+                ),
+                (
+                    "prod_support_ignore",
+                    unique.prod_support_ignore if unique is not None else False,
+                ),
             ),
         )

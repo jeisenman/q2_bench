@@ -1,3 +1,4 @@
+import json
 from importlib import import_module
 from pathlib import Path
 
@@ -21,6 +22,7 @@ def test_benchmarks_lists_visible_benchmarks() -> None:
         "data-insight-triage\tproduction_operations\n"
         "etl\tpipeline_engineering\n"
         "kpo-sizer\tplanning\n"
+        "prod-bench\tproduction_operations\n"
         "prod-support\tproduction_operations\n"
         "resource-discovery\tresource_operations\n"
     )
@@ -48,6 +50,49 @@ def test_run_matrix_selects_registered_configuration() -> None:
     assert result.output.count('"profile"') == 1
     assert '"profile": "sol-light-luna-high-workers"' in result.output
     assert '"workers": ["luna-high"]' in result.output
+
+
+def test_summarize_prod_support_evidence_omits_raw_log_body(tmp_path: Path) -> None:
+    dataset = tmp_path / "evidence.json"
+    dataset.write_text(
+        json.dumps(
+            {
+                "records": [
+                    {
+                        "region": "US-01",
+                        "dag_id": "dag",
+                        "run_id": "run",
+                        "task_id": "task",
+                        "start_at": "2026-09-25T05:00:00+00:00",
+                        "end_at": "2026-09-25T06:00:00+00:00",
+                        "try_number": 1,
+                        "log": ("progress\\n" * 10_000) + "OOMKilled",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "summarize-prod-support-evidence",
+            "--dataset",
+            str(dataset),
+            "--start",
+            "2026-09-25T05:00:00Z",
+            "--end",
+            "2026-09-26T05:00:00Z",
+        ],
+    )
+
+    record = json.loads(result.output)
+    assert result.exit_code == 0
+    assert record["log_retrieval"] == "exact_replay_task_attempt"
+    assert record["log_status"] == "terminal"
+    assert record["evidence"] == ["OOMKilled"]
+    assert "progress" not in result.output
 
 
 def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
@@ -79,6 +124,7 @@ def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
         "data-insight-triage\trun-1\n"
         "etl\trun-1\n"
         "kpo-sizer\trun-1\n"
+        "prod-bench\trun-1\n"
         "prod-support\trun-1\n"
         "resource-discovery\trun-1\n"
     )
@@ -90,9 +136,36 @@ def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
         "data-insight-triage",
         "etl",
         "kpo-sizer",
+        "prod-bench",
         "prod-support",
         "resource-discovery",
     ]
+
+
+def test_configure_codex_tracing_reports_written_paths(tmp_path: Path) -> None:
+    codex_home = tmp_path / "codex"
+    project_root = tmp_path / "project"
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "configure-codex-tracing",
+            "--tracking-uri",
+            "http://mlflow:5000",
+            "--experiment-id",
+            "42",
+            "--codex-home",
+            str(codex_home),
+            "--project-root",
+            str(project_root),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.output == (
+        f"codex-config\t{codex_home / 'config.toml'}\n"
+        f"tracing-config\t{project_root / '.codex/mlflow-tracing.json'}\n"
+    )
 
 
 def test_debug_prod_support_reports_local_artifacts(

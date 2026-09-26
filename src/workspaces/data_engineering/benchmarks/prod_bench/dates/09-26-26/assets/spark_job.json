@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "job_id": "spark-capability-case",
+  "airflow_command": "python src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/mock_spark_sources.py airflow",
+  "oms_command": "python src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/mock_spark_sources.py oms",
+  "required_provenance": ["airflow", "oms"]
+}

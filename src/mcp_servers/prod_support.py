@@ -19,6 +19,7 @@ from workspaces.data_engineering.agents.prod_support import (
     AirflowFailure,
     AirflowFailureSource,
     ProdSupportAgent,
+    ProdSupportReportConfig,
     ReplayAirflowFailureSource,
 )
 from workspaces.data_engineering.agents.prod_support.models import ProdSupportOutcome
@@ -110,7 +111,7 @@ def _url_from_report_line(line: str) -> str | None:
 
 def _format_mcp_output(outcome: ProdSupportOutcome) -> str:
     """Return the canonical report without adding competing formatting."""
-    return f"{outcome.report}\n\nFollow Up:\n{outcome.follow_up}"
+    return outcome.report
 
 
 @server.tool(
@@ -121,15 +122,22 @@ async def run_prod_support(
     prompt: str,
     service: str | None = None,
     correlation_id: str | None = None,
+    data_internal_omissions: list[str] | None = None,
 ) -> dict[str, Any]:
     """Run the production-support agent with optional service context."""
+    report_config = ProdSupportReportConfig.from_omission_values(
+        data_internal_omissions
+    )
     attributes = (("service", service),) if service else ()
     request = AgentRequest(
         prompt=prompt,
         correlation_id=correlation_id or uuid4().hex,
         attributes=attributes,
     )
-    outcome = await agent.investigate(request.prompt)
+    outcome = await agent.investigate(
+        request.prompt,
+        report_config=report_config,
+    )
     return {
         "output": _format_mcp_output(outcome),
         "developer_report": outcome.developer_report,
@@ -143,6 +151,12 @@ async def run_prod_support(
             "operational_date": outcome.operational_date.isoformat(),
             "failed_since": outcome.failed_since.isoformat(),
             "failure_count": len(outcome.failures),
+            "data_internal_omissions": [
+                item.value for item in report_config.data_internal_omissions
+            ],
+        },
+        "related_agents": {
+            "kpo_sizer": "agent://kpo-sizer/definition",
         },
     }
 

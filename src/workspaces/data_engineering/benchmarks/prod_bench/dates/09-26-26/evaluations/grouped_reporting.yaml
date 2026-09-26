@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-grouped-reporting-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: grouped_reporting
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/grouped-reporting
+judge_configuration: sol-high-judge
+rubric:
+  - id: grouped_reporting
+    weight: 1.0
+    reward: Produces the minimum region-pure bullets by grouping shared jobs across clients and remaining jobs per client, with every pair represented once.
+    punish: Repeats a client-job pair, emits one bullet per failure, mixes regions, drops a client or job, or adds unsupported diagnosis.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

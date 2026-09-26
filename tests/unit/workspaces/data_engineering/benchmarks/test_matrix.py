@@ -19,8 +19,39 @@ BENCHMARK_PATH = (
 )
 CASES_PATH = BENCHMARK_PATH.with_name("cases.yaml")
 CASE_ID = "prod-support-us-ca-2026-09-25"
-PARALLEL_CONTAINERS = 6
+PARALLEL_CONTAINERS = 5
 MAX_SUBAGENT_PARALLELISM = 5
+
+
+def _assert_reporting_prompt(candidate: str) -> None:
+    assert "account for every discovered failure" in candidate
+    assert "URLs to validate" in candidate
+    assert "Message for developer:" in candidate
+    assert ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:" in candidate
+    assert "Do not use Markdown headings" in candidate
+    assert "Do not insert blank lines between bullets" in candidate
+    assert "periods anywhere in Data Internal" in candidate
+    assert "Group clients that failed on the same job" in candidate
+    assert "group its jobs into one client line" in candidate
+    assert "Never place a CA finding in the US section" in candidate
+    assert "both healthy and unhealthy" in candidate
+    assert "credit migration matrix (CMM)" in candidate
+    assert "validate_event_bus_opportunities failure already implies" in candidate
+    assert "resource-discovery reviewed application link" in candidate
+    assert "ClientA (123), ClientB (456) failed on <same job>" in candidate
+    assert candidate.index("US Cluster Health") < candidate.index(
+        "ClientA (123), ClientB (456)"
+    )
+    assert "client UUID found in a DAG or task identifier" in candidate
+    assert "page backward through prior runs of the same DAG and task" in candidate
+    assert "start exact Airflow-log and OMS queries concurrently" in candidate
+    assert "US Cluster Health and CA Cluster Health" in candidate
+    assert "resend exceeds 100 unique events" in candidate
+    assert "data_internal_omissions parameter replaces these defaults" in candidate
+    assert "pd-rix" in candidate
+    assert "agent://kpo-sizer/definition" in candidate
+    assert "excluding every configured omission" in candidate
+    assert "Do not repeat diagnoses" in candidate
 
 
 def load_run(
@@ -90,32 +121,29 @@ def test_matrix_prompts_include_rubric_and_local_evidence() -> None:
         "Window: `2026-09-24 05:00:00 UTC` through `2026-09-25 05:00:00 UTC`"
     ) in candidate
     assert (
-        "?_flt_1_start_date=2026-09-24T05:00:00Z"
+        "?_flt_1_end_date=2026-09-25T05:00:00Z"
         "&_flt_3_state=failed"
-        "&_flt_2_start_date=2026-09-25T05:00:00Z#"
+        "&_flt_2_end_date=2026-09-24T05:00:00Z#"
     ) in candidate
     assert "%3A" not in candidate
     assert "/dags/<dag-id>/grid?status=failed" in candidate
     assert "US failures, CA failures, and US/CA cluster health" in candidate
-    assert "Enumerate every returned Airflow failure" in candidate
-    assert "one explicit entry for every discovered failure" in candidate
-    assert "URLs to validate" in candidate
-    assert "Message for developer:" in candidate
-    assert "Message for Data Internal Channel" in candidate
-    assert "Do not use Markdown headings" in candidate
-    assert "Do not insert blank lines between bullets" in candidate
-    assert "use exactly one client per bullet" in candidate
-    assert "combine multiple findings for that client" in candidate
-    assert "page backward through prior runs of the same DAG and task" in candidate
-    assert "start exact Airflow-log and OMS queries concurrently" in candidate
-    assert "US Cluster Health and CA Cluster Health" in candidate
-    assert "resend exceeds 100 unique events" in candidate
+    assert "agentbench summarize-prod-support-evidence" in candidate
+    assert "one compact record" in candidate
+    assert "Never emit a full log body" in candidate
+    _assert_reporting_prompt(candidate)
+    assert "Do not inspect Git history" in candidate
+    assert "do not retry the same failed command" in candidate
     assert "Do not claim a check was performed without trace evidence" in candidate
     assert "automation" in judge
     assert "capability_scores" in judge
     assert "Earlier comparable trace" in judge
     assert "complete_failure_inventory" in judge
     assert "report_structure" in judge
+    assert "client_identity_resolution" in judge
+    assert "complete_log_retrieval" in judge
+    assert "evidence_efficiency" in judge
+    assert "follow_up_actionability" in judge
 
 
 def test_matrix_plan_groups_profiles_under_one_matrix() -> None:
@@ -167,7 +195,7 @@ def test_rejects_worker_parallelism_above_repository_limit(tmp_path: Path) -> No
 def test_defaults_parallelism_to_candidate_count(tmp_path: Path) -> None:
     source = BENCHMARK_PATH.read_text(encoding="utf-8")
     path = tmp_path / "evaluation.yaml"
-    path.write_text(source.replace("  parallelism: 6\n", ""), encoding="utf-8")
+    path.write_text(source.replace("  parallelism: 5\n", ""), encoding="utf-8")
 
     manifest = load_matrix_run(path, AGENTS_PATH, CASES_PATH, CASE_ID)
 

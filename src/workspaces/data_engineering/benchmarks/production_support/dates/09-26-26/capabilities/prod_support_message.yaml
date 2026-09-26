@@ -4,32 +4,50 @@ description: Render a concise Data Internal message with actionable exceptions.
 cases:
   - id: september-25-data-internal
     expectations:
-      required_message_heading: Message for Data Internal Channel
       required_alert_heading: ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:"
+      alert_heading_is_first_line: true
       required_regions: [US, CA]
       require_status_under_each_region: true
       require_compact_bullets: true
       prohibit_markdown_section_headings: true
       prohibit_blank_lines_between_bullets: true
-      one_client_per_bullet: true
-      combine_same_client_findings: true
+      prohibit_periods: true
+      group_same_job_across_clients: true
+      group_multiple_jobs_per_client: true
+      prohibit_repeated_client_job_pairs: true
+      required_group_shape: "ClientA (123), ClientB (456) failed on <job>"
+      required_client_group_shape: "ClientA (123) failed on <job1>, <job2>, and <job3>"
+      require_resolved_client_names: true
       client_uuid_prefix_length: 3
-      omit_jobs:
-        - check_for_subscriber_client_errors
-        - log_cleanup
-        - opportunity_avro_aggregation_backfill
-        - opp_history_backfill
+      default_omission_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+      mcp_override_parameter: data_internal_omissions
+      required_failure_shape: "<client> (<prefix>) failed on <job>"
+      regional_consistency:
+        prohibit_cross_region_findings: true
+        require_source_region_section: true
+        punish_ca_under_us: true
+        punish_us_under_ca: true
+      contradiction_policy:
+        prohibit_conflicting_cluster_statuses: true
+        require_status_to_match_cited_evidence: true
+      concise_diagnosis:
+        validate_event_bus_implies: missing snapshots
+        do_not_repeat_implication: true
+        preferred_explicit_causes: [timeout, OOM, distinctness validation errors]
+        max_bullet_characters: 180
+      cluster_health_format:
+        status: "<region> cluster is <health status>"
+        symptoms: "<symptom1>, <symptom2>, and <symptom3> appear"
+        missing_evidence: "KEDA status and supporting OMS telemetry are missing"
       event_resend_format:
-        one_client_per_line: true
-        include_exact_dates: true
-        include_correct_application: true
-        include_unique_event_count: true
+        one_client_per_line: false
+        group_same_job_across_clients: true
+        include_exact_dates: false
+        include_correct_application: false
+        include_unique_event_count: false
+        details_belong_in_follow_up: true
       large_resend_threshold: 100
-      require_large_resend_warning: true
-      required_us_findings:
-        - Every reportable US client appears once with combined findings.
-      required_ca_findings:
-        - Every reportable CA client appears once with combined findings.
+      require_large_resend_warning: false
       required_follow_on_message:
         - No automatic production mutation was performed.
       mutation_policy: suggestion_only

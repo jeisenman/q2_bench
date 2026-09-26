@@ -15,8 +15,10 @@ values.
 `AgentDefinition`. `models.py` defines immutable identifiers, allowlisted
 metadata, and explicit cardinality statuses. `ports.py` contains the
 `ResourceDiscoverySource` protocol for injected read-only providers. Provider
-records are sanitized into the explicit metadata allowlist before reporting;
-unknown keys, including secret fields, are ignored.
+records are sanitized into the explicit metadata allowlist before reporting.
+The allowlist includes reviewed resend URLs, routing provenance, and a boolean
+production-support ignore marker; unknown keys, including secret fields, are
+ignored.
 `reporting.py` renders a fixed, deterministic non-secret field set, and
 `__init__.py` defines the public API.
 
@@ -43,7 +45,9 @@ occur in this package.
 3. Validate returned records, discard unknown fields, and order safe metadata
    by a stable key.
 4. Classify the result as `not_found`, `unique`, or `ambiguous`.
-5. Render only the fixed non-secret metadata fields.
+5. Render only the fixed non-secret metadata fields. Preserve an explicit
+   reviewed resend URL and `prod_support_ignore` marker for typed downstream
+   consumers; never derive either value from a subdomain or environment.
 6. Return the report, correlation ID, tool name `ResourceDiscovery`, and safe
    cardinality attributes.
 

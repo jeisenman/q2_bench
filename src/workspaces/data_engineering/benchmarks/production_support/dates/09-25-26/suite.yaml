@@ -10,18 +10,26 @@ layers:
     fixtures:
       - capabilities/date_resolution.yaml
       - capabilities/failure_discovery.yaml
+      - capabilities/client_identity_resolution.yaml
+      - capabilities/complete_log_retrieval.yaml
+      - capabilities/evidence_efficiency.yaml
       - capabilities/log_classification.yaml
       - capabilities/spark_evidence.yaml
       - capabilities/prior_run_log_fallback.yaml
       - capabilities/cluster_health.yaml
       - capabilities/channel_filtering.yaml
+      - capabilities/report_configuration.yaml
       - capabilities/resend_routing.yaml
       - capabilities/developer_message.yaml
       - capabilities/prod_support_message.yaml
+      - capabilities/follow_up_actions.yaml
     dimensions:
       - query_translation
       - bounded_query_translation
       - failure_recall
+      - client_identity_resolution
+      - complete_log_retrieval
+      - evidence_efficiency
       - dag_existence
       - diagnosis_accuracy
       - parallel_evidence_collection
@@ -29,13 +37,18 @@ layers:
       - historical_log_fallback
       - cluster_health
       - omitted_job_filtering
+      - data_internal_configuration
       - resource_routing
       - resend_reporting
       - regional_reporting
+      - regional_consistency
+      - contradiction_detection
+      - grouped_reporting
       - remediation_safety
       - response_formatting
       - developer_message
       - prod_support_message
+      - follow_up_actionability
   coordination:
     description: Test ordered tool use and synthesis across specialist agents.
     dimensions:

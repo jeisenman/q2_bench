@@ -1,6 +1,6 @@
 # Prod-support benchmark snapshot 09-26-26
 
-This v2 benchmark evaluates the September 25, 2026 operational day using the
+This v2.5 benchmark evaluates the September 25, 2026 operational day using the
 capture at:
 
 ```text
@@ -91,23 +91,38 @@ This snapshot remains uncurated until these gaps are reviewed:
   BoFA or Scotiabank task attempt. It is currently a synthetic capability
   fixture because the captured logs say only that the driver badly exited.
 - Complete KEDA ScaledObject evidence is required for US and CA.
-- Resource Discovery does not yet prove which supplied production resend
-  application belongs to each affected client. The benchmark prohibits
-  guessing this mapping.
+- Reviewed Resource Discovery fixture mappings provide the resend-events
+  application for each affected client; Airflow region and subdomain inference
+  remain prohibited.
 
 ## Output rules
 
 - Developer output includes every investigated failure, its complete error,
-  evidence source, and root cause or explicit evidence gap.
-- Data Internal excludes configured subscriber, maintenance, and backfill
-  jobs.
+  evidence source, and root cause or explicit evidence gap. Every client UUID
+  found in a DAG or task identifier is resolved before triage. Clients failing
+  the same job share one line, and multiple jobs for one client share one line.
+- Data Internal starts directly with the alert heading and uses concise
+  region-pure ongoing bullets. It defaults to excluding D2P, MI3, subscriber,
+  maintenance, backfill, and CMM groups; the MCP `data_internal_omissions`
+  parameter replaces those defaults. Data Internal contains no periods.
+- Cluster warnings must agree with the overall evidence-backed health verdict;
+  the retired CA replica does not make healthy application and parsing checks
+  unhealthy.
+- Every discovered failure receives an exact task-attempt log lookup even when
+  discovery already contains non-empty log text.
+- The reusable evidence command emits one bounded record per failure without
+  printing full log bodies.
 - Spark jobs start exact Airflow and OMS evidence requests concurrently.
 - If the latest task log is unavailable or non-diagnostic, search earlier runs
   of the same region, DAG, and task in reverse chronological order.
 - Explicit Airflow timeout evidence cancels pending OMS work.
-- Event resends are one client per line with exact dates, event counts, and
-  the Resource Discovery-routed application.
-- More than 100 unique resend events must be called out in both messages.
+- Event resends include exact dates, event counts, and a clickable Resource
+  Discovery-routed application link.
+- More than 100 unique resend events remain explicit in Developer and trigger
+  the configured owner escalation in Follow Ups, not Data Internal.
+- Follow Ups contains actions only: linked event resends or approval-gated,
+  job-grouped Airflow reruns. Large resends identify `pd-rix`; non-omitted
+  jobs above five attempts also link the KPO sizing agent interface.
 
 The multi-run fallback fixture is explicitly synthetic. It models a latest
 HTTP 404 followed by a previous run with terminal evidence and must not be

@@ -2,13 +2,9 @@ schema_version: 1
 capability: log_classification
 description: Classify terminal evidence without inferring unsupported causes.
 cases:
-  - id: explicit-airflow-timeout
-    failure_id: synthetic|airflow-timeout
-    try_number: 1
-    evidence:
-      - "airflow.exceptions.AirflowTaskTimeout: Timeout, PID: 2555323"
-  - id: inconclusive-driver-exit
-    failure_id: synthetic|driver-exit
-    try_number: 1
-    evidence:
-      - Driver badly exited without an explicit terminal cause.
+  - id: terminal-evidence-policy
+    requirements:
+      - classify timeout, OOM, and distinctness only from explicit task evidence
+      - preserve dependency-only and unavailable-log states as evidence gaps
+      - do not promote an uncorroborated process exit to a confirmed cause
+      - retain the evidence source and task-attempt identity

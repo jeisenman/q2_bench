@@ -9,6 +9,7 @@ This directory is the agent-readable entry point for the project.
 - [Proposed source architecture](source-architecture-proposal.md)
 - [MLflow 3.16.1 local guide](mlflow/README.md)
 - [Prod-support benchmark](prod-support-benchmark.md)
+- [Isolated prod-bench capabilities](prod-bench.md)
 - [Prod-support daily data collection](prod-support-data-collection.md)
 - [Prod-support evolution agent](../src/workspaces/data_engineering/agents/prod_support_evolution/README.md)
 - [Anti-leak agent](../src/workspaces/data_engineering/agents/anti_leak/README.md)

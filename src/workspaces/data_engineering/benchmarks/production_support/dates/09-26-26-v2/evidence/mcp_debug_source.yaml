@@ -1,0 +1,58 @@
+schema_version: 1
+source: production_mcp_debug
+operational_date: "2026-09-25"
+captured_at: "2026-09-26T20:20:21Z"
+correlation_id: prod-support-2026-09-25-v2-debug
+artifacts:
+  airflow_capture:
+    uri: var/benchmark_data/prod_support/2026-09-25/airflow_failures.json
+    record_count: 65
+    regional_record_counts:
+      US-01: 20
+      CA-02: 45
+    in_window_count: 50
+    in_window_regional_counts:
+      US-01: 5
+      CA-02: 45
+    unavailable_log_count: 10
+  mcp_result:
+    uri: var/benchmark_data/prod_support/2026-09-25/mcp_debug_result.json
+    failure_count: 22
+    validation_url_count: 2
+    follow_up_present: true
+    tool_calls:
+      - discover_airflow_failures
+      - fetch_airflow_task_log
+      - inspect_airflow_workload
+      - query_oms_job
+      - classify_failure
+      - trigger_resource_discovery_agent
+  mcp_trace:
+    uri: var/benchmark_data/prod_support/2026-09-25/mcp_debug_trace.json
+    failure_count: 23
+    resource_discovery_result_count: 6
+  compact_evidence:
+    uri: var/benchmark_data/prod_support/2026-09-25/compact_evidence.jsonl
+    failure_count: 50
+  holistic_evidence:
+    uri: var/benchmark_data/prod_support/2026-09-25/holistic_evidence.json
+    captured_failure_count: 50
+    agent_accessed_failure_count: 23
+    agent_not_accessed_failure_count: 27
+    source_results:
+      airflow_health: positive
+      airflow_dag_inventory: positive
+      kubernetes_pods: positive
+      keda_scaledobjects: unavailable
+      airflow_workload_inspection: not_accessed
+      oms_job_logs: not_accessed
+      adls: not_accessed
+    null_semantics: >-
+      Null means the source was not accessed and is not negative evidence
+limitations:
+  - The debug CLI refused to overwrite the existing Airflow capture
+  - The existing capture has no generated benchmark scaffold
+  - Ten captured task logs are explicitly unavailable
+  - MCP output is source evidence and does not replace human-curated expectations
+  - Declared MCP tools are not proof that each source was invoked
+  - OMS, workload inspection, and ADLS were not accessed by the agent

@@ -1,0 +1,12 @@
+schema_version: 1
+capability: client_identity_resolution
+description: Resolve every client-scoped failure before triage and reporting.
+cases:
+  - id: all-client-identifiers
+    evidence_uri: ../assets/resource_discovery_snapshot.json
+    requirements:
+      - extract every UUID from client DAG IDs and task IDs in both regions
+      - resolve identities before log triage or message construction
+      - use the resolved client name and three-character UUID prefix in reports
+      - use Unresolved client plus the prefix when no unique reviewed name exists
+      - never emit a bare UUID prefix as the client label

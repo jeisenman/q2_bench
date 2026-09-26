@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-26T17:04:26Z",
+  "scope": "Read-only current production health snapshot.",
+  "historical_context": {
+    "operational_date": "2026-09-25",
+    "statement": "Failures investigated by this suite occurred on 2026-09-25. The health observations below are current 2026-09-26 state and do not rewrite that history."
+  },
+  "regions": [
+    {
+      "region": "US-01",
+      "context": "l3-us01",
+      "namespace": "scheduler",
+      "application_health": {
+        "scheduler": "healthy",
+        "dag_processor": "healthy",
+        "metadatabase": "healthy"
+      },
+      "pods": {
+        "summary": "Airflow scheduler, webserver, and DAG processor pods were Running and ready.",
+        "running_unready_count": 0,
+        "dag_processor_restart_count": 3575
+      },
+      "dags": {
+        "active_count": 209,
+        "active_l3_main_count": 153,
+        "parsing_status": "healthy"
+      },
+      "keda_scaledobjects": {
+        "status": "access_denied",
+        "detail": "Configured read-only identity cannot list scaledobjects.keda.sh in scheduler."
+      },
+      "retry": {
+        "performed": false
+      }
+    },
+    {
+      "region": "CA-02",
+      "context": "l3-ca02",
+      "namespace": "scheduler",
+      "application_health": {
+        "scheduler": "healthy",
+        "dag_processor": "healthy",
+        "metadatabase": "healthy"
+      },
+      "pods": {
+        "summary": "Scheduler, webserver, and replacement DAG processor were Running and ready; one retired DAG processor replica remained Running but unready.",
+        "running_unready_count": 1,
+        "dag_processor_restart_count": 13
+      },
+      "dags": {
+        "active_count": 34,
+        "active_l3_main_count": 6,
+        "parsing_status": "healthy"
+      },
+      "keda_scaledobjects": {
+        "status": "access_denied",
+        "detail": "Configured read-only identity cannot list scaledobjects.keda.sh in scheduler."
+      },
+      "retry": {
+        "performed": true,
+        "first_observed_at": "2026-09-26T17:02:50Z",
+        "retried_at": "2026-09-26T17:03:28Z",
+        "wait_seconds": 30
+      }
+    }
+  ],
+  "mutation_performed": false
+}

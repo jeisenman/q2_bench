@@ -43,6 +43,21 @@ class UnavailableLogAirflow(FakeAirflow):
         raise TaskLogUnavailableError(failure.failure_id, self.status_code)
 
 
+class ExactLogAirflow(FakeAirflow):
+    def __init__(
+        self,
+        failures: tuple[AirflowFailure, ...],
+        exact_log: str,
+    ) -> None:
+        super().__init__(failures)
+        self.exact_log = exact_log
+        self.fetched: list[str] = []
+
+    async def fetch_log(self, failure: AirflowFailure) -> str:
+        self.fetched.append(failure.failure_id)
+        return self.exact_log
+
+
 class FakeResourceSource:
     def __init__(self) -> None:
         self.identifiers: list[ResourceIdentifier] = []
@@ -119,7 +134,12 @@ def test_agent_definition_requires_operational_delivery_workflow() -> None:
     assert "trigger_resource_discovery_agent" in {
         tool.name for tool in definition.tools
     }
-    assert definition.version == "6"
+    assert "DAG or task IDs" in definition.instructions
+    assert "Fetch the exact task log even when" in definition.instructions
+    assert "typed Data Internal omission groups" in definition.instructions
+    assert "pd-rix" in definition.instructions
+    assert "KPO sizing agent interface" in definition.instructions
+    assert definition.version == "11"
 
 
 def test_agent_reports_missing_task_log_as_developer_evidence_gap() -> None:
@@ -174,7 +194,7 @@ def test_agent_triggers_resource_discovery_for_unique_resend_clients() -> None:
     assert dict(outcome.resource_discovery_results[0].attributes)["status"] == "unique"
 
 
-def test_agent_skips_invalid_resource_discovery_candidates() -> None:
+def test_agent_resolves_valid_client_dags_and_skips_invalid_candidates() -> None:
     client_id = "1f06da19-2f61-401c-a1b7-38902e4f3543"
     candidates = (
         AirflowFailure(
@@ -214,5 +234,62 @@ def test_agent_skips_invalid_resource_discovery_candidates() -> None:
 
     outcome = asyncio.run(agent.investigate("do today's prod support"))
 
-    assert source.identifiers == []
-    assert outcome.resource_discovery_results == ()
+    assert [identifier.value for identifier in source.identifiers] == [client_id]
+    assert len(outcome.resource_discovery_results) == 1
+
+
+def test_agent_resolves_client_uuid_embedded_in_task_id() -> None:
+    client_id = "621d1ad2-3d0f-4fc4-8245-e3878a6bff7c"
+    mi_failure = AirflowFailure(
+        region=Region.US_01,
+        dag_id="market_insights_3_output",
+        run_id="scheduled__2026-09-24T00:00:00+00:00",
+        task_id=f"client_specific.mi_3_raw_output_validation_{client_id}",
+        start_at=datetime(2026, 9, 24, 5, tzinfo=UTC),
+        end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
+        log="pod exited 1",
+    )
+    source = FakeResourceSource()
+    agent = ProdSupportAgent(
+        FakeAirflow((mi_failure,)),
+        clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
+        resource_discovery=ResourceDiscoveryAgent(source),
+    )
+
+    outcome = asyncio.run(agent.investigate("do today's prod support"))
+
+    assert [identifier.value for identifier in source.identifiers] == [client_id]
+    assert "Example Bank (621) failed on MI3" in outcome.developer_report
+
+
+def test_agent_fetches_exact_log_when_discovery_contains_an_excerpt() -> None:
+    discovered = failure(24, "job is still running")
+    source = ExactLogAirflow((discovered,), "OOMKilled exact terminal evidence")
+    agent = ProdSupportAgent(
+        source,
+        clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
+    )
+
+    outcome = asyncio.run(agent.investigate("do today's prod support"))
+
+    assert source.fetched == [discovered.failure_id]
+    assert outcome.failures[0].log == "OOMKilled exact terminal evidence"
+    assert outcome.diagnoses[0].kind.value == "confirmed_oom"
+
+
+def test_agent_compacts_large_logs_after_classification() -> None:
+    large_log = ("ordinary progress\n" * 10_000) + "OOMKilled terminal evidence"
+    discovered = failure(24, "")
+    source = ExactLogAirflow((discovered,), large_log)
+    agent = ProdSupportAgent(
+        source,
+        clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
+    )
+
+    outcome = asyncio.run(agent.investigate("do today's prod support"))
+    diagnosis = outcome.diagnoses[0]
+
+    assert outcome.failures[0].log == "OOMKilled terminal evidence"
+    assert diagnosis.original_char_count == len(large_log)
+    assert diagnosis.source.value == "airflow_exact_task_attempt"
+    assert diagnosis.status.value == "terminal"

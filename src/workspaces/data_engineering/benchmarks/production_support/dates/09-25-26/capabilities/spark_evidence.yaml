@@ -25,11 +25,9 @@ cases:
         await_oms: true
         prohibit_inferred_oom: true
       explicit_oom:
-        classification: confirmed_oom
+        require_explicit_memory_signal: true
         require_exact_evidence: true
-    airflow_evidence:
-      - Exact Airflow task log is the primary terminal evidence.
-    evidence_status: recorded
+    evidence_status: supplied_by_case_assets
     require_timeout_evidence_in_developer_message: true
     requirements:
       - preserve exact Airflow and OMS evidence provenance

@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-resource-routing-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: resource_routing
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/resource-routing
+judge_configuration: sol-high-judge
+rubric:
+  - id: resource_routing
+    weight: 1.0
+    reward: Uses only reviewed mappings, renders resolved routes as clickable canonical resend links, and explicitly preserves unresolved mappings.
+    punish: Guesses from a subdomain or name, omits a client, returns an unlinked or noncanonical URL, or performs resend analysis.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

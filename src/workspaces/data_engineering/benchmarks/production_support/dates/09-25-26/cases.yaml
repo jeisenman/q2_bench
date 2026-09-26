@@ -10,6 +10,21 @@ cases:
     airflow_base_urls:
       US-01: "https://airflow-us01.precisionlender.com"
       CA-02: "https://airflow-ca02.precisionlender.com"
+    candidate_inputs:
+      - src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26/assets/multi_run_log_fallback.json
+      - src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26/assets/resource_discovery_snapshot.json
+      - src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26/evidence/current-us-cluster-observations.json
+      - src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26/evidence/current-ca-dag-processor.json
+    reporting_contract_version: "2.5"
+    instructions:
+      - Keep every finding under its source region and never mix US and CA
+      - Do not issue contradictory cluster-health verdicts from the same evidence
+      - Group clients sharing one job and group multiple jobs for one client
+      - Keep proven timeout, OOM, and distinctness-validation causes explicit
+      - Treat validate_event_bus_opportunities as missing-snapshot validation
+      - Use Resource Discovery to link each offered resend action
+      - Omit D2P, MI3, subscriber, maintenance, backfill, and CMM by default
+    prohibit_agent_changes: true
   - id: current-ca-deployment-events-2026-09-25
     reference_time: "2026-09-25T15:18:00Z"
     prompt: Review the current CA Airflow deployment events and report whether the DAG deployment completed.

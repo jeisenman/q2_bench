@@ -65,6 +65,12 @@ def unique_record() -> Mapping[str, object]:
         "database": "example-production",
         "storage": "exampleprod",
         "datalake": "example-lake",
+        "reviewed_production_resend_url": (
+            "https://us01-app.precisionlender.com/"
+            "Admin/Troubleshooting/ResendOpportunitySnapshots"
+        ),
+        "routing_source": "reviewed-lookup",
+        "prod_support_ignore": True,
         "client_secret": "do-not-print-client-secret",
         "access_token": "do-not-print-access-token",
     }
@@ -91,6 +97,18 @@ def test_agent_reports_a_unique_resource_match() -> None:
     assert "production" in result.output
     assert source.identifiers == ["client-123"]
     assert ("status", "unique") in result.attributes
+    assert ("identifier_value", "client-123") in result.attributes
+    assert ("client_name", "Example Bank") in result.attributes
+    assert ("provisioned_client_id", "provisioned-123") in result.attributes
+    assert ("environment", "production") in result.attributes
+    assert ("prod_support_ignore", True) in result.attributes
+    assert (
+        "reviewed_production_resend_url",
+        (
+            "https://us01-app.precisionlender.com/"
+            "Admin/Troubleshooting/ResendOpportunitySnapshots"
+        ),
+    ) in result.attributes
     assert result.tool_calls == ("ResourceDiscovery",)
 
 

@@ -1,6 +1,5 @@
 {
   "captured_at": "2026-09-25T15:22:25.409249+00:00",
-  "claim": "US Airflow infrastructure is healthy and actively processing DAGs",
   "evidence": {
     "airflow_dag_inventory": {
       "active_dag_count": 209,
@@ -41,13 +40,6 @@
       }
     }
   },
-  "expected_interpretation": {
-    "dag_processor_healthy": true,
-    "dags_active": true,
-    "metadatabase_healthy": true,
-    "scheduler_healthy": true
-  },
   "mutation_performed": false,
-  "region": "US-01",
-  "verdict": "healthy"
+  "region": "US-01"
 }

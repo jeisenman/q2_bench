@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-26T17:04:26Z",
+  "historical_operational_date": "2026-09-25",
+  "regions": [
+    {
+      "region": "US-01",
+      "keda_status": "access_denied",
+      "running_unready_pods": 0,
+      "dag_processor_restart_count": 3575,
+      "active_dag_count": 209,
+      "parsing_status": "healthy"
+    },
+    {
+      "region": "CA-02",
+      "keda_status": "access_denied",
+      "running_unready_pods": 1,
+      "dag_processor_restart_count": 13,
+      "active_dag_count": 34,
+      "parsing_status": "healthy"
+    }
+  ]
+}

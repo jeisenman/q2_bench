@@ -1,0 +1,31 @@
+schema_version: 1
+capability: follow_up_actions
+description: Offer only explicit, approval-gated remediation choices.
+cases:
+  - id: actionable-remediation
+    required_heading: "Follow Ups:"
+    required_structure:
+      - "- Would you like to:"
+      - "  - Follow up with pd-rix about <count> validate_event_bus events for <client> on <date>."
+      - "  - [Resend validate_event_bus events for <client>](<reviewed application link>) for <date or date range>"
+      - "  - Do you approve re-running the following jobs:"
+      - "    - <client or grouped clients>: <job>; also move to [KPO sizing agent](agent://kpo-sizer/definition)"
+    default_omission_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+    large_resend_threshold: 100
+    large_resend_owner: pd-rix
+    kpo_sizing_agent_uri: agent://kpo-sizer/definition
+    requirements:
+      - resolve and include a reviewed application link through Resource Discovery with every offered event resend
+      - when routing is unresolved, ask to resolve the production link first and do not offer an unlinked resend
+      - group identical rerun jobs across clients
+      - omit configured Data Internal jobs from rerun suggestions
+      - suggest pd-rix follow-up when an event resend exceeds 100
+      - suggest KPO sizing in addition to rerun approval when any grouped job exceeds five attempts
+      - expose KPO sizing as an agent URI only and do not invoke it
+      - require approval before reruns or resends
+      - exclude diagnoses, evidence gaps, status summaries, and other non-actions
+      - never claim a mutation occurred
+    prohibited_follow_ups:
+      - schema upgrades
+      - missing-log retrieval
+      - diagnostic evidence collection

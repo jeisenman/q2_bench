@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "timeout",
+      "log": "airflow.exceptions.AirflowTaskTimeout: Timeout, PID: 2555323"
+    },
+    {
+      "id": "pod-failure",
+      "log": "Pod returned a failure. container exit_code=1 reason=Error"
+    },
+    {
+      "id": "dependency-state",
+      "log": "Dependencies not met: Task Instance State FAILED: Task is in the 'failed' state"
+    }
+  ]
+}

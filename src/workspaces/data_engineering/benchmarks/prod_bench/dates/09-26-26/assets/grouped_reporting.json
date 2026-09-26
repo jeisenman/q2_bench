@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "findings": [
+    {"region": "CA", "client": "Scotiabank (1f0)", "job": "validate_event_bus_opportunities"},
+    {"region": "CA", "client": "CIBC Canada (fbf)", "job": "validate_event_bus_opportunities"},
+    {"region": "CA", "client": "Scotiabank Data Validation (b49)", "job": "validate_event_bus_opportunities"},
+    {"region": "CA", "client": "CIBC Canada Validation (cef)", "job": "opportunity_save_history"},
+    {"region": "CA", "client": "CIBC Canada Validation (cef)", "job": "opportunities_report"},
+    {"region": "CA", "client": "CIBC Canada Validation (cef)", "job": "relationship_quandrants"}
+  ]
+}

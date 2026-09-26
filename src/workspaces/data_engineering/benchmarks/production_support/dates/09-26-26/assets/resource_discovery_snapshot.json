@@ -1,28 +1,122 @@
 {
-  "captured_at": "2026-09-26T16:35:00Z",
-  "source": "PrecisionLender Resource Discovery API",
+  "captured_at": "2026-09-26T20:30:00Z",
+  "source": "Resource Discovery API and maintained user-confirmed lookup",
   "lookups": [
+    {
+      "client_id": "1c83e1d0-caf4-4d81-8c51-bc7f7e12014d",
+      "client_name": "Cornhusker Bank",
+      "match": "unique",
+      "source": "resource-discovery-api"
+    },
     {
       "client_id": "1f06da19-2f61-401c-a1b7-38902e4f3543",
       "client_name": "Scotiabank",
-      "subdomain": "scotiabank",
       "match": "unique",
-      "reviewed_production_resend_application": null
+      "source": "resource-discovery-api",
+      "environment": "ca02",
+      "reviewed_production_resend_application": "ca02",
+      "reviewed_production_resend_url": "https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
+      "routing_source": "benchmark-curated-reviewed-fixture"
     },
     {
-      "client_id": "fbfcd207-8a85-4f28-a787-3ed1e2736f28",
-      "client_name": "CIBC Canada",
-      "subdomain": "cibc-ca",
+      "client_id": "47322c85-71cf-45ea-9695-6bdcc1cc1ea9",
+      "client_name": null,
+      "match": "not_found",
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "621d1ad2-3d0f-4fc4-8245-e3878a6bff7c",
+      "client_name": "Andi Application Owner",
       "match": "unique",
-      "reviewed_production_resend_application": null
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "792f7424-402e-4a7e-b4de-69f811435d9c",
+      "client_name": "BoFA",
+      "match": "user_confirmed",
+      "source": "user-confirmed"
+    },
+    {
+      "client_id": "8f472547-3491-479b-9731-cd81ba90b992",
+      "client_name": "Busey Bank",
+      "match": "unique",
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "951ddcc6-dc43-408e-a4f4-bf0a67015ccc",
+      "client_name": "Synovus Bank (Columbus, GA)",
+      "match": "unique",
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "963c8181-42c4-44a2-9247-d062ab5d5700",
+      "client_name": null,
+      "match": "ambiguous",
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "9d272969-2cdd-401b-a373-6a73cf5a3042",
+      "client_name": "Glacier Bancorp",
+      "match": "user_confirmed",
+      "source": "user-confirmed"
+    },
+    {
+      "client_id": "a6f041a5-fda3-4b68-a002-d115b39e9914",
+      "client_name": "Bremer Bank, National Association",
+      "match": "unique",
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "a9cdadd4-1324-4a7a-842e-fe8fc9fe37f1",
+      "client_name": "First Developer Bank",
+      "match": "unique",
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "aff872b2-05b6-4b18-b940-679b172782e0",
+      "client_name": "Peoples National Bank (Mount Vernon, IL)",
+      "match": "unique",
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "b441897e-a525-4546-b68c-3f6820de847c",
+      "client_name": "Citizens Bank - Validation",
+      "match": "unique",
+      "source": "resource-discovery-api"
     },
     {
       "client_id": "b4916353-ef8a-4af8-9601-74305858e905",
       "client_name": "Scotiabank - Data Validation",
-      "subdomain": "scotia-validation",
       "match": "unique",
-      "reviewed_production_resend_application": null
+      "source": "resource-discovery-api",
+      "environment": "ca02",
+      "reviewed_production_resend_application": "ca02",
+      "reviewed_production_resend_url": "https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
+      "routing_source": "benchmark-curated-reviewed-fixture"
+    },
+    {
+      "client_id": "cd0c6dcb-fbd5-4bac-8b3a-8d48b0944a29",
+      "client_name": null,
+      "match": "not_found",
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "cefa3c2a-e1da-4c24-8676-532dc2b59056",
+      "client_name": "CIBC Canada Validation",
+      "match": "unique",
+      "source": "resource-discovery-api"
+    },
+    {
+      "client_id": "fbfcd207-8a85-4f28-a787-3ed1e2736f28",
+      "client_name": "CIBC Canada",
+      "match": "unique",
+      "source": "resource-discovery-api",
+      "environment": "ca02",
+      "reviewed_production_resend_application": "ca02",
+      "reviewed_production_resend_url": "https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
+      "routing_source": "benchmark-curated-reviewed-fixture"
     }
   ],
-  "routing_rule": "A null reviewed mapping means routing is unresolved. Do not infer an application from a subdomain, log directive, or non-production resource."
+  "identity_rule": "Resolve every client UUID found in a DAG or task identifier before triage. Use the reviewed name when match is unique or user_confirmed; otherwise use Unresolved client plus the three-character UUID prefix.",
+  "routing_rule": "Use reviewed_production_resend_url when present. A null reviewed mapping is unresolved; never infer an application from a subdomain, log directive, Airflow region, or non-production resource."
 }

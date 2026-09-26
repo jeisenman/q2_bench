@@ -1,0 +1,18 @@
+schema_version: 1
+capability: channel_filtering
+description: Discover all failures but intentionally omit configured jobs from Data Internal.
+cases:
+  - id: omitted-jobs
+    default_omission_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+    mcp_override_parameter: data_internal_omissions
+    required_behavior:
+      - retain omitted jobs in captured evidence
+      - allow omitted jobs in the complete developer diagnosis
+      - exclude omitted jobs from the Data Internal message
+      - exclude omitted jobs from rerun follow-ups
+      - treat credit_migration_matrix and CMM as the cmm omission group
+      - replace defaults when the MCP caller supplies an override
+      - include all jobs when the MCP caller supplies an empty list
+      - state the omission policy in trace annotations
+    punish_if_missing_from_discovery: true
+    punish_if_present_in_data_internal: true

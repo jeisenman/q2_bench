@@ -6,23 +6,47 @@ experiment_name: production_operations
 execution:
   runtime: container
   container_image: agentsdk-agentbench:local
-  parallelism: 6
+  parallelism: 5
   sandbox: read-only
   artifact_root: var/benchmark_matrix/prod-support-09-25-26
 judge_configuration: sol-high-judge
 rubric:
   - id: bounded_airflow_links
     weight: 2.0
-    reward: US and CA list links use raw 05:00 UTC start-date bounds, and every failed DAG has a bounded grid link.
+    reward: US and CA list links use raw 05:00 UTC lower and upper end-date bounds, and every failed DAG has a bounded grid link.
     punish: Links are encoded, locale-formatted, one-sided, use the wrong field, or omit a failed DAG.
+  - id: client_identity_resolution
+    weight: 2.5
+    reward: Resolves every client UUID found in a DAG or task identifier before triage and uses Resource Discovery names plus three-character UUID prefixes in both messages.
+    punish: Emits bare prefixes, raw UUIDs without names, skips task-embedded client IDs, or guesses an ambiguous identity.
+  - id: complete_log_retrieval
+    weight: 2.5
+    reward: Fetches the exact task-attempt log for every failure and continues past non-terminal discovery excerpts to terminal evidence, explicit truncation, or unavailable status.
+    punish: Skips exact-log retrieval because any log text exists or classifies a log that ends while the job is still running.
+  - id: evidence_efficiency
+    weight: 2.0
+    reward: Runs the reusable compact evidence command once, records source and status for every exact task attempt, and retains at most three evidence lines.
+    punish: Prints raw logs or execution JSONL, manually repeats parser work, or retries an unavailable utility.
   - id: report_structure
     weight: 2.5
-    reward: The report and window lead, followed by compact URLs, developer, and regional Data Internal blocks matching the linked prod-support reporting skill.
-    punish: Uses Markdown section headings, blank lines between bullets, wrong heading text, multiple clients per channel bullet, or uncombined client findings.
+    reward: The report and window lead, Developer starts with US and CA Cluster Health, and the alert-first Data Internal and actionable Follow Ups blocks remain compact.
+    punish: Cluster Health appears after failure details, Markdown headings or blank bullet lines are used, or Data Internal repeats verbose diagnoses.
+  - id: regional_consistency
+    weight: 3.0
+    reward: Every US finding appears only under US and every CA finding appears only under CA.
+    punish: A CA finding appears under US, a US finding appears under CA, or a cross-region group obscures source region.
+  - id: contradiction_detection
+    weight: 3.0
+    reward: Cluster status agrees with cited health evidence and warnings remain distinct from the overall verdict.
+    punish: The response calls a cluster both healthy and unhealthy, or promotes a retired-replica warning to an unsupported unhealthy verdict.
+  - id: grouped_reporting
+    weight: 3.0
+    reward: Groups clients sharing a job and groups multiple jobs for one client without repeating a client-job pair; proven timeout, OOM, and distinctness errors remain explicit.
+    punish: Repeats clients or jobs across bullets, leaves groupable findings split, or omits a proven high-value diagnosis.
   - id: complete_failure_inventory
     weight: 3.0
-    reward: Every regional Airflow failure appears in the trace and as an explicit Developer-message entry.
-    punish: Any failure is grouped away, omitted from the trace, or omitted from the Developer message.
+    reward: Every regional Airflow failure appears in the trace and remains explicit within a job-grouped Developer-message entry.
+    punish: Any failure is omitted from the trace or loses its client-specific diagnosis when grouped in the Developer message.
   - id: spark_evidence_race
     weight: 2.5
     reward: Starts exact Airflow-log and OMS queries concurrently for Spark jobs.
@@ -33,24 +57,28 @@ rubric:
     punish: Waits for unnecessary OMS work after definitive timeout evidence.
   - id: cluster_health
     weight: 2.0
-    reward: Checks KEDA ScaledObjects and pods in US and CA and reports both health lines.
-    punish: Omits either region, KEDA, pods, or evidence-qualified health status.
+    reward: Checks KEDA and pods in both regions, puts US and CA Cluster Health first in Developer, and formats Data Internal cluster issues as status plus observed symptoms.
+    punish: Cluster Health follows failure details, omits a region or evidence source, or reports a cluster issue without concrete symptoms.
   - id: resource_discovery_routing
     weight: 2.0
     reward: Uses resource discovery to select the client's correct resend application.
     punish: Guesses a domain or supplies a link for the wrong client environment.
   - id: large_resend_escalation
     weight: 1.5
-    reward: Calls out more than 100 unique events in developer and Data Internal messages.
-    punish: Hides a large resend count in either audience's message.
+    reward: Preserves the threshold evidence in Developer and adds the configured owner escalation in Follow Ups.
+    punish: Hides an above-threshold resend or repeats follow-up-only count details in Data Internal.
   - id: omitted_job_filter
     weight: 1.5
-    reward: Discovers all failures but omits configured noisy jobs from Data Internal.
-    punish: Drops them from investigation or includes them in the channel message.
+    reward: Discovers all failures while default-omitting D2P, MI3, subscriber, maintenance, backfill, and CMM groups from Data Internal and rerun follow-ups; honors MCP overrides.
+    punish: Drops omitted jobs from investigation, includes a default omission in Data Internal or rerun suggestions, or ignores an explicit MCP override.
   - id: root_cause_coverage
     weight: 2.5
     reward: Gives an evidence-backed root cause or explicitly states what evidence is missing.
     punish: Lists a failure without diagnosis or presents speculation as fact.
+  - id: follow_up_actionability
+    weight: 2.0
+    reward: Follow Ups contains only approval-gated resends and non-omitted reruns, escalates resends over 100 to pd-rix, and links jobs over five attempts to the KPO sizing agent interface.
+    punish: Includes diagnostic work, schema upgrades, omitted jobs, unlinked resends, or fails to include the pd-rix or KPO handoff when required.
   - id: automation
     weight: 1.5
     reward: Uses reusable Python scripts or CLIs, especially the Airflow CLI.
@@ -76,9 +104,9 @@ rubric:
     reward: Starts US failures, CA failures, and regional cluster health concurrently immediately after framing the report.
     punish: Serializes the initial regional and cluster-health workstreams.
   - id: token_efficiency
-    weight: 1.0
-    reward: Uses concise prompts, evidence, and responses without losing required facts.
-    punish: Emits oversized logs, repeats evidence, or spends tokens on irrelevant reasoning.
+    weight: 2.0
+    reward: Runs the compact evidence command once, retains at most three evidence lines per failure, and returns only the required report.
+    punish: Prints raw logs or execution JSONL, repeats evidence, retries failed utilities, or explores repository material unrelated to the case.
   - id: evolution_efficiency
     weight: 2.0
     reward: Improves elapsed time and estimated price versus comparable earlier traces.

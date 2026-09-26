@@ -41,19 +41,25 @@ def test_mcp_tool_runs_prod_support_agent() -> None:
     assert " operational day\n\nWindow: `" in result["output"]
     assert "URLs to validate\nhttps://airflow-us01" in result["output"]
     assert "Message for developer:" in result["output"]
-    assert "Message for Data Internal Channel\n:bangbang:" in result["output"]
+    assert "\n\n:bangbang: PROD SUPPORT " in result["output"]
+    assert "Message for Data Internal Channel" not in result["output"]
     assert "```markdown" not in result["output"]
-    assert "Follow Up:\nNo Airflow task retries" in result["output"]
+    assert "Follow Ups:\n\n- No action is required." in result["output"]
     assert "- Good" in result["output"]
     assert result["developer_report"].startswith("Message for developer:")
-    assert result["data_internal_report"].startswith(
-        "Message for Data Internal Channel"
-    )
+    assert result["data_internal_report"].startswith(":bangbang: PROD SUPPORT ")
     assert len(result["validation_urls"]) == EXPECTED_REGION_COUNT
-    assert result["follow_up"] == (
-        "No Airflow task retries are suggested for this operational window."
-    )
+    assert result["follow_up"] == "- No action is required."
     assert result["attributes"]["service"] == "orders"
+    assert result["attributes"]["data_internal_omissions"] == [
+        "d2p",
+        "mi3",
+        "subscriber",
+        "maintenance",
+        "backfill",
+        "cmm",
+    ]
+    assert result["related_agents"] == {"kpo_sizer": "agent://kpo-sizer/definition"}
     assert result["tool_calls"] == (
         "discover_airflow_failures",
         "fetch_airflow_task_log",
@@ -62,6 +68,38 @@ def test_mcp_tool_runs_prod_support_agent() -> None:
         "classify_failure",
         "trigger_resource_discovery_agent",
     )
+
+
+def test_mcp_tool_accepts_empty_data_internal_omission_override() -> None:
+    result = asyncio.run(
+        run_prod_support(
+            prompt="Investigate the orders pipeline.",
+            data_internal_omissions=[],
+        )
+    )
+
+    assert result["attributes"]["data_internal_omissions"] == []
+
+
+@pytest.mark.parametrize(
+    ("omissions", "message"),
+    [
+        (["unknown"], "unsupported Data Internal omission"),
+        (["d2p", "d2p"], "duplicate Data Internal omission"),
+        ([""], "must contain non-empty strings"),
+    ],
+)
+def test_mcp_tool_rejects_invalid_data_internal_omissions(
+    omissions: list[str],
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        asyncio.run(
+            run_prod_support(
+                prompt="Investigate the orders pipeline.",
+                data_internal_omissions=omissions,
+            )
+        )
 
 
 def test_mcp_resource_and_prompt_describe_agent() -> None:

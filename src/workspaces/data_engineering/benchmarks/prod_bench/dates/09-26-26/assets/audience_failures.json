@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "omit_from_data_internal": [
+    "check_for_subscriber_client_errors",
+    "expire_logs_3",
+    "opportunity_avro_aggregation",
+    "opp_history_backfill",
+    "credit_migration_matrix"
+  ],
+  "failures": [
+    {"task_id": "delivery_to_promise", "category": "client"},
+    {"task_id": "check_for_subscriber_client_errors", "category": "subscriber"},
+    {"task_id": "expire_logs_3", "category": "maintenance"},
+    {"task_id": "opportunity_avro_aggregation", "category": "backfill"},
+    {"task_id": "opp_history_backfill", "category": "backfill"},
+    {"task_id": "credit_migration_matrix", "category": "cmm"}
+  ]
+}

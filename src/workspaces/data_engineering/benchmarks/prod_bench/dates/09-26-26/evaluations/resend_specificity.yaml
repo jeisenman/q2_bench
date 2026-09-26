@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-resend-specificity-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: resend_specificity
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/resend-specificity
+judge_configuration: sol-high-judge
+rubric:
+  - id: resend_specificity
+    weight: 1.0
+    reward: Gives one complete line per supplied client, starts resolved actions with the reviewed clickable link, preserves date and count, and routes above-threshold cases to the configured owner.
+    punish: Omits a client, date, count, reviewed link, application status, or required escalation; invents routing; or hides the threshold.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "kind": "synthetic",
+    "purpose": "isolated resend capability fixture"
+  },
+  "resends": [
+    {
+      "client_name": "Scotiabank",
+      "date": "2026-09-14",
+      "unique_event_count": 208,
+      "reviewed_production_resend_application": "ca02"
+    },
+    {
+      "client_name": "CIBC Canada",
+      "date": "2026-09-14",
+      "unique_event_count": 79,
+      "reviewed_production_resend_application": "ca02"
+    },
+    {
+      "client_name": "Scotiabank Data Validation",
+      "date": "2026-09-14",
+      "unique_event_count": 11,
+      "reviewed_production_resend_application": "ca02"
+    }
+  ],
+  "applications": {
+    "ca02": "https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots"
+  }
+}

@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-cluster-health-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: cluster_health
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/cluster-health
+judge_configuration: sol-high-judge
+rubric:
+  - id: cluster_health
+    weight: 1.0
+    reward: Derives separate regional health statements from every supplied signal, preserves access gaps and pod warnings, and distinguishes current evidence from the historical window.
+    punish: Omits a field or region, converts an access gap into a healthy check, contradicts primary evidence, hides a warning, or treats current state as historical proof.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

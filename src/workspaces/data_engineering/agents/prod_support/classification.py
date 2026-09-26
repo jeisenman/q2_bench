@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
+    EvidenceSource,
     FailureDiagnosis,
     FailureKind,
 )
@@ -38,7 +39,12 @@ EVIDENCE_MARKERS = (
 )
 
 
-def classify_log(failure: AirflowFailure, log: str) -> FailureDiagnosis:
+def classify_log(
+    failure: AirflowFailure,
+    log: str,
+    *,
+    source: EvidenceSource = EvidenceSource.UNKNOWN,
+) -> FailureDiagnosis:
     """Classify a log without inferring unsupported causes."""
     normalized_log = log.lower()
     if any(marker in log for marker in DISTINCTNESS_MARKERS):
@@ -46,10 +52,19 @@ def classify_log(failure: AirflowFailure, log: str) -> FailureDiagnosis:
     elif any(marker in log for marker in OOM_MARKERS):
         kind, confidence = FailureKind.CONFIRMED_OOM, "confirmed"
     elif any(marker in log for marker in TIMEOUT_MARKERS):
-        kind, confidence = FailureKind.OMS_CONFIRMED_TIMEOUT, "confirmed"
+        kind = (
+            FailureKind.AIRFLOW_CONFIRMED_TIMEOUT
+            if source
+            in {
+                EvidenceSource.AIRFLOW_EXACT_TASK_ATTEMPT,
+                EvidenceSource.AIRFLOW_PRIOR_SAME_TASK,
+            }
+            else FailureKind.OMS_CONFIRMED_TIMEOUT
+        )
+        confidence = "confirmed"
     elif any(marker in normalized_log for marker in EXIT_MINUS_NINE_MARKERS):
         kind = FailureKind.UNKNOWN_RESOURCE_TERMINATION
-        confidence = "likely_oom"
+        confidence = "unknown"
     elif "SIGKILL" in log:
         if any(marker in log.lower() for marker in MEMORY_PRESSURE_MARKERS):
             kind, confidence = FailureKind.PROBABLE_OOM, "probable"
@@ -64,8 +79,10 @@ def classify_log(failure: AirflowFailure, log: str) -> FailureDiagnosis:
             kind=FailureKind.UNKNOWN,
             confidence="unknown",
             evidence=(),
+            source=source,
+            original_char_count=len(log),
         )
-    return _diagnosis(failure, kind, confidence, log)
+    return _diagnosis(failure, kind, confidence, log, source)
 
 
 def _diagnosis(
@@ -73,6 +90,7 @@ def _diagnosis(
     kind: FailureKind,
     confidence: str,
     log: str,
+    source: EvidenceSource,
 ) -> FailureDiagnosis:
     normalized = log.replace("\\n", "\n")
     lines = tuple(line.strip() for line in normalized.splitlines() if line.strip())
@@ -80,4 +98,11 @@ def _diagnosis(
         line for line in lines if any(marker in line for marker in EVIDENCE_MARKERS)
     )
     evidence = (matching or lines[-3:])[:3]
-    return FailureDiagnosis(failure.failure_id, kind, confidence, evidence)
+    return FailureDiagnosis(
+        failure.failure_id,
+        kind,
+        confidence,
+        evidence,
+        source=source,
+        original_char_count=len(log),
+    )

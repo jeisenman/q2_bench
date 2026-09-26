@@ -5,7 +5,7 @@ cases:
   - id: both-regions
     regions: [US-01, CA-02]
     evidence_uris:
-      US-01: ../evidence/current-us-healthy.json
+      US-01: ../evidence/current-us-cluster-observations.json
       CA-02: ../evidence/current-ca-dag-processor.json
     required_checks:
       - command: kubectl get scaledobjects -n scheduler
@@ -24,7 +24,12 @@ cases:
       - restart_count
       - evidence_timestamp
     prohibit_healthy_without_evidence: true
+    prohibit_unhealthy_when_primary_health_checks_pass: true
+    prohibit_conflicting_health_labels: true
+    require_warning_to_be_separate_from_overall_status: true
     require_cluster_health_bullets: true
     require_current_vs_historical_dates: true
-    evidence_gap:
-      - Existing evidence includes pods but not complete KEDA output.
+    status_policy:
+      - derive each regional status from primary application, pod, and DAG evidence
+      - keep access gaps and retired replicas as warnings unless primary checks fail
+      - reject any summary that conflicts with the cited evidence

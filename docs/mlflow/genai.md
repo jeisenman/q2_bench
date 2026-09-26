@@ -80,3 +80,34 @@ score.*, failure.kind, failure.message, reviewer.feedback
 
 Separate raw traces from derived summaries so a failed score can be
 re-examined without rerunning the agent.
+
+## Codex CLI tracing
+
+Install the MLflow Codex notifier with Node.js 18 or newer:
+
+```bash
+npm install -g @mlflow/codex
+```
+
+Then configure this checkout and the active Codex home:
+
+```bash
+uv run agentbench configure-codex-tracing \
+  --tracking-uri http://localhost:5000 \
+  --experiment-id 0
+```
+
+The command adds the user-level Codex `notify` hook and writes
+`.codex/mlflow-tracing.json` in the project. It refuses to replace a different
+notifier. `MLFLOW_TRACKING_URI` and `MLFLOW_EXPERIMENT_ID` can override the
+saved destination for an individual Codex process.
+
+Start MLflow with `uv run mlflow server --port 5000`, then launch Codex from
+the checkout. MLflow receives one conversation trace after each completed
+turn. Prompts, responses, tool inputs, and user metadata may be sensitive, so
+use an approved tracking server and retention policy.
+
+Codex reads `notify` from its user configuration; project configuration cannot
+define notification commands. See the
+[Codex advanced configuration documentation](https://developers.openai.com/codex/config-advanced/)
+and the MLflow Codex tracing integration documentation.

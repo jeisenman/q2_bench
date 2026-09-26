@@ -21,6 +21,8 @@ _DISPLAY_FIELDS: tuple[tuple[str, str], ...] = (
     ("Database", "database"),
     ("Storage", "storage"),
     ("DataLake", "datalake"),
+    ("Reviewed resend URL", "reviewed_production_resend_url"),
+    ("Routing source", "routing_source"),
 )
 
 
@@ -31,6 +33,8 @@ def _render_metadata(metadata: ResourceMetadata) -> list[str]:
         value = getattr(metadata, field_name)
         if value is not None:
             lines.append(f"- {label}: {value}")
+    if metadata.prod_support_ignore:
+        lines.append("- Production support: ignored by reviewed configuration")
     return lines
 
 

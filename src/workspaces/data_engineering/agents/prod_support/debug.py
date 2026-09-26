@@ -42,7 +42,8 @@ async def run_debug_day(
         message = f"debug capture already exists; refusing to overwrite: {day_root}"
         raise FileExistsError(message)
     dataset = await capture_day(source, operational_date, day_root)
-    prompt = f"Do prod support for {operational_date.isoformat()}."
+    prompt_date = operational_date.strftime("%m/%d/%y")
+    prompt = f"Do prod support for {prompt_date}."
     outcome = await ProdSupportAgent(
         ReplayAirflowFailureSource(dataset),
         clock=lambda: datetime.combine(
@@ -74,7 +75,7 @@ def _write_scaffold(
     case = {
         "id": case_id,
         "reference_time": captured_at.astimezone(UTC).isoformat(),
-        "prompt": f"Do prod support for {operational_date.isoformat()}.",
+        "prompt": f"Do prod support for {operational_date:%m/%d/%y}.",
         "operational_date": operational_date.isoformat(),
         "dataset_uri": dataset_uri,
         "expected_regions": ["US-01", "CA-02"],

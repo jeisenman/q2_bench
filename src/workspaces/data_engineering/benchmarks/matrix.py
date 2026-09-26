@@ -14,6 +14,7 @@ from workspaces.data_engineering.benchmarks.agent_configurations import (
     load_agent_configurations,
 )
 from workspaces.data_engineering.benchmarks.matrix_prompts import (
+    build_capability_prompt_lines,
     build_prod_support_prompt_lines,
 )
 
@@ -76,6 +77,9 @@ class MatrixManifest:
     operational_start: str
     operational_end: str
     case_id: str
+    capability: str | None
+    case_prompt: str
+    case_instructions: tuple[str, ...]
     runtime: str
     container_image: str
     parallelism: int
@@ -127,6 +131,13 @@ def load_matrix_run(
         )
     case = _load_case(cases_path, case_id)
     operational_window = _mapping(case, "operational_window", cases_path)
+    capability = _optional_text(raw, "capability", benchmark_path)
+    case_prompt = _optional_text(case, "prompt", cases_path) or ""
+    if capability is not None and not case_prompt:
+        raise MatrixManifestError.invalid(
+            cases_path,
+            "capability cases must define a prompt",
+        )
     try:
         judge_raw = registry.select(_text(raw, "judge_configuration", benchmark_path))
     except AgentConfigurationManifestError as error:
@@ -151,6 +162,9 @@ def load_matrix_run(
         operational_start=_text(operational_window, "start", cases_path),
         operational_end=_text(operational_window, "end", cases_path),
         case_id=case_id,
+        capability=capability,
+        case_prompt=case_prompt,
+        case_instructions=_string_tuple(case.get("instructions", []), cases_path),
         runtime=str(execution.get("runtime", "process")),
         container_image=str(execution.get("container_image", "")),
         parallelism=int(execution.get("parallelism", len(selected))),
@@ -168,11 +182,18 @@ def build_candidate_prompt(
 ) -> str:
     """Build candidate instructions, including controller-worker roles."""
     selected = profile or manifest.candidates[0]
-    lines = build_prod_support_prompt_lines(manifest, selected)
+    lines = (
+        build_capability_prompt_lines(manifest, selected)
+        if manifest.capability is not None
+        else build_prod_support_prompt_lines(manifest, selected)
+    )
     if selected.workers:
         lines.append(
-            "Delegate independent work to these configured subagents and preserve "
-            "their role attribution in the trace:"
+            "These configured subagents are available; use them only when they "
+            "help the named capability and preserve role attribution in the trace:"
+            if manifest.capability is not None
+            else "Delegate independent work to these configured subagents and "
+            "preserve their role attribution in the trace:"
         )
         lines.extend(
             f"- {worker.profile}: model={worker.model}, "
@@ -200,9 +221,14 @@ def build_matrix_judge_prompt(
         }
         for item in manifest.rubric
     ]
+    benchmark_kind = (
+        f"isolated {manifest.capability} capability"
+        if manifest.capability is not None
+        else "prod-support"
+    )
     return "\n".join(
         (
-            "Judge this prod-support agent trace using the weighted rubric.",
+            f"Judge this {benchmark_kind} agent trace using the weighted rubric.",
             "Score each criterion from 0 to 1. Do not excuse deterministic violations.",
             "Return JSON with overall_score, criteria, strengths, violations, "
             "rationale, and capability_scores. Attribute capability scores to "
@@ -223,6 +249,18 @@ def _mapping(raw: dict[str, Any], field: str, path: Path) -> dict[str, Any]:
 
 def _text(raw: dict[str, Any], field: str, path: Path) -> str:
     value = raw.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise MatrixManifestError.invalid(
+            path,
+            f"{field} must be a non-empty string",
+        )
+    return value
+
+
+def _optional_text(raw: dict[str, Any], field: str, path: Path) -> str | None:
+    value = raw.get(field)
+    if value is None:
+        return None
     if not isinstance(value, str) or not value.strip():
         raise MatrixManifestError.invalid(
             path,

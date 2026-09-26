@@ -1,0 +1,51 @@
+schema_version: 1
+suite_date: "2026-09-26"
+directory_date_format: MM-DD-YY
+benchmark_id: data_engineering.production_operations.prod_bench
+description: Isolated production-support capability evaluations.
+layers:
+  capabilities:
+    description: Each evaluation has one case and one primary rubric criterion.
+    evaluations:
+      - capability: date_window
+        case: date-window
+        manifest: evaluations/date_window.yaml
+      - capability: failure_discovery
+        case: failure-discovery
+        manifest: evaluations/failure_discovery.yaml
+      - capability: log_classification
+        case: log-classification
+        manifest: evaluations/log_classification.yaml
+      - capability: prior_run_fallback
+        case: prior-run-fallback
+        manifest: evaluations/prior_run_fallback.yaml
+      - capability: spark_evidence_race
+        case: spark-evidence-race
+        manifest: evaluations/spark_evidence_race.yaml
+      - capability: timeout_short_circuit
+        case: timeout-short-circuit
+        manifest: evaluations/timeout_short_circuit.yaml
+      - capability: cluster_health
+        case: cluster-health
+        manifest: evaluations/cluster_health.yaml
+      - capability: resource_routing
+        case: resource-routing
+        manifest: evaluations/resource_routing.yaml
+      - capability: resend_specificity
+        case: resend-specificity
+        manifest: evaluations/resend_specificity.yaml
+      - capability: channel_filtering
+        case: channel-filtering
+        manifest: evaluations/channel_filtering.yaml
+      - capability: developer_message
+        case: developer-message
+        manifest: evaluations/developer_message.yaml
+      - capability: data_internal_message
+        case: data-internal-message
+        manifest: evaluations/data_internal_message.yaml
+      - capability: regional_consistency
+        case: regional-consistency
+        manifest: evaluations/regional_consistency.yaml
+      - capability: grouped_reporting
+        case: grouped-reporting
+        manifest: evaluations/grouped_reporting.yaml

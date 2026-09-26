@@ -1,0 +1,14 @@
+schema_version: 1
+capability: evidence_efficiency
+description: Preserve complete evidence coverage without carrying raw log bodies
+cases:
+  - id: compact-exact-evidence
+    command: agentbench summarize-prod-support-evidence
+    requirements:
+      - run the reusable compact-evidence command once before manual inspection
+      - derive the operational window and dataset path from the case manifest
+      - retain one record per failure with exact retrieval source and status
+      - retain at most three diagnostic evidence lines per failure
+      - keep raw logs and execution JSONL out of the final response
+      - do not retry an unavailable utility with the same arguments
+      - do not inspect repository documentation or Git history

@@ -107,7 +107,11 @@ def test_prod_support_public_metadata_contains_no_expected_answers() -> None:
         Path(__file__).parents[5]
         / "src/workspaces/data_engineering/benchmarks/production_support/dates"
     )
-    for date_root in (root / "09-25-26", root / "09-26-26"):
+    for date_root in (
+        root / "09-25-26",
+        root / "09-26-26",
+        root / "09-26-26-v2",
+    ):
         public_paths = (
             date_root / "cases.yaml",
             *sorted((date_root / "capabilities").glob("*.yaml")),
@@ -116,6 +120,55 @@ def test_prod_support_public_metadata_contains_no_expected_answers() -> None:
             text = path.read_text(encoding="utf-8")
             assert "expected_" not in text
             assert "expected_classification" not in text
+            assert "required_client_findings" not in text
+            assert "required_us_findings" not in text
+            assert "required_ca_findings" not in text
+            assert "required_overall_status" not in text
+            assert "timeout_requirement" not in text
+
+
+def test_candidate_inputs_exclude_hidden_and_prior_report_outputs() -> None:
+    root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks/production_support/dates"
+    )
+    prohibited_names = {
+        "mcp_debug_result.json",
+        "mcp_debug_trace.json",
+        "compact_evidence.jsonl",
+        "holistic_evidence.json",
+    }
+
+    for date_root in (
+        root / "09-25-26",
+        root / "09-26-26",
+        root / "09-26-26-v2",
+    ):
+        cases = yaml.safe_load((date_root / "cases.yaml").read_text(encoding="utf-8"))
+        for case in cases["cases"]:
+            inputs = tuple(Path(item) for item in case.get("candidate_inputs", ()))
+            assert all("hidden" not in path.parts for path in inputs)
+            assert prohibited_names.isdisjoint(path.name for path in inputs)
+
+
+def test_candidate_health_evidence_contains_observations_not_outcomes() -> None:
+    root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks/production_support/dates"
+    )
+    paths = (
+        root / "09-25-26/evidence/current-us-cluster-observations.json",
+        root / "09-25-26/evidence/current-ca-dag-processor.json",
+        root / "09-25-26/evidence/current-ca-dag-processor-recovery.json",
+        root / "09-25-26/evidence/current-ca-deployment-events.json",
+        root / "09-26-26/assets/cluster_health_snapshot.json",
+        root / "09-26-26-v2/assets/cluster_health_snapshot.json",
+    )
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        assert '"verdict"' not in text
+        assert '"expected_interpretation"' not in text
 
 
 def test_agentbench_image_excludes_hidden_benchmark_files() -> None:

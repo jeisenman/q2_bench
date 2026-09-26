@@ -1,0 +1,188 @@
+schema_version: 1
+cases:
+  - id: date-window
+    prompt: Resolve the operational day and construct the exact US and CA Airflow failure-list links.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/empty.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls:
+      US-01: https://airflow-us01.precisionlender.com
+      CA-02: https://airflow-ca02.precisionlender.com
+    instructions:
+      - Return the operational date followed by one raw, unencoded link per region.
+      - Use lower and upper end-date filters and state=failed.
+      - Do not inspect failures or write either audience message.
+
+  - id: failure-discovery
+    prompt: Select every failed task instance whose end time falls inside the supplied operational window.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/failure_window.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Treat the start as inclusive and the end as exclusive.
+      - Return region, DAG ID, run ID, task ID, and try number for each selected record.
+      - Do not classify logs or create a support message.
+
+  - id: log-classification
+    prompt: Classify each supplied log using only explicit terminal evidence.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/log_evidence.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Return one classification and evidence excerpt per record.
+      - Distinguish a confirmed timeout, a pod failure without application cause, and dependency-state-only evidence.
+      - Do not infer OOM or causal order.
+
+  - id: prior-run-fallback
+    prompt: Starting from the newest run, select the first prior same-DAG and same-task run containing terminal evidence.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/prior_run_fallback.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Search in reverse chronological order without changing task identity.
+      - Return selected run ID, try number, classification, and exact evidence.
+      - Do not treat the latest HTTP 404 as the task root cause.
+
+  - id: spark-evidence-race
+    prompt: Run the supplied Airflow and OMS mock sources concurrently and report which source establishes the diagnosis first.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/spark_job.json
+    candidate_inputs:
+      - src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/mock_spark_sources.py
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Start both source commands before waiting for either result.
+      - Preserve source provenance in the response.
+      - Do not cancel either source in this case.
+
+  - id: timeout-short-circuit
+    prompt: Run the supplied Airflow and OMS mock sources concurrently, classify the explicit timeout, and cancel pending OMS work.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/spark_job.json
+    candidate_inputs:
+      - src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/mock_spark_sources.py
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Start both source commands before waiting for either result.
+      - When Airflow returns AirflowTaskTimeout, stop the OMS process.
+      - Report timeout classification and cancellation evidence.
+
+  - id: cluster-health
+    prompt: Produce separate evidence-qualified US and CA cluster-health findings.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/cluster_health.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Include KEDA status, unready pods, DAG-processor restart count, active DAG count, and evidence timestamp per region.
+      - Distinguish current health from historical failure-window health.
+      - Do not describe access denied as healthy.
+      - Derive overall status from primary application, parsing, DAG, and pod evidence while keeping secondary warnings distinct.
+      - Reject any conclusion that contradicts the supplied health evidence.
+
+  - id: resource-routing
+    prompt: Resolve each client's production resend application from the reviewed mapping.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/resource_routing.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Return one client per line.
+      - Use only reviewed production mappings.
+      - Mark a null reviewed mapping unresolved without guessing from subdomain.
+      - Render every resolved resend route as a clickable link.
+
+  - id: resend-specificity
+    prompt: Produce one complete resend instruction per client.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/resend_events.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Each line must start with a clickable reviewed resend link and contain client name, resend date, unique event count, and application status.
+      - Explicitly flag counts greater than 100.
+      - Recommend pd-rix follow-up for counts greater than 100.
+      - Do not omit unresolved routing or invent an application.
+
+  - id: channel-filtering
+    prompt: Split the supplied failures into Developer and Data Internal inventories using the audience policy.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/audience_failures.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Developer must retain every failure.
+      - Data Internal must omit subscriber, maintenance, backfill, and credit_migration_matrix or CMM jobs.
+      - Return task IDs only; do not diagnose or format full messages.
+
+  - id: developer-message
+    prompt: Render only the compact developer message from the supplied findings.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/message_findings.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Start with exactly "Message for developer:".
+      - Keep findings inside their source region and reject contradictory cluster-health claims.
+      - Group clients that fail on the same job and group multiple jobs for one client.
+      - Include job, complete error or evidence gap, evidence source, and root cause.
+      - Prefer explicit timeout, OOM, and distinctness diagnoses when supported.
+      - Use client names rather than raw UUIDs.
+
+  - id: data-internal-message
+    prompt: Render only the compact Data Internal message from the supplied findings.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/message_findings.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Use the exact Data Internal heading, alert line, and US/CA sections.
+      - Never place CA findings under US or US findings under CA.
+      - Group clients that fail on the same job and group multiple jobs for one client.
+      - Omit subscriber, maintenance, backfill, and credit_migration_matrix or CMM findings.
+      - Treat validate_event_bus_opportunities as sufficient to imply missing snapshots.
+      - Include explicit OOM, timeout, or distinctness diagnoses when supported.
+      - Use no periods, blank lines, resend counts, dates, or routing details.
+
+  - id: regional-consistency
+    prompt: Audit the draft for cross-region findings and cluster-health contradictions.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/regional_consistency.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Identify every finding placed under the wrong region.
+      - Identify every cluster-health claim that contradicts the authoritative evidence.
+      - Return corrected region placement and a contradiction-free CA health statement.
+      - Do not render the complete support report.
+
+  - id: grouped-reporting
+    prompt: Collapse the supplied findings into the minimum region-pure reporting bullets.
+    dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/grouped_reporting.json
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
+    airflow_base_urls: {}
+    instructions:
+      - Group all clients sharing one job into one bullet.
+      - Group all jobs for one client into one bullet.
+      - Mention every client-job pair exactly once.
+      - Do not add diagnoses or render unrelated report sections.

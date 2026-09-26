@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-regional-consistency-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: regional_consistency
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/regional-consistency
+judge_configuration: sol-high-judge
+rubric:
+  - id: regional_consistency
+    weight: 1.0
+    reward: Detects every cross-region placement and health contradiction, then returns corrected placement and an evidence-consistent status.
+    punish: Leaves a finding in the wrong region, preserves a contradictory status, overlooks supplied evidence, or renders unrelated report sections.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

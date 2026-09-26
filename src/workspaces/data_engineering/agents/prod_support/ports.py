@@ -1,10 +1,22 @@
 """Production and replay data interfaces for production support."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Protocol
 
 from domain import AgentRequest, AgentResult
-from workspaces.data_engineering.agents.prod_support.models import AirflowFailure
+from workspaces.data_engineering.agents.prod_support.cluster_health import (
+    RegionalClusterHealth,
+)
+from workspaces.data_engineering.agents.prod_support.models import (
+    AirflowFailure,
+    PriorTaskLog,
+    Region,
+)
+from workspaces.data_engineering.agents.prod_support.oms import (
+    OmsJobQueryParameters,
+)
 from workspaces.data_engineering.agents.prod_support.workloads import (
     AirflowTaskMetadata,
 )
@@ -20,6 +32,15 @@ class TaskLogUnavailableError(RuntimeError):
         super().__init__(
             f"Airflow task log unavailable for {failure_id}: HTTP {status_code}"
         )
+
+
+class OmsEvidenceUnavailableError(RuntimeError):
+    """Raised when an exact OMS query cannot return evidence."""
+
+    @classmethod
+    def not_configured(cls) -> OmsEvidenceUnavailableError:
+        """Return an error for a missing OMS evidence source."""
+        return cls("OMS source is not configured")
 
 
 class AirflowFailureSource(Protocol):
@@ -42,6 +63,34 @@ class AirflowTaskMetadataSource(Protocol):
         failure: AirflowFailure,
     ) -> AirflowTaskMetadata:
         """Return exact metadata for one failed task."""
+        ...
+
+
+class PriorTaskLogSource(Protocol):
+    """Read bounded prior logs for the exact same DAG and task."""
+
+    async def fetch_prior_logs(
+        self,
+        failure: AirflowFailure,
+        limit: int,
+    ) -> tuple[PriorTaskLog, ...]:
+        """Return attempts before the supplied failure, newest first."""
+        ...
+
+
+class OmsJobEvidenceSource(Protocol):
+    """Read one exact OMS job identity."""
+
+    async def query_job(self, parameters: OmsJobQueryParameters) -> str:
+        """Return bounded log evidence for one exact Spark attempt."""
+        ...
+
+
+class ClusterHealthSource(Protocol):
+    """Read current regional Airflow and KEDA health evidence."""
+
+    async def inspect_health(self, region: Region) -> RegionalClusterHealth:
+        """Return one evidence-derived regional observation."""
         ...
 
 

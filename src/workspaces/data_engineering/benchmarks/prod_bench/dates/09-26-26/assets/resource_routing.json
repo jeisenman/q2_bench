@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "kind": "synthetic",
+    "purpose": "isolated routing capability fixture"
+  },
+  "lookups": [
+    {
+      "client_name": "Mapped Bank",
+      "subdomain": "mapped",
+      "reviewed_production_resend_application": "us01"
+    },
+    {
+      "client_name": "Unresolved Bank",
+      "subdomain": "looks-like-us02",
+      "reviewed_production_resend_application": null
+    }
+  ],
+  "applications": {
+    "us01": "https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
+    "us02": "https://us02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
+    "ca02": "https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots"
+  },
+  "routing_rule": "Use only reviewed_production_resend_application; null is unresolved; render reviewed routes as clickable links."
+}

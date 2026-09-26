@@ -1,0 +1,20 @@
+schema_version: 1
+matrix_id: prod-bench-spark-evidence-race-09-26-26
+suite: prod-bench-09-26-26
+benchmark: prod-bench
+capability: spark_evidence_race
+experiment_name: production_operations
+execution:
+  runtime: container
+  container_image: agentsdk-agentbench:local
+  parallelism: 5
+  sandbox: read-only
+  artifact_root: var/benchmark_matrix/prod-bench-09-26-26/spark-evidence-race
+judge_configuration: sol-high-judge
+rubric:
+  - id: spark_evidence_race
+    weight: 1.0
+    reward: Trace proves both exact evidence sources started before either result was awaited, and the response preserves source provenance.
+    punish: Runs sources serially, uses only one source, claims concurrency without trace evidence, or performs unrelated reporting.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

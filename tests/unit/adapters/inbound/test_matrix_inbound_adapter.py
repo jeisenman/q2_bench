@@ -137,7 +137,7 @@ def test_command_builds_container_and_process_variants(tmp_path) -> None:
 
     assert container[:2] == ["docker", "run"]
     assert "--env-file" not in container
-    assert container[container.index("--sandbox") + 1] == "danger-full-access"
+    assert container[container.index("--sandbox") + 1] == "read-only"
     assert container[container.index("--profile") + 1] == "bedrock"
     assert "--read-only" in container
     assert "--skip-git-repo-check" in container
@@ -364,6 +364,7 @@ def test_candidate_process_persists_trace_and_usage(monkeypatch, tmp_path) -> No
     assert result.input_tokens == INPUT_TOKENS
     assert result.output_tokens == OUTPUT_TOKENS
     assert result.trace_path.is_file()
+    assert result.trace_path.parent.parent.name == manifest.candidates[0].profile
 
 
 def test_judge_process_returns_structured_assessment(monkeypatch, tmp_path) -> None:

@@ -1,6 +1,5 @@
 {
   "captured_at": "2026-09-25T15:00:12.581871+00:00",
-  "claim": "CA Airflow DAG processor is unhealthy",
   "evidence": {
     "airflow_dag_inventory": {
       "captured_at": "2026-09-25T15:00:12.581871+00:00",
@@ -48,7 +47,6 @@
       "pod_phase": "Running"
     },
     "oms": {
-      "corroborates_claim": false,
       "queries": [
         {
           "result_count": 0,
@@ -77,6 +75,5 @@
     }
   },
   "mutation_performed": false,
-  "region": "CA-02",
-  "verdict": "confirmed_by_airflow_health_not_correlated_in_oms"
+  "region": "CA-02"
 }

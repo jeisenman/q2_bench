@@ -7,11 +7,6 @@
         "logs_available": false,
         "restart_count": 13
       },
-      "expected_interpretation": {
-        "suggest_bounce": true,
-        "tripped": true,
-        "user_message_required": true
-      },
       "l3_main": {
         "expected_count": 6,
         "observed_active_count": 0
@@ -28,11 +23,6 @@
         },
         "logs_available": true,
         "restart_count": 0
-      },
-      "expected_interpretation": {
-        "suggest_bounce": false,
-        "tripped": false,
-        "user_message_required": false
       },
       "l3_main": {
         "expected_count": 6,

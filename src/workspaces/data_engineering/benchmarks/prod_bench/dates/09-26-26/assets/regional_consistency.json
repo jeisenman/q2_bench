@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "authoritative_cluster_health": {
+    "US": "healthy",
+    "CA": "healthy_with_retired_replica_warning"
+  },
+  "draft": {
+    "US": [
+      "CA cluster is unhealthy for support triage",
+      "One retired CA DAG processor replica is Running but unready"
+    ],
+    "CA": [
+      "Scotiabank failed on validate_event_bus_opportunities"
+    ],
+    "summary": "CA application and DAG parsing health are good"
+  }
+}

@@ -59,7 +59,7 @@ async def capture_day(
     records = []
     for failure in candidates:
         try:
-            log = failure.log or await source.fetch_log(failure)
+            log = await source.fetch_log(failure)
         except TaskLogUnavailableError as error:
             log = str(error)
         records.append(_serialize(failure, scrubber.redact(log)))
