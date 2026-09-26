@@ -319,6 +319,18 @@ Capture includes the preceding day so benchmark evaluation can verify that the
 agent applies the correct `end_date >= 05:00:00Z` cutoff. Captures remain
 ignored by Git and require human review before becoming scored benchmark data.
 
+To run support against genuine production Airflow and prepare an uncurated
+benchmark schema from the same redacted snapshot:
+
+```bash
+uv run agentbench debug-prod-support --date 2026-09-25
+```
+
+The generated `suite.yaml` and `cases.yaml` remain under the day's ignored
+`var/benchmark_data/.../benchmark/` directory and contain no expected answers
+or runnable system cases. `evaluation.yaml` is deferred until the case and
+rubric are curated.
+
 Architecture details are in
 [`docs/source-architecture-proposal.md`](docs/source-architecture-proposal.md).
 The pinned MLflow reference starts at

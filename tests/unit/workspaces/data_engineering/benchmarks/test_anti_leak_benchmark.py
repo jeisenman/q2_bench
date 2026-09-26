@@ -100,3 +100,26 @@ def test_suite_declares_protocol_subcapabilities() -> None:
         configured = yaml.safe_load((root / fixture).read_text(encoding="utf-8"))
         assert configured["subcapabilities"]
         assert configured["cases"]
+
+
+def test_prod_support_public_metadata_contains_no_expected_answers() -> None:
+    root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks/production_support/dates"
+    )
+    for date_root in (root / "09-25-26", root / "09-26-26"):
+        public_paths = (
+            date_root / "cases.yaml",
+            *sorted((date_root / "capabilities").glob("*.yaml")),
+        )
+        for path in public_paths:
+            text = path.read_text(encoding="utf-8")
+            assert "expected_" not in text
+            assert "expected_classification" not in text
+
+
+def test_agentbench_image_excludes_hidden_benchmark_files() -> None:
+    root = Path(__file__).parents[5]
+    dockerignore = (root / ".dockerignore").read_text(encoding="utf-8")
+
+    assert "src/workspaces/data_engineering/benchmarks/**/hidden" in dockerignore

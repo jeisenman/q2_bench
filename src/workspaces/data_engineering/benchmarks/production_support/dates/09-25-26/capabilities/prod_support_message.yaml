@@ -3,16 +3,29 @@ capability: prod_support_message
 description: Render a concise regional message for the production-support channel.
 cases:
   - id: us-ca-channel-message
-    input:
-      operational_date: "2026-09-24"
-      us_status: ongoing
-      ca_status: ongoing
-      retry_candidates:
-        - Bremer Bank Relationship Signals
-        - Valley National Bank Core Account Financial Statements
     expectations:
-      required_heading: PROD SUPPORT 2026-09-24
+      required_message_heading: Message for Data Internal Channel
+      required_alert_heading: ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:"
       required_regions: [US, CA]
+      require_status_under_each_region: true
+      require_compact_bullets: true
+      prohibit_markdown_section_headings: true
+      prohibit_blank_lines_between_bullets: true
+      one_client_per_bullet: true
+      combine_same_client_findings: true
+      client_uuid_prefix_length: 3
+      omit_jobs:
+        - check_for_subscriber_client_errors
+        - log_cleanup
+        - opportunity_avro_aggregation_backfill
+        - opp_history_backfill
+      event_resend_format:
+        one_client_per_line: true
+        include_exact_dates: true
+        include_correct_application: true
+        include_unique_event_count: true
+      large_resend_threshold: 100
+      require_large_resend_warning: true
       required_us_findings:
         - Valley National Bank failed DV.
         - Bremer Bank failed Relationship Signals aggregation.

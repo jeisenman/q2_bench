@@ -113,7 +113,7 @@ def test_publishes_parent_and_nested_matrix_runs(monkeypatch, tmp_path) -> None:
                 {
                     "role": "worker",
                     "model": "luna",
-                    "capability": "log-analysis",
+                    "capability": "log-analysis, evidence synthesis & reporting",
                     "score": CAPABILITY_SCORE,
                 }
             ],
@@ -136,7 +136,8 @@ def test_publishes_parent_and_nested_matrix_runs(monkeypatch, tmp_path) -> None:
     assert configured["experiment"] == "production_operations"
     assert configured["runs"][1][2] is True
     assert configured["metrics"]["judge_score"] == JUDGE_SCORE
-    assert configured["metrics"]["capability.worker.log_analysis"] == CAPABILITY_SCORE
+    capability_metric = "capability.worker.log_analysis_evidence_synthesis_reporting"
+    assert configured["metrics"][capability_metric] == CAPABILITY_SCORE
     assert len(configured["artifacts"]) == ARTIFACT_COUNT
     assert [span["span_type"] for span in configured["spans"]] == [
         "WORKFLOW",

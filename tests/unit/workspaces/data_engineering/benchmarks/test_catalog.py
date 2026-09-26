@@ -9,6 +9,9 @@ from workspaces.data_engineering.benchmarks import (
     BenchmarkManifestError,
     default_catalog,
 )
+from workspaces.data_engineering.benchmarks.case_files import (
+    load_case_with_expectations,
+)
 
 LARGE_RESEND_THRESHOLD = 100
 
@@ -50,15 +53,16 @@ def test_catalog_reports_unknown_id() -> None:
 
 def test_prod_support_case_combines_us_and_ca_expectations() -> None:
     captured_ca_dag_count = 35
-    expected_us_failure_count = 7
+    expected_us_failure_count = 17
     cases_path = (
         Path(__file__).parents[5]
         / "src/workspaces/data_engineering/benchmarks"
         / "production_support/dates/09-25-26/cases.yaml"
     )
     configured = yaml.safe_load(cases_path.read_text(encoding="utf-8"))["cases"]
-    case = next(
-        item for item in configured if item["id"] == "prod-support-us-ca-2026-09-25"
+    case = load_case_with_expectations(
+        cases_path,
+        "prod-support-us-ca-2026-09-25",
     )
 
     assert case["prompt"] == "Do prod support"
@@ -66,6 +70,36 @@ def test_prod_support_case_combines_us_and_ca_expectations() -> None:
     assert case["expected_failure_counts"] == {
         "US-01": expected_us_failure_count,
         "CA-02": 0,
+    }
+    assert case["required_capture_summary"].startswith(
+        "Local capture contains 17 failures"
+    )
+    assert case["required_report_order"][:2] == [
+        "report_heading",
+        "operational_window",
+    ]
+    assert case["required_output_format"] == {
+        "urls_heading": "URLs to validate",
+        "developer_heading": "Message for developer:",
+        "data_internal_heading": "Message for Data Internal Channel",
+        "prohibit_markdown_section_headings": True,
+        "prohibit_blank_lines_between_bullets": True,
+        "one_client_per_data_internal_bullet": True,
+        "combine_same_client_findings": True,
+        "client_uuid_prefix_length": 3,
+    }
+    assert case["expected_developer_message"].startswith("Message for developer:\n  -")
+    assert case["expected_prod_support_message"].startswith(
+        "Message for Data Internal Channel\n"
+        ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:\n"
+        "US\n- Ongoing\n"
+    )
+    assert "\n\n" not in case["expected_developer_message"]
+    assert "\n\n" not in case["expected_prod_support_message"]
+    assert set(case["required_initial_parallel_workstreams"]) == {
+        "US-01_failure_discovery",
+        "CA-02_failure_discovery",
+        "regional_cluster_health",
     }
     assert len(case["expected_failure_ids"]) == expected_us_failure_count
     assert case["require_reported_dags_exist"] is True
@@ -133,6 +167,7 @@ def test_prod_support_suite_registers_capability_fixtures() -> None:
         "capabilities/failure_discovery.yaml",
         "capabilities/log_classification.yaml",
         "capabilities/spark_evidence.yaml",
+        "capabilities/prior_run_log_fallback.yaml",
         "capabilities/cluster_health.yaml",
         "capabilities/channel_filtering.yaml",
         "capabilities/resend_routing.yaml",
@@ -147,24 +182,65 @@ def test_prod_support_suite_registers_capability_fixtures() -> None:
         assert fixture["cases"]
 
 
+def test_developer_message_fixtures_require_compact_per_client_output() -> None:
+    benchmark_root = (
+        Path(__file__).parents[5]
+        / "src/workspaces/data_engineering/benchmarks"
+        / "production_support/dates"
+    )
+    for snapshot in ("09-25-26", "09-26-26"):
+        fixture = yaml.safe_load(
+            (
+                benchmark_root / snapshot / "capabilities/developer_message.yaml"
+            ).read_text(encoding="utf-8")
+        )
+        expectations = fixture["cases"][0]["expectations"]
+
+        assert expectations["required_heading"] == "Message for developer:"
+        assert expectations["required_bullet_prefix"] == "  - "
+        assert expectations["require_compact_bullets"] is True
+        assert expectations["prohibit_markdown_section_headings"] is True
+        assert expectations["prohibit_blank_lines_between_bullets"] is True
+        assert expectations["require_one_client_or_recurring_issue_per_bullet"] is True
+        assert expectations["require_one_entry_per_discovered_failure"] is True
+        assert expectations["require_evidence_qualified_causality"] is True
+        assert expectations["require_grid_link_per_failed_dag"] is True
+
+    current = yaml.safe_load(
+        (benchmark_root / "09-26-26/capabilities/developer_message.yaml").read_text(
+            encoding="utf-8"
+        )
+    )["cases"][0]["expectations"]
+    assert "required_grouped_finding" not in current
+    assert [item["client"] for item in current["required_client_findings"]] == [
+        "Scotiabank",
+        "CIBC Canada",
+        "Scotiabank Data Validation",
+    ]
+
+
 def test_previous_snapshot_uses_bounded_links_and_v2_capabilities() -> None:
     root = (
         Path(__file__).parents[5]
         / "src/workspaces/data_engineering/benchmarks"
         / "production_support/dates/09-25-26"
     )
-    cases = yaml.safe_load((root / "cases.yaml").read_text(encoding="utf-8"))
-    case = cases["cases"][0]
+    case = load_case_with_expectations(
+        root / "cases.yaml",
+        "prod-support-us-ca-2026-09-25",
+    )
     suite = yaml.safe_load((root / "suite.yaml").read_text(encoding="utf-8"))
 
     assert suite["operational_date"] == "2026-09-24"
     assert case["expected_ui_window"] == {
-        "end_date_gte": "2026-09-24T09:00:00Z",
-        "end_date_lt": "2026-09-25T09:00:00Z",
+        "start_date_gte": "2026-09-24T05:00:00Z",
+        "start_date_lt": "2026-09-25T05:00:00Z",
     }
     for link in case["expected_cluster_links"].values():
-        assert "_flt_1_end_date=2026-09-25" in link
-        assert "_flt_2_end_date=2026-09-24" in link
+        assert "_flt_1_start_date=2026-09-24T05:00:00Z" in link
+        assert "_flt_2_start_date=2026-09-25T05:00:00Z" in link
+        assert "_flt_3_state=failed" in link
+        assert "%" not in link
     assert (
         "capabilities/spark_evidence.yaml"
         in (suite["layers"]["capabilities"]["fixtures"])
@@ -187,21 +263,19 @@ def test_new_prod_support_snapshot_versions_september_25_data() -> None:
     cases = yaml.safe_load((suite_root / "cases.yaml").read_text(encoding="utf-8"))
     case = cases["cases"][0]
     previous_root = suite_root.with_name("09-25-26")
-    previous_cases = yaml.safe_load(
+    previous_case = yaml.safe_load(
         (previous_root / "cases.yaml").read_text(encoding="utf-8")
-    )
-    previous_case = previous_cases["cases"][0]
+    )["cases"][0]
 
     assert suite["suite_date"] == "2026-09-26"
     assert suite["operational_date"] == "2026-09-25"
     assert suite["layers"]["system"]["cases"] == [
         "prod-support-us-ca-operational-2026-09-25"
     ]
-    assert set(previous_case).issubset(case)
-    assert case["expected_failure_counts"] == {}
-    assert case["expected_cluster_links"] == {}
-    assert case["expected_developer_message"] is None
-    assert case["expected_prod_support_message"] is None
+    assert set(previous_case) == set(case).difference(
+        {"candidate_inputs", "prohibit_agent_changes"}
+    )
+    assert not any(key.startswith("expected_") for key in case)
 
     fixtures = suite["layers"]["capabilities"]["fixtures"]
     assert "capabilities/spark_evidence.yaml" in fixtures

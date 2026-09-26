@@ -30,6 +30,7 @@ from cli.prod_support_replay import (
 from workspaces.data_engineering.agents.prod_support import (
     PROD_SUPPORT_DEFINITION,
     capture_day,
+    run_debug_day,
 )
 from workspaces.data_engineering.benchmarks import (
     default_catalog,
@@ -179,6 +180,31 @@ def capture_prod_support(operational_date: datetime, output_root: Path) -> None:
         )
     )
     click.echo(str(target))
+
+
+@cli.command("debug-prod-support")
+@click.option(
+    "--date",
+    "operational_date",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    required=True,
+)
+def debug_prod_support(operational_date: datetime) -> None:
+    """Run production-backed support and prepare an uncurated benchmark."""
+    artifacts = asyncio.run(
+        run_debug_day(
+            AirflowApiSource.from_environment(),
+            operational_date.date(),
+            Path("var/benchmark_data/prod_support"),
+        )
+    )
+    click.echo(
+        "captured\t"
+        f"{len(artifacts.outcome.failures)} failures\t"
+        "review required before promotion"
+    )
+    click.echo(f"dataset\t{artifacts.dataset}")
+    click.echo(f"benchmark\t{artifacts.benchmark_root}")
 
 
 @cli.command("evaluate")

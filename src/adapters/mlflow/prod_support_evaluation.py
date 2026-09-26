@@ -11,6 +11,9 @@ from typing import Any, cast
 import yaml
 
 from workspaces.data_engineering.benchmarks import dag_existence_rate
+from workspaces.data_engineering.benchmarks.case_files import (
+    load_case_with_expectations,
+)
 
 
 class RecordedEvaluationError(RuntimeError):
@@ -52,20 +55,12 @@ def load_recorded_evaluation(
     result_path: Path,
 ) -> RecordedEvaluation:
     """Load one curated case and its previously recorded agent result."""
-    cases = _load_mapping(cases_path)
-    configured = cases.get("cases")
-    if not isinstance(configured, list):
-        raise RecordedEvaluationError.invalid(cases_path, "cases must be a list")
-    selected = next(
-        (
-            item
-            for item in configured
-            if isinstance(item, dict) and item.get("id") == case_id
-        ),
-        None,
-    )
-    if selected is None:
-        raise RecordedEvaluationError.unknown_case(case_id)
+    try:
+        selected = load_case_with_expectations(cases_path, case_id)
+    except KeyError as error:
+        raise RecordedEvaluationError.unknown_case(case_id) from error
+    except (TypeError, ValueError) as error:
+        raise RecordedEvaluationError.invalid(cases_path, str(error)) from error
     expected_ids = selected.get("expected_failure_ids")
     expected_diagnoses = selected.get("expected_diagnoses")
     if not isinstance(expected_ids, list) or not isinstance(expected_diagnoses, dict):

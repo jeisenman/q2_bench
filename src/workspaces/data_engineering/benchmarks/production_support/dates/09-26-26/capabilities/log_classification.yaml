@@ -1,0 +1,14 @@
+schema_version: 1
+capability: log_classification
+description: Classify terminal evidence without inferring unsupported causes.
+cases:
+  - id: explicit-airflow-timeout
+    failure_id: synthetic|airflow-timeout
+    try_number: 1
+    evidence:
+      - "airflow.exceptions.AirflowTaskTimeout: Timeout, PID: 2555323"
+  - id: inconclusive-driver-exit
+    failure_id: synthetic|driver-exit
+    try_number: 1
+    evidence:
+      - Driver badly exited without an explicit terminal cause.

@@ -74,9 +74,25 @@ responses into `src/`.
 
 ## Daily workflow
 
+### 0. Use debug mode for a production-backed draft
+
+```bash
+uv run agentbench debug-prod-support --date 2026-09-25
+```
+
+Debug mode performs one read-only production capture, redacts logs before
+persistence, replays the agent from that exact snapshot, prints the support
+report, and creates an unscored benchmark draft under ignored `var/` storage.
+The draft has `status: captured`, no registered system case, and only neutral
+expectation placeholders. It writes `suite.yaml` and `cases.yaml`;
+`evaluation.yaml` is deferred until curation supplies a runnable case and
+rubric. It currently captures Airflow only; infrastructure, OMS, and Resource
+Discovery evidence still require separate approved collection.
+
 ### 1. Scaffold the next day
 
-Copy the preceding suite structure, not its conclusions:
+Start from the debug draft when available. Otherwise, copy the preceding suite
+structure, not its conclusions:
 
 ```bash
 previous=src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26
@@ -91,6 +107,10 @@ Create a new `cases.yaml` from the scaffold below rather than copying prior
 expected failures or messages. Update `suite_date`, descriptions, case IDs,
 dataset paths, and matrix IDs. Until collection is complete, omit the case from
 `layers.system.cases` or mark its daily dataset `future`.
+
+Never promote the debug draft directly. Review and minimize its dataset, add
+source-grounded evidence, author expectations independently, run the anti-leak
+audit, and only then copy curated files into a new dated suite under `src/`.
 
 ```yaml
 schema_version: 1

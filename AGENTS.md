@@ -37,6 +37,8 @@ explicit contracts, vectorized batch operations, and deterministic behavior.
 ## Code rules
 
 - No tracked source or documentation file may exceed 400 lines.
+- Subagent worker parallelism must never exceed 5. Reject configurations with
+  `max_parallel` greater than 5 rather than silently reducing the requested value.
 - Add type annotations to all production functions.
 - Add concise docstrings to public modules, classes, and functions.
 - Raise specific exceptions with actionable messages.
@@ -55,22 +57,3 @@ explicit contracts, vectorized batch operations, and deterministic behavior.
    workflow changes.
 5. Run the repository quality command.
 6. Summarize changed behavior, verification, and remaining risks.
-
-## Anti-leak benchmark protocol
-
-- Invoke the anti-leak agent whenever creating or changing an agent benchmark,
-  its public assets, hidden expectations, matrix, container, mounts, or runtime
-  security profile.
-- Run this audit concurrently as a side process. A Sol controller must
-  coordinate Luna subagents for independent public-versus-hidden data checks
-  and container-security checks.
-- The audit must inspect sanitized metadata only. Never ask a reviewer to print
-  secret values or broadly enumerate host files.
-- Fail closed when public assets expose expected answers, credentials are
-  copied into an image, hidden data is mounted into a candidate container, or
-  the runtime has an unjustified privileged security profile.
-- Convert every confirmed, reproducible leakage into a dated anti-leak
-  benchmark case with sanitized evidence, a protected expected finding, and a
-  regression assertion.
-- Do not encode speculative findings as expected answers. Record uncertain
-  observations as review gaps until independently evidenced.

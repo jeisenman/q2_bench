@@ -6,14 +6,23 @@ expected_api_window:
   end_date_gte: "2026-09-25T05:00:00Z"
   end_date_lt: "2026-09-26T05:00:00Z"
 expected_ui_window:
-  end_date_gte: "2026-09-25T09:00:00Z"
-  end_date_lt: "2026-09-26T09:00:00Z"
+  start_date_gte: "2026-09-25T05:00:00Z"
+  start_date_lt: "2026-09-26T05:00:00Z"
 expected_cluster_links:
-  US-01: "https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-26T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#"
-  CA-02: "https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-26T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#"
+  US-01: "https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_start_date=2026-09-25T05:00:00Z&_flt_3_state=failed&_flt_2_start_date=2026-09-26T05:00:00Z#"
+  CA-02: "https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_start_date=2026-09-25T05:00:00Z&_flt_3_state=failed&_flt_2_start_date=2026-09-26T05:00:00Z#"
 expected_failure_counts:
   US-01: 5
   CA-02: 45
+required_output_format:
+  urls_heading: URLs to validate
+  developer_heading: "Message for developer:"
+  data_internal_heading: Message for Data Internal Channel
+  prohibit_markdown_section_headings: true
+  prohibit_blank_lines_between_bullets: true
+  one_client_per_data_internal_bullet: true
+  combine_same_client_findings: true
+  client_uuid_prefix_length: 3
 expected_failure_ids:
   - US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-24T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data
   - US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-24T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data
@@ -78,59 +87,40 @@ expected_diagnoses:
   unknown_resource_termination:
     - Bremer Bank Relationship Signals time-series aggregation carry-forward
 expected_developer_message: |
-  Message for Developer
-  - US Cluster failures: https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-26T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
-  - CA Cluster failures: https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-26T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
-  - US Cluster Health:
-    - US pods appear healthy as of 2026-09-26T17:04:26Z; KEDA status is
-      unavailable because the configured read-only identity was denied.
-    - We had 3575 DAG processor restarts.
-  - CA Cluster Health:
-    - CA Airflow application health and DAG parsing appear healthy as of
-      2026-09-26T17:04:26Z, but one retired DAG processor replica remained
-      unready with 13 restarts after a 30-second retry; KEDA status is
-      unavailable because the configured read-only identity was denied.
-    - We had 13 DAG processor restarts.
-  - DAGs parsing properly: 209 DAGs exist in US, 34 DAGs exist in CA.
-  - These health bullets describe current 2026-09-26 state; the failures below
-    are historical 2026-09-25 evidence.
-  - Bremer Bank Relationship Signals time-series aggregation remains an ongoing
-    carry-forward from the prior operational day. Attempt 9 exited -9 and OMS
-    supplied no corroborating memory signal; classification:
-    unknown_resource_termination.
-  - US Delivery to Promise Other Products failed after an ABFS parquet read
-    error, executor loss, and Spark stage exhaustion.
-  - CA Delivery to Promise Other Products failed after repeated executor loss;
-    the initiating cause is unavailable.
-  - US Delivery to Promise has no terminal cause in the recorded same-task logs.
-  - US MI3 validation failed because its pod exited 1 without a termination message.
-  - Subscriber checks failed on stale OpportunitySaved schema versions.
-  - Scotiabank has 208 missing opportunity snapshots for 2026-09-14; CIBC
-    Canada has 79; Scotiabank Data Validation has 11. Resource discovery
-    completed, but no reviewed production resend application mapping exists.
-  - CA log cleanup failed parsing the value "catchup".
-  - Remaining CA L3 and aggregation failures expose dependency state only.
-  - Ten CA opportunity-history logs are unavailable and have no recorded prior
-    same-task terminal evidence.
+  Message for developer:
+    - US Cluster Health: US pods appear healthy as of 2026-09-26T17:04:26Z; KEDA status is unavailable because the configured read-only identity was denied; 3575 DAG processor restarts were recorded.
+    - CA Cluster Health: CA Airflow application health and DAG parsing appear healthy as of 2026-09-26T17:04:26Z, but one retired DAG processor replica remained unready with 13 restarts after a 30-second retry; KEDA status is unavailable because the configured read-only identity was denied.
+    - DAGs parsing properly: 209 DAGs exist in US, 34 DAGs exist in CA.
+    - These health bullets describe current 2026-09-26 state; the failures below are historical 2026-09-25 evidence.
+    - Bremer Bank Relationship Signals time-series aggregation remains an ongoing carry-forward from the prior operational day. Attempt 9 exited -9 and OMS supplied no corroborating memory signal; classification: unknown_resource_termination.
+    - US Delivery to Promise Other Products failed after an ABFS parquet read error, executor loss, and Spark stage exhaustion.
+    - CA Delivery to Promise Other Products failed after repeated executor loss; the initiating cause is unavailable.
+    - US Delivery to Promise has no terminal cause in the recorded same-task logs.
+    - US MI3 validation failed because its pod exited 1 without a termination message.
+    - Subscriber checks failed on stale OpportunitySaved schema versions.
+    - Scotiabank has 208 missing opportunity snapshots for 2026-09-14.
+    - CIBC Canada has 79 missing opportunity snapshots for 2026-09-14.
+    - Scotiabank Data Validation has 11 missing opportunity snapshots for 2026-09-14.
+    - Resource discovery completed, but no reviewed production resend application mapping exists.
+    - CA log cleanup failed parsing the value "catchup".
+    - Remaining CA L3 and aggregation failures expose dependency state only.
+    - Ten CA opportunity-history logs are unavailable and have no recorded prior same-task terminal evidence.
 expected_prod_support_message: |
-  Message for Data Internal
+  Message for Data Internal Channel
   :bangbang: PROD SUPPORT 2026-09-25 :bangbang:
-
   US
-  - Delivery to Promise Other Products failed on an ABFS parquet read followed
-    by executor loss and stage exhaustion.
-  - Delivery to Promise and MI3 validation lack a terminal underlying cause.
-
+  - Ongoing
+    - BoFA (792) failed on Delivery to Promise—Other Products after an ABFS parquet read, executor loss, and stage exhaustion.
+    - Glacier Bancorp (9d2) failed on Delivery to Promise without a terminal cause in the recorded same-task logs.
+    - Andi Application Owner (621) failed on Market Insights validation because its pod exited 1 without a termination message.
   CA
-  - Scotiabank: 208 missing opportunity snapshots for 2026-09-14. This exceeds
-    100 and requires Developer and Data Internal escalation.
-  - CIBC Canada: 79 missing opportunity snapshots for 2026-09-14.
-  - Scotiabank Data Validation: 11 missing opportunity snapshots for 2026-09-14.
-  - Resend application routing remains unresolved because Resource Discovery
-    has no reviewed production mapping.
-  - Delivery to Promise Other Products failed after executor loss; remaining
-    L3 and aggregation records expose dependency state or unavailable logs.
-  - Subscriber checks, log cleanup, and configured backfills are omitted.
+  - Ongoing
+    - Scotiabank (1f0) failed on Delivery to Promise—Other Products after executor loss and has 208 missing opportunity snapshots for 2026-09-14; the resend count exceeds 100.
+    - CIBC Canada (fbf) has 79 missing opportunity snapshots for 2026-09-14.
+    - Scotiabank Data Validation (b49) has 11 missing opportunity snapshots for 2026-09-14.
+    - Resend application routing remains unresolved because Resource Discovery has no reviewed production mapping.
+    - Delivery to Promise Other Products failed after executor loss; remaining L3 and aggregation records expose dependency state or unavailable logs.
+    - Subscriber checks, log cleanup, and configured backfills are omitted.
 follow_on_message: |
   Resource routing and KEDA status remain unresolved. Obtain a reviewed
   production resend mapping and authorized KEDA evidence. Bremer Bank

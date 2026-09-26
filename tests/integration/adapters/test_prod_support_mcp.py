@@ -37,12 +37,15 @@ def test_mcp_tool_runs_prod_support_agent() -> None:
 
     assert result["correlation_id"] == "incident-1"
     assert "PROD SUPPORT" in result["output"]
-    assert result["output"].startswith("URLs to validate\n- https://")
+    assert result["output"].startswith("# Prod Support Report — ")
+    assert " operational day\n\nWindow: `" in result["output"]
+    assert "URLs to validate\nhttps://airflow-us01" in result["output"]
     assert "Message for developer:" in result["output"]
-    assert "Message for Data Internal Channel:\n```markdown\n" in result["output"]
+    assert "Message for Data Internal Channel\n:bangbang:" in result["output"]
+    assert "```markdown" not in result["output"]
     assert "Follow Up:\nNo Airflow task retries" in result["output"]
     assert "- Good" in result["output"]
-    assert result["developer_report"].startswith("Message for Developer")
+    assert result["developer_report"].startswith("Message for developer:")
     assert result["data_internal_report"].startswith(
         "Message for Data Internal Channel"
     )

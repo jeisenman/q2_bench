@@ -10,6 +10,7 @@ layers:
     fixtures:
       - capabilities/date_resolution.yaml
       - capabilities/failure_discovery.yaml
+      - capabilities/log_classification.yaml
       - capabilities/spark_evidence.yaml
       - capabilities/prior_run_log_fallback.yaml
       - capabilities/cluster_health.yaml
@@ -18,8 +19,11 @@ layers:
       - capabilities/developer_message.yaml
       - capabilities/prod_support_message.yaml
     dimensions:
+      - query_translation
       - bounded_query_translation
       - failure_recall
+      - dag_existence
+      - diagnosis_accuracy
       - parallel_evidence_collection
       - timeout_diagnosis
       - historical_log_fallback
@@ -27,11 +31,19 @@ layers:
       - omitted_job_filtering
       - resource_routing
       - resend_reporting
+      - regional_reporting
+      - remediation_safety
+      - response_formatting
       - developer_message
       - prod_support_message
   coordination:
     description: Test parallel evidence collection and evidence-qualified synthesis.
     dimensions:
+      - investigation_chain
+      - direct_oms_lookup
+      - tool_call_efficiency
+      - regional_synthesis
+      - evidence_handoff
       - airflow_oms_race
       - oms_cancellation
       - regional_parallelization

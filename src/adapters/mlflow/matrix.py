@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from contextlib import AbstractContextManager
 from importlib import import_module
 from pathlib import Path
@@ -94,9 +95,15 @@ def _log_if_present(mlflow: _ArtifactLogger, path: Path) -> None:
 
 
 def _capability_metric_name(item: dict[str, object]) -> str:
-    role = str(item.get("role", "unknown")).replace("-", "_")
-    capability = str(item.get("capability", "unknown")).replace("-", "_")
+    role = _metric_component(item.get("role"))
+    capability = _metric_component(item.get("capability"))
     return f"capability.{role}.{capability}"
+
+
+def _metric_component(value: object) -> str:
+    """Normalize judge-provided text into a safe MLflow metric component."""
+    normalized = re.sub(r"[^A-Za-z0-9]+", "_", str(value or "unknown"))
+    return normalized.strip("_") or "unknown"
 
 
 def _capability_metrics(assessment: dict[str, object]) -> dict[str, float]:

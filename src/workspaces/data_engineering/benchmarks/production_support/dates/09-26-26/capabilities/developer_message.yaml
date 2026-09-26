@@ -4,28 +4,58 @@ description: Render a complete, human-readable technical handoff.
 cases:
   - id: september-25-developer-message
     expectations:
-      required_sections:
+      required_heading: "Message for developer:"
+      required_bullet_prefix: "  - "
+      require_compact_bullets: true
+      prohibit_markdown_section_headings: true
+      prohibit_blank_lines_between_bullets: true
+      require_one_client_or_recurring_issue_per_bullet: true
+      require_one_entry_per_discovered_failure: true
+      combine_same_client_findings: true
+      require_evidence_qualified_causality: true
+      require_grid_link_per_failed_dag: true
+      required_urls_heading: URLs to validate
+      required_url_order: [US-01, CA-02]
+      require_urls_outside_developer_bullets: true
+      required_cluster_links:
+        US-01: https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_start_date=2026-09-25T05:00:00Z&_flt_3_state=failed&_flt_2_start_date=2026-09-26T05:00:00Z#
+        CA-02: https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_start_date=2026-09-25T05:00:00Z&_flt_3_state=failed&_flt_2_start_date=2026-09-26T05:00:00Z#
+      required_terms:
+        DV: Distinctness Validation
+        MI: Market Insights
+        MI3: Market Insights 3
+      required_health_findings:
         - US Cluster Health
         - CA Cluster Health
-        - Failures and root causes
-        - Event resend actions
-      required_grouped_finding:
-        clients:
-          - Scotiabank
-          - CIBC Canada
-          - Scotiabank Data Validation
-        job: validate_event_bus_opportunities
-        remediation: resending events
-      required_timeout_detail:
+      required_client_findings:
+        - client: Scotiabank
+          job: validate_event_bus_opportunities
+          remediation: resending events
+        - client: CIBC Canada
+          job: validate_event_bus_opportunities
+          remediation: resending events
+        - client: Scotiabank Data Validation
+          job: validate_event_bus_opportunities
+          remediation: resending events
+      timeout_requirement:
+        required: true
         exception: airflow.exceptions.AirflowTaskTimeout
         message: "Timeout, PID: 2555323"
       required_failure_fields:
-        - human-readable client
+        - human-readable client or known recurring issue
         - job
         - complete error
         - evidence source
         - root cause or explicit evidence gap
-      prohibited_content:
-        - bare classification labels without explanation
-        - raw client UUIDs without client names
-        - check_for_subscriber_client_errors in Data Internal
+      required_findings:
+        - Airflow task timeouts retain the exact terminal exception.
+        - Resend routing remains unresolved without a reviewed application mapping.
+        - No production mutation was performed.
+      prohibited_claims:
+        - Bare classification labels without explanation.
+        - Raw client UUIDs without client names.
+        - Multiple clients in one bullet.
+        - Markdown section headings.
+        - Blank lines between bullets.
+        - Failures occurred in an inferred order unsupported by trace evidence.
+        - A nearby error caused a failure without direct task-log evidence.

@@ -92,59 +92,25 @@ def _resource_discovery() -> ResourceDiscoveryAgent | None:
 agent = ProdSupportAgent(_source(), resource_discovery=_resource_discovery())
 
 
-def _validation_urls(developer_report: str) -> tuple[str, ...]:
-    """Extract Airflow validation URLs from the developer report."""
+def _validation_urls(report: str) -> tuple[str, ...]:
+    """Extract Airflow validation URLs from the canonical report."""
     return tuple(
         url
-        for line in developer_report.splitlines()
+        for line in report.splitlines()
         if (url := _url_from_report_line(line)) is not None
     )
 
 
-def _developer_message(developer_report: str) -> str:
-    """Remove the report heading and validation URLs from the developer text."""
-    return "\n".join(
-        line
-        for line in developer_report.splitlines()
-        if line != "Message for Developer" and _url_from_report_line(line) is None
-    ).strip()
-
-
 def _url_from_report_line(line: str) -> str | None:
-    """Return a URL embedded in a developer-report line, if present."""
-    if not line.startswith("- ") or "http" not in line:
+    """Return a standalone Airflow validation URL, if present."""
+    if not line.startswith("https://airflow-"):
         return None
-    return line[line.index("http") :].strip()
-
-
-def _data_internal_message(data_internal_report: str) -> str:
-    """Remove the channel heading before placing the message in a code block."""
-    return data_internal_report.removeprefix(
-        "Message for Data Internal Channel\n"
-    ).strip()
+    return line.strip()
 
 
 def _format_mcp_output(outcome: ProdSupportOutcome) -> str:
-    """Render the MCP-facing response with explicit delivery sections."""
-    urls = _validation_urls(outcome.developer_report)
-    url_lines = "\n".join(f"- {url}" for url in urls)
-    return "\n".join(
-        (
-            "URLs to validate",
-            url_lines,
-            "",
-            "Message for developer:",
-            _developer_message(outcome.developer_report),
-            "",
-            "Message for Data Internal Channel:",
-            "```markdown",
-            _data_internal_message(outcome.data_internal_report),
-            "```",
-            "",
-            "Follow Up:",
-            outcome.follow_up,
-        )
-    )
+    """Return the canonical report without adding competing formatting."""
+    return f"{outcome.report}\n\nFollow Up:\n{outcome.follow_up}"
 
 
 @server.tool(
@@ -169,7 +135,7 @@ async def run_prod_support(
         "developer_report": outcome.developer_report,
         "data_internal_report": outcome.data_internal_report,
         "follow_up": outcome.follow_up,
-        "validation_urls": _validation_urls(outcome.developer_report),
+        "validation_urls": _validation_urls(outcome.report),
         "correlation_id": request.correlation_id,
         "tool_calls": tuple(tool.name for tool in agent.definition.tools),
         "attributes": {

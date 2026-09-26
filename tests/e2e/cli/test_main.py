@@ -27,7 +27,7 @@ def test_benchmarks_lists_visible_benchmarks() -> None:
 
 
 def test_run_matrix_defaults_to_a_grouped_dry_run() -> None:
-    candidate_count = 9
+    candidate_count = 10
     result = CliRunner().invoke(cli, ["run-matrix"])
 
     assert result.exit_code == 0
@@ -93,6 +93,53 @@ def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
         "prod-support",
         "resource-discovery",
     ]
+
+
+def test_debug_prod_support_reports_local_artifacts(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    class Outcome:
+        report = "debug report"
+        failures = ()
+
+    class Artifacts:
+        outcome = Outcome()
+        dataset = tmp_path / "airflow_failures.json"
+        benchmark_root = tmp_path / "benchmark"
+
+    def fake_source() -> object:
+        return object()
+
+    monkeypatch.setattr(
+        main.AirflowApiSource,
+        "from_environment",
+        staticmethod(fake_source),
+    )
+
+    async def fake_run(source, operational_date, output_root):
+        assert source is not None
+        assert operational_date.isoformat() == "2026-09-25"
+        assert output_root == Path("var/benchmark_data/prod_support")
+        return Artifacts()
+
+    monkeypatch.setattr(main, "run_debug_day", fake_run)
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "debug-prod-support",
+            "--date",
+            "2026-09-25",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.output == (
+        f"captured\t0 failures\treview required before promotion\n"
+        f"dataset\t{Artifacts.dataset}\n"
+        f"benchmark\t{Artifacts.benchmark_root}\n"
+    )
 
 
 def test_evaluate_publishes_recorded_case(monkeypatch, tmp_path: Path) -> None:

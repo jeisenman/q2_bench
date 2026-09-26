@@ -19,5 +19,7 @@ cases:
       required_messages:
         - developer
         - data_internal
+      required_phrase: more than 100 unique events require resend
     punish_wrong_application: true
     punish_grouped_ambiguous_dates: true
+    require_explicit_unresolved_status_without_reviewed_mapping: true

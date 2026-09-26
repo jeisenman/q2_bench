@@ -13,6 +13,11 @@ from workspaces.data_engineering.benchmarks.agent_configurations import (
     AgentConfigurationManifestError,
     load_agent_configurations,
 )
+from workspaces.data_engineering.benchmarks.matrix_prompts import (
+    build_prod_support_prompt_lines,
+)
+
+MAX_SUBAGENT_PARALLELISM = 5
 
 
 class MatrixManifestError(ValueError):
@@ -68,6 +73,8 @@ class MatrixManifest:
     dataset: Path
     candidate_inputs: tuple[Path, ...]
     airflow_base_urls: tuple[tuple[str, str], ...]
+    operational_start: str
+    operational_end: str
     case_id: str
     runtime: str
     container_image: str
@@ -119,6 +126,7 @@ def load_matrix_run(
             "at least one candidate configuration is required",
         )
     case = _load_case(cases_path, case_id)
+    operational_window = _mapping(case, "operational_window", cases_path)
     try:
         judge_raw = registry.select(_text(raw, "judge_configuration", benchmark_path))
     except AgentConfigurationManifestError as error:
@@ -140,6 +148,8 @@ def load_matrix_run(
             case.get("airflow_base_urls", {}),
             cases_path,
         ),
+        operational_start=_text(operational_window, "start", cases_path),
+        operational_end=_text(operational_window, "end", cases_path),
         case_id=case_id,
         runtime=str(execution.get("runtime", "process")),
         container_image=str(execution.get("container_image", "")),
@@ -158,50 +168,7 @@ def build_candidate_prompt(
 ) -> str:
     """Build candidate instructions, including controller-worker roles."""
     selected = profile or manifest.candidates[0]
-    lines = [
-        "Run the prod-support benchmark using only local recorded evidence.",
-        f"Case: {manifest.case_id}",
-        f"Dataset: {manifest.dataset}",
-        "Additional recorded inputs: "
-        f"{', '.join(map(str, manifest.candidate_inputs)) or 'none'}",
-        "Airflow base URLs: "
-        + ", ".join(f"{region}={url}" for region, url in manifest.airflow_base_urls),
-        f"Your role: {selected.role}.",
-        f"Your measured capabilities: {', '.join(selected.capabilities) or 'all'}.",
-        "Use read-only automation and inspect exact Airflow task logs.",
-        "Investigate every failure, including jobs omitted from audience-facing "
-        "messages. Do not partition workers into arbitrary record ranges; assign "
-        "independent operational capabilities and run independent evidence queries "
-        "concurrently.",
-        "Required operational workflow:",
-        "1. If the latest task log is unavailable or non-diagnostic, page backward "
-        "through prior runs of the same DAG and task and cite the first terminal "
-        "evidence. Never change task identity.",
-        "2. Provide US and CA Airflow failure links bounded by both the lower and "
-        "upper end-date limits for the operational day.",
-        "3. For each Spark workload, start exact Airflow-log and OMS queries "
-        "concurrently. If Airflow proves AirflowTaskTimeout, cancel pending OMS "
-        "work and classify the timeout without waiting.",
-        "4. Check KEDA ScaledObjects and pod health in both regions. Include explicit "
-        "US Cluster Health and CA Cluster Health lines, or identify the exact "
-        "missing evidence. Treat access-denied results and capture timestamps as "
-        "evidence, never as proof of historical health.",
-        "5. Resolve every resend client through the recorded resource-discovery "
-        "input. Application selection is hard-gated on an explicit reviewed "
-        "production mapping. If none exists, report routing unresolved and do not "
-        "substitute a log directive, client subdomain, or guessed application.",
-        "6. When a resend exceeds 100 unique events, call it out in both the "
-        "Developer and Data Internal messages.",
-        "7. Investigate all failures, but omit configured maintenance and subscriber "
-        "jobs from the Data Internal message.",
-        "8. Group the Developer report naturally by job and provide an evidence-backed "
-        "root cause or a precise evidence gap for every reported failure. Use client "
-        "names or short aliases in audience messages; keep raw UUIDs, Spark IDs, and "
-        "record references out of the Developer and Data Internal messages.",
-        "Before returning, audit the final report against all eight workflow items. "
-        "Do not claim a check was performed without trace evidence.",
-        "Do not mutate production systems. Return the final report only.",
-    ]
+    lines = build_prod_support_prompt_lines(manifest, selected)
     if selected.workers:
         lines.append(
             "Delegate independent work to these configured subagents and preserve "
@@ -284,6 +251,11 @@ def _worker(raw: object, path: Path) -> WorkerProfile:
     max_parallel = int(raw.get("max_parallel", 1))
     if max_parallel <= 0:
         raise MatrixManifestError.invalid(path, "worker max_parallel must be positive")
+    if max_parallel > MAX_SUBAGENT_PARALLELISM:
+        raise MatrixManifestError.invalid(
+            path,
+            f"worker max_parallel must not exceed {MAX_SUBAGENT_PARALLELISM}",
+        )
     return WorkerProfile(
         profile=_text(raw, "profile", path),
         model=_text(raw, "model", path),

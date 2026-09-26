@@ -21,7 +21,7 @@ configurations:
       - profile: luna-xhigh
         model: openai.gpt-5.6-luna
         reasoning_effort: xhigh
-        max_parallel: 6
+        max_parallel: 5
         capabilities:
           - failure_discovery
           - airflow_log_analysis
@@ -41,7 +41,7 @@ configurations:
       - profile: luna-high
         model: openai.gpt-5.6-luna
         reasoning_effort: high
-        max_parallel: 6
+        max_parallel: 5
         capabilities:
           - failure_discovery
           - airflow_log_analysis
@@ -61,7 +61,7 @@ configurations:
       - profile: luna-high
         model: openai.gpt-5.6-luna
         reasoning_effort: high
-        max_parallel: 6
+        max_parallel: 5
         capabilities:
           - failure_discovery
           - airflow_log_analysis
@@ -72,6 +72,26 @@ configurations:
   - profile: sol-light
     model: openai.gpt-5.6-sol
     reasoning_effort: low
+  - profile: luna-high-controller-luna-high-workers
+    model: openai.gpt-5.6-luna
+    reasoning_effort: high
+    role: controller
+    capabilities:
+      - task_decomposition
+      - parallel_coordination
+      - evidence_synthesis
+      - final_reporting
+    workers:
+      - profile: luna-high
+        model: openai.gpt-5.6-luna
+        reasoning_effort: high
+        max_parallel: 5
+        capabilities:
+          - failure_discovery
+          - airflow_log_analysis
+          - oms_investigation
+          - cluster_health
+          - resource_routing
   - profile: terra-medium
     model: openai.gpt-5.6-terra
     reasoning_effort: medium

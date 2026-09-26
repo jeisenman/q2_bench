@@ -27,3 +27,10 @@ cases:
       explicit_oom:
         classification: confirmed_oom
         require_exact_evidence: true
+    airflow_evidence:
+      - Exact Airflow task log is the primary terminal evidence.
+    evidence_status: recorded
+    require_timeout_evidence_in_developer_message: true
+    requirements:
+      - preserve exact Airflow and OMS evidence provenance
+      - do not infer a terminal cause from unrelated errors

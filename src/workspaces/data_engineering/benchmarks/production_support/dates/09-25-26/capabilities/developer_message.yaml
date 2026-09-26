@@ -3,32 +3,54 @@ capability: developer_message
 description: Render a technical, evidence-qualified developer handoff.
 cases:
   - id: us-ca-developer-handoff
-    input:
-      operational_date: "2026-09-24"
-      regions: [US-01, CA-02]
-      diagnoses:
-        confirmed_oom: [BoFA]
-        distinctness: [Valley National Bank]
-        unknown_resource_termination: [Bremer Bank]
-        unknown: [Glacier Bancorp]
-        application_error: [Andi Application Owner, Event Bus]
-      ca_infrastructure_status: dag_processor_unhealthy
-      automatic_actions: []
     expectations:
+      required_heading: "Message for developer:"
+      required_bullet_prefix: "  - "
+      require_compact_bullets: true
+      prohibit_markdown_section_headings: true
+      prohibit_blank_lines_between_bullets: true
+      require_one_client_or_recurring_issue_per_bullet: true
+      require_one_entry_per_discovered_failure: true
+      combine_same_client_findings: true
+      require_evidence_qualified_causality: true
+      require_grid_link_per_failed_dag: true
+      required_urls_heading: URLs to validate
+      required_url_order: [US-01, CA-02]
+      require_urls_outside_developer_bullets: true
       required_cluster_links:
-        US-01: https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
-        CA-02: https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-24T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#
+        US-01: https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_start_date=2026-09-24T05:00:00Z&_flt_3_state=failed&_flt_2_start_date=2026-09-25T05:00:00Z#
+        CA-02: https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_start_date=2026-09-24T05:00:00Z&_flt_3_state=failed&_flt_2_start_date=2026-09-25T05:00:00Z#
       required_terms:
         DV: Distinctness Validation
         MI: Market Insights
         MI3: Market Insights 3
+      required_health_findings:
+        - US Cluster Health
+        - CA Cluster Health
+      required_client_findings:
+        - client: Bremer Bank
+          job: Relationship Signals
+          remediation: create a KPO ticket
+        - client: Valley National Bank
+          job: Core Account Financial Statements
+          remediation: suggest re-run of validated distinctness targets
+      timeout_requirement:
+        required: false
+        exception: ""
+        message: ""
+      required_failure_fields:
+        - human-readable client or known recurring issue
+        - job
+        - complete error
+        - evidence source
+        - root cause or explicit evidence gap
       required_findings:
         - Bremer Bank exited -9 on attempt 9 without corroborating OOM evidence.
         - Valley National Bank failed Distinctness Validation on attempt 4.
         - CA had 0 active DAGs versus 6 expected l3-main graphs.
         - No production mutation was performed.
-        - US Cluster Health was checked using KEDA and pod evidence.
-        - CA Cluster Health was checked using KEDA and pod evidence.
       prohibited_claims:
         - Exit -9 was a confirmed OOM.
         - CA was healthy.
+        - Failures occurred in an inferred order unsupported by trace evidence.
+        - A nearby error caused a failure without direct task-log evidence.

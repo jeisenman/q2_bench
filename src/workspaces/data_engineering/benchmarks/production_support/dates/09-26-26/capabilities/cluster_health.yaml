@@ -4,6 +4,9 @@ description: Require evidence-based US and CA KEDA and pod health checks.
 cases:
   - id: both-regions
     regions: [US-01, CA-02]
+    evidence_uris:
+      US-01: ../assets/cluster_health_snapshot.json
+      CA-02: ../assets/cluster_health_snapshot.json
     required_checks:
       - command: kubectl get scaledobjects -n scheduler
         proves: KEDA ScaledObject readiness and scaling state
@@ -23,3 +26,5 @@ cases:
     prohibit_healthy_without_evidence: true
     require_cluster_health_bullets: true
     require_current_vs_historical_dates: true
+    evidence_gap:
+      - KEDA status is unavailable because the read-only identity was denied.

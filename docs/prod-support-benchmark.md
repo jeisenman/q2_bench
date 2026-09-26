@@ -52,6 +52,12 @@ Captured evidence includes one prior day as distractor data. This allows the
 benchmark to measure whether the agent selects every failure in the target
 window without incorrectly including older failures.
 
+For a production-backed investigation that should seed a benchmark, run
+`agentbench debug-prod-support --date YYYY-MM-DD`. It captures once, replays
+the report from the redacted snapshot, and writes an unscored schema draft
+beside the dataset. The YAML contains no expected answers and remains under
+ignored `var/` storage until human curation and anti-leak review.
+
 ## Date-versioned benchmark suites
 
 Benchmark definitions are immutable snapshots organized using `MM-DD-YY`:
@@ -102,6 +108,11 @@ ScaledObject and pod checks. Event resend recommendations must use resource
 discovery to select the correct application, list each client and resend date
 on its own line, and call out more than 100 unique events in both developer
 and Data Internal messages.
+
+Debug capture currently records the production Airflow boundary only. Resource
+Discovery, infrastructure checks, OMS contracts, prior-run fallback, bounded
+links, channel filtering, and resend routing require separately reviewed,
+minimized evidence before the draft becomes a scored suite.
 
 ## Evaluation dimensions
 

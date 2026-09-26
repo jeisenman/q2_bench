@@ -15,6 +15,7 @@ from workspaces.data_engineering.agents.etl import EtlAgent
 from workspaces.data_engineering.agents.kpo_sizer import KpoSizerAgent
 from workspaces.data_engineering.agents.planning import (
     DeterministicPlanningAgent,
+    WorkflowStep,
 )
 
 AGENTS = (
@@ -68,3 +69,19 @@ def test_scaffolds_declare_expected_integration_boundaries() -> None:
 def test_planning_agent_rejects_an_empty_workflow() -> None:
     with pytest.raises(ValueError, match="steps must not be empty"):
         DeterministicPlanningAgent(KpoSizerAgent().definition, ())
+
+
+@pytest.mark.parametrize(
+    ("name", "outcome", "message"),
+    [
+        (" ", "valid outcome", "step name must not be empty"),
+        ("valid name", " ", "step outcome must not be empty"),
+    ],
+)
+def test_workflow_step_rejects_incomplete_values(
+    name: str,
+    outcome: str,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        WorkflowStep(name, outcome)

@@ -1,0 +1,230 @@
+schema_version: 1
+cases:
+  - id: prod-support-us-ca-2026-09-25
+    reference_time: "2026-09-25T16:00:00Z"
+    prompt: Do prod support
+    dataset_uri: var/benchmark_data/prod_support/2026-09-24/steps/02-airflow-capture/2026-09-24/airflow_failures.json
+    expected_regions:
+      - US-01
+      - CA-02
+    expected_since: "2026-09-24T05:00:00Z"
+    expected_api_window:
+      end_date_gte: "2026-09-24T05:00:00Z"
+      end_date_lt: "2026-09-25T05:00:00Z"
+    expected_ui_window:
+      start_date_gte: "2026-09-24T05:00:00Z"
+      start_date_lt: "2026-09-25T05:00:00Z"
+    expected_cluster_links:
+      US-01: "https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_start_date=2026-09-24T05:00:00Z&_flt_3_state=failed&_flt_2_start_date=2026-09-25T05:00:00Z#"
+      CA-02: "https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_start_date=2026-09-24T05:00:00Z&_flt_3_state=failed&_flt_2_start_date=2026-09-25T05:00:00Z#"
+    expected_failure_counts:
+      US-01: 17
+      CA-02: 0
+    required_capture_summary: >-
+      Local capture contains 17 failures, all from US-01; no CA failures were
+      recorded.
+    required_report_order:
+      - report_heading
+      - operational_window
+      - capture_summary
+      - regional_failure_links
+      - developer_message
+      - data_internal_message
+    required_output_format:
+      urls_heading: URLs to validate
+      developer_heading: "Message for developer:"
+      data_internal_heading: Message for Data Internal Channel
+      prohibit_markdown_section_headings: true
+      prohibit_blank_lines_between_bullets: true
+      one_client_per_data_internal_bullet: true
+      combine_same_client_findings: true
+      client_uuid_prefix_length: 3
+    required_initial_parallel_workstreams:
+      - US-01_failure_discovery
+      - CA-02_failure_discovery
+      - regional_cluster_health
+    expected_failure_ids:
+      - US-01|l3-main-63ecb663-1de9-4ed7-a5fb-cae3a6e8c68c|manual__2026-09-22T05:00:00+00:00|validate_event_bus_opportunities
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-23T15:00:00+00:00|check_for_subscriber_client_errors
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-23T15:00:00+00:00|pricing_events_to_payload_historical_7
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-23T15:00:00+00:00|pricing_events_to_payload_historical_6
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-23T15:00:00+00:00|pricing_events_to_payload_historical_5
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-23T15:00:00+00:00|pricing_events_to_payload_historical_4
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-23T15:00:00+00:00|get_opp_history_params
+      - US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-22T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-23T03:00:00+00:00|check_for_subscriber_client_errors
+      - US-01|market_insights_3_output|scheduled__2026-09-23T00:00:00+00:00|client_specific.client_specific_mi_3_raw_output_validation_621d1ad2-3d0f-4fc4-8245-e3878a6bff7c
+      - US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-23T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data
+      - US-01|l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a|manual__2026-09-23T05:00:00+00:00|high_quality_core_account_financial_statements.high_quality_core_account_financial_statements
+      - US-01|l3-main-a6f041a5-fda3-4b68-a002-d115b39e9914|manual__2026-09-23T05:00:00+00:00|relationship_signals_time_series.relationship_signals_time_series_agg_cp_to_snowflake
+      - US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-23T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data
+      - US-01|market_insights_3_output|scheduled__2026-09-24T00:00:00+00:00|client_specific.client_specific_mi_3_raw_output_validation_621d1ad2-3d0f-4fc4-8245-e3878a6bff7c
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T03:00:00+00:00|check_for_subscriber_client_errors
+      - US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T15:00:00+00:00|check_for_subscriber_client_errors
+    expected_diagnoses:
+      US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-23T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data: confirmed_oom
+      US-01|l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a|manual__2026-09-23T05:00:00+00:00|high_quality_core_account_financial_statements.high_quality_core_account_financial_statements: distinctness
+      US-01|l3-main-a6f041a5-fda3-4b68-a002-d115b39e9914|manual__2026-09-23T05:00:00+00:00|relationship_signals_time_series.relationship_signals_time_series_agg_cp_to_snowflake: unknown_resource_termination
+      US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-23T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data: unknown
+      US-01|market_insights_3_output|scheduled__2026-09-24T00:00:00+00:00|client_specific.client_specific_mi_3_raw_output_validation_621d1ad2-3d0f-4fc4-8245-e3878a6bff7c: application_error
+      US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T03:00:00+00:00|check_for_subscriber_client_errors: application_error
+      US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T15:00:00+00:00|check_for_subscriber_client_errors: application_error
+    expected_developer_message: |
+      Message for developer:
+        - US Cluster Health: healthy; scheduler, DAG processor, and pods were ready at the evidence timestamp.
+        - CA Cluster Health: DAG processor unhealthy; pod was running with 13 restarts and 0 active DAGs.
+        - Terminology: DV means Distinctness Validation. MI means Market Insights; MI3 means Market Insights 3.
+        - BoFA (792): Delivery to Promise Other Products failed with explicit OOM evidence; classification: confirmed_oom.
+        - Valley National Bank (8b2): Core Account Financial Statements high quality failed on attempt 4 during DV (Distinctness Validation); classification: distinctness.
+        - Bremer Bank (a6f): Relationship Signals aggregation exited -9 without corroborating OOM evidence; classification: unknown_resource_termination.
+        - Glacier Bancorp (9d2): Delivery to Promise failed with a badly exited driver and no explicit terminal signal; classification: unknown.
+        - Andi Application Owner (621): MI3 (Market Insights 3) raw-output validation failed without an underlying pod cause in the captured task log; classification: application_error.
+        - Event Bus subscriber validation failed in both observed runs because OpportunitySaved schema versions 8.6 and 8.9 have newer versions available; classification: application_error.
+        - CA-02 had no task failures, but its DAG processor was unhealthy: 0 active DAGs versus 6 expected l3-main graphs, processor logs were unavailable, and 13 restarts were observed. OMS did not corroborate the failure.
+        - Suggest a CA DAG-processor bounce for operator approval. No production mutation was performed.
+    expected_prod_support_message: |
+      Message for Data Internal Channel
+      :bangbang: PROD SUPPORT 2026-09-24 :bangbang:
+      US
+      - Ongoing
+        - Valley National Bank (8b2) failed on Core Account Financial Statements high quality on DV
+        - Bremer Bank (a6f) failed on Relationship Signals aggregation from 9-23-26 -- creating KPO ticket to resolve
+        - BoFA (792) failed on Delivery to Promise—Other Products from memory exhaustion
+        - Glacier Bancorp (9d2) failed on Delivery to Promise from executor loss and unavailable shuffle data; a later run lacks terminal evidence
+        - Andi Application Owner (621) failed on Market Insights validation without application diagnostics
+      CA
+      - Ongoing
+        - The DAG processor is unhealthy: 0 active DAGs versus 6 expected l3-main graphs, processor logs are unavailable, and 13 restarts were observed. Suggest a DAG-processor bounce for operator approval.
+    follow_on_message: |
+      Would you like me to retry:
+        - Bremer Bank (a6f) Relationship Signals aggregation, which exited with code -9 on attempt 9?
+        - Valley National Bank (8b2) Core Account Financial Statements job, which failed Distinctness Validation on attempt 4?
+
+    require_reported_dags_exist: true
+    evidence_captured_at:
+      US-01: "2026-09-25T15:22:25.409249Z"
+      CA-02: "2026-09-25T15:00:12.581871Z"
+    infrastructure_evidence_uris:
+      US-01: evidence/current-us-healthy.json
+      CA-02: evidence/current-ca-dag-processor.json
+    expected_infrastructure_statuses:
+      US-01: healthy
+      CA-02: dag_processor_unhealthy
+    expected_oms_corroboration:
+      CA-02: false
+    required_investigations:
+      - inspect every relevant Airflow task log
+      - inspect Airflow and OMS concurrently for every Spark job
+      - cancel pending OMS work when Airflow proves a timeout
+      - check KEDA ScaledObjects and pods in both regions
+      - resolve every client through resource discovery
+    omitted_from_data_internal:
+      - check_for_subscriber_client_errors
+      - log_cleanup
+      - opportunity_avro_aggregation_backfill
+      - opp_history_backfill
+    resend_policy:
+      require_correct_application_for_client: true
+      require_resource_discovery: true
+      require_date_per_client: true
+      multiple_clients_are_line_by_line: true
+      large_resend_threshold: 100
+      large_resend_notice_destinations:
+        - developer_message
+        - data_internal_message
+    required_cluster_health_lines:
+      - US Cluster Health
+      - CA Cluster Health
+    require_root_cause_per_reported_failure: true
+    expected_remediation_policy:
+      mode: suggestion_only
+      automatic_bounce: false
+      automatic_actions: []
+      suggest_bounce_on_missing_dags_logs_and_restarts: true
+    expected_l3_main_graph_counts:
+      US-01: 78
+      CA-02: 6
+    expected_active_dag_counts:
+      US-01: 209
+      CA-02: 0
+    expected_active_l3_main_dag_counts:
+      US-01: 153
+      CA-02: 0
+    expected_dag_ids:
+      - clients_data
+      - clients_metadata
+      - connection_validation
+      - database_cleanup
+      - databricks_repair_all_external_tables
+      - de_2953_andi_backfill
+      - delete_hard_coded_paths_dagDE3035
+      - delete_hard_coded_paths_dagQDS7960
+      - demo
+      - deprecate_datasets
+      - event_bus_to_payloads_historical
+      - handle_record_locked_dags
+      - invalidate_opportunity_spread_guidance_data_cache
+      - invalidate_portfolio_spread_guidance_data_cache
+      - l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543
+      - l3-main-37de14dd-118d-4d12-bfa3-89db98071a1b
+      - l3-main-47322c85-71cf-45ea-9695-6bdcc1cc1ea9
+      - l3-main-792f7424-402e-4a7e-b4de-69f811435d9c
+      - l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a
+      - l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042
+      - l3-main-a6f041a5-fda3-4b68-a002-d115b39e9914
+      - l3-main-b4916353-ef8a-4af8-9601-74305858e905
+      - l3-main-cefa3c2a-e1da-4c24-8676-532dc2b59056
+      - l3-main-fbfcd207-8a85-4f28-a787-3ed1e2736f28
+      - l3-trigger-dag
+      - log_analytics_daily_graph
+      - log_cleanup
+      - market_insights_3_output
+      - opportunity_avro_aggregation_backfill
+      - opportunity_avro_aggregation_backfill_chunked
+      - opportunity_snapshot_backfill
+      - pl_storage_backfill
+      - pod_cleanup
+      - prod_support_retry_data_studio_client_tasks
+      - prod_support_slack_alerts
+      - ra_backfill
+      - ra_rerun_derived_monthly
+      - redis_maintenance
+      - redis_metrics
+      - validate_group_partitions
+  - id: current-ca-deployment-events-2026-09-25
+    reference_time: "2026-09-25T15:18:00Z"
+    prompt: Review the current CA Airflow deployment events and report whether the DAG deployment completed.
+    region: CA-02
+    infrastructure_evidence_uri: evidence/current-ca-deployment-events.json
+    expected_infrastructure_status: dag_processor_rollout_not_observed
+    expected_event_reasons:
+      - Killing
+      - Scheduled
+      - Pulling
+      - Pulled
+      - Created
+      - Started
+      - SuccessfulCreate
+      - Completed
+      - ScaledObjectCheckFailed
+    expected_migration_completed: true
+    expected_dag_processor_rollout_observed: false
+  - id: yesterday-2026-09-25
+    reference_time: "2026-09-25T12:00:00Z"
+    prompt: Do yesterday's prod support
+    expected_since: "2026-09-23T05:00:00Z"
+  - id: explicit-date
+    reference_time: "2026-09-25T12:00:00Z"
+    prompt: Do prod support for 9/21/26.
+    expected_since: "2026-09-21T05:00:00Z"
+  - id: explicit-run-start
+    reference_time: "2026-09-25T12:00:00Z"
+    prompt: Do prod support for run/date_start 2026-03-14, 05:00:00 UTC
+    expected_since: "2026-03-14T05:00:00Z"
+daily_datasets:
+  - operational_date: "2026-09-25"
+    evidence_uri: var/benchmark_data/prod_support/2026-09-24/steps/02-airflow-capture/2026-09-24/airflow_failures.json
+    status: curated
+  - operational_date: "2026-09-26"
+    evidence_uri: var/benchmark_data/prod_support/2026-09-26/airflow_failures.json
+    status: future

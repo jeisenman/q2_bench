@@ -3,40 +3,10 @@ cases:
   - id: prod-support-us-ca-operational-2026-09-25
     reference_time: "2026-09-26T16:00:00Z"
     prompt: Do today's prod support
-    operational_date: "2026-09-25"
     dataset_uri: var/benchmark_data/prod_support/2026-09-25/airflow_failures.json
-    expected_regions:
-      - US-01
-      - CA-02
-    expected_since: null
-    expected_api_window: {}
-    expected_ui_window: {}
-    expected_cluster_links: {}
-    expected_failure_counts: {}
-    expected_failure_ids: []
-    expected_diagnoses: {}
-    expected_developer_message: null
-    expected_prod_support_message: null
-    follow_on_message: null
-    require_reported_dags_exist: true
-    evidence_captured_at:
-      US-01: null
-      CA-02: null
-    infrastructure_evidence_uris:
-      US-01: assets/cluster_health_snapshot.json
-      CA-02: assets/cluster_health_snapshot.json
-    expected_infrastructure_statuses: {}
-    expected_oms_corroboration: {}
-    required_investigations: []
-    omitted_from_data_internal: []
-    resend_policy: {}
-    required_cluster_health_lines: []
-    require_root_cause_per_reported_failure: null
-    expected_remediation_policy: {}
-    expected_l3_main_graph_counts: {}
-    expected_active_dag_counts: {}
-    expected_active_l3_main_dag_counts: {}
-    expected_dag_ids: []
+    operational_window:
+      start: "2026-09-25T05:00:00Z"
+      end: "2026-09-26T05:00:00Z"
     airflow_base_urls:
       US-01: "https://airflow-us01.precisionlender.com"
       CA-02: "https://airflow-ca02.precisionlender.com"

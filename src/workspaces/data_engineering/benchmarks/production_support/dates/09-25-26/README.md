@@ -1,8 +1,7 @@
 # Prod-support benchmark snapshot 09-25-26
 
-This v2-compatible snapshot evaluates the September 24, 2026 operational day.
-It preserves the original failure IDs and diagnoses while applying the current
-benchmark contract. No prod-support agent behavior is changed here.
+This snapshot evaluates the September 24, 2026 operational day using a strict
+report, evidence, and trace contract.
 
 ## Crucial commands
 
@@ -31,7 +30,14 @@ uv run python \
 
 ## v2 requirements
 
-- Airflow UI links use lower and upper end-date bounds.
+- The report heading and 05:00 UTC operational window appear before analysis.
+- US failures, CA failures, and regional cluster health start concurrently.
+- Regional Airflow links use raw ISO-8601 start-date bounds without encoding.
+- Every failed DAG receives a bounded grid-view link.
+- Every discovered failure and exact-log lookup remains visible in the trace.
+- Developer output contains one evidence-qualified entry per failure.
+- Final messages follow the symlinked `prod-support` reporting skill: compact
+  bullets, no Markdown section headings, and one client per Data Internal line.
 - Spark investigations start exact Airflow and OMS requests concurrently.
 - Definitive Airflow timeout evidence cancels pending OMS work.
 - Developer output includes US and CA Cluster Health lines.

@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, date, datetime
 
 from workspaces.data_engineering.agents.prod_support.models import (
@@ -64,8 +65,57 @@ def test_formats_channel_reports_and_suggestion_only_follow_up() -> None:
 
     reports = format_reports(date(2026, 9, 24), (failure,), (diagnosis,))
 
-    assert reports.developer.startswith("Message for Developer")
+    assert reports.combined.startswith(
+        "# Prod Support Report — 2026-09-24 operational day\n\n"
+        "Window: `2026-09-24 05:00:00 UTC` through "
+        "`2026-09-25 05:00:00 UTC`"
+    )
+    assert reports.capture_summary == (
+        "Local capture contains 1 failure, all from US-01; "
+        "no CA failures were recorded."
+    )
+    assert reports.urls_to_validate.startswith("URLs to validate\n")
+    assert reports.developer.startswith("Message for developer:\n  -")
+    assert (
+        "/dags/l3-main-client/grid?status=failed"
+        "&execution_start=2026-09-24T05:00:00Z"
+        "&execution_end=2026-09-25T05:00:00Z"
+    ) in reports.developer
     assert reports.data_internal.startswith("Message for Data Internal Channel")
     assert "Would you like me to prepare retry recommendations" in reports.follow_up
     assert "attempt 4" in reports.follow_up
     assert "Message for Data Internal Channel" in reports.combined
+
+
+def test_developer_report_lists_every_failure() -> None:
+    us_failure = _failure(1)
+    ca_failure = replace(
+        us_failure,
+        region=Region.CA_02,
+        dag_id="ca-dag",
+        task_id="ca-task",
+    )
+    diagnoses = tuple(
+        FailureDiagnosis(
+            failure_id=failure.failure_id,
+            kind=FailureKind.APPLICATION_ERROR,
+            confidence="confirmed",
+            evidence=(f"{failure.task_id} failed",),
+        )
+        for failure in (us_failure, ca_failure)
+    )
+
+    reports = format_reports(
+        date(2026, 9, 24),
+        (us_failure, ca_failure),
+        diagnoses,
+    )
+
+    assert "l3-main-client / relationship_signals" in reports.developer
+    assert "ca-dag / ca-task" in reports.developer
+    assert "\n\n  -" not in reports.developer
+    assert "US\n- Ongoing\n  - l3-main-client failed on" in reports.data_internal
+    assert "CA\n- Ongoing\n  - ca-dag failed on" in reports.data_internal
+    assert reports.capture_summary == (
+        "Local capture contains 2 failures: 1 from US-01 and 1 from CA-02."
+    )

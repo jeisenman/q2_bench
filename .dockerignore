@@ -13,3 +13,4 @@ dist
 reports
 var
 *.egg-info
+src/workspaces/data_engineering/benchmarks/**/hidden

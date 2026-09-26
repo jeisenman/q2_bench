@@ -16,6 +16,9 @@ from workspaces.data_engineering.agents.prod_support import (
     ProdSupportOutcome,
     ReplayAirflowFailureSource,
 )
+from workspaces.data_engineering.benchmarks.case_files import (
+    load_case_with_expectations,
+)
 
 
 class ReplayCaseError(RuntimeError):
@@ -53,19 +56,14 @@ class ReplayCase:
 
 def load_replay_case(cases_path: Path, case_id: str) -> ReplayCase:
     """Load one curated replay case from the benchmark catalog."""
-    configured = _load_mapping(cases_path).get("cases")
-    if not isinstance(configured, list):
-        raise ReplayCaseError.invalid_file(cases_path, "cases must be a list")
-    selected = next(
-        (
-            item
-            for item in configured
-            if isinstance(item, dict) and item.get("id") == case_id
-        ),
-        None,
-    )
-    if selected is None:
-        raise ReplayCaseError.unknown_case(case_id)
+    if not cases_path.is_file():
+        raise ReplayCaseError.invalid_file(cases_path, "does not exist")
+    try:
+        selected = load_case_with_expectations(cases_path, case_id)
+    except KeyError as error:
+        raise ReplayCaseError.unknown_case(case_id) from error
+    except (TypeError, ValueError) as error:
+        raise ReplayCaseError.invalid_file(cases_path, str(error)) from error
     if not isinstance(selected.get("expected_failure_ids"), list) or not isinstance(
         selected.get("expected_diagnoses"), dict
     ):

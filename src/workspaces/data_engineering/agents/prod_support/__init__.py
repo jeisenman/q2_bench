@@ -16,6 +16,10 @@ from workspaces.data_engineering.agents.prod_support.dates import (
     QueryWindow,
     resolve_query_window,
 )
+from workspaces.data_engineering.agents.prod_support.debug import (
+    DebugArtifacts,
+    run_debug_day,
+)
 from workspaces.data_engineering.agents.prod_support.evaluation import (
     ProdSupportExpectation,
     ProdSupportScores,
@@ -40,6 +44,7 @@ from workspaces.data_engineering.agents.prod_support.ports import (
     TaskLogUnavailableError,
 )
 from workspaces.data_engineering.agents.prod_support.reporting import (
+    airflow_dag_failure_url,
     airflow_failure_url,
 )
 from workspaces.data_engineering.agents.prod_support.workloads import (
@@ -58,6 +63,7 @@ __all__ = [
     "AirflowTaskMetadata",
     "AirflowTaskMetadataError",
     "AirflowTaskMetadataSource",
+    "DebugArtifacts",
     "DefaultLogRedactor",
     "FailureDiagnosis",
     "OmsEvidenceRoute",
@@ -74,6 +80,7 @@ __all__ = [
     "ResourceDiscoveryInvoker",
     "TaskLogUnavailableError",
     "WorkloadKind",
+    "airflow_dag_failure_url",
     "airflow_failure_url",
     "build_oms_job_query",
     "capture_day",
@@ -82,4 +89,5 @@ __all__ = [
     "evaluate_outcome",
     "resolve_query_window",
     "route_oms_evidence",
+    "run_debug_day",
 ]

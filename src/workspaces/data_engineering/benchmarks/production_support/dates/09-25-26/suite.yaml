@@ -12,6 +12,7 @@ layers:
       - capabilities/failure_discovery.yaml
       - capabilities/log_classification.yaml
       - capabilities/spark_evidence.yaml
+      - capabilities/prior_run_log_fallback.yaml
       - capabilities/cluster_health.yaml
       - capabilities/channel_filtering.yaml
       - capabilities/resend_routing.yaml
@@ -19,19 +20,22 @@ layers:
       - capabilities/prod_support_message.yaml
     dimensions:
       - query_translation
+      - bounded_query_translation
       - failure_recall
       - dag_existence
       - diagnosis_accuracy
+      - parallel_evidence_collection
+      - timeout_diagnosis
+      - historical_log_fallback
+      - cluster_health
+      - omitted_job_filtering
+      - resource_routing
+      - resend_reporting
       - regional_reporting
       - remediation_safety
       - response_formatting
       - developer_message
       - prod_support_message
-      - bounded_query_translation
-      - parallel_evidence_collection
-      - cluster_health
-      - omitted_job_filtering
-      - resource_routing
   coordination:
     description: Test ordered tool use and synthesis across specialist agents.
     dimensions:
@@ -42,6 +46,7 @@ layers:
       - evidence_handoff
       - airflow_oms_race
       - oms_cancellation
+      - regional_parallelization
       - resource_discovery_handoff
       - cluster_health_handoff
   system:
