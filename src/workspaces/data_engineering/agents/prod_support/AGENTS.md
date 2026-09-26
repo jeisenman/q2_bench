@@ -48,7 +48,10 @@ fallback, cluster-health, routing, and audience-delivery steps.
 8. For controller-led execution, verify prior-log fallback, bounded links,
    concurrent Spark evidence, timeout cancellation, regional cluster health,
    resend routing, escalation, and channel filtering before final delivery.
-9. Return the reports, follow-up, correlation ID, tool names, and operational
+9. Hard-gate resend application selection on a reviewed production mapping;
+   report unresolved routing rather than deriving it from logs or subdomains.
+10. Keep raw UUIDs, Spark IDs, and record references out of audience messages.
+11. Return the reports, follow-up, correlation ID, tool names, and operational
    attributes.
 
 Invalid dates, non-404 log failures, and invalid query parameters fail

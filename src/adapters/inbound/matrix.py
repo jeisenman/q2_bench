@@ -29,6 +29,13 @@ from workspaces.data_engineering.benchmarks.matrix import (
 
 COMMAND_TIMEOUT_SECONDS = 1800
 TRACE_PROMPT_LIMIT = 50_000
+PROCESS_ENVIRONMENT_KEYS = (
+    "CODEX_HOME",
+    "HOME",
+    "PATH",
+    "SSL_CERT_FILE",
+    "TMPDIR",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,9 +100,12 @@ class MatrixInboundAdapter:
             message = f"matrix artifact root may not be a symlink: {root}"
             raise MatrixRunError(message)
         root.mkdir(parents=True, exist_ok=True)
-        baselines = _load_baselines(root / "comparison.json")
+        baselines = _load_baselines(root / "comparison.json", root)
         with (
-            _candidate_workspace(self._workspace, manifest.dataset) as runtime,
+            _candidate_workspace(
+                self._workspace,
+                (manifest.dataset, *manifest.candidate_inputs),
+            ) as runtime,
             _codex_auth_source() as auth_source,
         ):
             context = _ExecutionContext(runtime, root, auth_source)
@@ -158,6 +168,7 @@ def _run_candidate(
         capture_output=True,
         text=True,
         timeout=COMMAND_TIMEOUT_SECONDS,
+        env=_command_environment(manifest.runtime),
     )
     elapsed = monotonic() - started
     _write_output(trace_path, process.stdout, profile_root)
@@ -223,6 +234,7 @@ def _judge_candidate(
         capture_output=True,
         text=True,
         timeout=COMMAND_TIMEOUT_SECONDS,
+        env=_command_environment(manifest.runtime),
     )
     if process.returncode != 0:
         raise MatrixRunError.judge_failed(candidate.profile, process.returncode)
@@ -345,8 +357,16 @@ def _judge_schema() -> dict[str, object]:
     }
 
 
-def _load_baselines(path: Path) -> dict[str, dict[str, object]]:
-    if not path.is_file():
+def _load_baselines(
+    path: Path,
+    root: Path | None = None,
+) -> dict[str, dict[str, object]]:
+    expected_root = (root or path.parent).resolve()
+    if path.is_symlink() or not path.is_file():
+        return {}
+    try:
+        path.resolve().relative_to(expected_root)
+    except ValueError:
         return {}
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict) or not isinstance(raw.get("results"), list):
@@ -355,4 +375,13 @@ def _load_baselines(path: Path) -> dict[str, dict[str, object]]:
         str(item["profile"]): item
         for item in raw["results"]
         if isinstance(item, dict) and "profile" in item
+    }
+
+
+def _command_environment(runtime: str) -> dict[str, str] | None:
+    """Return a minimal host environment for process-mode model execution."""
+    if runtime != "process":
+        return None
+    return {
+        key: os.environ[key] for key in PROCESS_ENVIRONMENT_KEYS if key in os.environ
     }

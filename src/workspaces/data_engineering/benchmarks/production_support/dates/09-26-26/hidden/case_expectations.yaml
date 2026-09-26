@@ -1,0 +1,23 @@
+schema_version: 1
+case_id: prod-support-us-ca-operational-2026-09-25
+expected_regions: [US-01, CA-02]
+expected_api_window:
+  end_date_gte: "2026-09-25T05:00:00Z"
+  end_date_lt: "2026-09-26T05:00:00Z"
+expected_ui_window:
+  end_date_gte: "2026-09-25T09:00:00Z"
+  end_date_lt: "2026-09-26T09:00:00Z"
+expected_cluster_links:
+  US-01: "https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-26T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#"
+  CA-02: "https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-26T09%3A00%3A00%2B00%3A00&_flt_2_end_date=2026-09-25T09%3A00%3A00%2B00%3A00&_flt_3_state=failed#"
+expected_capture_counts:
+  US-01: 14
+  CA-02: 45
+  prior_day_distractors: 6
+omitted_from_data_internal:
+  - check_for_subscriber_client_errors
+  - log_cleanup
+  - opportunity_avro_aggregation_backfill
+  - opp_history_backfill
+required_cluster_health_lines: [US Cluster Health, CA Cluster Health]
+large_resend_threshold: 100

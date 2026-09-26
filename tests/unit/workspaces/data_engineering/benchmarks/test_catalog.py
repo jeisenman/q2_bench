@@ -180,18 +180,23 @@ def test_new_prod_support_snapshot_versions_september_25_data() -> None:
     suite = yaml.safe_load((suite_root / "suite.yaml").read_text(encoding="utf-8"))
     cases = yaml.safe_load((suite_root / "cases.yaml").read_text(encoding="utf-8"))
     case = cases["cases"][0]
+    expectations = yaml.safe_load(
+        (suite_root / "hidden/case_expectations.yaml").read_text(encoding="utf-8")
+    )
 
     assert suite["suite_date"] == "2026-09-26"
     assert suite["operational_date"] == "2026-09-25"
     assert suite["layers"]["system"]["cases"] == [
         "prod-support-us-ca-operational-2026-09-25"
     ]
-    assert case["expected_capture_counts"] == {
+    assert expectations["expected_capture_counts"] == {
         "US-01": 14,
         "CA-02": 45,
         "prior_day_distractors": 6,
     }
-    for link in case["expected_cluster_links"].values():
+    assert "expected_capture_counts" not in case
+    assert "expected_cluster_links" not in case
+    for link in expectations["expected_cluster_links"].values():
         assert "_flt_1_end_date=2026-09-26" in link
         assert "_flt_2_end_date=2026-09-25" in link
         assert "_flt_3_state=failed" in link

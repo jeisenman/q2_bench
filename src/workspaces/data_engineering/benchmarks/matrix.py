@@ -66,6 +66,8 @@ class MatrixManifest:
     benchmark: str
     experiment_name: str
     dataset: Path
+    candidate_inputs: tuple[Path, ...]
+    airflow_base_urls: tuple[tuple[str, str], ...]
     case_id: str
     runtime: str
     container_image: str
@@ -133,6 +135,11 @@ def load_matrix_run(
         benchmark=_text(raw, "benchmark", benchmark_path),
         experiment_name=_text(raw, "experiment_name", benchmark_path),
         dataset=Path(_text(case, "dataset_uri", cases_path)),
+        candidate_inputs=_path_tuple(case.get("candidate_inputs", []), cases_path),
+        airflow_base_urls=_string_pairs(
+            case.get("airflow_base_urls", {}),
+            cases_path,
+        ),
         case_id=case_id,
         runtime=str(execution.get("runtime", "process")),
         container_image=str(execution.get("container_image", "")),
@@ -155,6 +162,10 @@ def build_candidate_prompt(
         "Run the prod-support benchmark using only local recorded evidence.",
         f"Case: {manifest.case_id}",
         f"Dataset: {manifest.dataset}",
+        "Additional recorded inputs: "
+        f"{', '.join(map(str, manifest.candidate_inputs)) or 'none'}",
+        "Airflow base URLs: "
+        + ", ".join(f"{region}={url}" for region, url in manifest.airflow_base_urls),
         f"Your role: {selected.role}.",
         f"Your measured capabilities: {', '.join(selected.capabilities) or 'all'}.",
         "Use read-only automation and inspect exact Airflow task logs.",
@@ -173,15 +184,20 @@ def build_candidate_prompt(
         "work and classify the timeout without waiting.",
         "4. Check KEDA ScaledObjects and pod health in both regions. Include explicit "
         "US Cluster Health and CA Cluster Health lines, or identify the exact "
-        "missing evidence.",
-        "5. Resolve every resend client through resource discovery. Give client, "
-        "resend date, unique event count, and selected application on separate lines.",
+        "missing evidence. Treat access-denied results and capture timestamps as "
+        "evidence, never as proof of historical health.",
+        "5. Resolve every resend client through the recorded resource-discovery "
+        "input. Application selection is hard-gated on an explicit reviewed "
+        "production mapping. If none exists, report routing unresolved and do not "
+        "substitute a log directive, client subdomain, or guessed application.",
         "6. When a resend exceeds 100 unique events, call it out in both the "
         "Developer and Data Internal messages.",
         "7. Investigate all failures, but omit configured maintenance and subscriber "
         "jobs from the Data Internal message.",
         "8. Group the Developer report naturally by job and provide an evidence-backed "
-        "root cause or a precise evidence gap for every reported failure.",
+        "root cause or a precise evidence gap for every reported failure. Use client "
+        "names or short aliases in audience messages; keep raw UUIDs, Spark IDs, and "
+        "record references out of the Developer and Data Internal messages.",
         "Before returning, audit the final report against all eight workflow items. "
         "Do not claim a check was performed without trace evidence.",
         "Do not mutate production systems. Return the final report only.",
@@ -283,6 +299,25 @@ def _string_tuple(raw: object, path: Path) -> tuple[str, ...]:
     ):
         raise MatrixManifestError.invalid(path, "capabilities must be a string list")
     return tuple(raw)
+
+
+def _path_tuple(raw: object, path: Path) -> tuple[Path, ...]:
+    return tuple(Path(item) for item in _string_tuple(raw, path))
+
+
+def _string_pairs(raw: object, path: Path) -> tuple[tuple[str, str], ...]:
+    if not isinstance(raw, dict) or not all(
+        isinstance(key, str)
+        and key.strip()
+        and isinstance(value, str)
+        and value.strip()
+        for key, value in raw.items()
+    ):
+        raise MatrixManifestError.invalid(
+            path,
+            "airflow_base_urls must be a string mapping",
+        )
+    return tuple((key, value) for key, value in raw.items())
 
 
 def _load_case(path: Path, case_id: str) -> dict[str, Any]:

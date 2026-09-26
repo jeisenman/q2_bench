@@ -1,0 +1,28 @@
+{
+  "captured_at": "2026-09-26T16:35:00Z",
+  "source": "PrecisionLender Resource Discovery API",
+  "lookups": [
+    {
+      "client_id": "1f06da19-2f61-401c-a1b7-38902e4f3543",
+      "client_name": "Scotiabank",
+      "subdomain": "scotiabank",
+      "match": "unique",
+      "reviewed_production_resend_application": null
+    },
+    {
+      "client_id": "fbfcd207-8a85-4f28-a787-3ed1e2736f28",
+      "client_name": "CIBC Canada",
+      "subdomain": "cibc-ca",
+      "match": "unique",
+      "reviewed_production_resend_application": null
+    },
+    {
+      "client_id": "b4916353-ef8a-4af8-9601-74305858e905",
+      "client_name": "Scotiabank - Data Validation",
+      "subdomain": "scotia-validation",
+      "match": "unique",
+      "reviewed_production_resend_application": null
+    }
+  ],
+  "routing_rule": "A null reviewed mapping means routing is unresolved. Do not infer an application from a subdomain, log directive, or non-production resource."
+}

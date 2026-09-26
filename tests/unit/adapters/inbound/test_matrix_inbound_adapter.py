@@ -145,12 +145,12 @@ def test_command_builds_container_and_process_variants(tmp_path) -> None:
     assert "no-new-privileges" in container
     assert f"{workspace.resolve()}:/evaluation:ro" in container
     assert f"{output.resolve()}:/output" in container
-    assert f"{auth_source.resolve()}:/mnt/codex-host:ro" in container
+    assert f"{auth_source.resolve()}:/mnt/codex-host:ro" not in container
     assert "AWS_PROFILE=benchmark" in container
     assert "AWS_SHARED_CREDENTIALS_FILE=/run/agent-auth/credentials" in container
     assert not any("/.aws:" in item for item in container)
     assert not any(":/workspace:ro" in item for item in container)
-    assert "/mnt/codex-host:ro" in " ".join(container)
+    assert "/mnt/codex-host:ro" not in " ".join(container)
     assert "--tmpfs" in container
     assert "/output/final.md" in container
     assert "--json" in container
@@ -172,6 +172,23 @@ def test_trace_helpers_and_schema(tmp_path) -> None:
     invalid = tmp_path / "invalid.json"
     invalid.write_text("{}", encoding="utf-8")
     assert matrix._load_baselines(invalid) == {}
+    target = tmp_path / "target.json"
+    target.write_text('{"results": []}', encoding="utf-8")
+    linked = tmp_path / "linked.json"
+    linked.symlink_to(target)
+    assert matrix._load_baselines(linked) == {}
+
+
+def test_process_environment_is_allowlisted(monkeypatch) -> None:
+    monkeypatch.setenv("SECRET_CANARY", "must-not-pass")
+    monkeypatch.setenv("PATH", "/bin")
+
+    environment = matrix._command_environment("process")
+
+    assert environment is not None
+    assert environment["PATH"] == "/bin"
+    assert "SECRET_CANARY" not in environment
+    assert matrix._command_environment("container") is None
 
 
 def test_container_path_must_be_inside_workspace(tmp_path) -> None:
@@ -191,7 +208,7 @@ def test_container_path_must_be_inside_workspace(tmp_path) -> None:
 def test_candidate_workspace_rejects_traversal(tmp_path) -> None:
     with (
         pytest.raises(MatrixRunError, match="workspace-relative"),
-        matrix_runtime._candidate_workspace(tmp_path, Path("../hidden")),
+        matrix_runtime._candidate_workspace(tmp_path, (Path("../hidden"),)),
     ):
         pass
 
@@ -202,7 +219,7 @@ def test_candidate_workspace_stages_only_selected_dataset(tmp_path) -> None:
     source.parent.mkdir(parents=True)
     source.write_text('{"records": []}', encoding="utf-8")
 
-    with matrix_runtime._candidate_workspace(tmp_path, dataset) as workspace:
+    with matrix_runtime._candidate_workspace(tmp_path, (dataset,)) as workspace:
         staged = workspace / dataset
         assert staged.read_text(encoding="utf-8") == '{"records": []}'
         assert tuple(workspace.iterdir()) == (workspace / "var",)
@@ -211,7 +228,7 @@ def test_candidate_workspace_stages_only_selected_dataset(tmp_path) -> None:
 def test_candidate_workspace_rejects_missing_dataset(tmp_path) -> None:
     with (
         pytest.raises(MatrixRunError, match="does not exist"),
-        matrix_runtime._candidate_workspace(tmp_path, Path("missing.json")),
+        matrix_runtime._candidate_workspace(tmp_path, (Path("missing.json"),)),
     ):
         pass
 

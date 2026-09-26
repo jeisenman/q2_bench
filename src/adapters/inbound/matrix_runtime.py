@@ -49,6 +49,11 @@ class MatrixRunError(RuntimeError):
         """Create an error for a path unavailable to a worker container."""
         return cls(f"container path must be inside workspace or output: {path}")
 
+    @classmethod
+    def missing_candidate_inputs(cls) -> MatrixRunError:
+        """Create an error for an empty candidate evidence set."""
+        return cls("matrix candidate inputs must not be empty")
+
 
 @dataclass(frozen=True, slots=True)
 class _CommandOptions:
@@ -136,8 +141,6 @@ def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]
         "--volume",
         f"{options.output_root.resolve()}:/output",
         "--volume",
-        f"{options.auth_source.resolve()}:/mnt/codex-host:ro",
-        "--volume",
         f"{(options.auth_source / 'config.toml').resolve()}:"
         "/run/agent-auth/codex-bedrock.config.toml:ro",
         "--volume",
@@ -171,30 +174,41 @@ def _runtime_path(path: Path, options: _CommandOptions) -> str:
 
 
 @contextmanager
-def _candidate_workspace(workspace: Path, dataset: Path) -> Iterator[Path]:
-    if dataset.is_absolute() or ".." in dataset.parts:
-        message = f"matrix dataset path must be workspace-relative: {dataset}"
-        raise MatrixRunError(message)
+def _candidate_workspace(
+    workspace: Path,
+    inputs: tuple[Path, ...],
+) -> Iterator[Path]:
+    if not inputs:
+        raise MatrixRunError.missing_candidate_inputs()
     workspace_root = workspace.resolve()
-    source = workspace_root / dataset
-    if _has_symlink_component(workspace_root, dataset):
-        message = f"matrix dataset may not contain symlinks: {dataset}"
+    sources = tuple(_validated_input(workspace_root, item) for item in inputs)
+    with TemporaryDirectory(prefix="agentbench-evidence-") as temporary:
+        root = Path(temporary)
+        for relative, source in zip(inputs, sources, strict=True):
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+        yield root
+
+
+def _validated_input(workspace_root: Path, relative: Path) -> Path:
+    if relative.is_absolute() or ".." in relative.parts:
+        message = f"matrix input path must be workspace-relative: {relative}"
+        raise MatrixRunError(message)
+    source = workspace_root / relative
+    if _has_symlink_component(workspace_root, relative):
+        message = f"matrix input may not contain symlinks: {relative}"
         raise MatrixRunError(message)
     source = source.resolve()
     try:
         source.relative_to(workspace_root)
     except ValueError as error:
-        message = f"matrix dataset resolves outside workspace: {dataset}"
+        message = f"matrix input resolves outside workspace: {relative}"
         raise MatrixRunError(message) from error
     if not source.is_file() or source.is_symlink():
-        message = f"matrix dataset does not exist: {source}"
+        message = f"matrix input does not exist: {source}"
         raise MatrixRunError(message)
-    with TemporaryDirectory(prefix="agentbench-evidence-") as temporary:
-        root = Path(temporary)
-        target = root / dataset
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, target)
-        yield root
+    return source
 
 
 @contextmanager

@@ -33,7 +33,10 @@ def test_candidate_workspace_rejects_symlinked_dataset(tmp_path) -> None:
 
     with (
         pytest.raises(MatrixRunError, match="may not contain symlinks"),
-        matrix_runtime._candidate_workspace(tmp_path, Path("var/evidence.json")),
+        matrix_runtime._candidate_workspace(
+            tmp_path,
+            (Path("var/evidence.json"),),
+        ),
     ):
         pass
 
