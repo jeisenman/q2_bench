@@ -12,6 +12,10 @@ from workspaces.data_engineering.agents.prod_support.models import Region
 from workspaces.data_engineering.agents.prod_support.ports import (
     TaskLogUnavailableError,
 )
+from workspaces.data_engineering.agents.resource_discovery import (
+    ResourceDiscoveryAgent,
+    ResourceIdentifier,
+)
 
 
 class FakeAirflow:
@@ -37,6 +41,24 @@ class UnavailableLogAirflow(FakeAirflow):
 
     async def fetch_log(self, failure: AirflowFailure) -> str:
         raise TaskLogUnavailableError(failure.failure_id, self.status_code)
+
+
+class FakeResourceSource:
+    def __init__(self) -> None:
+        self.identifiers: list[ResourceIdentifier] = []
+
+    async def lookup(
+        self,
+        identifier: ResourceIdentifier,
+    ) -> tuple[dict[str, object], ...]:
+        self.identifiers.append(identifier)
+        return (
+            {
+                "provisioned_client_id": identifier.value,
+                "client_name": "Example Bank",
+                "environment": "production",
+            },
+        )
 
 
 def failure(day: int, log: str) -> AirflowFailure:
@@ -80,7 +102,8 @@ def test_agent_normalizes_framework_result() -> None:
     )
 
     assert result.correlation_id == "case-1"
-    assert result.attributes[-1] == ("failure_count", 0)
+    assert dict(result.attributes)["failure_count"] == 0
+    assert dict(result.attributes)["resource_discovery_count"] == 0
 
 
 def test_agent_definition_requires_operational_delivery_workflow() -> None:
@@ -92,7 +115,11 @@ def test_agent_definition_requires_operational_delivery_workflow() -> None:
     assert "cancel pending OMS work" in definition.instructions
     assert "Page backward through the same DAG and task" in definition.instructions
     assert "US and CA KEDA and pod health" in definition.instructions
-    assert definition.version == "5"
+    assert "Trigger the Resource Discovery agent" in definition.instructions
+    assert "trigger_resource_discovery_agent" in {
+        tool.name for tool in definition.tools
+    }
+    assert definition.version == "6"
 
 
 def test_agent_reports_missing_task_log_as_developer_evidence_gap() -> None:
@@ -119,3 +146,73 @@ def test_agent_still_fails_fast_for_non_404_log_errors() -> None:
 
     with pytest.raises(TaskLogUnavailableError, match="HTTP 503"):
         asyncio.run(agent.investigate("do today's prod support"))
+
+
+def test_agent_triggers_resource_discovery_for_unique_resend_clients() -> None:
+    client_id = "1f06da19-2f61-401c-a1b7-38902e4f3543"
+    resend = AirflowFailure(
+        region=Region.CA_02,
+        dag_id=f"l3-main-{client_id}",
+        run_id="manual__2026-09-24T05:00:00+00:00",
+        task_id="validate_event_bus_opportunities",
+        start_at=datetime(2026, 9, 24, 5, tzinfo=UTC),
+        end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
+        log="OpportunityValidationException",
+    )
+    source = FakeResourceSource()
+    agent = ProdSupportAgent(
+        FakeAirflow((resend, resend)),
+        clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
+        resource_discovery=ResourceDiscoveryAgent(source),
+    )
+
+    outcome = asyncio.run(agent.investigate("do today's prod support"))
+
+    assert [identifier.value for identifier in source.identifiers] == [client_id]
+    assert len(outcome.resource_discovery_results) == 1
+    assert "Example Bank" in outcome.developer_report
+    assert dict(outcome.resource_discovery_results[0].attributes)["status"] == "unique"
+
+
+def test_agent_skips_invalid_resource_discovery_candidates() -> None:
+    client_id = "1f06da19-2f61-401c-a1b7-38902e4f3543"
+    candidates = (
+        AirflowFailure(
+            region=Region.CA_02,
+            dag_id=f"l3-main-{client_id}",
+            run_id="manual__2026-09-24T05:00:00+00:00",
+            task_id="unrelated_task",
+            start_at=datetime(2026, 9, 24, 5, tzinfo=UTC),
+            end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
+            log="failed",
+        ),
+        AirflowFailure(
+            region=Region.CA_02,
+            dag_id="unrelated-dag",
+            run_id="manual__2026-09-24T05:00:00+00:00",
+            task_id="validate_event_bus_opportunities",
+            start_at=datetime(2026, 9, 24, 5, tzinfo=UTC),
+            end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
+            log="failed",
+        ),
+        AirflowFailure(
+            region=Region.CA_02,
+            dag_id="l3-main-not-a-uuid",
+            run_id="manual__2026-09-24T05:00:00+00:00",
+            task_id="validate_event_bus_opportunities",
+            start_at=datetime(2026, 9, 24, 5, tzinfo=UTC),
+            end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
+            log="failed",
+        ),
+    )
+    source = FakeResourceSource()
+    agent = ProdSupportAgent(
+        FakeAirflow(candidates),
+        clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
+        resource_discovery=ResourceDiscoveryAgent(source),
+    )
+
+    outcome = asyncio.run(agent.investigate("do today's prod support"))
+
+    assert source.identifiers == []
+    assert outcome.resource_discovery_results == ()

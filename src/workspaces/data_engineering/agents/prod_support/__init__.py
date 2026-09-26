@@ -36,6 +36,7 @@ from workspaces.data_engineering.agents.prod_support.oms import (
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
     AirflowTaskMetadataSource,
+    ResourceDiscoveryInvoker,
     TaskLogUnavailableError,
 )
 from workspaces.data_engineering.agents.prod_support.reporting import (
@@ -70,6 +71,7 @@ __all__ = [
     "QueryWindow",
     "Region",
     "ReplayAirflowFailureSource",
+    "ResourceDiscoveryInvoker",
     "TaskLogUnavailableError",
     "WorkloadKind",
     "airflow_failure_url",

@@ -31,6 +31,8 @@ fallback, cluster-health, routing, and audience-delivery steps.
   retrieval.
 - `AirflowTaskMetadataSource`: injected protocol for operator metadata when
   workload routing is required.
+- `ResourceDiscoveryInvoker`: injected agent boundary used to resolve unique
+  resend clients through the read-only Resource Discovery agent.
 - Airflow and OMS: external read-only evidence systems reached through adapters
   outside this package.
 - Runtime configuration: supplied by the selected adapters; the domain agent
@@ -50,8 +52,10 @@ fallback, cluster-health, routing, and audience-delivery steps.
    resend routing, escalation, and channel filtering before final delivery.
 9. Hard-gate resend application selection on a reviewed production mapping;
    report unresolved routing rather than deriving it from logs or subdomains.
-10. Keep raw UUIDs, Spark IDs, and record references out of audience messages.
-11. Return the reports, follow-up, correlation ID, tool names, and operational
+10. Trigger Resource Discovery concurrently for every unique client with a
+    `validate_event_bus_opportunities` failure.
+11. Keep raw UUIDs, Spark IDs, and record references out of audience messages.
+12. Return the reports, follow-up, correlation ID, tool names, and operational
    attributes.
 
 Invalid dates, non-404 log failures, and invalid query parameters fail

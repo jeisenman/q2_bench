@@ -37,8 +37,8 @@ def load_run(
 def test_loads_prod_support_matrix_profiles_and_judge() -> None:
     manifest = load_run()
 
-    assert manifest.judge.profile == "sol-xhigh-judge"
-    assert manifest.judge.reasoning_effort == "xhigh"
+    assert manifest.judge.profile == "sol-high-judge"
+    assert manifest.judge.reasoning_effort == "high"
     assert [item.profile for item in manifest.candidates] == [
         "sol-controller-luna-xhigh-workers",
         "sol-light-luna-high-workers",
@@ -96,7 +96,7 @@ def test_matrix_plan_groups_profiles_under_one_matrix() -> None:
 
     assert len(plan) == len(manifest.candidates)
     assert {item["matrix_id"] for item in plan} == {manifest.matrix_id}
-    assert {item["judge_profile"] for item in plan} == {"sol-xhigh-judge"}
+    assert {item["judge_profile"] for item in plan} == {"sol-high-judge"}
     assert plan[0]["role"] == "controller"
     assert plan[0]["workers"] == ("luna-xhigh",)
 

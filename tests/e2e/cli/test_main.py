@@ -29,7 +29,7 @@ def test_run_matrix_defaults_to_a_grouped_dry_run() -> None:
         result.output.count('"matrix_id": "prod-support-09-25-26"') == candidate_count
     )
     assert '"profile": "sol-light"' in result.output
-    assert '"judge_profile": "sol-xhigh-judge"' in result.output
+    assert '"judge_profile": "sol-high-judge"' in result.output
 
 
 def test_run_matrix_selects_registered_configuration() -> None:

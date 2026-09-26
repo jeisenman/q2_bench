@@ -9,7 +9,7 @@ execution:
   parallelism: 6
   sandbox: read-only
   artifact_root: var/benchmark_matrix/prod-support-09-26-26
-judge_configuration: sol-xhigh-judge
+judge_configuration: sol-high-judge
 rubric:
   - id: prior_run_log_fallback
     weight: 2.5

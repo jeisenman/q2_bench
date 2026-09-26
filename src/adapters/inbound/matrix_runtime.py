@@ -130,6 +130,8 @@ def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]
         "AWS_SHARED_CREDENTIALS_FILE=/run/agent-auth/credentials",
         "--env",
         "AWS_REGION=us-east-2",
+        "--env",
+        "CODEX_SOURCE_HOME=/run/agent-auth",
         "--tmpfs",
         "/home/agentbench/.bedrock_codex:uid=1000,gid=1000,mode=0700",
         "--tmpfs",
@@ -142,7 +144,7 @@ def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]
         f"{options.output_root.resolve()}:/output",
         "--volume",
         f"{(options.auth_source / 'config.toml').resolve()}:"
-        "/run/agent-auth/codex-bedrock.config.toml:ro",
+        "/run/agent-auth/config.toml:ro",
         "--volume",
         f"{(options.auth_source / '.runtime/aws-credentials').resolve()}:"
         "/run/agent-auth/credentials:ro",

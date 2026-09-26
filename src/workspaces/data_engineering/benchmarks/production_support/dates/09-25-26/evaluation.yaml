@@ -9,7 +9,7 @@ execution:
   parallelism: 6
   sandbox: read-only
   artifact_root: var/benchmark_matrix/prod-support-09-25-26
-judge_configuration: sol-xhigh-judge
+judge_configuration: sol-high-judge
 rubric:
   - id: bounded_airflow_links
     weight: 2.0

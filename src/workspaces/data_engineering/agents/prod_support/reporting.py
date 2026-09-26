@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from urllib.parse import urlencode
 
+from domain import AgentResult
 from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
     FailureDiagnosis,
@@ -53,6 +54,7 @@ def format_reports(
     diagnoses: tuple[FailureDiagnosis, ...],
     *,
     reference_date: date | None = None,
+    resource_discovery_results: tuple[AgentResult, ...] = (),
 ) -> ProdSupportReports:
     """Render channel-specific reports and a read-only follow-up."""
     diagnosis_by_id = {item.failure_id: item for item in diagnoses}
@@ -79,6 +81,12 @@ def format_reports(
         developer_lines.append(
             f"- {failure.region.value} {failure.dag_id} / {failure.task_id}: "
             f"{_diagnosis_label(diagnosis)}; evidence: {evidence}"
+        )
+    if resource_discovery_results:
+        developer_lines.append("- Resource Discovery:")
+        developer_lines.extend(
+            f"  - {result.output.replace(chr(10), '; ')}"
+            for result in resource_discovery_results
         )
     data_internal_lines = [
         "Message for Data Internal Channel",

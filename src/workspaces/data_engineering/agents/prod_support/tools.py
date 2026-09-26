@@ -41,3 +41,11 @@ QUERY_OMS_JOB = ToolDefinition(
         ("start_at", "datetime"),
     ),
 )
+TRIGGER_RESOURCE_DISCOVERY = ToolDefinition(
+    name="trigger_resource_discovery_agent",
+    description=(
+        "Invoke the read-only Resource Discovery agent for a resend client's "
+        "provisioned client identifier."
+    ),
+    input_schema=(("client_id", "string"),),
+)

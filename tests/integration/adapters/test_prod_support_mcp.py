@@ -50,6 +50,7 @@ def test_mcp_tool_runs_prod_support_agent() -> None:
         "inspect_airflow_workload",
         "query_oms_job",
         "classify_failure",
+        "trigger_resource_discovery_agent",
     )
 
 

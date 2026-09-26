@@ -1,8 +1,8 @@
 schema_version: 1
 configurations:
-  - profile: sol-xhigh-judge
+  - profile: sol-high-judge
     model: openai.gpt-5.6-sol
-    reasoning_effort: xhigh
+    reasoning_effort: high
     role: judge
     capabilities:
       - evidence_grounding

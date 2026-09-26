@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Protocol
 
+from domain import AgentRequest, AgentResult
 from workspaces.data_engineering.agents.prod_support.models import AirflowFailure
 from workspaces.data_engineering.agents.prod_support.workloads import (
     AirflowTaskMetadata,
@@ -41,4 +42,12 @@ class AirflowTaskMetadataSource(Protocol):
         failure: AirflowFailure,
     ) -> AirflowTaskMetadata:
         """Return exact metadata for one failed task."""
+        ...
+
+
+class ResourceDiscoveryInvoker(Protocol):
+    """Invoke the read-only Resource Discovery agent."""
+
+    async def run(self, request: AgentRequest) -> AgentResult:
+        """Resolve non-secret resource metadata for one client identifier."""
         ...

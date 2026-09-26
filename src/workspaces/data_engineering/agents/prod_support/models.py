@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from enum import StrEnum
 
+from domain import AgentResult
+
 
 class Region(StrEnum):
     """Supported production Airflow regions."""
@@ -88,3 +90,4 @@ class ProdSupportOutcome:
     developer_report: str = ""
     data_internal_report: str = ""
     follow_up: str = ""
+    resource_discovery_results: tuple[AgentResult, ...] = ()
