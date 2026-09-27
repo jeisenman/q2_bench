@@ -39,6 +39,7 @@ packages = [
     "src/domain",
     "src/mcp_servers",
     "src/ports",
+    "src/prdbench",
     "src/workspaces",
 ]
 
