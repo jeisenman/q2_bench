@@ -14,7 +14,7 @@ judge_configuration: sol-high-judge
 rubric:
   - id: channel_filtering
     weight: 1.0
-    reward: Developer retains every supplied task while Data Internal applies every configured omission and preserves only eligible client-facing tasks.
-    punish: Drops a Developer task, ignores an omission category, diagnoses failures, or formats full messages.
+    reward: Developer retains every supplied task while Data Internal represents each configured omission group once as a regional code and preserves eligible client-facing tasks.
+    punish: Drops a Developer task, leaks client details for a coded omission, omits a represented code or eligible task, diagnoses failures, or formats full messages.
 group_by: [matrix_id, suite, case_id]
 compare_by: [profile, model, reasoning_effort]

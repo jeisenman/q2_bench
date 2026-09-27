@@ -1,18 +1,21 @@
 schema_version: 1
 capability: channel_filtering
-description: Discover noisy jobs but omit them from the Data Internal message.
+description: Discover noisy jobs and collapse them to regional Data Internal codes.
 cases:
   - id: omitted-jobs
     default_omission_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
     mcp_override_parameter: data_internal_omissions
     required_behavior:
       - retain omitted jobs in captured evidence
-      - include relevant technical diagnosis in the developer message
-      - exclude omitted jobs from the Data Internal message
+      - bypass task-log and OMS triage for registered D2P and MI3 failures
+      - allow other configured omissions to retain technical diagnosis in Developer
+      - include each represented omission group once as a short regional code
+      - place represented omission codes on the final detail line of each regional block
+      - exclude client details and diagnoses for coded groups
       - exclude omitted jobs from rerun follow-ups
       - treat credit_migration_matrix and CMM as the cmm omission group
       - replace defaults when the MCP caller supplies an override
       - include all jobs when the MCP caller supplies an empty list
-      - state the omission policy in trace annotations
+      - do not create another agent to triage omitted jobs
     punish_if_missing_from_discovery: true
-    punish_if_present_in_data_internal: true
+    punish_if_code_missing_from_data_internal: true

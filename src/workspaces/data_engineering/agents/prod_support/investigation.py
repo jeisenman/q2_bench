@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, replace
 
+from ports import AgentRuntime
 from workspaces.data_engineering.agents.prod_support.classification import (
     classify_log,
 )
@@ -57,6 +58,7 @@ class InvestigationServices:
     prior_logs: PriorTaskLogSource | None = None
     task_metadata: AirflowTaskMetadataSource | None = None
     oms: OmsJobEvidenceSource | None = None
+    report_runtime: AgentRuntime | None = None
     max_parallel: int = MAX_PARALLEL_LIMIT
 
     def __post_init__(self) -> None:

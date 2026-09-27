@@ -101,21 +101,26 @@ This snapshot remains uncurated until these gaps are reviewed:
   evidence source, and root cause or explicit evidence gap. Every client UUID
   found in a DAG or task identifier is resolved before triage. Clients failing
   the same job share one line, and multiple jobs for one client share one line.
-- Data Internal starts directly with the alert heading and uses concise
-  region-pure ongoing bullets. It defaults to excluding D2P, MI3, subscriber,
-  maintenance, backfill, and CMM groups; the MCP `data_internal_omissions`
-  parameter replaces those defaults. Data Internal contains no periods.
+- Data Internal starts directly with the alert heading and uses concise,
+  region-pure ongoing bullets. Configured D2P, MI3, subscriber, maintenance,
+  backfill, and CMM findings collapse to regional codes; the MCP
+  `data_internal_omissions` parameter replaces those defaults. Data Internal
+  contains no periods.
 - Cluster warnings must agree with the overall evidence-backed health verdict;
   the retired CA replica does not make healthy application and parsing checks
   unhealthy.
 - Every discovered failure receives an exact task-attempt log lookup even when
   discovery already contains non-empty log text.
-- The reusable evidence command emits one bounded record per failure without
-  printing full log bodies.
-- Spark jobs start exact Airflow and OMS evidence requests concurrently.
+- The staged briefing parser writes bounded exact-attempt records to `/tmp` and
+  prints one report-ready grouped brief. Candidates must not reopen the JSON or
+  probe for unavailable parsing utilities.
+- OMS is queried only for a proven Spark workload when the case supplies an
+  exact source.
 - If the latest task log is unavailable or non-diagnostic, search earlier runs
   of the same region, DAG, and task in reverse chronological order.
-- Explicit Airflow timeout evidence cancels pending OMS work.
+- D2P and MI3 remain discovered but bypass task-log and OMS triage.
+- One Cluster and one Airflow leaf handoff start concurrently; one Reporting
+  pass follows both, and no leaf agent may delegate.
 - Event resends include exact dates, event counts, and a clickable Resource
   Discovery-routed application link.
 - More than 100 unique resend events remain explicit in Developer and trigger

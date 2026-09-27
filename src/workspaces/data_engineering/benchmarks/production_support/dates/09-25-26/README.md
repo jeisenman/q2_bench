@@ -31,7 +31,8 @@ uv run python \
 ## v2.5 requirements
 
 - The report heading and 05:00 UTC operational window appear before analysis.
-- US failures, CA failures, and regional cluster health start concurrently.
+- One Cluster handoff and one Airflow handoff start concurrently. US and CA
+  reads run concurrently inside Airflow rather than as additional agents.
 - Regional Airflow links use raw ISO-8601 end-date bounds without encoding.
 - Every failed DAG receives a bounded grid-view link.
 - Every discovered failure receives an exact task-attempt log lookup even when
@@ -45,8 +46,10 @@ uv run python \
 - Final messages follow the symlinked `prod-support` reporting skill: compact
   bullets, no Markdown section headings, resolved client labels, and an
   alert-first Data Internal message.
-- Spark investigations start exact Airflow and OMS requests concurrently.
-- Definitive Airflow timeout evidence cancels pending OMS work.
+- OMS is queried only for a proven Spark workload with a supplied exact source.
+- D2P and MI3 remain discovered but bypass task-log and OMS triage.
+- Cluster, Airflow, and Reporting are leaf agents and cannot delegate.
+- Reporting runs once after Cluster and Airflow return.
 - Developer output starts with US and CA Cluster Health lines.
 - Cluster health checks KEDA ScaledObjects and pods in both regions.
 - Data Internal uses concise, region-pure ongoing bullets. It defaults to omitting

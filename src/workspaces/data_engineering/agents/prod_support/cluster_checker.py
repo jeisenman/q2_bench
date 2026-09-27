@@ -13,6 +13,15 @@ from workspaces.data_engineering.agents.prod_support.ports import (
 )
 
 
+class ClusterCheckConfigurationError(ValueError):
+    """Raised when a cluster check has no regional scope."""
+
+    @classmethod
+    def empty_regions(cls) -> ClusterCheckConfigurationError:
+        """Return an error for an empty cluster scope."""
+        return cls("cluster check must include at least one region")
+
+
 class ClusterChecker:
     """Inspect both production regions concurrently."""
 
@@ -20,9 +29,13 @@ class ClusterChecker:
         """Initialize with an optional read-only cluster-health source."""
         self._source = source
 
-    async def check(self) -> tuple[RegionalClusterHealth, ...]:
-        """Return complete US and CA observations or explicit evidence gaps."""
-        regions = (Region.US_01, Region.CA_02)
+    async def check(
+        self,
+        regions: tuple[Region, ...] = (Region.US_01, Region.CA_02),
+    ) -> tuple[RegionalClusterHealth, ...]:
+        """Return selected regional observations or explicit evidence gaps."""
+        if not regions:
+            raise ClusterCheckConfigurationError.empty_regions()
         if self._source is None:
             return tuple(
                 RegionalClusterHealth.unavailable(region) for region in regions

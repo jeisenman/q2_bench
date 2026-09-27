@@ -14,7 +14,7 @@ judge_configuration: sol-high-judge
 rubric:
   - id: data_internal_message
     weight: 1.0
-    reward: Uses the required compact regional format, groups shared jobs and each client's remaining jobs, retains supported high-value causes, applies omissions, and uses no periods.
-    punish: Mixes regions, repeats a client-job pair, fails either grouping rule, includes an omitted job, repeats an implied diagnosis, adds follow-up-only details, uses periods or blank lines, contradicts evidence, or writes the developer message.
+    reward: Uses the compact regional format, groups shared jobs first, lists only each grouped client's other jobs separately, mentions every client-job pair once, collapses configured omissions to regional codes, and uses no periods.
+    punish: Mixes regions, repeats a client-job pair or shared job, exposes client details for a coded omission, omits a represented code, adds follow-up-only details, uses periods or blank lines, contradicts evidence, or writes the developer message.
 group_by: [matrix_id, suite, case_id]
 compare_by: [profile, model, reasoning_effort]

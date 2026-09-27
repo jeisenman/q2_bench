@@ -31,6 +31,11 @@ class ClusterHealthValueError(ValueError):
         return cls("active_dag_count must not be negative")
 
     @classmethod
+    def negative_restart_count(cls) -> ClusterHealthValueError:
+        """Return an error for a negative restart count."""
+        return cls("restart_count must not be negative")
+
+    @classmethod
     def empty_keda_status(cls) -> ClusterHealthValueError:
         """Return an error for an empty KEDA status."""
         return cls("keda_status must not be empty")
@@ -51,6 +56,7 @@ class RegionalClusterHealth:
     pods_healthy: bool | None = None
     dags_parsing_healthy: bool | None = None
     active_dag_count: int | None = None
+    restart_count: int | None = None
     keda_status: str = "unknown"
     symptoms: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -61,6 +67,8 @@ class RegionalClusterHealth:
             raise ClusterHealthValueError.timezone_required()
         if self.active_dag_count is not None and self.active_dag_count < 0:
             raise ClusterHealthValueError.negative_dag_count()
+        if self.restart_count is not None and self.restart_count < 0:
+            raise ClusterHealthValueError.negative_restart_count()
         if not self.keda_status.strip():
             raise ClusterHealthValueError.empty_keda_status()
         if any(not item.strip() for item in (*self.symptoms, *self.warnings)):
@@ -76,8 +84,11 @@ class RegionalClusterHealth:
         )
         if False in primary or self.active_dag_count == 0:
             return ClusterHealthState.UNHEALTHY
-        if all(value is True for value in primary) and (
-            self.active_dag_count is None or self.active_dag_count > 0
+        known = tuple(value for value in primary if value is not None)
+        if (
+            known
+            and all(value is True for value in known)
+            and (self.active_dag_count is None or self.active_dag_count > 0)
         ):
             return ClusterHealthState.HEALTHY
         return ClusterHealthState.UNKNOWN

@@ -80,6 +80,7 @@ class MatrixManifest:
     capability: str | None
     case_prompt: str
     case_instructions: tuple[str, ...]
+    applicability: tuple[tuple[str, bool], ...]
     runtime: str
     container_image: str
     parallelism: int
@@ -165,6 +166,10 @@ def load_matrix_run(
         capability=capability,
         case_prompt=case_prompt,
         case_instructions=_string_tuple(case.get("instructions", []), cases_path),
+        applicability=_boolean_pairs(
+            case.get("evaluation_applicability", {}),
+            cases_path,
+        ),
         runtime=str(execution.get("runtime", "process")),
         container_image=str(execution.get("container_image", "")),
         parallelism=int(execution.get("parallelism", len(selected))),
@@ -202,6 +207,17 @@ def build_candidate_prompt(
             f"capabilities={','.join(worker.capabilities)}"
             for worker in selected.workers
         )
+        lines.append(
+            "Configured workers are leaf agents. They must complete their scoped "
+            "task directly and must not spawn, hand off to, or delegate to another "
+            "agent."
+        )
+        if manifest.capability is None:
+            lines.append(
+                "Only the top-level controller may delegate. Use at most one Cluster "
+                "worker and one Airflow worker, start them concurrently, and perform "
+                "the single Reporting pass only after both leaf handoffs return."
+            )
     return "\n".join(lines)
 
 
@@ -230,9 +246,19 @@ def build_matrix_judge_prompt(
         (
             f"Judge this {benchmark_kind} agent trace using the weighted rubric.",
             "Score each criterion from 0 to 1. Do not excuse deterministic violations.",
+            "Apply the case applicability map before scoring. A criterion explicitly "
+            "marked false is not applicable: award 1.0 when the agent avoids "
+            "fabricating or performing that work. Use the same rule for capability "
+            "scores. In particular, OMS and Spark-race criteria require a supplied "
+            "exact OMS source; absence of that source is not an agent failure.",
+            "For token efficiency, distinguish fresh input from cached input. Cached "
+            "tokens are not evidence of repeated logs; score trace size, uncached "
+            "input, redundant commands, repeated inventories, and worker payloads.",
             "Return JSON with overall_score, criteria, strengths, violations, "
             "rationale, and capability_scores. Attribute capability scores to "
             "the controller and worker models declared in the trace.",
+            "Case applicability: "
+            f"{json.dumps(dict(manifest.applicability), sort_keys=True)}",
             f"Rubric: {json.dumps(criteria, sort_keys=True)}",
             f"Trace: {json.dumps(trace, sort_keys=True)}",
             f"Earlier comparable trace: {json.dumps(baseline or {}, sort_keys=True)}",
@@ -286,6 +312,8 @@ def parse_model_profile(raw: object, path: Path) -> ModelProfile:
 def _worker(raw: object, path: Path) -> WorkerProfile:
     if not isinstance(raw, dict):
         raise MatrixManifestError.invalid(path, "worker profile must be a mapping")
+    if "workers" in raw or raw.get("can_delegate", False) is not False:
+        raise MatrixManifestError.invalid(path, "worker profiles must be leaf agents")
     max_parallel = int(raw.get("max_parallel", 1))
     if max_parallel <= 0:
         raise MatrixManifestError.invalid(path, "worker max_parallel must be positive")
@@ -326,6 +354,18 @@ def _string_pairs(raw: object, path: Path) -> tuple[tuple[str, str], ...]:
         raise MatrixManifestError.invalid(
             path,
             "airflow_base_urls must be a string mapping",
+        )
+    return tuple((key, value) for key, value in raw.items())
+
+
+def _boolean_pairs(raw: object, path: Path) -> tuple[tuple[str, bool], ...]:
+    if not isinstance(raw, dict) or not all(
+        isinstance(key, str) and key.strip() and isinstance(value, bool)
+        for key, value in raw.items()
+    ):
+        raise MatrixManifestError.invalid(
+            path,
+            "evaluation_applicability must be a boolean mapping",
         )
     return tuple((key, value) for key, value in raw.items())
 

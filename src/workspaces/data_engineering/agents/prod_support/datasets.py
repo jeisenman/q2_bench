@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from dataclasses import asdict
@@ -15,7 +16,11 @@ from workspaces.data_engineering.agents.prod_support.models import (
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
+    RegionalAirflowFailureSource,
     TaskLogUnavailableError,
+)
+from workspaces.data_engineering.agents.prod_support.reporting_config import (
+    ProdSupportReportConfig,
 )
 
 AUTHORIZATION = re.compile(r"(?i)(authorization\s*[:=]\s*)(?:basic|bearer)\s+\S+")
@@ -23,6 +28,21 @@ SECRET_ASSIGNMENT = re.compile(
     r"(?i)\b(password|token|secret|api[_-]?key)\s*[:=]\s*\S+"
 )
 OPERATIONAL_HOUR = 5
+MAX_PARALLEL = 5
+
+
+class CaptureConfigurationError(ValueError):
+    """Raised when a production-support capture is configured unsafely."""
+
+    @classmethod
+    def empty_regions(cls) -> CaptureConfigurationError:
+        """Return an error for an empty regional scope."""
+        return cls("capture regions must not be empty")
+
+    @classmethod
+    def duplicate_regions(cls) -> CaptureConfigurationError:
+        """Return an error for repeated regional scope."""
+        return cls("capture regions must not contain duplicates")
 
 
 class LogRedactor(Protocol):
@@ -47,22 +67,52 @@ async def capture_day(
     destination: Path,
     *,
     redactor: LogRedactor | None = None,
+    regions: tuple[Region, ...] = (Region.US_01, Region.CA_02),
 ) -> Path:
-    """Capture one operational day plus prior-day distractor failures."""
+    """Capture scoped Airflow evidence plus prior-day distractors."""
+    if not regions:
+        raise CaptureConfigurationError.empty_regions()
+    if len(set(regions)) != len(regions):
+        raise CaptureConfigurationError.duplicate_regions()
     cutoff = datetime.combine(
         operational_date,
         time(hour=OPERATIONAL_HOUR),
         tzinfo=UTC,
     )
-    candidates = await source.discover_failures(cutoff - timedelta(days=1))
+    candidates = await _discover_candidates(
+        source,
+        cutoff - timedelta(days=1),
+        regions,
+    )
     scrubber = redactor or DefaultLogRedactor()
-    records = []
-    for failure in candidates:
+    config = ProdSupportReportConfig()
+    semaphore = asyncio.Semaphore(MAX_PARALLEL)
+
+    async def collect(failure: AirflowFailure) -> dict[str, Any]:
+        group = config.omission_group(failure)
+        if config.skips_airflow_triage(failure):
+            return _serialize(
+                failure,
+                "",
+                triage_status="omitted",
+                log_retrieval="omitted_by_policy",
+                omission_code=group.value.upper() if group is not None else None,
+            )
         try:
-            log = await source.fetch_log(failure)
+            async with semaphore:
+                log = await source.fetch_log(failure)
+            retrieval = "exact_task_attempt"
         except TaskLogUnavailableError as error:
             log = str(error)
-        records.append(_serialize(failure, scrubber.redact(log)))
+            retrieval = "unavailable"
+        return _serialize(
+            failure,
+            scrubber.redact(log),
+            triage_status="investigated",
+            log_retrieval=retrieval,
+        )
+
+    records = await asyncio.gather(*(collect(failure) for failure in candidates))
     destination.mkdir(parents=True, exist_ok=True)
     target = destination / "airflow_failures.json"
     target.write_text(
@@ -71,6 +121,8 @@ async def capture_day(
                 "schema_version": 1,
                 "operational_date": operational_date.isoformat(),
                 "failed_since": cutoff.isoformat(),
+                "regions": [region.value for region in regions],
+                "triage_omissions": ["D2P", "MI3"],
                 "records": records,
             },
             indent=2,
@@ -80,6 +132,37 @@ async def capture_day(
         encoding="utf-8",
     )
     return target
+
+
+async def _discover_candidates(
+    source: AirflowFailureSource,
+    since: datetime,
+    regions: tuple[Region, ...],
+) -> tuple[AirflowFailure, ...]:
+    if isinstance(source, RegionalAirflowFailureSource):
+        batches = await asyncio.gather(
+            *(source.discover_region_failures(region, since) for region in regions)
+        )
+        candidates = tuple(item for batch in batches for item in batch)
+    else:
+        candidates = tuple(
+            failure
+            for failure in await source.discover_failures(since)
+            if failure.region in regions
+        )
+    return tuple(
+        sorted(
+            candidates,
+            key=lambda item: (
+                item.region.value,
+                item.end_at,
+                item.dag_id,
+                item.run_id,
+                item.task_id,
+                item.try_number,
+            ),
+        )
+    )
 
 
 class ReplayAirflowFailureSource:
@@ -104,12 +187,23 @@ class ReplayAirflowFailureSource:
         return failure.log
 
 
-def _serialize(failure: AirflowFailure, log: str) -> dict[str, Any]:
+def _serialize(
+    failure: AirflowFailure,
+    log: str,
+    *,
+    triage_status: str,
+    log_retrieval: str,
+    omission_code: str | None = None,
+) -> dict[str, Any]:
     value = asdict(failure)
     value["region"] = failure.region.value
     value["start_at"] = failure.start_at.isoformat()
     value["end_at"] = failure.end_at.isoformat()
     value["log"] = log
+    value["triage_status"] = triage_status
+    value["log_retrieval"] = log_retrieval
+    if omission_code is not None:
+        value["omission_code"] = omission_code
     return value
 
 

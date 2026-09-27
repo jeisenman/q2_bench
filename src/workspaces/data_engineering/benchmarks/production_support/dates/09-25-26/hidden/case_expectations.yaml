@@ -40,8 +40,10 @@ cases:
       prohibit_blank_lines_between_bullets: true
       prohibit_periods_in_data_internal: true
       group_same_job_across_clients: true
+      group_shared_jobs_before_remaining_client_jobs: true
       group_multiple_jobs_per_client: true
       prohibit_repeated_client_job_pairs: true
+      prohibit_shared_job_on_remaining_client_line: true
       prohibit_cross_region_findings: true
       prohibit_cluster_status_contradictions: true
       require_resolved_client_names: true
@@ -54,6 +56,8 @@ cases:
         - maintenance
         - backfill
         - cmm
+      require_represented_omission_codes: true
+      omission_codes_are_final_regional_detail: true
       data_internal_failure_shape: "<client> (<prefix>) failed on <job>"
       data_internal_client_group_shape: "<client> (<prefix>) failed on <job1>, <job2>, and <job3>"
       data_internal_cluster_shape: "<region> cluster is <status>; <symptoms> appear"
@@ -61,10 +65,13 @@ cases:
       validate_event_bus_implies_missing_snapshots: true
       preferred_explicit_causes: [timeout, OOM, distinctness validation errors]
       kpo_sizing_agent_uri: agent://kpo-sizer/definition
-    required_initial_parallel_workstreams:
-      - US-01_failure_discovery
-      - CA-02_failure_discovery
-      - regional_cluster_health
+    orchestration_contract:
+      top_level_agent: orchestrator
+      concurrent_leaf_handoffs: [cluster, airflow]
+      airflow_regions_concurrent: true
+      reporting_calls: 1
+      reporting_starts_after: [cluster, airflow]
+      prohibit_nested_delegation: true
     expected_failure_ids:
       - US-01|l3-main-63ecb663-1de9-4ed7-a5fb-cae3a6e8c68c|manual__2026-09-22T05:00:00+00:00|validate_event_bus_opportunities
       - US-01|event_bus_to_payloads_historical|scheduled__2026-09-23T15:00:00+00:00|check_for_subscriber_client_errors
@@ -84,11 +91,11 @@ cases:
       - US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T03:00:00+00:00|check_for_subscriber_client_errors
       - US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T15:00:00+00:00|check_for_subscriber_client_errors
     expected_diagnoses:
-      US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-23T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data: confirmed_oom
+      US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-23T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data: omitted
       US-01|l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a|manual__2026-09-23T05:00:00+00:00|high_quality_core_account_financial_statements.high_quality_core_account_financial_statements: distinctness
       US-01|l3-main-a6f041a5-fda3-4b68-a002-d115b39e9914|manual__2026-09-23T05:00:00+00:00|relationship_signals_time_series.relationship_signals_time_series_agg_cp_to_snowflake: unknown_resource_termination
-      US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-23T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data: unknown
-      US-01|market_insights_3_output|scheduled__2026-09-24T00:00:00+00:00|client_specific.client_specific_mi_3_raw_output_validation_621d1ad2-3d0f-4fc4-8245-e3878a6bff7c: application_error
+      US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-23T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data: omitted
+      US-01|market_insights_3_output|scheduled__2026-09-24T00:00:00+00:00|client_specific.client_specific_mi_3_raw_output_validation_621d1ad2-3d0f-4fc4-8245-e3878a6bff7c: omitted
       US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T03:00:00+00:00|check_for_subscriber_client_errors: application_error
       US-01|event_bus_to_payloads_historical|scheduled__2026-09-24T15:00:00+00:00|check_for_subscriber_client_errors: application_error
     expected_developer_message: |
@@ -96,11 +103,11 @@ cases:
         - US Cluster Health: healthy; scheduler, DAG processor, and pods were ready at the evidence timestamp.
         - CA Cluster Health: DAG processor unhealthy; pod was running with 13 restarts and 0 active DAGs.
         - Terminology: DV means Distinctness Validation. MI means Market Insights; MI3 means Market Insights 3.
-        - BoFA (792): Delivery to Promise Other Products failed with explicit OOM evidence; classification: confirmed_oom.
+        - BoFA (792): Delivery to Promise Other Products triage was omitted by registered D2P policy.
         - Valley National Bank (8b2): Core Account Financial Statements high quality failed on attempt 4 during DV (Distinctness Validation); classification: distinctness.
         - Bremer Bank, National Association (a6f): Relationship Signals aggregation exited -9 without corroborating OOM evidence; classification: unknown_resource_termination.
-        - Glacier Bancorp (9d2): Delivery to Promise failed with a badly exited driver and no explicit terminal signal; classification: unknown.
-        - Andi Application Owner (621): MI3 (Market Insights 3) raw-output validation failed without an underlying pod cause in the captured task log; classification: application_error.
+        - Glacier Bancorp (9d2): Delivery to Promise triage was omitted by registered D2P policy.
+        - Andi Application Owner (621): MI3 triage was omitted by registered MI3 policy.
         - Event Bus subscriber validation failed in both observed runs because OpportunitySaved schema versions 8.6 and 8.9 have newer versions available; classification: application_error.
         - CA-02 had no task failures, but its DAG processor was unhealthy: 0 active DAGs versus 6 expected l3-main graphs, processor logs were unavailable, and 13 restarts were observed. OMS did not corroborate the failure.
         - Suggest a CA DAG-processor bounce for operator approval. No production mutation was performed.
@@ -111,6 +118,7 @@ cases:
         - Bank of Hope (Los Angeles, CA) (63e) failed on validate_event_bus_opportunities
         - Valley National Bank (8b2) failed on Core Account Financial Statements high quality with distinctness validation errors
         - Bremer Bank, National Association (a6f) failed on Relationship Signals aggregation with probable OOM
+        - D2P, MI3, Subscriber
       CA
       - Ongoing
         - CA cluster is unhealthy; 0 active DAGs, 13 pod restarts, and unavailable processor logs appear; KEDA status and supporting OMS telemetry are missing
@@ -136,11 +144,10 @@ cases:
     expected_oms_corroboration:
       CA-02: false
     required_investigations:
-      - inspect every relevant Airflow task log
-      - fetch the exact task-attempt log even when discovery includes non-empty log text
-      - inspect Airflow and OMS concurrently for every Spark job
-      - cancel pending OMS work when Airflow proves a timeout
-      - check KEDA ScaledObjects and pods in both regions
+      - fetch compact exact evidence for every failure except registered D2P and MI3 triage omissions
+      - never query task logs or OMS for registered D2P and MI3 triage omissions
+      - query OMS only for a proven Spark workload when an exact OMS source is supplied
+      - check pod state, restart counts, and KEDA health in both regions
       - resolve every client UUID found in a DAG or task identifier through resource discovery before triage
     omitted_from_data_internal:
       - d2p

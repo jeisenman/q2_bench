@@ -34,6 +34,16 @@ class ReportContractError(ValueError):
         """Return an error for duplicate regional health."""
         return cls("duplicate regional cluster-health observations")
 
+    @classmethod
+    def empty_regions(cls) -> ReportContractError:
+        """Return an error for an empty reporting scope."""
+        return cls("report findings must include at least one region")
+
+    @classmethod
+    def duplicate_regions(cls) -> ReportContractError:
+        """Return an error for duplicate reporting regions."""
+        return cls("report findings contain duplicate regions")
+
 
 def validate_report_inputs(
     failures: tuple[AirflowFailure, ...],

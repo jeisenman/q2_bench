@@ -32,20 +32,12 @@ file. Keep timestamps in UTC and include offsets in captured records.
 ```text
 var/benchmark_data/prod_support/          ignored, sensitive working data
 └── YYYY-MM-DD/
-    ├── airflow_failures.json             canonical redacted replay dataset
-    └── steps/                            optional collection and mining trail
-        ├── 01-discovery.txt
-        ├── 02-airflow-capture/
-        │   └── YYYY-MM-DD/
-        │       └── airflow_failures.json
-        ├── 03-dataset-summary.json
-        ├── 04-record-index.tsv
-        ├── 05-client-identities.txt
-        ├── 06-agent-result.json
-        ├── 07-terminal-evidence.txt
-        ├── 08-oms-<subject>.json
-        ├── 09-observed-recurrence.tsv
-        └── 10-final-report.md
+    ├── airflow_failures.json             redacted failures and triage policy
+    ├── cluster_health.json               pod, restart, and KEDA observations
+    ├── resource_discovery.json           reviewed non-secret client metadata
+    ├── compact_evidence.json             bounded evidence without raw logs
+    ├── reporting_input.json              grouped input for one Reporting pass
+    └── collection_manifest.json          scope and orchestration contract
 
 src/workspaces/data_engineering/benchmarks/production_support/
 ├── manifest.yaml                         stable benchmark identity
@@ -81,13 +73,12 @@ uv run agentbench debug-prod-support --date 2026-09-25
 ```
 
 Debug mode performs one read-only production capture, redacts logs before
-persistence, replays the agent from that exact snapshot, prints the support
-report, and creates an unscored benchmark draft under ignored `var/` storage.
-The draft has `status: captured`, no registered system case, and only neutral
-expectation placeholders. It writes `suite.yaml` and `cases.yaml`;
-`evaluation.yaml` is deferred until curation supplies a runnable case and
-rubric. It currently captures Airflow only; infrastructure, OMS, and Resource
-Discovery evidence still require separate approved collection.
+persistence, captures cluster health concurrently with Airflow, resolves
+reviewed non-secret client metadata, and then replays the agent from those
+exact artifacts. It creates an unscored benchmark draft under ignored `var/`
+storage. The draft has `status: captured`, no registered system case, and no
+expected answers. It writes `suite.yaml` and `cases.yaml`; `evaluation.yaml`
+is deferred until curation supplies a runnable case and rubric.
 
 ### 1. Scaffold the next day
 
@@ -133,84 +124,88 @@ completed privacy and source checks. `curated` has complete expectations and
 can be scored. `rejected` remains out of scored layers and records why it
 cannot be trusted.
 
-### 2. Capture Airflow evidence
+### 2. Capture the selected production scope
 
 After the operational date has begun and source data is available:
 
 ```bash
 uv run agentbench capture-prod-support --date 2026-09-26
+uv run agentbench capture-prod-support --date 2026-09-26 --scope us
+uv run agentbench capture-prod-support --date 2026-09-26 --scope ca
 ```
 
-The command writes:
+`--scope` accepts `both`, `us`, or `ca` and defaults to `both`. The command
+writes one directory containing:
 
 ```text
-var/benchmark_data/prod_support/2026-09-26/airflow_failures.json
+airflow_failures.json
+cluster_health.json
+resource_discovery.json
+compact_evidence.json
+reporting_input.json
+collection_manifest.json
 ```
 
 The capture contract is:
 
-- `schema_version` is `1`.
-- `operational_date` matches the requested date.
-- `failed_since` is the operational date at 05:00 UTC.
-- `records` contains both target-window records and the preceding day's
+- Cluster and Airflow leaf collection start concurrently.
+- Selected Airflow regions are queried concurrently.
+- `airflow_failures.json` includes target-window records and preceding-day
   temporal distractors.
-- Every record has region, DAG, run, task, start/end timestamps, try number,
-  and a redacted log.
+- D2P and MI3 records remain present with their omission code, but collection
+  does not request their task logs or OMS evidence.
+- Other Airflow records identify whether the exact task-attempt log was
+  retrieved or unavailable.
+- `cluster_health.json` records pod readiness, restart count, KEDA status,
+  symptoms, and warnings for every selected region.
+- Resource Discovery is bounded to exact client IDs from non-omitted failures.
+- `compact_evidence.json` retains only bounded terminal evidence; it never
+  copies complete logs.
+- `reporting_input.json` groups each client-job pair once and carries omission
+  codes for the final regional omission line.
+- `collection_manifest.json` records date, scope, artifacts, concurrent leaf
+  handoffs, and `nested_delegation: false`.
 
-Fail the collection if either region is unavailable. Record source failures
-explicitly; do not silently treat an unavailable region as having zero
-failures.
+Fail the collection if any selected region or source is unavailable. Do not
+silently treat an unavailable region as having zero failures.
 
-### 3. Collect regional infrastructure evidence
+### 3. Review conditional evidence
 
-For both `US-01` and `CA-02`, collect evidence at approximately the same time:
+The standard collector does not query OMS or retrieve broad infrastructure
+logs. Add conditional evidence to a curated case only when the failure path
+requires it:
 
-- Airflow service and DAG-processor health.
-- Active DAG inventory and expected `l3-main-*` graph counts.
-- Processor logs or an explicit statement that logs were unavailable.
-- Restart counts and deployment events.
-- OMS corroboration, including query scope and whether telemetry was absent.
-- The complete OMS KQL, workspace, table, exact client/run/task/attempt
-  parameters, and the UTC calendar-day window derived from the task start date.
-- Airflow task metadata, including the exact operator class used to classify
-  the workload before routing confirmed Spark jobs to regional OMS evidence.
+- OMS is applicable only when task metadata proves a Spark workload and an
+  exact-identity source is available.
+- Prior-run fallback is applicable only when the current exact attempt is
+  unavailable or non-diagnostic.
+- Broad DAG inventory and processor-log collection require a documented
+  benchmark need; they are not part of the default daily bundle.
 
-Each committed evidence file must contain:
+If an optional source is not applicable, the benchmark should award full
+credit for skipping it. Absence of OMS telemetry is not proof of health.
 
-```json
-{
-  "captured_at": "2026-09-26T15:00:00Z",
-  "region": "CA-02",
-  "evidence": {},
-  "verdict": "review_required"
-}
-```
+### 4. Review the compact bundle
 
-Preserve disagreement between sources. For example, Airflow may show an
-unhealthy processor while OMS has no corroborating signal. Absence of OMS
-telemetry is not proof of health.
-
-### 4. Mine and normalize the capture
-
-Data mining here means deterministic extraction and grouping, not searching
-for a desired conclusion. Produce a temporary record index with:
+The collector already performs deterministic extraction and grouping. Review:
 
 - Stable failure ID:
   `region|dag_id|run_id|task_id`.
 - Operational-window membership based on task `end_at`.
-- Client identity derived from reviewed DAG metadata.
-- Terminal log lines and attempt number.
+- Exact client identity from Resource Discovery for non-omitted failures.
+- Bounded terminal evidence and attempt number.
+- Explicit `omitted_by_policy` records for D2P and MI3.
 - Repeated DAG/task signatures across runs.
 - Candidate classification and the exact supporting evidence.
-- Regional DAG counts and differences from expected inventory.
+- Regional pod readiness, restart count, and KEDA status.
 
 Group records by normalized DAG/task signature to reveal recurrence. Compare
 current records with prior curated days only for trend analysis; prior labels
 must not automatically label a new record.
 
-Prefer scripts and array/dataframe operations for summaries over manual
-counting. Sort outputs by region, end timestamp, DAG ID, run ID, and task ID so
-reruns are deterministic.
+Do not reopen complete log bodies to create the report. The Reporting pass
+should consume `reporting_input.json`. Sort outputs by region, end timestamp,
+DAG ID, run ID, task ID, and attempt so reruns are deterministic.
 
 ### 5. Add controlled misdirection
 

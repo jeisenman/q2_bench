@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
-from datetime import date, datetime
 from pathlib import Path
 from typing import cast
 
 import click
 
-from adapters.airflow import AirflowApiSource
 from adapters.inbound import MatrixInboundAdapter
 from adapters.mlflow import (
     BedrockAssistantConfigurator,
@@ -20,9 +17,13 @@ from adapters.mlflow import (
     load_recorded_evaluation,
     publish_matrix_results,
     publish_recorded_evaluation,
-    register_agent_definition,
+    register_agent_definitions,
 )
 from cli.mlflow import configure_codex_tracing
+from cli.prod_support_collection import (
+    capture_prod_support,
+    debug_prod_support,
+)
 from cli.prod_support_evidence import summarize_prod_support_evidence
 from cli.prod_support_replay import (
     load_replay_case,
@@ -30,9 +31,8 @@ from cli.prod_support_replay import (
     write_recorded_outcome,
 )
 from workspaces.data_engineering.agents.prod_support import (
-    PROD_SUPPORT_DEFINITION,
-    capture_day,
-    run_debug_day,
+    PROD_SUPPORT_AGENT_DEFINITIONS,
+    PROD_SUPPORT_MLFLOW_NAMESPACE,
 )
 from workspaces.data_engineering.benchmarks import (
     default_catalog,
@@ -63,6 +63,10 @@ DEFAULT_MATRIX_CASE = "prod-support-us-ca-2026-09-25"
 @click.group()
 def cli() -> None:
     """Manage data-engineering agents and benchmarks."""
+
+
+cli.add_command(capture_prod_support)
+cli.add_command(debug_prod_support)
 
 
 @cli.command("benchmarks")
@@ -101,14 +105,19 @@ def initialize(tracking_uri: str, artifact_root: Path) -> None:
 @click.argument("agent", type=click.Choice(["prod-support"]))
 @click.option("--tracking-uri", default=DEFAULT_TRACKING_URI, show_default=True)
 def register_agent(agent: str, tracking_uri: str) -> None:
-    """Register an immutable agent definition in MLflow."""
+    """Register an agent family in its MLflow namespace."""
     del agent
-    run_id, version = register_agent_definition(
-        PROD_SUPPORT_DEFINITION,
+    registrations = register_agent_definitions(
+        PROD_SUPPORT_AGENT_DEFINITIONS,
         tracking_uri=tracking_uri,
         experiment_name="production_operations",
+        namespace=PROD_SUPPORT_MLFLOW_NAMESPACE,
     )
-    click.echo(f"prod-support\tv{PROD_SUPPORT_DEFINITION.version}\t{version}\t{run_id}")
+    for definition, run_id, version in registrations:
+        click.echo(
+            f"{PROD_SUPPORT_MLFLOW_NAMESPACE}.{definition.name}\t"
+            f"v{definition.version}\t{version}\t{run_id}"
+        )
 
 
 @cli.command("configure-assistant")
@@ -155,58 +164,6 @@ def configure_assistant(
             config_path=config_path,
         )
     click.echo(f"{selected}\t{selected_model}\t{config_path}")
-
-
-@cli.command("capture-prod-support")
-@click.option(
-    "--date",
-    "operational_date",
-    type=click.DateTime(formats=["%Y-%m-%d"]),
-    required=True,
-)
-@click.option(
-    "--output-root",
-    type=click.Path(file_okay=False, path_type=Path),
-    default=Path("var/benchmark_data/prod_support"),
-    show_default=True,
-)
-def capture_prod_support(operational_date: datetime, output_root: Path) -> None:
-    """Capture redacted Airflow evidence for one benchmark day."""
-    target_date: date = operational_date.date()
-    source = AirflowApiSource.from_environment()
-    target = asyncio.run(
-        capture_day(
-            source,
-            target_date,
-            output_root / target_date.isoformat(),
-        )
-    )
-    click.echo(str(target))
-
-
-@cli.command("debug-prod-support")
-@click.option(
-    "--date",
-    "operational_date",
-    type=click.DateTime(formats=["%Y-%m-%d"]),
-    required=True,
-)
-def debug_prod_support(operational_date: datetime) -> None:
-    """Run production-backed support and prepare an uncurated benchmark."""
-    artifacts = asyncio.run(
-        run_debug_day(
-            AirflowApiSource.from_environment(),
-            operational_date.date(),
-            Path("var/benchmark_data/prod_support"),
-        )
-    )
-    click.echo(
-        "captured\t"
-        f"{len(artifacts.outcome.failures)} failures\t"
-        "review required before promotion"
-    )
-    click.echo(f"dataset\t{artifacts.dataset}")
-    click.echo(f"benchmark\t{artifacts.benchmark_root}")
 
 
 @cli.command("evaluate")

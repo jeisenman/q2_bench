@@ -136,11 +136,23 @@ class AirflowApiSource:
         """Query failures by end date across all configured regions."""
         batches = await asyncio.gather(
             *(
-                asyncio.to_thread(self._discover_region, region, since)
-                for region in self._regions
+                self.discover_region_failures(config.region, since)
+                for config in self._regions
             )
         )
         return tuple(item for batch in batches for item in batch)
+
+    async def discover_region_failures(
+        self,
+        region: Region,
+        since: datetime,
+    ) -> tuple[AirflowFailure, ...]:
+        """Query one explicitly selected production region."""
+        return await asyncio.to_thread(
+            self._discover_region,
+            self._config_for(region),
+            since,
+        )
 
     async def fetch_log(self, failure: AirflowFailure) -> str:
         """Retrieve the exact task log for the recorded attempt."""

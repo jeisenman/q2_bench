@@ -18,6 +18,7 @@
       },
       "pods": {
         "summary": "Airflow scheduler, webserver, and DAG processor pods were Running and ready.",
+        "primary_pods_healthy": true,
         "running_unready_count": 0,
         "dag_processor_restart_count": 3575
       },
@@ -45,8 +46,10 @@
       },
       "pods": {
         "summary": "Scheduler, webserver, and replacement DAG processor were Running and ready; one retired DAG processor replica remained Running but unready.",
+        "primary_pods_healthy": true,
         "running_unready_count": 1,
-        "dag_processor_restart_count": 13
+        "dag_processor_restart_count": 13,
+        "warning": "One retired DAG processor replica remained Running but unready with 13 restarts."
       },
       "dags": {
         "active_count": 34,

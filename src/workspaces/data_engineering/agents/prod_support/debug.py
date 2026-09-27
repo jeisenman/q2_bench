@@ -11,10 +11,19 @@ import yaml
 from workspaces.data_engineering.agents.prod_support.agent import ProdSupportAgent
 from workspaces.data_engineering.agents.prod_support.datasets import (
     ReplayAirflowFailureSource,
-    capture_day,
 )
-from workspaces.data_engineering.agents.prod_support.models import ProdSupportOutcome
-from workspaces.data_engineering.agents.prod_support.ports import AirflowFailureSource
+from workspaces.data_engineering.agents.prod_support.models import (
+    ProdSupportOutcome,
+    Region,
+)
+from workspaces.data_engineering.benchmarks.production_support import (
+    collection_replay,
+)
+from workspaces.data_engineering.benchmarks.production_support.collection import (
+    ProdSupportCaptureBundle,
+    ProdSupportCollectionSources,
+    collect_prod_support_data,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,13 +33,15 @@ class DebugArtifacts:
     dataset: Path
     benchmark_root: Path
     outcome: ProdSupportOutcome
+    capture: ProdSupportCaptureBundle
 
 
 async def run_debug_day(
-    source: AirflowFailureSource,
+    sources: ProdSupportCollectionSources,
     operational_date: date,
     output_root: Path,
     *,
+    regions: tuple[Region, ...] = (Region.US_01, Region.CA_02),
     captured_at: datetime | None = None,
 ) -> DebugArtifacts:
     """Capture production evidence, replay it, and scaffold review-only YAML."""
@@ -41,11 +52,31 @@ async def run_debug_day(
     if day_root.exists():
         message = f"debug capture already exists; refusing to overwrite: {day_root}"
         raise FileExistsError(message)
-    dataset = await capture_day(source, operational_date, day_root)
+    captured = captured_at or datetime.now(UTC)
+    bundle = await collect_prod_support_data(
+        sources,
+        operational_date,
+        day_root,
+        regions=regions,
+        captured_at=captured,
+    )
     prompt_date = operational_date.strftime("%m/%d/%y")
-    prompt = f"Do prod support for {prompt_date}."
+    scope = (
+        "US "
+        if regions == (Region.US_01,)
+        else "CA "
+        if regions == (Region.CA_02,)
+        else ""
+    )
+    prompt = f"Do {scope}prod support for {prompt_date}."
     outcome = await ProdSupportAgent(
-        ReplayAirflowFailureSource(dataset),
+        ReplayAirflowFailureSource(bundle.airflow),
+        cluster_health=collection_replay.CapturedClusterHealthSource(
+            bundle.cluster_health
+        ),
+        resource_discovery=collection_replay.CapturedResourceDiscoveryInvoker(
+            bundle.resource_discovery
+        ),
         clock=lambda: datetime.combine(
             operational_date,
             datetime.min.time(),
@@ -56,59 +87,51 @@ async def run_debug_day(
     _write_scaffold(
         benchmark_root,
         operational_date,
-        dataset,
-        captured_at or datetime.now(UTC),
+        bundle,
+        captured,
+        regions,
     )
-    return DebugArtifacts(dataset, benchmark_root, outcome)
+    return DebugArtifacts(bundle.airflow, benchmark_root, outcome, bundle)
 
 
 def _write_scaffold(
     root: Path,
     operational_date: date,
-    dataset: Path,
+    bundle: ProdSupportCaptureBundle,
     captured_at: datetime,
+    regions: tuple[Region, ...],
 ) -> None:
     root.mkdir(parents=True, exist_ok=True)
     suite_date = captured_at.date()
-    case_id = f"prod-support-us-ca-operational-{operational_date.isoformat()}"
-    dataset_uri = str(dataset)
+    scope_id = "-".join(region.value.casefold() for region in regions)
+    case_id = f"prod-support-{scope_id}-operational-{operational_date.isoformat()}"
+    dataset_uri = str(bundle.airflow)
     case = {
         "id": case_id,
         "reference_time": captured_at.astimezone(UTC).isoformat(),
         "prompt": f"Do prod support for {operational_date:%m/%d/%y}.",
         "operational_date": operational_date.isoformat(),
+        "scope": [region.value for region in regions],
         "dataset_uri": dataset_uri,
-        "expected_regions": ["US-01", "CA-02"],
-        "expected_since": None,
-        "expected_api_window": {},
-        "expected_ui_window": {},
-        "expected_cluster_links": {},
-        "expected_failure_counts": {},
-        "expected_failure_ids": [],
-        "expected_diagnoses": {},
-        "expected_developer_message": None,
-        "expected_prod_support_message": None,
-        "follow_on_message": None,
-        "require_reported_dags_exist": True,
-        "evidence_captured_at": {"US-01": None, "CA-02": None},
-        "infrastructure_evidence_uris": {},
-        "expected_infrastructure_statuses": {},
-        "expected_oms_corroboration": {},
-        "required_investigations": [],
-        "omitted_from_data_internal": [],
-        "resend_policy": {},
-        "required_cluster_health_lines": [],
-        "require_root_cause_per_reported_failure": None,
-        "expected_remediation_policy": {},
-        "expected_l3_main_graph_counts": {},
-        "expected_active_dag_counts": {},
-        "expected_active_l3_main_dag_counts": {},
-        "expected_dag_ids": [],
+        "operational_window": {
+            "start": f"{operational_date.isoformat()}T05:00:00+00:00",
+        },
         "airflow_base_urls": {
             "US-01": "https://airflow-us01.precisionlender.com",
             "CA-02": "https://airflow-ca02.precisionlender.com",
         },
-        "candidate_inputs": [],
+        "candidate_inputs": [
+            str(bundle.cluster_health),
+            str(bundle.resource_discovery),
+            str(bundle.compact_evidence),
+            str(bundle.reporting_input),
+        ],
+        "reporting_contract_version": "3.0",
+        "instructions": {
+            "concurrent_leaf_handoffs": ["cluster", "airflow"],
+            "nested_delegation": False,
+            "triage_omissions": ["D2P", "MI3"],
+        },
         "prohibit_agent_changes": True,
     }
     documents = {
@@ -135,6 +158,7 @@ def _write_scaffold(
                 {
                     "operational_date": operational_date.isoformat(),
                     "evidence_uri": dataset_uri,
+                    "manifest_uri": str(bundle.manifest),
                     "captured_at": captured_at.astimezone(UTC).isoformat(),
                     "status": "captured",
                     "candidate_case_id": case_id,

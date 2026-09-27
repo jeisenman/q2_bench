@@ -39,18 +39,22 @@ class DeveloperReporter:
         """Return the Developer report with health findings first."""
         diagnosis_by_id = {item.failure_id: item for item in findings.diagnoses}
         identities = client_identities(findings.resource_discovery_results)
-        regional_health = health_by_region(findings.cluster_health)
+        regional_health = health_by_region(findings.cluster_health, findings.regions)
         lines = [
             "Message for developer:",
             *(
                 developer_health_line(regional_health[region])
-                for region in (Region.US_01, Region.CA_02)
+                for region in findings.regions
             ),
         ]
-        parsing_line = dag_parsing_line(regional_health)
+        parsing_line = (
+            dag_parsing_line(regional_health)
+            if set(findings.regions) == {Region.US_01, Region.CA_02}
+            else None
+        )
         if parsing_line is not None:
             lines.append(parsing_line)
-        for region in (Region.US_01, Region.CA_02):
+        for region in findings.regions:
             regional = tuple(
                 item for item in findings.failures if item.region is region
             )

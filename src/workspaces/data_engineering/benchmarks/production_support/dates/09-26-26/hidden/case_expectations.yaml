@@ -24,8 +24,10 @@ required_output_format:
   prohibit_blank_lines_between_bullets: true
   prohibit_periods_in_data_internal: true
   group_same_job_across_clients: true
+  group_shared_jobs_before_remaining_client_jobs: true
   group_multiple_jobs_per_client: true
   prohibit_repeated_client_job_pairs: true
+  prohibit_shared_job_on_remaining_client_line: true
   prohibit_cross_region_findings: true
   prohibit_cluster_status_contradictions: true
   require_resolved_client_names: true
@@ -38,6 +40,8 @@ required_output_format:
     - maintenance
     - backfill
     - cmm
+  require_represented_omission_codes: true
+  omission_codes_are_final_regional_detail: true
   data_internal_failure_shape: "<client> (<prefix>) failed on <job>"
   data_internal_client_group_shape: "<client> (<prefix>) failed on <job1>, <job2>, and <job3>"
   data_internal_cluster_shape: "<region> cluster is <status>; <symptoms> appear"
@@ -45,6 +49,13 @@ required_output_format:
   validate_event_bus_implies_missing_snapshots: true
   preferred_explicit_causes: [timeout, OOM, distinctness validation errors]
   kpo_sizing_agent_uri: agent://kpo-sizer/definition
+orchestration_contract:
+  top_level_agent: orchestrator
+  concurrent_leaf_handoffs: [cluster, airflow]
+  airflow_regions_concurrent: true
+  reporting_calls: 1
+  reporting_starts_after: [cluster, airflow]
+  prohibit_nested_delegation: true
 expected_failure_ids:
   - US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-24T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data
   - US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-24T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data
@@ -88,13 +99,10 @@ expected_failure_ids:
   - CA-02|l3-main-47322c85-71cf-45ea-9695-6bdcc1cc1ea9|manual__2026-09-24T05:00:00+00:00|pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history
   - CA-02|opportunity_avro_aggregation_backfill|manual__2026-09-25T16:45:52.063728+00:00|opportunity_avro_aggregation
 expected_diagnoses:
-  confirmed_oom:
+  triage_omitted:
     - BoFA Delivery to Promise Other Products
-  data_read_failure:
     - Scotiabank Delivery to Promise Other Products
-  executor_loss:
     - CA Delivery to Promise Other Products
-  pod_failure:
     - US Market Insights 3 raw-output validation
   stale_schema:
     - US and CA event-bus subscriber checks
@@ -114,13 +122,11 @@ expected_developer_message: |
   Message for developer:
     - US Cluster Health: US pods and application checks are healthy as of 2026-09-26T17:04:26Z; KEDA status is unavailable because the configured read-only identity was denied.
     - CA Cluster Health: CA application health and DAG parsing are healthy as of 2026-09-26T17:04:26Z; one retired DAG processor replica remained unready with 13 restarts and KEDA status is unavailable.
-    - DAGs parsing properly: 209 DAGs exist in US, 34 DAGs exist in CA.
     - These health bullets describe current 2026-09-26 state; the failures below are historical 2026-09-25 evidence.
-    - Bremer Bank Relationship Signals time-series aggregation remains an ongoing carry-forward from the prior operational day. Attempt 9 exited -9 and OMS supplied no corroborating memory signal; classification: unknown_resource_termination.
-    - BoFA failed Delivery to Promise Other Products with explicit Spark OOM evidence.
-    - Scotiabank failed Delivery to Promise Other Products after executor loss and shuffle fetch failure.
-    - US Delivery to Promise has no terminal cause in the recorded same-task logs.
-    - US MI3 validation failed because its pod exited 1 without a termination message.
+    - Bremer Bank Relationship Signals time-series aggregation remains an ongoing carry-forward from the prior operational day. Attempt 9 exited -9 without an explicit memory signal; classification: unknown_resource_termination.
+    - BoFA and Scotiabank Delivery to Promise triage was omitted by registered D2P policy.
+    - US Delivery to Promise triage was omitted by registered D2P policy.
+    - US MI3 triage was omitted by registered MI3 policy.
     - Subscriber checks failed on stale OpportunitySaved schema versions.
     - Scotiabank, CIBC Canada, and Scotiabank Data Validation failed validate_event_bus_opportunities for 2026-09-14 with 208, 79, and 11 missing snapshots respectively.
     - Resource Discovery supplied reviewed CA-02 resend-event links for all three clients.
@@ -132,13 +138,15 @@ expected_developer_message: |
 expected_prod_support_message: |
   :bangbang: PROD SUPPORT 2026-09-25 :bangbang:
   US
-  - Good
+  - Ongoing
+    - D2P, MI3, Subscriber
   CA
   - Ongoing
     - Scotiabank (1f0), CIBC Canada (fbf), and Scotiabank Data Validation (b49) failed on validate_event_bus_opportunities
     - CIBC Canada Validation (cef) failed on opportunity-save-history, opportunities-report, and relationship-quadrants with dependency-state evidence only
     - CIBC Canada (fbf) failed on engagement-events and high-quality-core-account-financial-statements
     - Unresolved client (473) failed on relationship-quadrants and downstream opportunity and pipeline history jobs with dependency-state evidence only
+    - D2P, Subscriber, Maintenance, Backfill, CMM
 follow_on_message: |
   Follow Ups:
   - Would you like to:
@@ -165,12 +173,11 @@ expected_oms_corroboration:
   US-01: false
   CA-02: false
 required_investigations:
-  - inspect every relevant Airflow task log
-  - fetch the exact task-attempt log even when discovery includes non-empty log text
+  - fetch compact exact evidence for every failure except registered D2P and MI3 triage omissions
+  - never query task logs or OMS for registered D2P and MI3 triage omissions
   - page to prior runs of the same DAG and task when the latest log is unavailable or non-diagnostic
-  - inspect Airflow and OMS concurrently for every Spark job
-  - cancel pending OMS work when Airflow proves a timeout
-  - check KEDA ScaledObjects and pods in both regions
+  - query OMS only for a proven Spark workload when an exact OMS source is supplied
+  - check pod state, restart counts, and KEDA health in both regions
   - resolve every client UUID found in a DAG or task identifier through resource discovery before triage
 omitted_from_data_internal:
   - d2p

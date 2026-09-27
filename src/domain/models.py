@@ -59,6 +59,9 @@ class AgentDefinition:
     instructions: str
     tools: tuple[ToolDefinition, ...] = ()
     version: str = "1"
+    model: str | None = None
+    output_template: str | None = None
+    can_delegate: bool = False
 
     def __post_init__(self) -> None:
         """Validate required agent metadata and unique tool names."""
@@ -66,6 +69,10 @@ class AgentDefinition:
         _require_text(self.description, "description")
         _require_text(self.instructions, "instructions")
         _require_text(self.version, "version")
+        if self.model is not None:
+            _require_text(self.model, "model")
+        if self.output_template is not None:
+            _require_text(self.output_template, "output_template")
         names = tuple(tool.name for tool in self.tools)
         if len(names) != len(set(names)):
             msg = f"agent {self.name!r} contains duplicate tool names"

@@ -137,7 +137,7 @@ def test_command_builds_container_and_process_variants(tmp_path) -> None:
 
     assert container[:2] == ["docker", "run"]
     assert "--env-file" not in container
-    assert container[container.index("--sandbox") + 1] == "read-only"
+    assert container[container.index("--sandbox") + 1] == "danger-full-access"
     assert container[container.index("--profile") + 1] == "bedrock"
     assert "--read-only" in container
     assert "--skip-git-repo-check" in container

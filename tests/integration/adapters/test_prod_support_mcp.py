@@ -5,9 +5,12 @@ from pathlib import Path
 import pytest
 
 from adapters.airflow import AirflowApiSource
+from adapters.openai_agents import OpenAIAgentsRuntime
 from adapters.resource_discovery import ResourceDiscoveryApiSource
 from mcp_servers.prod_support import (
     EmptyAirflowFailureSource,
+    _cluster_health,
+    _report_runtime,
     _resource_discovery,
     _source,
     list_prod_support_updates,
@@ -61,6 +64,7 @@ def test_mcp_tool_runs_prod_support_agent() -> None:
     ]
     assert result["related_agents"] == {"kpo_sizer": "agent://kpo-sizer/definition"}
     assert result["tool_calls"] == (
+        "inspect_cluster_health",
         "discover_airflow_failures",
         "fetch_airflow_task_log",
         "inspect_airflow_workload",
@@ -79,6 +83,14 @@ def test_mcp_tool_accepts_empty_data_internal_omission_override() -> None:
     )
 
     assert result["attributes"]["data_internal_omissions"] == []
+
+
+def test_cluster_health_source_is_production_only(monkeypatch) -> None:
+    monkeypatch.delenv("PROD_SUPPORT_SOURCE", raising=False)
+    assert _cluster_health() is None
+
+    monkeypatch.setenv("PROD_SUPPORT_SOURCE", "production")
+    assert _cluster_health() is not None
 
 
 @pytest.mark.parametrize(
@@ -162,6 +174,7 @@ def test_mcp_source_uses_production_airflow(
     resource_discovery = _resource_discovery()
     assert isinstance(resource_discovery, ResourceDiscoveryAgent)
     assert isinstance(resource_discovery._source, ResourceDiscoveryApiSource)
+    assert isinstance(_report_runtime(), OpenAIAgentsRuntime)
 
 
 def test_mcp_source_uses_explicit_replay_dataset(
@@ -184,6 +197,7 @@ def test_mcp_source_defaults_to_safe_empty(
 
     assert isinstance(_source(), EmptyAirflowFailureSource)
     assert _resource_discovery() is None
+    assert _report_runtime() is None
 
 
 @pytest.mark.parametrize(

@@ -58,6 +58,39 @@ class ConcurrentHealthSource:
         return RegionalClusterHealth(region=region, application_healthy=True)
 
 
+class ConcurrentRegionalAirflowSource(FakeAirflowSource):
+    """Require selected regional discoveries to overlap."""
+
+    def __init__(self, failures: tuple[AirflowFailure, ...]) -> None:
+        super().__init__(failures)
+        self.started: set[Region] = set()
+        self.expected: set[Region] = {Region.US_01, Region.CA_02}
+        self.all_started = asyncio.Event()
+
+    async def discover_region_failures(
+        self,
+        region: Region,
+        since: datetime,
+    ) -> tuple[AirflowFailure, ...]:
+        del since
+        self.started.add(region)
+        if self.started == self.expected:
+            self.all_started.set()
+        await self.all_started.wait()
+        return tuple(item for item in self.failures if item.region is region)
+
+
+class RecordingHealthSource:
+    """Record selected cluster-health calls."""
+
+    def __init__(self) -> None:
+        self.started: list[Region] = []
+
+    async def inspect_health(self, region: Region) -> RegionalClusterHealth:
+        self.started.append(region)
+        return RegionalClusterHealth(region=region, application_healthy=True)
+
+
 def _failure(
     region: Region,
     *,
@@ -135,6 +168,34 @@ def test_cluster_checker_reads_both_regions_concurrently() -> None:
         Region.US_01,
         Region.CA_02,
     )
+
+
+def test_cluster_checker_honors_single_region_scope() -> None:
+    source = RecordingHealthSource()
+
+    observations = asyncio.run(ClusterChecker(source).check((Region.US_01,)))
+
+    assert tuple(item.region for item in observations) == (Region.US_01,)
+    assert source.started == [Region.US_01]
+
+
+def test_airflow_checker_reads_selected_regions_concurrently() -> None:
+    source = ConcurrentRegionalAirflowSource(
+        (_failure(Region.US_01), _failure(Region.CA_02))
+    )
+
+    failures = asyncio.run(
+        asyncio.wait_for(
+            AirflowChecker(source).check(
+                datetime(2026, 9, 25, 5, tzinfo=UTC),
+                datetime(2026, 9, 26, 5, tzinfo=UTC),
+            ),
+            timeout=1,
+        )
+    )
+
+    assert len(failures) == EXPECTED_REGION_COUNT
+    assert source.started == {Region.US_01, Region.CA_02}
 
 
 def test_audience_reporters_match_assembled_report_contract() -> None:

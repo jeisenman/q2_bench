@@ -9,7 +9,9 @@ from workspaces.data_engineering.agents.anti_leak import (
     MountedPath,
 )
 from workspaces.data_engineering.agents.prod_support import (
+    PROD_SUPPORT_AGENT_DEFINITIONS,
     PROD_SUPPORT_DEFINITION,
+    PROD_SUPPORT_MLFLOW_NAMESPACE,
     AirflowFailure,
     AirflowFailureSource,
     FailureDiagnosis,
@@ -36,8 +38,10 @@ from workspaces.data_engineering.agents.resource_discovery import (
 
 __all__ = [
     "ANTI_LEAK_V1_DEFINITION",
+    "PROD_SUPPORT_AGENT_DEFINITIONS",
     "PROD_SUPPORT_DEFINITION",
     "PROD_SUPPORT_EVOLUTION_DEFINITION",
+    "PROD_SUPPORT_MLFLOW_NAMESPACE",
     "RESOURCE_DISCOVERY_DEFINITION",
     "AgentFactory",
     "AgentRegistry",

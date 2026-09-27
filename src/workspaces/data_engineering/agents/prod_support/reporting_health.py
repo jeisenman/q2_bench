@@ -12,12 +12,13 @@ PAIR_SIZE = 2
 
 def health_by_region(
     observations: tuple[RegionalClusterHealth, ...],
+    regions: tuple[Region, ...] = (Region.US_01, Region.CA_02),
 ) -> dict[Region, RegionalClusterHealth]:
     """Return complete regional health, filling explicit evidence gaps."""
     indexed = {observation.region: observation for observation in observations}
     return {
         region: indexed.get(region, RegionalClusterHealth.unavailable(region))
-        for region in (Region.US_01, Region.CA_02)
+        for region in regions
     }
 
 
@@ -29,6 +30,8 @@ def developer_health_line(observation: RegionalClusterHealth) -> str:
         details.append(f"observed {observation.observed_at.isoformat()}")
     if observation.active_dag_count is not None:
         details.append(f"{observation.active_dag_count} active DAGs")
+    if observation.restart_count is not None:
+        details.append(f"{observation.restart_count} pod restarts")
     details.extend(observation.symptoms)
     details.extend(observation.warnings)
     if observation.keda_status != "unknown":

@@ -61,6 +61,11 @@ An agent combines instructions, a model configuration, and capabilities.
 Keep instructions narrow and testable. Construct agents at the application
 boundary rather than as import-time global state.
 
+Repository `AgentDefinition` values may also carry an `output_template`.
+Provider adapters append that generic placeholder-based contract to the
+instructions. Templates must describe structure without embedding benchmark
+answers or environment-specific conclusions.
+
 ### Runs
 
 `Runner` executes an agent turn and returns a result containing final output

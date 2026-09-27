@@ -119,7 +119,7 @@ cases:
       - Do not omit unresolved routing or invent an application.
 
   - id: channel-filtering
-    prompt: Split the supplied failures into Developer and Data Internal inventories using the audience policy.
+    prompt: Split the supplied failures into Developer details and regional Data Internal codes using the audience policy.
     dataset_uri: src/workspaces/data_engineering/benchmarks/prod_bench/dates/09-26-26/assets/audience_failures.json
     operational_window:
       start: "2026-09-25T05:00:00Z"
@@ -127,8 +127,9 @@ cases:
     airflow_base_urls: {}
     instructions:
       - Developer must retain every failure.
-      - Data Internal must omit subscriber, maintenance, backfill, and credit_migration_matrix or CMM jobs.
-      - Return task IDs only; do not diagnose or format full messages.
+      - Data Internal must collapse configured subscriber, maintenance, backfill, and credit_migration_matrix or CMM jobs to regional codes.
+      - Do not include client details or diagnoses for coded groups.
+      - Return the Developer task IDs and the Data Internal regional code list only.
 
   - id: developer-message
     prompt: Render only the compact developer message from the supplied findings.
@@ -155,8 +156,10 @@ cases:
     instructions:
       - Use the exact Data Internal heading, alert line, and US/CA sections.
       - Never place CA findings under US or US findings under CA.
-      - Group clients that fail on the same job and group multiple jobs for one client.
-      - Omit subscriber, maintenance, backfill, and credit_migration_matrix or CMM findings.
+      - Group clients that fail on the same job first.
+      - If a grouped client has other jobs, list only those other jobs on its separate line.
+      - Mention every client-job pair exactly once.
+      - Collapse configured subscriber, maintenance, backfill, and credit_migration_matrix or CMM findings to short regional codes.
       - Treat validate_event_bus_opportunities as sufficient to imply missing snapshots.
       - Include explicit OOM, timeout, or distinctness diagnoses when supported.
       - Use no periods, blank lines, resend counts, dates, or routing details.

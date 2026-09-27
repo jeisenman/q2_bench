@@ -240,7 +240,7 @@ def test_default_omissions_hide_jobs_from_data_internal_and_follow_up() -> None:
     assert "D2P" in reports.developer
     assert "MI3" in reports.developer
     assert "subscriber" in reports.developer
-    assert "US\n- Good" in reports.data_internal
+    assert "US\n- Ongoing\n  - D2P, MI3, Subscriber" in reports.data_internal
     assert "Do you approve re-running" not in reports.follow_up
 
 

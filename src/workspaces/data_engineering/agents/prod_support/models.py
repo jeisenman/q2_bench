@@ -19,6 +19,7 @@ class Region(StrEnum):
 class FailureKind(StrEnum):
     """Supported evidence-based failure classifications."""
 
+    OMITTED = "omitted"
     DISTINCTNESS = "distinctness"
     OMS_CONFIRMED_TIMEOUT = "oms_confirmed_timeout"
     AIRFLOW_CONFIRMED_TIMEOUT = "airflow_confirmed_timeout"
@@ -143,3 +144,4 @@ class ProdSupportOutcome:
     data_internal_report: str = ""
     follow_up: str = ""
     resource_discovery_results: tuple[AgentResult, ...] = ()
+    regions: tuple[Region, ...] = (Region.US_01, Region.CA_02)

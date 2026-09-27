@@ -12,12 +12,15 @@ from uuid import uuid4
 from mcp.server.mcpserver import MCPServer
 
 from adapters.airflow import AirflowApiSource
+from adapters.kubernetes import ClusterHealthScriptSource
 from adapters.local import filter_prod_support_updates, load_prod_support_updates
+from adapters.openai_agents import OpenAIAgentsRuntime
 from adapters.resource_discovery import ResourceDiscoveryApiSource
 from domain import AgentRequest
 from workspaces.data_engineering.agents.prod_support import (
     AirflowFailure,
     AirflowFailureSource,
+    InvestigationServices,
     ProdSupportAgent,
     ProdSupportReportConfig,
     ReplayAirflowFailureSource,
@@ -90,7 +93,26 @@ def _resource_discovery() -> ResourceDiscoveryAgent | None:
     return ResourceDiscoveryAgent(ResourceDiscoveryApiSource.from_environment())
 
 
-agent = ProdSupportAgent(_source(), resource_discovery=_resource_discovery())
+def _report_runtime() -> OpenAIAgentsRuntime | None:
+    """Use Luna report specialists only for explicit production execution."""
+    if os.environ.get(SOURCE_ENV) != "production":
+        return None
+    return OpenAIAgentsRuntime()
+
+
+def _cluster_health() -> ClusterHealthScriptSource | None:
+    """Use the read-only cluster script only for explicit production mode."""
+    if os.environ.get(SOURCE_ENV) != "production":
+        return None
+    return ClusterHealthScriptSource.from_repository()
+
+
+agent = ProdSupportAgent(
+    _source(),
+    resource_discovery=_resource_discovery(),
+    cluster_health=_cluster_health(),
+    investigation=InvestigationServices(report_runtime=_report_runtime()),
+)
 
 
 def _validation_urls(report: str) -> tuple[str, ...]:
@@ -137,6 +159,7 @@ async def run_prod_support(
     outcome = await agent.investigate(
         request.prompt,
         report_config=report_config,
+        correlation_id=request.correlation_id,
     )
     return {
         "output": _format_mcp_output(outcome),
@@ -151,6 +174,7 @@ async def run_prod_support(
             "operational_date": outcome.operational_date.isoformat(),
             "failed_since": outcome.failed_since.isoformat(),
             "failure_count": len(outcome.failures),
+            "regions": [region.value for region in outcome.regions],
             "data_internal_omissions": [
                 item.value for item in report_config.data_internal_omissions
             ],

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import TypeVar
 
@@ -23,12 +24,22 @@ from workspaces.data_engineering.agents.prod_support.investigation import (
 )
 from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
+    EvidenceSource,
+    EvidenceStatus,
+    FailureDiagnosis,
+    FailureKind,
     ProdSupportOutcome,
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
     ClusterHealthSource,
     ResourceDiscoveryInvoker,
+)
+from workspaces.data_engineering.agents.prod_support.report_agents import (
+    ReportingAgent,
+)
+from workspaces.data_engineering.agents.prod_support.report_findings import (
+    ReportFindings,
 )
 from workspaces.data_engineering.agents.prod_support.reporting import (
     ProdSupportReportContext,
@@ -40,10 +51,15 @@ from workspaces.data_engineering.agents.prod_support.reporting_config import (
 from workspaces.data_engineering.agents.prod_support.reporting_details import (
     client_id as extract_client_id,
 )
+from workspaces.data_engineering.agents.prod_support.scope import resolve_scope
+from workspaces.data_engineering.agents.prod_support.templates import (
+    PROD_SUPPORT_REPORT_TEMPLATE,
+)
 from workspaces.data_engineering.agents.prod_support.tools import (
     CLASSIFY_FAILURE,
     DISCOVER_FAILURES,
     FETCH_TASK_LOG,
+    INSPECT_CLUSTER_HEALTH,
     INSPECT_WORKLOAD,
     QUERY_OMS_JOB,
     TRIGGER_RESOURCE_DISCOVERY,
@@ -55,51 +71,16 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
     name="prod-support",
     description="Discover and diagnose production Airflow failures.",
     instructions=(
-        "Run the deterministic replay workflow before repository exploration. "
-        "Resolve dates from the request, parse every relevant Airflow record "
-        "programmatically, and cite exact task-log evidence. Resolve every client "
-        "identifier in DAG or task IDs through Resource Discovery before triage or "
-        "reporting. Investigate US and "
-        "CA concurrently. Assign parallel workers by operational capability, not "
-        "arbitrary record ranges. Use Airflow for batch evidence and query OMS only "
-        "with exact identifiers when corroboration is required. For Spark workloads, "
-        "start exact Airflow and OMS evidence queries concurrently; cancel pending "
-        "OMS work when Airflow proves AirflowTaskTimeout. Diagnose "
-        "independently before reading curated expectations. Keep tool output "
-        "targeted. Build OMS queries from parameterized client, run, task, "
-        "attempt, and the task's full UTC calendar day. Inspect the Airflow "
-        "operator before routing evidence: query regional DI_Scheduling_CL "
-        "only for confirmed Spark workloads. Page backward through the same DAG "
-        "and task when the latest log is unavailable or non-diagnostic. Report "
-        "bounded Airflow links, US and CA KEDA and pod health, resource-discovered "
-        "resend applications, per-client dates and counts, large-resend escalation "
-        "for both audiences, and channel-specific omission policy. "
-        "Trigger the Resource Discovery agent for every unique client-scoped "
-        "failure before triage; preserve unresolved and ambiguous results. "
-        "Never mix US and CA findings in the same regional section. Reject a final "
-        "report when a regional finding appears under the other region or when a "
-        "cluster is described as both healthy and unhealthy from the same evidence. "
-        "Group clients that fail on the same job into one report line, and group "
-        "multiple jobs for the same client into one concise client line. Fetch the "
-        "exact task log even when "
-        "discovery includes a non-empty log excerpt. Classify the full log, then "
-        "retain only source, status, original character count, and at most three "
-        "diagnostic lines; never return raw log bodies. Follow-ups must contain "
-        "only actionable resend or approval-gated rerun choices with dates. "
-        "Treat validate_event_bus_opportunities as missing-snapshot validation; "
-        "do not repeat that implication as a verbose diagnosis in Data Internal. "
-        "Prefer explicit timeout, OOM, and distinctness-validation evidence when "
-        "available. Apply typed Data Internal omission groups, omit those jobs from "
-        "rerun follow-ups, escalate resends above 100 events to pd-rix, and link "
-        "failures over five attempts to the KPO sizing agent interface. "
-        "Data Internal must contain no periods. Treat exit code -9 as an unknown "
-        "resource termination unless exact Airflow or OMS evidence corroborates "
-        "memory pressure. Derive cluster status only from primary application, pod, "
-        "and DAG checks; keep access gaps and retired replicas as warnings. "
-        "Run the repository quality check when changing code, and "
-        "never mutate production systems."
+        "Accept 'Do prod support', 'Do US prod support', or 'Do CA prod support', "
+        "with an optional date. Default to the previous operational day and both "
+        "regions. Run the selected cluster-health and Airflow checks concurrently, "
+        "then pass their validated results to one reporting agent. Cluster checks "
+        "return pod state, restart counts, and KEDA health. Airflow checks return "
+        "direct errors and do not triage configured D2P or MI3 omissions. No component "
+        "may delegate further or mutate production."
     ),
     tools=(
+        INSPECT_CLUSTER_HEALTH,
         DISCOVER_FAILURES,
         FETCH_TASK_LOG,
         INSPECT_WORKLOAD,
@@ -107,7 +88,9 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
         CLASSIFY_FAILURE,
         TRIGGER_RESOURCE_DISCOVERY,
     ),
-    version="11",
+    version="15",
+    output_template=PROD_SUPPORT_REPORT_TEMPLATE,
+    can_delegate=True,
 )
 
 
@@ -129,6 +112,7 @@ class ProdSupportAgent:
         self._resource_discovery = resource_discovery
         self._airflow_checker = AirflowChecker(source)
         self._cluster_checker = ClusterChecker(cluster_health)
+        self._report_runtime = services.report_runtime
         self._max_parallel = services.max_parallel
         self._failure_investigator = FailureInvestigator(
             source,
@@ -144,7 +128,10 @@ class ProdSupportAgent:
 
     async def run(self, request: AgentRequest) -> AgentResult:
         """Execute the read-only production-support workflow."""
-        outcome = await self.investigate(request.prompt)
+        outcome = await self.investigate(
+            request.prompt,
+            correlation_id=request.correlation_id,
+        )
         return AgentResult(
             output=outcome.report,
             correlation_id=request.correlation_id,
@@ -157,6 +144,7 @@ class ProdSupportAgent:
                     "resource_discovery_count",
                     len(outcome.resource_discovery_results),
                 ),
+                ("regions", ",".join(region.value for region in outcome.regions)),
                 (
                     "evidence_characters_read",
                     sum(item.original_char_count for item in outcome.diagnoses),
@@ -173,14 +161,21 @@ class ProdSupportAgent:
         prompt: str,
         *,
         report_config: ProdSupportReportConfig | None = None,
+        correlation_id: str | None = None,
     ) -> ProdSupportOutcome:
         """Return structured evidence and reporting for benchmark evaluation."""
         reference_time = self._clock()
         window = resolve_query_window(prompt, reference_time)
+        scope = resolve_scope(prompt)
+        config = report_config or ProdSupportReportConfig()
         failed_before = window.failed_since + timedelta(days=1)
         failures, cluster_health = await asyncio.gather(
-            self._airflow_checker.check(window.failed_since, failed_before),
-            self._cluster_checker.check(),
+            self._airflow_checker.check(
+                window.failed_since,
+                failed_before,
+                regions=scope.regions,
+            ),
+            self._cluster_checker.check(scope.regions),
         )
         resource_results = await self._trigger_resource_discovery(failures)
         reportable = tuple(
@@ -188,22 +183,62 @@ class ProdSupportAgent:
             for failure in failures
             if not _ignored_by_resource_discovery(failure, resource_results)
         )
+        investigation_targets = tuple(
+            failure
+            for failure in reportable
+            if not config.skips_airflow_triage(failure)
+        )
         investigated = await self._bounded_map(
-            reportable,
+            investigation_targets,
             self._failure_investigator.investigate,
         )
-        hydrated = tuple(item[0] for item in investigated)
-        diagnoses = tuple(item[1] for item in investigated)
+        investigated_by_id = {item[0].failure_id: item for item in investigated}
+        hydrated: tuple[AirflowFailure, ...] = tuple(
+            (
+                replace(failure, log="")
+                if config.skips_airflow_triage(failure)
+                else investigated_by_id[failure.failure_id][0]
+            )
+            for failure in reportable
+        )
+        diagnoses = tuple(
+            (
+                _omitted_diagnosis(failure, config)
+                if config.skips_airflow_triage(failure)
+                else investigated_by_id[failure.failure_id][1]
+            )
+            for failure in reportable
+        )
+        report_context = ProdSupportReportContext(
+            resource_discovery_results=resource_results,
+            config=config,
+            cluster_health=cluster_health,
+            regions=scope.regions,
+        )
         reports = format_reports_with_context(
             window.operational_date,
             hydrated,
             diagnoses,
-            context=ProdSupportReportContext(
-                resource_discovery_results=resource_results,
-                config=report_config or ProdSupportReportConfig(),
-                cluster_health=cluster_health,
-            ),
+            context=report_context,
         )
+        findings = ReportFindings(
+            failures=hydrated,
+            diagnoses=diagnoses,
+            resource_discovery_results=resource_results,
+            config=report_context.config,
+            cluster_health=cluster_health,
+            regions=scope.regions,
+        )
+        if self._report_runtime is not None:
+            reports = await ReportingAgent(self._report_runtime).write(
+                window.operational_date,
+                findings,
+                reports,
+                correlation_id=(
+                    correlation_id
+                    or f"prod-support:{window.operational_date.isoformat()}"
+                ),
+            )
         return ProdSupportOutcome(
             operational_date=window.operational_date,
             failed_since=window.failed_since,
@@ -214,6 +249,7 @@ class ProdSupportAgent:
             data_internal_report=reports.data_internal,
             follow_up=reports.follow_up,
             resource_discovery_results=resource_results,
+            regions=scope.regions,
         )
 
     async def _trigger_resource_discovery(
@@ -271,4 +307,21 @@ def _ignored_by_resource_discovery(
         dict(result.attributes).get("identifier_value") == identifier
         and dict(result.attributes).get("prod_support_ignore") is True
         for result in results
+    )
+
+
+def _omitted_diagnosis(
+    failure: AirflowFailure,
+    config: ProdSupportReportConfig,
+) -> FailureDiagnosis:
+    """Return the registered no-triage diagnosis for D2P or MI3."""
+    group = config.omission_group(failure)
+    label = group.value.upper() if group is not None else "configured"
+    return FailureDiagnosis(
+        failure_id=failure.failure_id,
+        kind=FailureKind.OMITTED,
+        confidence="configured",
+        evidence=(f"{label} triage omitted by policy",),
+        source=EvidenceSource.UNKNOWN,
+        status=EvidenceStatus.UNKNOWN,
     )

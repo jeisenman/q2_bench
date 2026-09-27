@@ -2,6 +2,14 @@
 
 from domain import ToolDefinition
 
+INSPECT_CLUSTER_HEALTH = ToolDefinition(
+    name="inspect_cluster_health",
+    description=(
+        "Run the read-only cluster health check for selected regions and return "
+        "pod state, restart counts, and KEDA status."
+    ),
+    input_schema=(("regions", "array"),),
+)
 DISCOVER_FAILURES = ToolDefinition(
     name="discover_airflow_failures",
     description="Query failed Airflow task instances by end-date cutoff.",

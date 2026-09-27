@@ -13,13 +13,18 @@ cases:
       prohibit_blank_lines_between_bullets: true
       prohibit_periods: true
       group_same_job_across_clients: true
+      group_shared_jobs_before_remaining_client_jobs: true
       group_multiple_jobs_per_client: true
       prohibit_repeated_client_job_pairs: true
+      prohibit_shared_job_on_remaining_client_line: true
       required_group_shape: "ClientA (123), ClientB (456) failed on <job>"
       required_client_group_shape: "ClientA (123) failed on <job1>, <job2>, and <job3>"
       require_resolved_client_names: true
       client_uuid_prefix_length: 3
       default_omission_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+      require_represented_omission_codes: true
+      omission_code_shape: "<code1>, <code2>"
+      omission_codes_are_final_regional_detail: true
       mcp_override_parameter: data_internal_omissions
       required_failure_shape: "<client> (<prefix>) failed on <job>"
       regional_consistency:
@@ -37,8 +42,8 @@ cases:
         max_bullet_characters: 180
       cluster_health_format:
         status: "<region> cluster is <health status>"
-        symptoms: "<symptom1>, <symptom2>, and <symptom3> appear"
-        missing_evidence: "KEDA status and supporting OMS telemetry are missing"
+        symptoms: "<pod state>, <restart count>, and <KEDA health>"
+        missing_evidence: "<exact unavailable cluster evidence>"
       event_resend_format:
         one_client_per_line: false
         group_same_job_across_clients: true

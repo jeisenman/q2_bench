@@ -2,19 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
 
 import click
 
-from workspaces.data_engineering.agents.prod_support.classification import classify_log
-from workspaces.data_engineering.agents.prod_support.datasets import (
-    ReplayAirflowFailureSource,
+from workspaces.data_engineering.benchmarks.production_support.compact_evidence import (
+    build_compact_evidence,
 )
-from workspaces.data_engineering.agents.prod_support.evidence import summarize_task_log
-from workspaces.data_engineering.agents.prod_support.models import EvidenceSource
 
 
 @click.command("summarize-prod-support-evidence")
@@ -36,37 +32,13 @@ def summarize_prod_support_evidence(
     if end_at <= start_at:
         message = "--end must be after --start"
         raise click.UsageError(message)
-    source = ReplayAirflowFailureSource(dataset)
-    failures = asyncio.run(source.discover_failures(start_at))
-    for failure in failures:
-        if not start_at <= failure.end_at < end_at:
-            continue
-        log = asyncio.run(source.fetch_log(failure))
-        summary = summarize_task_log(log)
-        diagnosis = classify_log(
-            failure,
-            log,
-            source=EvidenceSource.AIRFLOW_EXACT_TASK_ATTEMPT,
-        )
-        click.echo(
-            json.dumps(
-                {
-                    "classification": diagnosis.kind.value,
-                    "confidence": diagnosis.confidence,
-                    "dag_id": failure.dag_id,
-                    "evidence": summary.excerpt.splitlines(),
-                    "failure_id": failure.failure_id,
-                    "log_characters": summary.original_char_count,
-                    "log_retrieval": "exact_replay_task_attempt",
-                    "log_status": summary.status.value,
-                    "region": failure.region.value,
-                    "run_id": failure.run_id,
-                    "task_id": failure.task_id,
-                    "try_number": failure.try_number,
-                },
-                sort_keys=True,
-            )
-        )
+    result = build_compact_evidence(dataset, start_at, end_at)
+    records = result.get("records")
+    if not isinstance(records, tuple):
+        message = "compact evidence records must be a tuple"
+        raise TypeError(message)
+    for record in records:
+        click.echo(json.dumps(record, sort_keys=True))
 
 
 def _timestamp(value: str, option: str) -> datetime:

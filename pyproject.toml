@@ -9,6 +9,7 @@ dependencies = [
     "inspect-ai>=0.3",
     "mcp>=1.0",
     "mlflow==3.16.1",
+    "openai-agents>=0.22.3",
     "pyyaml>=6.0",
 ]
 

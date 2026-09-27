@@ -102,11 +102,11 @@ def test_prod_support_case_combines_us_and_ca_expectations() -> None:
     )
     assert "\n\n" not in case["expected_developer_message"]
     assert "\n\n" not in case["expected_prod_support_message"]
-    assert set(case["required_initial_parallel_workstreams"]) == {
-        "US-01_failure_discovery",
-        "CA-02_failure_discovery",
-        "regional_cluster_health",
-    }
+    orchestration = case["orchestration_contract"]
+    assert orchestration["concurrent_leaf_handoffs"] == ["cluster", "airflow"]
+    assert orchestration["airflow_regions_concurrent"] is True
+    assert orchestration["reporting_calls"] == 1
+    assert orchestration["prohibit_nested_delegation"] is True
     assert len(case["expected_failure_ids"]) == expected_us_failure_count
     assert case["require_reported_dags_exist"] is True
     assert len(case["expected_dag_ids"]) > captured_ca_dag_count
@@ -160,6 +160,8 @@ def test_prod_support_suite_registers_capability_fixtures() -> None:
 
     assert fixtures == [
         "capabilities/date_resolution.yaml",
+        "capabilities/request_scope.yaml",
+        "capabilities/orchestration_structure.yaml",
         "capabilities/failure_discovery.yaml",
         "capabilities/client_identity_resolution.yaml",
         "capabilities/complete_log_retrieval.yaml",
@@ -312,12 +314,8 @@ def test_new_snapshot_requires_parallel_timeout_and_resend_routing() -> None:
     assert "expected_classification" not in spark_case
     assert cluster["cases"][0]["required_checks"] == [
         {
-            "command": "kubectl get scaledobjects -n scheduler",
-            "proves": "KEDA ScaledObject readiness and scaling state",
-        },
-        {
-            "command": "kubectl get pods -n scheduler",
-            "proves": "pod readiness, phase, and restart counts",
+            "command": "scripts/check_prod_cluster_health.py --region <region>",
+            "proves": "pod readiness, restart counts, and KEDA ScaledObject health",
         },
     ]
     assert resend["cases"][0]["require_resource_discovery_skill"] is True
@@ -339,9 +337,12 @@ def test_new_snapshot_judge_punishes_missing_health_and_unresolved_routing() -> 
     evaluation = yaml.safe_load((root / "evaluation.yaml").read_text(encoding="utf-8"))
     rubric = {item["id"]: item for item in evaluation["rubric"]}
 
-    assert "follows failure details" in rubric["cluster_health"]["punish"]
-    assert "without concrete symptoms" in rubric["cluster_health"]["punish"]
-    assert "Omits a reviewed link" in rubric["resource_discovery_routing"]["punish"]
+    assert "Omits pods, restarts, or KEDA" in rubric["cluster_health"]["punish"]
+    assert (
+        "unreviewed application route"
+        in (rubric["client_identity_resolution"]["punish"])
+    )
+    assert "Any component or worker spawns" in rubric["leaf_delegation"]["punish"]
 
 
 def test_new_snapshot_models_prior_run_log_fallback_without_fake_provenance() -> None:
@@ -368,7 +369,7 @@ def test_new_snapshot_models_prior_run_log_fallback_without_fake_provenance() ->
     assert "AirflowTaskTimeout" in evidence["runs"][1]["log"]
 
 
-def test_new_snapshot_carries_prior_relationship_signals_evidence() -> None:
+def test_new_snapshot_preserves_prior_context_outside_holistic_case() -> None:
     root = (
         Path(__file__).parents[5]
         / "src/workspaces/data_engineering/benchmarks"
@@ -380,7 +381,7 @@ def test_new_snapshot_carries_prior_relationship_signals_evidence() -> None:
 
     assert (
         str(asset_path.relative_to(Path(__file__).parents[5]))
-        in (cases["cases"][0]["candidate_inputs"])
+        not in (cases["cases"][0]["candidate_inputs"])
     )
     assert evidence["evidence_type"] == "prior_day_carry_forward"
     assert evidence["source_case_id"] == "prod-support-us-ca-2026-09-25"

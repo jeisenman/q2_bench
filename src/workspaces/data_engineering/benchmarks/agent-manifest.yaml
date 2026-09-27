@@ -23,11 +23,9 @@ configurations:
         reasoning_effort: xhigh
         max_parallel: 5
         capabilities:
-          - failure_discovery
-          - airflow_log_analysis
-          - oms_investigation
           - cluster_health
-          - resource_routing
+          - airflow_failure_discovery
+          - compact_failure_investigation
   - profile: sol-light-luna-high-workers
     model: openai.gpt-5.6-sol
     reasoning_effort: low
@@ -43,11 +41,9 @@ configurations:
         reasoning_effort: high
         max_parallel: 5
         capabilities:
-          - failure_discovery
-          - airflow_log_analysis
-          - oms_investigation
           - cluster_health
-          - resource_routing
+          - airflow_failure_discovery
+          - compact_failure_investigation
   - profile: sol-medium-luna-high-workers
     model: openai.gpt-5.6-sol
     reasoning_effort: medium
@@ -63,12 +59,9 @@ configurations:
         reasoning_effort: high
         max_parallel: 5
         capabilities:
-          - failure_discovery
-          - airflow_log_analysis
-          - oms_investigation
           - cluster_health
-          - resource_routing
-          - resend_planning
+          - airflow_failure_discovery
+          - compact_failure_investigation
   - profile: sol-light
     model: openai.gpt-5.6-sol
     reasoning_effort: low
@@ -87,11 +80,9 @@ configurations:
         reasoning_effort: high
         max_parallel: 5
         capabilities:
-          - failure_discovery
-          - airflow_log_analysis
-          - oms_investigation
           - cluster_health
-          - resource_routing
+          - airflow_failure_discovery
+          - compact_failure_investigation
   - profile: terra-medium
     model: openai.gpt-5.6-terra
     reasoning_effort: medium

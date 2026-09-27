@@ -23,6 +23,8 @@ cases:
       - suggest KPO sizing in addition to rerun approval when any grouped job exceeds five attempts
       - expose KPO sizing as an agent URI only and do not invoke it
       - require approval before reruns or resends
+      - include the operational date on every resend and rerun choice
+      - return no action is required when no evidence-supported action exists
       - exclude diagnoses, evidence gaps, status summaries, and other non-actions
       - never claim a mutation occurred
     prohibited_follow_ups:

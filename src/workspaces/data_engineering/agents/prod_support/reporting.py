@@ -64,6 +64,7 @@ class ProdSupportReportContext:
     resource_discovery_results: tuple[AgentResult, ...] = ()
     config: ProdSupportReportConfig = field(default_factory=ProdSupportReportConfig)
     cluster_health: tuple[RegionalClusterHealth, ...] = ()
+    regions: tuple[Region, ...] = (Region.US_01, Region.CA_02)
 
 
 def format_report(
@@ -117,12 +118,15 @@ def format_reports_with_context(
         resource_discovery_results=report_context.resource_discovery_results,
         config=report_context.config,
         cluster_health=report_context.cluster_health,
+        regions=report_context.regions,
     )
     urls_to_validate = "\n".join(
         (
             "URLs to validate",
-            airflow_failure_url(Region.US_01, operational_date),
-            airflow_failure_url(Region.CA_02, operational_date),
+            *(
+                airflow_failure_url(region, operational_date)
+                for region in report_context.regions
+            ),
             *tuple(
                 dict.fromkeys(
                     airflow_dag_failure_url(failure, operational_date)

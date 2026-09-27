@@ -8,6 +8,7 @@ from adapters.mlflow import MlflowExperimentAdapter
 from cli.main import cli
 
 main = import_module("cli.main")
+collection_cli = import_module("cli.prod_support_collection")
 
 
 def test_benchmarks_lists_visible_benchmarks() -> None:
@@ -185,18 +186,37 @@ def test_debug_prod_support_reports_local_artifacts(
         return object()
 
     monkeypatch.setattr(
-        main.AirflowApiSource,
+        collection_cli.AirflowApiSource,
+        "from_environment",
+        staticmethod(fake_source),
+    )
+    monkeypatch.setattr(
+        collection_cli.ClusterHealthScriptSource,
+        "from_repository",
+        staticmethod(fake_source),
+    )
+    monkeypatch.setattr(
+        collection_cli.ResourceDiscoveryApiSource,
         "from_environment",
         staticmethod(fake_source),
     )
 
-    async def fake_run(source, operational_date, output_root):
-        assert source is not None
+    async def fake_run(
+        sources,
+        operational_date,
+        output_root,
+        *,
+        regions,
+    ):
+        assert sources.airflow is not None
+        assert sources.cluster_health is not None
+        assert sources.resource_discovery is not None
         assert operational_date.isoformat() == "2026-09-25"
         assert output_root == Path("var/benchmark_data/prod_support")
+        assert [region.value for region in regions] == ["US-01", "CA-02"]
         return Artifacts()
 
-    monkeypatch.setattr(main, "run_debug_day", fake_run)
+    monkeypatch.setattr(collection_cli, "run_debug_day", fake_run)
 
     result = CliRunner().invoke(
         cli,

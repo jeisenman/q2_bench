@@ -8,24 +8,41 @@ from importlib import import_module
 from domain import AgentDefinition
 
 
+def _registered_name(definition: AgentDefinition, namespace: str | None) -> str:
+    if namespace is None:
+        return definition.name
+    normalized = namespace.strip().strip(".")
+    if not normalized:
+        message = "MLflow agent namespace must not be empty"
+        raise ValueError(message)
+    return f"{normalized}.{definition.name}"
+
+
 def register_agent_definition(
     definition: AgentDefinition,
     *,
     tracking_uri: str,
     experiment_name: str,
+    namespace: str | None = None,
 ) -> tuple[str, str]:
     """Log an agent definition and create its MLflow model-registry version."""
+    registered_name = _registered_name(definition, namespace)
     mlflow = import_module("mlflow")
     client_module = import_module("mlflow.tracking")
     mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment(experiment_name)
-    registered_name = definition.name
+    tags = {
+        "agent.name": definition.name,
+        "agent.registered_name": registered_name,
+        "agent.version": definition.version,
+    }
+    if namespace is not None:
+        tags["agent.namespace"] = namespace
+    if definition.model is not None:
+        tags["agent.model"] = definition.model
     with mlflow.start_run(
         run_name=f"{registered_name}-v{definition.version}",
-        tags={
-            "agent.name": registered_name,
-            "agent.version": definition.version,
-        },
+        tags=tags,
     ) as run:
         mlflow.log_dict(asdict(definition), "agent/definition.json")
         run_id = str(run.info.run_id)
@@ -47,3 +64,32 @@ def register_agent_definition(
         version.version,
     )
     return run_id, str(version.version)
+
+
+def register_agent_definitions(
+    definitions: tuple[AgentDefinition, ...],
+    *,
+    tracking_uri: str,
+    experiment_name: str,
+    namespace: str,
+) -> tuple[tuple[AgentDefinition, str, str], ...]:
+    """Register a non-empty collection in one MLflow namespace."""
+    if not definitions:
+        message = "at least one agent definition is required"
+        raise ValueError(message)
+    names = tuple(definition.name for definition in definitions)
+    if len(names) != len(set(names)):
+        message = "agent definitions must have unique names"
+        raise ValueError(message)
+    return tuple(
+        (
+            definition,
+            *register_agent_definition(
+                definition,
+                tracking_uri=tracking_uri,
+                experiment_name=experiment_name,
+                namespace=namespace,
+            ),
+        )
+        for definition in definitions
+    )

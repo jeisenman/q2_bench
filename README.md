@@ -77,6 +77,13 @@ Initialize the local MLflow database and seed the sample benchmark:
 uv run agentbench init
 ```
 
+Register the prod-support manager and its Luna specialists under the
+`data_engineering.production_operations` MLflow model namespace:
+
+```bash
+uv run agentbench register-agent prod-support
+```
+
 Confirm the application catalog:
 
 ```bash
@@ -185,6 +192,19 @@ Agents depend on typed ports rather than Databricks, Snowflake, OMS, or MCP
 SDKs directly. The production Airflow adapter and replay datasets implement the
 same `AirflowFailureSource` interface.
 
+The prod-support manager keeps evidence collection and classification
+deterministic and always creates the complete report first. If every failure is
+classified, it returns that report without a model call. In explicit production
+MCP mode, only `unknown` findings are sent to a Luna Airflow analyst; separate
+Luna Developer, Data Internal, and Follow Up writers then refine those areas
+while preserving the deterministic content. Replay and unit-test composition
+can omit the model runtime entirely.
+
+The manager and each specialist own a generic `template.py` contract shaped
+like the public benchmark skeleton. Templates are stored in agent definitions,
+registered with MLflow, and supplied to the model runtime; they contain
+placeholders rather than benchmark case answers.
+
 ```python
 from pathlib import Path
 
@@ -238,8 +258,10 @@ docker compose run --rm --no-deps prod-support-mcp
 Production mode fails immediately when any required US or CA Airflow credential
 or Resource Discovery credential is missing. It discovers failed task
 instances, reads exact task logs, and resolves resend clients through genuine
-Resource Discovery API records. It does not retry jobs or mutate production
-systems.
+Resource Discovery API records. It uses the OpenAI Agents SDK with
+`openai.gpt-5.6-luna` for the four report specialists, so the runtime's OpenAI
+authentication must also be configured. It does not retry jobs or mutate
+production systems.
 
 The tool's `output` is delivery-ready and contains `URLs to validate`, `Message
 for developer`, a fenced Markdown `Message for Data Internal Channel`, and
@@ -302,25 +324,28 @@ src/
 
 ## Capture a prod-support benchmark day
 
-Set the established read-only Airflow credential environment variables, then
-capture and redact one operational day:
+Configure the established read-only Airflow, cluster, and Resource Discovery
+access, then capture one operational day:
 
 ```bash
 uv run agentbench capture-prod-support --date 2026-09-25
+uv run agentbench capture-prod-support --date 2026-09-25 --scope ca
 ```
 
-The resulting local dataset is written to:
+The resulting local bundle is written under:
 
 ```text
-var/benchmark_data/prod_support/2026-09-25/airflow_failures.json
+var/benchmark_data/prod_support/2026-09-25/
 ```
 
-Capture includes the preceding day so benchmark evaluation can verify that the
-agent applies the correct `end_date >= 05:00:00Z` cutoff. Captures remain
-ignored by Git and require human review before becoming scored benchmark data.
+It contains redacted Airflow failures, pod/restart/KEDA health, reviewed
+Resource Discovery metadata, compact evidence, direct Reporting input, and a
+collection manifest. D2P and MI3 remain represented without task-log
+retrieval. Captures remain ignored by Git and require human review before
+becoming scored benchmark data.
 
-To run support against genuine production Airflow and prepare an uncurated
-benchmark schema from the same redacted snapshot:
+To capture production once, replay every component from that bundle, and
+prepare an uncurated benchmark schema:
 
 ```bash
 uv run agentbench debug-prod-support --date 2026-09-25

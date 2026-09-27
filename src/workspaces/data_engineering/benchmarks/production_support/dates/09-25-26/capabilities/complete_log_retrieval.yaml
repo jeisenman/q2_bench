@@ -1,17 +1,21 @@
 schema_version: 1
 capability: complete_log_retrieval
-description: Retrieve exact terminal evidence even when discovery includes log text.
+description: Retrieve compact exact evidence for failures that are not triage omissions.
 cases:
   - id: non-terminal-discovery-log
     requirements:
+      - exclude registered D2P and MI3 failures from task-log and OMS retrieval
       - treat discovery log text as an excerpt rather than proof of completeness
-      - fetch the exact task-attempt log for every discovered failure
+      - fetch the exact task-attempt log for every remaining failure
       - continue until terminal evidence, explicit truncation, or unavailable-log status
       - page prior same-DAG and same-task runs only after the exact current log is unavailable or non-diagnostic
       - record every exact-log lookup and evidence outcome in the trace
-      - use the compact evidence command to record source, status, and original character count
+      - run the supplied standalone compact parser exactly once
+      - use its output file to record source, status, and original character count
       - retain no more than three evidence lines and never print the raw log body
     punish:
+      - fetch task logs or OMS evidence for a registered D2P or MI3 omission
       - skip exact-log retrieval because a discovery record has a non-empty log field
       - classify a task from a log that ends while the job is still running
       - stop after the first non-terminal Airflow log fragment
+      - print the compact evidence file or source dataset into the trace

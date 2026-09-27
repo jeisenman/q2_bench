@@ -24,6 +24,7 @@ CODEX_AUTH_FILES = (
     Path(".runtime/netskope-ca-bundle.pem"),
 )
 SAFE_PROFILE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+CONTAINER_CODEX_SANDBOX = "danger-full-access"
 
 
 class MatrixRunError(RuntimeError):
@@ -72,6 +73,9 @@ def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]
     if options.runtime == "container" and options.sandbox != "read-only":
         message = "container matrix sandbox must be read-only"
         raise MatrixRunError(message)
+    codex_sandbox = (
+        CONTAINER_CODEX_SANDBOX if options.runtime == "container" else options.sandbox
+    )
     command = [
         "--model",
         profile.model,
@@ -82,7 +86,7 @@ def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]
         "-c",
         'model_providers.amazon-bedrock.aws.profile="benchmark"',
         "--sandbox",
-        options.sandbox,
+        codex_sandbox,
         "--ask-for-approval",
         "never",
         "--cd",

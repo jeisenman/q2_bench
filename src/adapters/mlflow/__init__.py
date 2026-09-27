@@ -1,6 +1,9 @@
 """MLflow integration exports."""
 
-from adapters.mlflow.agent_registry import register_agent_definition
+from adapters.mlflow.agent_registry import (
+    register_agent_definition,
+    register_agent_definitions,
+)
 from adapters.mlflow.assistant import (
     BedrockAssistantConfigurator,
     CodexAssistantConfigurator,
@@ -49,6 +52,7 @@ __all__ = [
     "publish_matrix_results",
     "publish_recorded_evaluation",
     "register_agent_definition",
+    "register_agent_definitions",
     "score_date_resolution",
     "score_developer_message",
     "score_failure_discovery",

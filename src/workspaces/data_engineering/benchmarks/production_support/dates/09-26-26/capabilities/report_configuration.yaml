@@ -10,5 +10,8 @@ cases:
       - replace the defaults with the explicitly supplied groups
       - allow an empty list to include every investigated job
       - retain omitted jobs in evidence and the developer message
-      - omit configured jobs from Data Internal and rerun follow-ups
+      - bypass Airflow and OMS triage only for registered d2p and mi3 failures
+      - collapse configured jobs to regional codes in Data Internal
+      - place represented regional codes on the final regional detail line
+      - omit configured jobs from rerun follow-ups
       - reject unknown, empty, or duplicate group values

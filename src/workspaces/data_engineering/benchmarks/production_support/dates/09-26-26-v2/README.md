@@ -115,30 +115,44 @@ This snapshot remains uncurated until these gaps are reviewed:
   evidence source, and root cause or explicit evidence gap. Every client UUID
   found in a DAG or task identifier is resolved before triage. Clients failing
   the same job share one line, and multiple jobs for one client share one line.
-- Data Internal starts directly with the alert heading and uses concise
-  region-pure ongoing bullets. D2P, MI3, subscriber, maintenance, backfill, and
-  CMM jobs are omitted by default. Data Internal contains no periods.
+- Data Internal starts directly with the alert heading and uses concise,
+  region-pure ongoing bullets. It groups shared jobs before each client's
+  remaining jobs and never repeats a client-job pair. Configured D2P, MI3,
+  subscriber, maintenance, backfill, and CMM findings collapse to regional
+  codes rather than disappearing. Data Internal contains no periods.
 - Cluster warnings must agree with the overall evidence-backed health verdict;
   the retired CA replica does not make healthy application and parsing checks
   unhealthy.
 - Every discovered failure receives an exact task-attempt log lookup even when
   discovery already contains non-empty log text.
-- The reusable evidence command emits one bounded record per failure without
-  printing full log bodies.
-- Spark jobs start exact Airflow and OMS evidence requests concurrently.
+- The staged standard-library evidence parser writes bounded records to
+  `/tmp`, prints only a summary, and never prints full log bodies.
+- OMS is queried only for a proven Spark workload when the case supplies an
+  exact source.
 - If the latest task log is unavailable or non-diagnostic, search earlier runs
   of the same region, DAG, and task in reverse chronological order.
-- Explicit Airflow timeout evidence cancels pending OMS work.
+- D2P and MI3 remain discovered but bypass task-log and OMS triage.
+- One Cluster and one Airflow leaf handoff start concurrently; one Reporting
+  pass follows both, and no leaf agent may delegate.
 - Event resends include exact dates, event counts, and a clickable Resource
   Discovery-routed application link.
 - More than 100 unique resend events remain explicit in Developer and trigger
   the configured owner escalation in Follow Ups, not Data Internal.
 - Follow Ups contains actions only: linked event resends or approval-gated,
-  job-grouped Airflow reruns. Large resends identify `pd-rix`; non-omitted
-  jobs above five attempts also link the KPO sizing agent interface. The MCP
+  dated, job-grouped Airflow reruns. When no action is supported it says so.
+  Large resends identify `pd-rix`; non-omitted jobs above five attempts also
+  link the KPO sizing agent interface. The MCP
   result contract includes the `follow_up` field and includes that content in
   `output` under `Follow Ups:`.
+- The compact briefing parser normalizes primary pod readiness separately from
+  retired replica warnings and prints complete report-ready grouped evidence,
+  identities, event counts, routes, and prior-run context. Candidates do not
+  need to inspect any JSON file. OMS and Spark-race criteria are
+  applicability-gated, so a case without a supplied exact OMS source awards
+  full credit when the agent avoids inventing OMS work.
 
 The multi-run fallback fixture is explicitly synthetic. It models a latest
-HTTP 404 followed by a previous run with terminal evidence and must not be
-represented as captured production evidence.
+HTTP 404 followed by a previous run with terminal evidence and belongs to the
+isolated fallback capability, not the holistic 50-failure case. The holistic
+case marks fallback and timeout-short-circuit scoring not applicable and does
+not stage the fixture.

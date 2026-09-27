@@ -1,0 +1,12 @@
+schema_version: 1
+capability: orchestration_structure
+description: Enforce the fixed one-level production-support agent graph.
+cases:
+  - id: cluster-airflow-reporting
+    top_level_agent: orchestrator
+    concurrent_leaf_handoffs: [cluster, airflow]
+    reporting_starts_after: [cluster, airflow]
+    reporting_calls: 1
+    leaf_agents: [cluster, airflow, reporting]
+    prohibit_nested_delegation: true
+    regional_airflow_concurrency_is_agent_delegation: false

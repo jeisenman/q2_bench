@@ -19,6 +19,10 @@ from workspaces.data_engineering.agents.prod_support.cluster_health import (
     ClusterHealthValueError,
     RegionalClusterHealth,
 )
+from workspaces.data_engineering.agents.prod_support.component_agents import (
+    PROD_SUPPORT_AIRFLOW_DEFINITION,
+    PROD_SUPPORT_CLUSTER_DEFINITION,
+)
 from workspaces.data_engineering.agents.prod_support.data_internal_reporter import (
     DataInternalReporter,
 )
@@ -74,8 +78,16 @@ from workspaces.data_engineering.agents.prod_support.ports import (
     OmsEvidenceUnavailableError,
     OmsJobEvidenceSource,
     PriorTaskLogSource,
+    RegionalAirflowFailureSource,
     ResourceDiscoveryInvoker,
     TaskLogUnavailableError,
+)
+from workspaces.data_engineering.agents.prod_support.report_agents import (
+    LUNA_MODEL,
+    PROD_SUPPORT_MLFLOW_NAMESPACE,
+    PROD_SUPPORT_REPORTER_DEFINITION,
+    ReportAgentOutputError,
+    ReportingAgent,
 )
 from workspaces.data_engineering.agents.prod_support.report_findings import (
     ReportFindings,
@@ -89,6 +101,13 @@ from workspaces.data_engineering.agents.prod_support.reporting_config import (
     DataInternalOmissionGroup,
     ProdSupportReportConfig,
 )
+from workspaces.data_engineering.agents.prod_support.scope import (
+    ProdSupportScope,
+    resolve_scope,
+)
+from workspaces.data_engineering.agents.prod_support.templates import (
+    PROD_SUPPORT_REPORT_TEMPLATE,
+)
 from workspaces.data_engineering.agents.prod_support.workloads import (
     AirflowTaskMetadata,
     AirflowTaskMetadataError,
@@ -98,8 +117,22 @@ from workspaces.data_engineering.agents.prod_support.workloads import (
     route_oms_evidence,
 )
 
+PROD_SUPPORT_AGENT_DEFINITIONS = (
+    PROD_SUPPORT_DEFINITION,
+    PROD_SUPPORT_CLUSTER_DEFINITION,
+    PROD_SUPPORT_AIRFLOW_DEFINITION,
+    PROD_SUPPORT_REPORTER_DEFINITION,
+)
+
 __all__ = [
+    "LUNA_MODEL",
+    "PROD_SUPPORT_AGENT_DEFINITIONS",
+    "PROD_SUPPORT_AIRFLOW_DEFINITION",
+    "PROD_SUPPORT_CLUSTER_DEFINITION",
     "PROD_SUPPORT_DEFINITION",
+    "PROD_SUPPORT_MLFLOW_NAMESPACE",
+    "PROD_SUPPORT_REPORTER_DEFINITION",
+    "PROD_SUPPORT_REPORT_TEMPLATE",
     "AirflowCheckConfigurationError",
     "AirflowChecker",
     "AirflowFailure",
@@ -135,12 +168,16 @@ __all__ = [
     "ProdSupportOutcome",
     "ProdSupportReportConfig",
     "ProdSupportReportContext",
+    "ProdSupportScope",
     "ProdSupportScores",
     "QueryWindow",
     "Region",
+    "RegionalAirflowFailureSource",
     "RegionalClusterHealth",
     "ReplayAirflowFailureSource",
+    "ReportAgentOutputError",
     "ReportFindings",
+    "ReportingAgent",
     "ResourceDiscoveryInvoker",
     "TaskLogSummary",
     "TaskLogUnavailableError",
@@ -153,6 +190,7 @@ __all__ = [
     "classify_workload",
     "evaluate_outcome",
     "resolve_query_window",
+    "resolve_scope",
     "route_oms_evidence",
     "run_debug_day",
     "summarize_task_log",

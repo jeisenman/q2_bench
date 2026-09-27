@@ -1,6 +1,9 @@
 schema_version: 1
 capability: spark_evidence
 description: Diagnose Spark failures using parallel Airflow and OMS evidence.
+applicability_policy:
+  - require a proven Spark workload and a supplied exact OMS source
+  - award full credit when no exact OMS source is supplied and the agent avoids invented OMS work
 cases:
   - id: airflow-timeout-wins-race
     workload_type: spark

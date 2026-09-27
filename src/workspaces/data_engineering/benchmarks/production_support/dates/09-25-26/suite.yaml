@@ -9,6 +9,8 @@ layers:
     description: Test deterministic skills independently.
     fixtures:
       - capabilities/date_resolution.yaml
+      - capabilities/request_scope.yaml
+      - capabilities/orchestration_structure.yaml
       - capabilities/failure_discovery.yaml
       - capabilities/client_identity_resolution.yaml
       - capabilities/complete_log_retrieval.yaml
@@ -25,6 +27,9 @@ layers:
       - capabilities/follow_up_actions.yaml
     dimensions:
       - query_translation
+      - request_scope
+      - orchestration_structure
+      - leaf_delegation
       - bounded_query_translation
       - failure_recall
       - client_identity_resolution
@@ -50,18 +55,14 @@ layers:
       - prod_support_message
       - follow_up_actionability
   coordination:
-    description: Test ordered tool use and synthesis across specialist agents.
+    description: Test the fixed one-level component handoffs and reporting boundary.
     dimensions:
-      - investigation_chain
-      - direct_oms_lookup
-      - tool_call_efficiency
-      - regional_synthesis
-      - evidence_handoff
-      - airflow_oms_race
-      - oms_cancellation
-      - regional_parallelization
-      - resource_discovery_handoff
-      - cluster_health_handoff
+      - scope_handoff
+      - cluster_airflow_parallelization
+      - regional_airflow_io_parallelization
+      - compact_evidence_handoff
+      - single_reporting_pass
+      - leaf_delegation
   system:
     description: Test the full prompt-to-report workflow against recorded evidence.
     cases:

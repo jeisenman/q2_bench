@@ -85,7 +85,7 @@
   },
   "385c35bf-29c4-48a7-9527-a91963b7af69": {
     "api_status": "unique-match",
-    "last_checked": "2026-08-30",
+    "last_checked": "2026-09-26",
     "name": "U.S. Bancorp (Minneapolis, MN)",
     "source": "resource-discovery-api"
   },
@@ -108,7 +108,7 @@
   },
   "5301628b-e85f-4ff9-b5b3-e8d13c5926a7": {
     "api_status": "unique-match",
-    "last_checked": "2026-08-30",
+    "last_checked": "2026-09-26",
     "name": "TD Bank (Wilmington, DE)",
     "source": "resource-discovery-api"
   },
@@ -120,8 +120,14 @@
   },
   "60009dc8-695b-4b58-b512-1fc72c3c98e7": {
     "api_status": "unique-match",
-    "last_checked": "2026-08-30",
+    "last_checked": "2026-09-26",
     "name": "Popular Community Bank",
+    "source": "resource-discovery-api"
+  },
+  "621d1ad2-3d0f-4fc4-8245-e3878a6bff7c": {
+    "api_status": "unique-match",
+    "last_checked": "2026-09-26",
+    "name": "Andi Application Owner",
     "source": "resource-discovery-api"
   },
   "631c7704-582e-4705-af1e-1dbd04af145f": {
@@ -138,7 +144,7 @@
   },
   "792f7424-402e-4a7e-b4de-69f811435d9c": {
     "api_status": "no-unique-match",
-    "last_checked": "2026-08-30",
+    "last_checked": "2026-09-26",
     "name": "BoFA",
     "source": "user-confirmed"
   },
@@ -207,9 +213,15 @@
   },
   "9d272969-2cdd-401b-a373-6a73cf5a3042": {
     "api_status": "ambiguous",
-    "last_checked": "2026-08-30",
+    "last_checked": "2026-09-26",
     "name": "Glacier Bancorp",
     "source": "user-confirmed"
+  },
+  "9e344fed-d096-4827-8985-992c8a021369": {
+    "api_status": "unique-match",
+    "last_checked": "2026-09-26",
+    "name": "Webster Bank",
+    "source": "resource-discovery-api"
   },
   "a6f041a5-fda3-4b68-a002-d115b39e9914": {
     "api_status": "unique-match",

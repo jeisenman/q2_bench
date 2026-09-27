@@ -1,8 +1,43 @@
 schema_version: 1
 capability: spark_evidence
 description: Diagnose Spark failures using parallel Airflow and OMS evidence.
+applicability_policy:
+  - require a proven Spark workload and a supplied exact OMS source
+  - award full credit when no exact OMS source is supplied and the agent avoids invented OMS work
 cases:
-  - id: spark-dual-source-race
+  - id: airflow-timeout-wins-race
+    workload_type: spark
+    execution:
+      start_in_parallel:
+        - exact_airflow_task_log
+        - exact_oms_job_query
+      mock_oms:
+        printed_notice: "Mock OMS query: would wait 10 seconds"
+        actual_sleep_seconds: 0
+      cancellation:
+        when: Airflow log contains explicit AirflowTaskTimeout evidence
+        cancel: exact_oms_job_query
+      required_trace_events:
+        - oms_query_started
+        - airflow_log_started
+        - airflow_timeout_detected
+        - oms_query_cancelled
+    evidence_rules:
+      timeout:
+        required_airflow_text: airflow.exceptions.AirflowTaskTimeout
+        cancel_pending_oms: true
+      no_terminal_cause:
+        await_oms: true
+        prohibit_inferred_oom: true
+      explicit_oom:
+        require_explicit_memory_signal: true
+        require_exact_evidence: true
+    evidence_status: supplied_by_case_assets
+    require_timeout_evidence_in_developer_message: true
+    requirements:
+      - preserve exact Airflow and OMS evidence provenance
+      - do not infer a terminal cause from unrelated errors
+  - id: inconclusive-airflow-requires-oms
     workload_type: spark
     execution:
       start_in_parallel:
@@ -28,7 +63,8 @@ cases:
         require_explicit_memory_signal: true
         require_exact_evidence: true
     evidence_status: supplied_by_case_assets
-    require_timeout_evidence_in_developer_message: true
+    require_timeout_evidence_in_developer_message: false
     requirements:
-      - preserve exact Airflow and OMS evidence provenance
-      - do not infer a terminal cause from unrelated errors
+      - await the already-started exact OMS query
+      - combine Airflow and OMS evidence
+      - do not infer OOM without an explicit memory signal

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from domain import AgentRequest, AgentResult
 from workspaces.data_engineering.agents.prod_support.cluster_health import (
@@ -52,6 +52,19 @@ class AirflowFailureSource(Protocol):
 
     async def fetch_log(self, failure: AirflowFailure) -> str:
         """Return the exact task-instance log for a failure."""
+        ...
+
+
+@runtime_checkable
+class RegionalAirflowFailureSource(Protocol):
+    """Read Airflow failures from one explicitly selected region."""
+
+    async def discover_region_failures(
+        self,
+        region: Region,
+        since: datetime,
+    ) -> tuple[AirflowFailure, ...]:
+        """Return failures for one production region."""
         ...
 
 

@@ -22,6 +22,7 @@ from workspaces.data_engineering.agents.prod_support.reporting_validation import
 )
 
 MAX_DATA_INTERNAL_BULLET_CHARACTERS = 180
+EXPECTED_REGION_COUNT = 2
 
 
 def _failure(
@@ -83,6 +84,7 @@ def _healthy(
         pods_healthy=True,
         dags_parsing_healthy=True,
         active_dag_count=count,
+        restart_count=7,
         keda_status="access_denied",
         warnings=warnings,
     )
@@ -107,6 +109,7 @@ def test_cluster_warnings_do_not_contradict_primary_healthy_status() -> None:
 
     assert "US Cluster Health: healthy" in reports.developer
     assert "CA Cluster Health: healthy" in reports.developer
+    assert reports.developer.count("7 pod restarts") == EXPECTED_REGION_COUNT
     assert "DAGs parsing properly: 209 DAGs exist in US, 34 DAGs exist in CA" in (
         reports.developer
     )

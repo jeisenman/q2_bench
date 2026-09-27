@@ -115,7 +115,12 @@ def test_prod_support_suite_defines_three_evaluation_layers() -> None:
     assert suite["suite_date"] == "2026-09-25"
     assert set(suite["layers"]) == {"capabilities", "coordination", "system"}
     assert "diagnosis_accuracy" in suite["layers"]["capabilities"]["dimensions"]
-    assert "evidence_handoff" in suite["layers"]["coordination"]["dimensions"]
+    assert (
+        "cluster_airflow_parallelization"
+        in (suite["layers"]["coordination"]["dimensions"])
+    )
+    assert "single_reporting_pass" in suite["layers"]["coordination"]["dimensions"]
+    assert "leaf_delegation" in suite["layers"]["coordination"]["dimensions"]
     assert "prod-support-us-ca-2026-09-25" in suite["layers"]["system"]["cases"]
 
 

@@ -54,6 +54,11 @@ class MatrixPromptManifest(Protocol):
         """Return focused case requirements."""
         ...
 
+    @property
+    def applicability(self) -> tuple[tuple[str, bool], ...]:
+        """Return criterion applicability declared by the case."""
+        ...
+
 
 class MatrixPromptProfile(Protocol):
     """Model-profile values required by the production-support prompt."""
@@ -73,7 +78,7 @@ def build_prod_support_prompt_lines(
     manifest: MatrixPromptManifest,
     profile: MatrixPromptProfile,
 ) -> list[str]:
-    """Build the strict production-support candidate prompt lines."""
+    """Build the production-support orchestrator benchmark prompt."""
     operational_date = manifest.operational_start.partition("T")[0]
     failure_links = tuple(
         (
@@ -85,9 +90,52 @@ def build_prod_support_prompt_lines(
         )
         for region, base_url in manifest.airflow_base_urls
     )
+    compact_parser = (
+        "workspaces.data_engineering.benchmarks.production_support.compact_brief"
+    )
+    inputs_by_name = {path.name: str(path) for path in manifest.candidate_inputs}
+    applicability = dict(manifest.applicability)
+    optional_inputs = (
+        ("cluster_health_snapshot.json", "--cluster-health", "cluster_health"),
+        ("resource_discovery_snapshot.json", "--resource-discovery", None),
+        (
+            "multi_run_log_fallback.json",
+            "--prior-run-logs",
+            "prior_run_log_fallback",
+        ),
+        ("relationship_signals_prior_day.json", "--prior-context", None),
+    )
+    optional_arguments = " ".join(
+        f"{argument} {inputs_by_name[name]}"
+        for name, argument, criterion in optional_inputs
+        if name in inputs_by_name
+        and (criterion is None or applicability.get(criterion, True))
+    )
+    compact_command = (
+        f"PYTHONPATH=src python3 -m {compact_parser} --dataset {manifest.dataset} "
+        f"--start {manifest.operational_start} --end {manifest.operational_end} "
+        f"{optional_arguments} "
+        "--output /tmp/prod-support-compact-evidence.json"
+    )
+    region_labels = tuple(region.partition("-")[0] for region, _ in failure_links)
+    developer_health = tuple(
+        f"  - {label} Cluster Health: <pod state, restart count, and KEDA health>"
+        for label in region_labels
+    )
+    data_internal_regions = tuple(
+        line
+        for label in region_labels
+        for line in (
+            label,
+            "- Good|Ongoing",
+            "  - <grouped client and job failures>",
+            "  - <represented omission codes, always last>",
+        )
+    )
     return [
         "Run the prod-support benchmark using only local recorded evidence.",
         f"Case: {manifest.case_id}",
+        f"User request: {manifest.case_prompt or 'Do prod support'}",
         f"Dataset: {manifest.dataset}",
         "Additional recorded inputs: "
         f"{', '.join(map(str, manifest.candidate_inputs)) or 'none'}",
@@ -95,6 +143,20 @@ def build_prod_support_prompt_lines(
         + ", ".join(f"{region}={url}" for region, url in manifest.airflow_base_urls),
         f"Your role: {profile.role}.",
         f"Your measured capabilities: {', '.join(profile.capabilities) or 'all'}.",
+        "All Cluster, Airflow, identity, and reporting operations are read-only.",
+        "Act as the top-level production-support orchestrator. Resolve the requested "
+        "date and regional scope first. A generic request selects both regions; "
+        "US and CA requests select only that region. When no date is supplied, use "
+        "the previous operational day.",
+        "The orchestration boundary is fixed:",
+        "1. Start one Cluster Agent handoff and one Airflow Agent handoff "
+        "concurrently.",
+        "2. Cluster and Airflow are leaf agents. They must not spawn, hand off to, "
+        "or invoke another agent.",
+        "3. The Airflow Agent may query selected regions concurrently with ordinary "
+        "I/O concurrency; those regional calls are not additional agents.",
+        "4. After both handoffs complete, make one Reporting Agent pass that produces "
+        "Developer, Data Internal, and Follow Up outputs.",
         "Final response structure is strict. The first line must be exactly:",
         f"# Prod Support Report — {operational_date} operational day",
         "The next non-empty line must be exactly:",
@@ -105,138 +167,59 @@ def build_prod_support_prompt_lines(
             f"`{manifest.operational_end.replace('T', ' ').removesuffix('Z')} UTC`"
         ),
         "Do not emit analysis, a preamble, or tool commentary before those lines.",
-        "Start with exactly one reusable evidence command:",
-        "agentbench summarize-prod-support-evidence "
-        f"--dataset {manifest.dataset} --start {manifest.operational_start} "
-        f"--end {manifest.operational_end}",
-        "Use its compact JSON records as the failure inventory. Do not print raw "
-        "logs, the source dataset, or an execution JSONL transcript.",
+        "Use exactly one reusable evidence command to replay the Cluster and Airflow "
+        "handoffs:",
+        compact_command,
+        "The command prints one bounded report-ready brief. Use that stdout directly. "
+        "Do not reopen inputs or outputs, invoke jq, run another shell command, print "
+        "record inventories, raw logs, or an execution JSONL transcript.",
         "Use these exact regional failure-list links without percent encoding or "
         "locale-specific date formatting:",
         *(f"- {region}: {link}" for region, link in failure_links),
-        "After the capture-summary line, use this exact compact section structure:",
+        "After the capture summary, use this compact section order:",
         "URLs to validate",
-        failure_links[0][1],
-        failure_links[1][1],
+        *(link for _, link in failure_links),
         "",
         "Message for developer:",
-        "  - US Cluster Health: <status and evidence>",
-        "  - CA Cluster Health: <status and evidence>",
-        "  - ClientA (123), ClientB (456) failed on <same job>: <evidence>",
+        *developer_health,
+        "  - <grouped clients and direct error evidence>",
         "",
         f":bangbang: PROD SUPPORT {operational_date} :bangbang:",
-        "US",
-        "- Good|Ongoing",
-        "  - ClientA (123), ClientB (456) failed on <same job>",
-        "CA",
-        "- Good|Ongoing",
-        "  - ClientC (789) failed on <job1>, <job2>, and <job3>",
-        "  - CA cluster is <evidence-derived status>; <symptom1>, <symptom2>, and "
-        "<symptom3> appear KEDA status and supporting OMS telemetry are missing",
+        *data_internal_regions,
         "",
         "Follow Ups:",
-        "",
-        "- Would you like to:",
-        "  - [Resend validate_event_bus events for <client>]"
-        "(<resource-discovery reviewed application link>) for <date or date range>",
-        "  - Follow up with pd-rix about <count> validate_event_bus events for "
-        "<client> on <date>.",
-        "  - Do you approve re-running the following jobs:",
-        "    - <client or grouped clients>: <job>; also move to "
-        f"[KPO sizing agent](agent://kpo-sizer/definition) for {operational_date} "
-        "when attempts exceed five",
-        "Do not use Markdown headings such as '## Developer message' or "
-        "'## Data Internal message'. Do not insert blank lines between bullets or "
-        "periods anywhere in Data Internal.",
+        "- <suggestion-only action with operational date, or No action is required>",
+        "Cluster Agent requirements: report selected-region pod readiness/state, "
+        "total restart count, KEDA health, warnings, and evidence gaps. Do not require "
+        "DAG parsing or OMS evidence to establish Kubernetes/KEDA health.",
+        "Airflow Agent requirements: return every selected-region failure and direct "
+        "validated error. D2P and MI3 are registered triage omissions: retain them in "
+        "the inventory, but do not fetch task logs or query OMS for them. Retrieve "
+        "bounded exact evidence for other failures. Query OMS only for a proven Spark "
+        "workload when an exact OMS source is supplied.",
         "Resolve every client UUID found in a DAG or task identifier through the "
         "recorded Resource Discovery input before triage or reporting. Use the "
         "resolved name and first three UUID characters in parentheses. When no "
         "unique reviewed name exists, use 'Unresolved client (<prefix>)'; never "
         "emit a bare prefix.",
-        "Never place a CA finding in the US section or a US finding in the CA "
-        "section. Do not describe one regional cluster as both healthy and unhealthy "
-        "from the same evidence. Treat either defect as a failed final-report audit.",
-        "In both audience messages, minimize repetition. Group clients that failed "
-        "on the same job into one line. When one client has multiple failures, group "
-        "its jobs into one client line. Preserve each failure's evidence in Developer.",
+        "Reporting Agent requirements: use one reporting pass only. Group clients "
+        "that failed on the same job on one line. If a grouped client has other jobs, "
+        "list that client separately with only the other jobs. Mention every "
+        "client-job pair exactly once. Put represented omission codes on the final "
+        "detail line of each regional Data Internal block.",
+        "Never place a CA finding in US or a US finding in CA. Do not describe one "
+        "cluster as both healthy and unhealthy from the same evidence. Use no periods "
+        "in Data Internal and no blank lines between its bullets.",
         "For every failed DAG, also provide a DAG grid link using this exact shape:",
         "<airflow-base-url>/dags/<dag-id>/grid?status=failed"
         f"&execution_start={manifest.operational_start}"
         f"&execution_end={manifest.operational_end}",
-        "Use read-only automation and fetch the exact Airflow task-attempt log for "
-        "every discovered failure. A non-empty discovery log is only an excerpt; "
-        "do not stop until terminal evidence, explicit truncation, or an unavailable "
-        "log result is established.",
-        "After establishing the report heading and window, immediately start three "
-        "independent workstreams concurrently: US failures, CA failures, and "
-        "US/CA cluster health. Do not serialize these workstreams.",
-        "Enumerate every returned failure in both regions with one compact record: "
-        "region, DAG ID, run ID, task ID, attempt, exact-log status, source, and at "
-        "most three evidence lines. Never emit a full log body.",
-        "Required operational workflow:",
-        "1. Print a capture-summary line derived from discovered records. When one "
-        "region has every failure and the other has none, use: Local capture "
-        "contains <N> failures, all from <region>; no <region> failures were recorded.",
-        "2. If the latest task log is unavailable or non-diagnostic, page backward "
-        "through prior runs of the same DAG and task and cite the first terminal "
-        "evidence. Never change task identity.",
-        "3. Provide the exact US and CA regional failure links above plus a filtered "
-        "DAG grid link for every failed DAG.",
-        "4. For each Spark workload, start exact Airflow-log and OMS queries "
-        "concurrently. If Airflow proves AirflowTaskTimeout, cancel pending OMS "
-        "work and classify the timeout without waiting.",
-        "5. Check KEDA ScaledObjects and pod health in both regions. Include explicit "
-        "US Cluster Health and CA Cluster Health lines as the first Developer "
-        "message bullets, or identify the exact missing evidence. In Data Internal, "
-        "describe an unhealthy cluster with one status sentence followed by its "
-        "observed symptoms without periods. Treat access-denied results and "
-        "capture timestamps as "
-        "evidence, never as proof of historical health.",
-        "6. Resolve every client UUID found in a DAG or task identifier through the "
-        "recorded resource-discovery input before triage. Application selection is "
-        "hard-gated on an explicit "
-        "reviewed production mapping. Use that mapping to emit a clickable resend "
-        "events link for every resend client. If none exists, report an evidence gap "
-        "and do not substitute a log directive, client subdomain, Airflow region, or "
-        "guessed application.",
-        "7. When a resend exceeds 100 unique events, call it out in both the "
-        "developer and Data Internal messages.",
-        "8. Investigate all failures, but by default omit D2P, MI3, subscriber, "
-        "maintenance, backfill, and credit migration matrix (CMM) groups from Data "
-        "Internal and rerun follow-ups. "
-        "The MCP data_internal_omissions parameter replaces these defaults; an empty "
-        "list includes every investigated job.",
-        "9. The developer message must account for every discovered failure, "
-        "including jobs omitted from Data Internal. Group the same job across "
-        "clients and multiple jobs for one client. State only an "
-        "evidence-backed root cause; otherwise state the precise evidence gap. Do not "
-        "infer event order or causality from unrelated timestamps or errors. Use "
-        "client names or short aliases in audience messages; keep raw UUIDs, Spark "
-        "IDs, and record references out of audience-facing prose.",
-        "10. Follow Ups must contain actions only. A "
-        "validate_event_bus_opportunities failure already implies missing snapshots; "
-        "keep its Data Internal wording concise. In Follow Ups, include "
-        "the exact resend date or range and a reviewed Resource Discovery application "
-        "link. If routing "
-        "is unresolved, ask to resolve the production link first and do not offer an "
-        "unlinked resend. For more than 100 events, add a pd-rix follow-up. Group "
-        "identical rerun jobs and ask for approval with the operational date, "
-        "excluding every configured omission. When a grouped job exceeds five "
-        "attempts, also link the KPO "
-        "sizing agent interface at agent://kpo-sizer/definition without invoking it. "
-        "Do not repeat diagnoses, evidence-gathering tasks, schema upgrades, or "
-        "status summaries in Follow Ups.",
-        "11. Audit regional consistency and contradictions. Every finding must appear "
-        "under its source region, every cluster status must agree with its cited "
-        "evidence, and no client/job pair may be repeated across multiple Data "
-        "Internal bullets. Prefer the explicit words timeout, OOM, or distinctness "
-        "validation errors when those causes are proven.",
-        "Before returning, audit the final report against all eleven workflow items. "
-        "Do not claim a check was performed without trace evidence.",
-        "Derive dates, paths, clients, and counts from the supplied manifest and "
-        "evidence. Do not hard-code this case in worker prompts. Do not inspect Git "
-        "history or repository documentation. If a utility is unavailable, use the "
-        "Python standard library once; do not retry the same failed command.",
+        "Follow Up is suggestion-only. Never claim a rerun, resend, bounce, or other "
+        "production mutation occurred. Include the operational date on any proposed "
+        "action and return 'No action is required' when no supported action exists.",
+        "Use case applicability. If OMS, Spark-race, automation, or another optional "
+        "source is not supplied or not needed, avoid that work and treat it as "
+        "success rather than an evidence gap.",
         "Do not mutate production systems. Return the final report only.",
     ]
 

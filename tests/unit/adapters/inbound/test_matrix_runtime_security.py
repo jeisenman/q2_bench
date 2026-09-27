@@ -42,6 +42,20 @@ def test_candidate_workspace_rejects_symlinked_dataset(tmp_path) -> None:
         pass
 
 
+def test_process_runtime_preserves_declared_codex_sandbox(tmp_path) -> None:
+    command = matrix_runtime._codex_command(
+        load_run().candidates[0],
+        matrix_runtime._CommandOptions(
+            workspace=tmp_path,
+            sandbox="read-only",
+            final_path=tmp_path / "final.md",
+            json_output=False,
+        ),
+    )
+
+    assert command[command.index("--sandbox") + 1] == "read-only"
+
+
 def test_candidate_workspace_rejects_hidden_inputs(tmp_path) -> None:
     hidden = tmp_path / "hidden" / "answer.yaml"
     hidden.parent.mkdir()

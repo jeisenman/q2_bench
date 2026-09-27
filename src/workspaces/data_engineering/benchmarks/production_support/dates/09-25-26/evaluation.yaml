@@ -11,111 +11,69 @@ execution:
   artifact_root: var/benchmark_matrix/prod-support-09-25-26
 judge_configuration: sol-high-judge
 rubric:
+  - id: request_scope
+    weight: 2.5
+    reward: Resolves the date and US, CA, or combined scope; generic requests default to both regions and the previous operational day.
+    punish: Uses the wrong date, queries an unrequested region, or omits a requested region.
+  - id: orchestration_structure
+    weight: 3.0
+    reward: Starts one Cluster and one Airflow handoff concurrently, allows regional I/O concurrency inside Airflow, and starts Reporting after both return.
+    punish: Serializes Cluster and Airflow, creates regional agents, or reports before either handoff completes.
+  - id: leaf_delegation
+    weight: 2.0
+    reward: Only the orchestrator delegates; Cluster, Airflow, and Reporting complete work directly without descendants.
+    punish: Any component or worker spawns, hands off to, or delegates to another agent.
   - id: bounded_airflow_links
-    weight: 2.0
-    reward: US and CA list links use raw 05:00 UTC lower and upper end-date bounds, and every failed DAG has a bounded grid link.
-    punish: Links are encoded, locale-formatted, one-sided, use the wrong field, or omit a failed DAG.
+    weight: 1.5
+    reward: Selected-region failure and DAG-grid links use the exact bounded operational window.
+    punish: Links are one-sided, encoded incorrectly, use the wrong date, or include an unselected region.
   - id: client_identity_resolution
-    weight: 2.5
-    reward: Resolves every client UUID found in a DAG or task identifier before triage and uses Resource Discovery names plus three-character UUID prefixes in both messages.
-    punish: Emits bare prefixes, raw UUIDs without names, skips task-embedded client IDs, or guesses an ambiguous identity.
-  - id: complete_log_retrieval
-    weight: 2.5
-    reward: Fetches the exact task-attempt log for every failure and continues past non-terminal discovery excerpts to terminal evidence, explicit truncation, or unavailable status.
-    punish: Skips exact-log retrieval because any log text exists or classifies a log that ends while the job is still running.
-  - id: evidence_efficiency
     weight: 2.0
-    reward: Runs the reusable compact evidence command once, records source and status for every exact task attempt, and retains at most three evidence lines.
-    punish: Prints raw logs or execution JSONL, manually repeats parser work, or retries an unavailable utility.
-  - id: report_structure
+    reward: Uses reviewed names and three-character prefixes without raw UUIDs or guessed identities.
+    punish: Emits raw identifiers, bare prefixes, guessed names, or an unreviewed application route.
+  - id: cluster_health
     weight: 2.5
-    reward: The report and window lead, Developer starts with US and CA Cluster Health, and the alert-first Data Internal and actionable Follow Ups blocks remain compact.
-    punish: Cluster Health appears after failure details, Markdown headings or blank bullet lines are used, or Data Internal repeats verbose diagnoses.
-  - id: regional_consistency
-    weight: 3.0
-    reward: Every US finding appears only under US and every CA finding appears only under CA.
-    punish: A CA finding appears under US, a US finding appears under CA, or a cross-region group obscures source region.
-  - id: contradiction_detection
-    weight: 3.0
-    reward: Cluster status agrees with cited health evidence and warnings remain distinct from the overall verdict.
-    punish: The response calls a cluster both healthy and unhealthy, or promotes a retired-replica warning to an unsupported unhealthy verdict.
-  - id: grouped_reporting
-    weight: 3.0
-    reward: Groups clients sharing a job and groups multiple jobs for one client without repeating a client-job pair; proven timeout, OOM, and distinctness errors remain explicit.
-    punish: Repeats clients or jobs across bullets, leaves groupable findings split, or omits a proven high-value diagnosis.
+    reward: Reports selected-region pod state, restarts, KEDA health, warnings, and evidence gaps without requiring DAG or OMS evidence.
+    punish: Omits pods, restarts, or KEDA; checks an unselected region; or invents health.
   - id: complete_failure_inventory
     weight: 3.0
-    reward: Every regional Airflow failure appears in the trace and remains explicit within a job-grouped Developer-message entry.
-    punish: Any failure is omitted from the trace or loses its client-specific diagnosis when grouped in the Developer message.
-  - id: spark_evidence_race
+    reward: Airflow returns every selected-region failure exactly once and Reporting preserves every client-job pair.
+    punish: Drops, duplicates, or moves a failure to the wrong region.
+  - id: complete_log_retrieval
+    weight: 2.0
+    reward: Retrieves bounded exact or prior same-task evidence for every non-triage-omitted failure and records unavailable evidence explicitly.
+    punish: Skips a non-omitted failure, uses unrelated history, prints raw logs, or fetches task logs for D2P or MI3.
+  - id: omitted_job_routing
     weight: 2.5
-    reward: Starts exact Airflow-log and OMS queries concurrently for Spark jobs.
-    punish: Uses only one source or serializes independent evidence queries.
-  - id: timeout_short_circuit
-    weight: 2.0
-    reward: Cancels pending OMS work when Airflow proves an AirflowTaskTimeout.
-    punish: Waits for unnecessary OMS work after definitive timeout evidence.
-  - id: cluster_health
-    weight: 2.0
-    reward: Checks KEDA and pods in both regions, puts US and CA Cluster Health first in Developer, and formats Data Internal cluster issues as status plus observed symptoms.
-    punish: Cluster Health follows failure details, omits a region or evidence source, or reports a cluster issue without concrete symptoms.
-  - id: resource_discovery_routing
-    weight: 2.0
-    reward: Uses resource discovery to select the client's correct resend application.
-    punish: Guesses a domain or supplies a link for the wrong client environment.
-  - id: large_resend_escalation
+    reward: Retains omissions, bypasses task-log and OMS triage for D2P and MI3, and puts represented codes on the final regional detail line.
+    punish: Drops an omission, triages D2P or MI3, exposes coded client details, repeats a code, or misplaces codes.
+  - id: conditional_oms
     weight: 1.5
-    reward: Preserves the threshold evidence in Developer and adds the configured owner escalation in Follow Ups.
-    punish: Hides an above-threshold resend or repeats follow-up-only count details in Data Internal.
-  - id: omitted_job_filter
-    weight: 1.5
-    reward: Discovers all failures while default-omitting D2P, MI3, subscriber, maintenance, backfill, and CMM groups from Data Internal and rerun follow-ups; honors MCP overrides.
-    punish: Drops omitted jobs from investigation, includes a default omission in Data Internal or rerun suggestions, or ignores an explicit MCP override.
-  - id: root_cause_coverage
+    reward: Uses exact OMS only for a proven Spark workload with a supplied source; otherwise performs no OMS work and receives full credit.
+    punish: Queries OMS without both prerequisites, uses a broad query, or penalizes a correct no-OMS path.
+  - id: reporting_boundary
+    weight: 2.0
+    reward: Performs one Reporting pass over compact Cluster and Airflow handoffs and returns all three audience outputs.
+    punish: Invokes separate audience agents, repeats reporting, passes raw logs, or omits an output.
+  - id: grouped_reporting
+    weight: 3.0
+    reward: Groups clients sharing a job, then lists only each grouped client's other jobs, with every client-job pair once.
+    punish: Repeats a shared job, splits groupable clients, or repeats a client-job pair.
+  - id: regional_consistency
     weight: 2.5
-    reward: Gives an evidence-backed root cause or explicitly states what evidence is missing.
-    punish: Lists a failure without diagnosis or presents speculation as fact.
+    reward: Keeps every finding and health result in its source region and avoids contradictory verdicts.
+    punish: Mixes regions or labels the same cluster both healthy and unhealthy from one evidence set.
   - id: follow_up_actionability
     weight: 2.0
-    reward: Follow Ups contains only approval-gated resends and non-omitted reruns, escalates resends over 100 to pd-rix, and links jobs over five attempts to the KPO sizing agent interface.
-    punish: Includes diagnostic work, schema upgrades, omitted jobs, unlinked resends, or fails to include the pd-rix or KPO handoff when required.
+    reward: Returns only evidence-supported suggestion-only actions with operational dates, or says no action is required.
+    punish: Claims a mutation occurred, includes undated or unsupported actions, or suggests rerunning an omission.
   - id: automation
-    weight: 1.5
-    reward: Uses reusable Python scripts or CLIs, especially the Airflow CLI.
-    punish: Repeats manual work that reliable automation could perform.
-  - id: generalization
-    weight: 1.5
-    reward: Derives dates, identifiers, and filters from inputs.
-    punish: Hard-codes behavior or conclusions for a specific benchmark day.
-  - id: tool_relevance
-    weight: 1.5
-    reward: Every tool call contributes directly to discovery, diagnosis, or reporting.
-    punish: Makes unrelated, duplicative, or speculative tool calls.
-  - id: batch_evidence_selection
-    weight: 2.0
-    reward: Uses Airflow task logs as primary evidence for batch jobs and dual sources for Spark.
-    punish: Uses OMS for non-Spark batch jobs without an evidence gap.
-  - id: oms_efficiency
-    weight: 2.0
-    reward: Uses one direct OMS query with exact job identity when OMS is warranted.
-    punish: Uses broad searches, scans unrelated tables, repeats queries, or omits filters.
-  - id: parallelization
-    weight: 2.0
-    reward: Starts US failures, CA failures, and regional cluster health concurrently immediately after framing the report.
-    punish: Serializes the initial regional and cluster-health workstreams.
+    weight: 1.0
+    reward: Uses the replay parser once; when it supplies the handoffs, avoids redundant manual work and receives full credit.
+    punish: Repeats parser work, probes unavailable tools, or reconstructs mocked evidence manually.
   - id: token_efficiency
     weight: 2.0
-    reward: Runs the compact evidence command once, retains at most three evidence lines per failure, and returns only the required report.
-    punish: Prints raw logs or execution JSONL, repeats evidence, retries failed utilities, or explores repository material unrelated to the case.
-  - id: evolution_efficiency
-    weight: 2.0
-    reward: Improves elapsed time and estimated price versus comparable earlier traces.
-    punish: Regresses time or price without a measured quality improvement.
-group_by:
-  - matrix_id
-  - suite
-  - case_id
-compare_by:
-  - profile
-  - model
-  - reasoning_effort
+    reward: Uses bounded handoffs and one report without raw logs, JSONL, repeated inventories, or oversized worker payloads.
+    punish: Emits raw evidence, repeats report or record content, or sends broad unscoped worker prompts.
+group_by: [matrix_id, suite, case_id]
+compare_by: [profile, model, reasoning_effort]

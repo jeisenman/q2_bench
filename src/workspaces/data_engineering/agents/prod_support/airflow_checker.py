@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 
 from workspaces.data_engineering.agents.prod_support.models import (
@@ -10,6 +11,7 @@ from workspaces.data_engineering.agents.prod_support.models import (
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
+    RegionalAirflowFailureSource,
 )
 
 
@@ -51,18 +53,32 @@ class AirflowChecker:
         self,
         failed_since: datetime,
         failed_before: datetime,
+        *,
+        regions: tuple[Region, ...] | None = None,
     ) -> tuple[AirflowFailure, ...]:
         """Return unique selected-region failures in a half-open time window."""
         if failed_since.tzinfo is None or failed_before.tzinfo is None:
             raise AirflowCheckConfigurationError.timezone_required()
         if failed_before <= failed_since:
             raise AirflowCheckConfigurationError.invalid_window()
-        candidates = await self._source.discover_failures(failed_since)
+        selected = frozenset(regions or tuple(self._regions))
+        if not selected:
+            raise AirflowCheckConfigurationError.empty_regions()
+        if isinstance(self._source, RegionalAirflowFailureSource):
+            batches = await asyncio.gather(
+                *(
+                    self._source.discover_region_failures(region, failed_since)
+                    for region in sorted(selected, key=lambda item: item.value)
+                )
+            )
+            candidates = tuple(item for batch in batches for item in batch)
+        else:
+            candidates = await self._source.discover_failures(failed_since)
         return _unique_failures(
             tuple(
                 failure
                 for failure in candidates
-                if failure.region in self._regions
+                if failure.region in selected
                 and failed_since <= failure.end_at < failed_before
             )
         )
