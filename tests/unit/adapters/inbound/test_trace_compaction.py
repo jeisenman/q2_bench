@@ -1,9 +1,10 @@
 from adapters.inbound.trace_compaction import compact_trace_for_judge, redact_text
 
 MAX_COMPACT_OUTPUT = 3_000
+EXPECTED_COMPACT_EVENTS = 2
 
 
-def test_omits_started_events_warnings_and_large_output() -> None:
+def test_keeps_started_events_and_omits_warnings_and_large_output() -> None:
     events = (
         {"type": "item.started", "item": {"type": "command_execution"}},
         {
@@ -25,8 +26,9 @@ def test_omits_started_events_warnings_and_large_output() -> None:
 
     compact = compact_trace_for_judge(events)
 
-    assert len(compact) == 1
-    item = compact[0]["item"]
+    assert len(compact) == EXPECTED_COMPACT_EVENTS
+    assert compact[0]["type"] == "item.started"
+    item = compact[1]["item"]
     assert isinstance(item, dict)
     output = item["aggregated_output"]
     assert isinstance(output, str)

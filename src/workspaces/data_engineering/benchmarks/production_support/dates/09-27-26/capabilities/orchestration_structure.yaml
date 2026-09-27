@@ -12,3 +12,12 @@ cases:
     leaf_agents: [cluster, airflow, reporting]
     prohibit_nested_delegation: true
     regional_airflow_concurrency_is_agent_delegation: false
+  - id: mcp-prod-support-invocation
+    invocation_phrases: ["Do prod support", "Do prod support for yesterday"]
+    required_tool: run_prod_support
+    exact_calls: 1
+    required_response_fields:
+      [links, developer_message, data_internal_message, follow_up_message]
+    response_format: slack_mrkdwn
+    prohibit_code_fences: true
+    prohibit_github_heading_syntax: true

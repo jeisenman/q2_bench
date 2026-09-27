@@ -4,12 +4,12 @@ from datetime import UTC, datetime
 import pytest
 
 from domain import AgentRequest
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
-    ProdSupportAgent,
+    ProductionSupportWorkflow,
 )
-from workspaces.data_engineering.agents.prod_support.models import Region
-from workspaces.data_engineering.agents.prod_support.ports import (
+from workspaces.data_engineering.agents.production_support.models import Region
+from workspaces.data_engineering.agents.production_support.ports import (
     TaskLogUnavailableError,
 )
 from workspaces.data_engineering.agents.resource_discovery import (
@@ -101,7 +101,7 @@ def failure(day: int, log: str) -> AirflowFailure:
 
 
 def test_agent_filters_prior_day_and_classifies_logs() -> None:
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         FakeAirflow(
             (
                 failure(23, "old failure"),
@@ -129,7 +129,7 @@ def test_agent_honors_us_only_scope() -> None:
         end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
         log="failed",
     )
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         FakeAirflow((us_failure, ca_failure)),
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
     )
@@ -144,7 +144,7 @@ def test_agent_honors_us_only_scope() -> None:
 
 
 def test_agent_normalizes_framework_result() -> None:
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         FakeAirflow(()),
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
     )
@@ -160,27 +160,30 @@ def test_agent_normalizes_framework_result() -> None:
 
 
 def test_agent_definition_requires_operational_delivery_workflow() -> None:
-    definition = ProdSupportAgent(FakeAirflow(())).definition
+    definition = ProductionSupportWorkflow(FakeAirflow(())).definition
 
-    assert "Do US prod support" in definition.instructions
-    assert "Do CA prod support" in definition.instructions
-    assert "previous operational day" in definition.instructions
-    assert "cluster-health and Airflow checks concurrently" in definition.instructions
-    assert "D2P or MI3" in definition.instructions
-    assert "No component may delegate further" in definition.instructions
+    assert definition.name == "Orchestrator"
+    assert "CA and US" in definition.instructions
+    assert "ClusterAgent" in definition.instructions
+    assert "AirflowAgent" in definition.instructions
+    assert "Reporter" in definition.instructions
+    assert "BenchBuilderAgent" in definition.instructions
     assert definition.can_delegate is True
-    assert "inspect_cluster_health" in {tool.name for tool in definition.tools}
-    assert "trigger_resource_discovery_agent" in {
-        tool.name for tool in definition.tools
+    assert {tool.name for tool in definition.tools} == {
+        "run_prod_support",
+        "DelegateToClusterAgent",
+        "DelegateToAirflowAgent",
+        "DelegateToTriageAgent",
+        "DelegateToFollowUpAgent",
+        "DelegateToReporter",
+        "DelegateToBenchBuilderAgent",
     }
-    assert definition.version == "19"
-    assert definition.output_template is not None
-    assert definition.output_template.startswith("# Prod Support Report")
+    assert definition.version == "1"
 
 
 def test_agent_reports_missing_task_log_as_developer_evidence_gap() -> None:
     missing_log = failure(24, "")
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         UnavailableLogAirflow((missing_log,), 404),
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
     )
@@ -195,7 +198,7 @@ def test_agent_reports_missing_task_log_as_developer_evidence_gap() -> None:
 
 def test_agent_still_fails_fast_for_non_404_log_errors() -> None:
     missing_log = failure(24, "")
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         UnavailableLogAirflow((missing_log,), 503),
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
     )
@@ -216,7 +219,7 @@ def test_agent_triggers_resource_discovery_for_unique_resend_clients() -> None:
         log="OpportunityValidationException",
     )
     source = FakeResourceSource()
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         FakeAirflow((resend, resend)),
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
         resource_discovery=ResourceDiscoveryAgent(source),
@@ -262,7 +265,7 @@ def test_agent_resolves_valid_client_dags_and_skips_invalid_candidates() -> None
         ),
     )
     source = FakeResourceSource()
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         FakeAirflow(candidates),
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
         resource_discovery=ResourceDiscoveryAgent(source),
@@ -286,7 +289,7 @@ def test_agent_keeps_mi3_when_recovery_cannot_be_verified() -> None:
         log="pod exited 1",
     )
     source = FakeResourceSource()
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         FakeAirflow((mi_failure,)),
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
         resource_discovery=ResourceDiscoveryAgent(source),
@@ -297,7 +300,7 @@ def test_agent_keeps_mi3_when_recovery_cannot_be_verified() -> None:
     assert [identifier.value for identifier in source.identifiers] == [client_id]
     assert outcome.diagnoses[0].kind.value != "omitted"
     assert outcome.failures[0].log
-    assert "  - MI3" not in outcome.data_internal_report
+    assert "US\n- Ongoing\n  - MI3" in outcome.data_internal_report
 
 
 def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
@@ -315,7 +318,7 @@ def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
         "terminal D2P failure evidence",
         recovered=True,
     )
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         source,
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
     )
@@ -328,7 +331,8 @@ def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
     assert any(
         "same DAG and task succeeded" in item for item in outcome.diagnoses[0].evidence
     )
-    assert "  - D2P" in outcome.data_internal_report
+    assert "US\n- Ongoing\n  - D2P" in outcome.data_internal_report
+    assert outcome.follow_up == "- No action is required."
 
 
 def test_agent_does_not_omit_without_same_task_success() -> None:
@@ -341,7 +345,7 @@ def test_agent_does_not_omit_without_same_task_success() -> None:
         end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
     )
     source = ExactLogAirflow((candidate,), "terminal application failure")
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         source,
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
     )
@@ -349,13 +353,13 @@ def test_agent_does_not_omit_without_same_task_success() -> None:
     outcome = asyncio.run(agent.investigate("Do prod support"))
 
     assert outcome.diagnoses[0].kind.value != "omitted"
-    assert "  - D2P" not in outcome.data_internal_report
+    assert "US\n- Ongoing\n  - D2P" in outcome.data_internal_report
 
 
 def test_agent_fetches_exact_log_when_discovery_contains_an_excerpt() -> None:
     discovered = failure(24, "job is still running")
     source = ExactLogAirflow((discovered,), "OOMKilled exact terminal evidence")
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         source,
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
     )
@@ -371,7 +375,7 @@ def test_agent_compacts_large_logs_after_classification() -> None:
     large_log = ("ordinary progress\n" * 10_000) + "OOMKilled terminal evidence"
     discovered = failure(24, "")
     source = ExactLogAirflow((discovered,), large_log)
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         source,
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
     )

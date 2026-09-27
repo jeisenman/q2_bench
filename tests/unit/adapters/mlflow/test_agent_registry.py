@@ -4,7 +4,9 @@ from typing import ClassVar
 import pytest
 
 from adapters.mlflow import agent_registry
-from workspaces.data_engineering.agents.prod_support import PROD_SUPPORT_DEFINITION
+from workspaces.data_engineering.agents.production_support import (
+    PRODUCTION_SUPPORT_DEFINITION,
+)
 
 
 class FakeRun:
@@ -64,17 +66,18 @@ def test_registers_agent_definition_and_current_alias(monkeypatch) -> None:
     monkeypatch.setattr(agent_registry, "import_module", modules.__getitem__)
 
     run_id, version = agent_registry.register_agent_definition(
-        PROD_SUPPORT_DEFINITION,
+        PRODUCTION_SUPPORT_DEFINITION,
         tracking_uri="http://localhost:5000",
         experiment_name="production_operations",
     )
 
     assert (run_id, version) == ("run-2", "2")
-    assert FakeClient.created[0] == "prod-support"
-    assert FakeClient.created[-1] == "prod-support:agent-v19:2"
+    assert FakeClient.created[0] == "Orchestrator"
+    assert FakeClient.created[-1] == "Orchestrator:agent-v1:2"
     logged_definition, path = FakeMlflow.logged["definition"]
     assert path == "agent/definition.json"
-    assert logged_definition["output_template"].startswith("# Prod Support Report")
+    assert "ClusterAgent" in logged_definition["instructions"]
+    assert logged_definition["can_delegate"] is True
 
 
 def test_reuses_existing_registered_agent(monkeypatch) -> None:
@@ -87,12 +90,12 @@ def test_reuses_existing_registered_agent(monkeypatch) -> None:
     monkeypatch.setattr(agent_registry, "import_module", modules.__getitem__)
 
     agent_registry.register_agent_definition(
-        PROD_SUPPORT_DEFINITION,
+        PRODUCTION_SUPPORT_DEFINITION,
         tracking_uri="sqlite:///mlflow.db",
         experiment_name="production_operations",
     )
 
-    assert "prod-support" not in FakeClient.created
+    assert "Orchestrator" not in FakeClient.created
 
 
 def test_registers_agent_in_namespace(monkeypatch) -> None:
@@ -105,15 +108,15 @@ def test_registers_agent_in_namespace(monkeypatch) -> None:
     monkeypatch.setattr(agent_registry, "import_module", modules.__getitem__)
 
     agent_registry.register_agent_definition(
-        PROD_SUPPORT_DEFINITION,
+        PRODUCTION_SUPPORT_DEFINITION,
         tracking_uri="sqlite:///mlflow.db",
         experiment_name="production_operations",
         namespace="data_engineering.production_operations",
     )
 
-    registered_name = "data_engineering.production_operations.prod-support"
+    registered_name = "data_engineering.production_operations.Orchestrator"
     assert FakeClient.created[0] == registered_name
-    assert FakeClient.created[-1] == f"{registered_name}:agent-v19:2"
+    assert FakeClient.created[-1] == f"{registered_name}:agent-v1:2"
     assert FakeMlflow.logged["run"]["tags"]["agent.namespace"] == (
         "data_engineering.production_operations"
     )
@@ -130,7 +133,7 @@ def test_registration_rejects_invalid_family() -> None:
 
     with pytest.raises(ValueError, match="unique names"):
         agent_registry.register_agent_definitions(
-            (PROD_SUPPORT_DEFINITION, PROD_SUPPORT_DEFINITION),
+            (PRODUCTION_SUPPORT_DEFINITION, PRODUCTION_SUPPORT_DEFINITION),
             tracking_uri="sqlite:///mlflow.db",
             experiment_name="production_operations",
             namespace="data_engineering.production_operations",
@@ -140,7 +143,7 @@ def test_registration_rejects_invalid_family() -> None:
 def test_registration_rejects_empty_namespace() -> None:
     with pytest.raises(ValueError, match="namespace must not be empty"):
         agent_registry.register_agent_definition(
-            PROD_SUPPORT_DEFINITION,
+            PRODUCTION_SUPPORT_DEFINITION,
             tracking_uri="sqlite:///mlflow.db",
             experiment_name="production_operations",
             namespace=" . ",

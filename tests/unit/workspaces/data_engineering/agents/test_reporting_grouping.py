@@ -2,13 +2,13 @@ from dataclasses import replace
 from datetime import UTC, date, datetime
 
 from domain import AgentResult
-from workspaces.data_engineering.agents.prod_support.models import (
+from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
     FailureDiagnosis,
     FailureKind,
     Region,
 )
-from workspaces.data_engineering.agents.prod_support.reporting import (
+from workspaces.data_engineering.agents.production_support.reporting import (
     ProdSupportReportContext,
     format_reports_with_context,
 )
@@ -73,8 +73,8 @@ def test_groups_multiple_jobs_for_one_client() -> None:
     )
 
     expected = (
-        "Client A (111) failed on opportunity-save-history, "
-        "opportunities-report, and relationship-quandrants"
+        "Client A (111) failed on opportunity_save_history, "
+        "opportunities_report, and relationship_quandrants"
     )
     assert report.data_internal.count(expected) == 1
     assert report.data_internal.count("Client A (111)") == 1
@@ -125,11 +125,11 @@ def test_groups_shared_job_even_when_one_client_has_another_failure() -> None:
     )
 
     assert (
-        "Client A (111) and Client B (222) failed on opportunity-save-history"
+        "Client A (111) and Client B (222) failed on opportunity_save_history"
         in report.data_internal
     )
-    assert "Client A (111) failed on opportunities-report" in report.data_internal
-    assert report.data_internal.count("opportunity-save-history") == 1
+    assert "Client A (111) failed on opportunities_report" in report.data_internal
+    assert report.data_internal.count("opportunity_save_history") == 1
 
 
 def test_data_internal_retains_high_value_causes() -> None:
@@ -167,7 +167,7 @@ def test_data_internal_retains_high_value_causes() -> None:
     assert "with distinctness validation errors" in report.data_internal
 
 
-def test_cmm_is_collapsed_to_code_and_omitted_from_follow_up_by_default() -> None:
+def test_cmm_is_excluded_from_data_internal_and_follow_up_by_default() -> None:
     client_id = "11111111-1111-4111-8111-111111111111"
     failure = _failure(
         client_id,
@@ -184,12 +184,13 @@ def test_cmm_is_collapsed_to_code_and_omitted_from_follow_up_by_default() -> Non
     )
 
     assert "CMM" in report.developer
-    assert "CA\n- Ongoing\n  - CMM" in report.data_internal
+    assert "CA\n- Good" in report.data_internal
+    assert "CMM" not in report.data_internal
     assert "Client A (111)" not in report.data_internal
     assert "Do you approve re-running" not in report.follow_up
 
 
-def test_configured_omission_codes_are_listed_once_per_region() -> None:
+def test_mi3_and_d2p_omissions_use_regional_shorthand() -> None:
     client_id = "11111111-1111-4111-8111-111111111111"
     failures = (
         _failure(client_id, "delivery_to_promise.delivery_to_promise_data"),
@@ -206,7 +207,7 @@ def test_configured_omission_codes_are_listed_once_per_region() -> None:
         ),
     )
 
-    assert "CA\n- Ongoing\n  - D2P, MI3" in report.data_internal
+    assert "CA\n- Ongoing\n  - MI3, D2P" in report.data_internal
     assert report.data_internal.count("D2P") == 1
     assert report.data_internal.count("MI3") == 1
     assert "Client A (111)" not in report.data_internal

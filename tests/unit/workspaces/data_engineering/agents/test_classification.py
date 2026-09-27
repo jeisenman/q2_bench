@@ -2,11 +2,11 @@ from datetime import UTC, datetime
 
 import pytest
 
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
     classify_log,
 )
-from workspaces.data_engineering.agents.prod_support.models import Region
+from workspaces.data_engineering.agents.production_support.models import Region
 
 
 @pytest.fixture

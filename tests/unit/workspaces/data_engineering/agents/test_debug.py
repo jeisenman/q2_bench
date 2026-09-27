@@ -6,7 +6,7 @@ import pytest
 import yaml
 
 from domain import AgentRequest, AgentResult
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
     Region,
     RegionalClusterHealth,
@@ -39,7 +39,13 @@ class FakeSource:
 
 
 class FakeCluster:
-    async def inspect_health(self, region: Region) -> RegionalClusterHealth:
+    async def inspect_health(
+        self,
+        region: Region,
+        restart_window_start: datetime,
+        restart_window_end: datetime,
+    ) -> RegionalClusterHealth:
+        del restart_window_start, restart_window_end
         return RegionalClusterHealth(
             region=region,
             observed_at=datetime(2026, 9, 26, 16, tzinfo=UTC),

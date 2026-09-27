@@ -1,10 +1,10 @@
 from datetime import UTC, date, datetime
 
-from workspaces.data_engineering.agents.prod_support.evaluation import (
+from workspaces.data_engineering.agents.production_support.evaluation import (
     ProdSupportExpectation,
     evaluate_outcome,
 )
-from workspaces.data_engineering.agents.prod_support.models import (
+from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
     FailureDiagnosis,
     FailureKind,

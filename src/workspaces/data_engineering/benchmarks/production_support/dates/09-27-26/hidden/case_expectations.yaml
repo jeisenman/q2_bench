@@ -34,8 +34,11 @@ required_output_format:
   client_uuid_prefix_length: 3
   developer_cluster_health_position: first
   default_data_internal_omission_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
-  require_represented_omission_codes: true
-  omission_codes_are_final_regional_detail: true
+  shorthand_omission_groups: [mi3, d2p]
+  shorthand_order: [MI3, D2P]
+  shorthand_is_indented_ongoing_detail_when_no_actionable_details: true
+  other_omission_groups_hidden: [subscriber, maintenance, backfill, cmm]
+  region_labels_left_aligned: true
   data_internal_failure_shape: "<client> (<prefix>) failed on <job>"
   data_internal_client_group_shape: "<client> (<prefix>) failed on <job1>, <job2>, and <job3>"
   data_internal_cluster_shape: "<region> cluster is <status>; <symptoms> appear"
@@ -45,6 +48,13 @@ required_output_format:
   kpo_sizing_agent_uri: agent://kpo-sizer/definition
 orchestration_contract:
   top_level_agent: orchestrator
+  mcp_tool: run_prod_support
+  mcp_invocation_phrases: ["Do prod support", "Do prod support for yesterday"]
+  required_response_fields:
+    [links, developer_message, data_internal_message, follow_up_message]
+  response_format: slack_mrkdwn
+  prohibit_response_code_fences: true
+  prohibit_github_heading_syntax: true
   concurrent_leaf_handoffs: [cluster, airflow]
   airflow_regions_concurrent: true
   reporting_calls: 1
@@ -125,14 +135,14 @@ expected_prod_support_message: |
   :bangbang: PROD SUPPORT 2026-09-26 :bangbang:
   US
   - Ongoing
-    - US cluster is unhealthy; get-ra-job-status-baz7v3up is unready and KEDA evidence is unavailable
-    - D2P, MI3, Subscriber
+    - MI3, D2P
   CA
   - Ongoing
-    - CA cluster is unhealthy; airflow-dag-processor-5d89bb769-sdwcn is unready and KEDA evidence is unavailable
-    - Scotiabank (1f0) failed on account-level-opportunity-draw-schedule-history with timeout
-    - Scotiabank (1f0), Scotiabank Data Validation (b49), CIBC Canada Validation (cef), and CIBC Canada (fbf) failed on validate-event-bus-opportunities
-    - D2P, Subscriber, Maintenance, Backfill
+    - Scotiabank (1f0) failed on account_level_opportunity_draw_schedule_history with timeout
+    - Scotiabank (1f0), Scotiabank DV (b49), CIBC Canada Validation (cef), and CIBC Canada (fbf) failed on validate_event_bus_opportunities
+expected_mcp_follow_up_message: |
+  Do you approve these re-runs?
+  - Scotiabank (1f0): account_level_opportunity_draw_schedule_history
 follow_on_message: |
   Follow Ups:
   - Would you like to:
@@ -173,7 +183,9 @@ required_investigations:
   - query OMS only for a proven Spark workload when an exact OMS source is supplied
   - check pod state, restart counts, and KEDA health in both regions
   - resolve every client UUID found in a DAG or task identifier through resource discovery before triage
-omitted_from_data_internal: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+omitted_details_from_data_internal: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+visible_omission_shorthand: [MI3, D2P]
+omitted_from_follow_up: [d2p, mi3, subscriber, maintenance, backfill, cmm]
 resend_policy:
   require_correct_application_for_client: true
   require_resource_discovery: true

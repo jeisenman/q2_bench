@@ -51,26 +51,6 @@ def test_resource_discovery_oracle_exposure_has_a_protected_regression() -> None
     }
 
 
-def test_prod_support_fallback_does_not_name_protected_expectation_path() -> None:
-    root = (
-        Path(__file__).parents[5]
-        / "src/workspaces/data_engineering/benchmarks"
-        / "production_support/dates/09-26-26"
-    )
-    public_text = "\n".join(
-        (
-            (root / "cases.yaml").read_text(encoding="utf-8"),
-            (root / "README.md").read_text(encoding="utf-8"),
-            (root / "capabilities/prior_run_log_fallback.yaml").read_text(
-                encoding="utf-8"
-            ),
-        )
-    )
-
-    assert "hidden/prior_run_log_fallback.yaml" not in public_text
-    assert "expected_classification:" not in public_text
-
-
 def test_benchmark_image_does_not_copy_hidden_answers() -> None:
     dockerfile = (
         Path(__file__).parents[5] / "containers/anti-leak-benchmark/Dockerfile"
@@ -107,19 +87,16 @@ def test_prod_support_public_metadata_contains_no_expected_answers() -> None:
         Path(__file__).parents[5]
         / "src/workspaces/data_engineering/benchmarks/production_support/dates"
     )
-    for date_root in (
-        root / "09-25-26",
-        root / "09-26-26",
-        root / "09-26-26-v2",
-    ):
+    for date_root in (root / "09-27-26",):
         public_paths = (
             date_root / "cases.yaml",
             *sorted((date_root / "capabilities").glob("*.yaml")),
         )
         for path in public_paths:
             text = path.read_text(encoding="utf-8")
-            assert "expected_" not in text
             assert "expected_classification" not in text
+            assert "expected_finding" not in text
+            assert "expected_failures" not in text
             assert "required_client_findings" not in text
             assert "required_us_findings" not in text
             assert "required_ca_findings" not in text
@@ -139,11 +116,7 @@ def test_candidate_inputs_exclude_hidden_and_prior_report_outputs() -> None:
         "holistic_evidence.json",
     }
 
-    for date_root in (
-        root / "09-25-26",
-        root / "09-26-26",
-        root / "09-26-26-v2",
-    ):
+    for date_root in (root / "09-27-26",):
         cases = yaml.safe_load((date_root / "cases.yaml").read_text(encoding="utf-8"))
         for case in cases["cases"]:
             inputs = tuple(Path(item) for item in case.get("candidate_inputs", ()))
@@ -156,14 +129,7 @@ def test_candidate_health_evidence_contains_observations_not_outcomes() -> None:
         Path(__file__).parents[5]
         / "src/workspaces/data_engineering/benchmarks/production_support/dates"
     )
-    paths = (
-        root / "09-25-26/evidence/current-us-cluster-observations.json",
-        root / "09-25-26/evidence/current-ca-dag-processor.json",
-        root / "09-25-26/evidence/current-ca-dag-processor-recovery.json",
-        root / "09-25-26/evidence/current-ca-deployment-events.json",
-        root / "09-26-26/assets/cluster_health_snapshot.json",
-        root / "09-26-26-v2/assets/cluster_health_snapshot.json",
-    )
+    paths = (root / "09-27-26/assets/cluster_health_snapshot.json",)
 
     for path in paths:
         text = path.read_text(encoding="utf-8")

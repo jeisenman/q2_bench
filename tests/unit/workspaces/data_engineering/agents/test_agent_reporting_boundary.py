@@ -3,13 +3,13 @@ import json
 from datetime import UTC, datetime
 
 from domain import AgentDefinition, AgentRequest, AgentResult
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
     InvestigationServices,
-    ProdSupportAgent,
+    ProductionSupportWorkflow,
 )
-from workspaces.data_engineering.agents.prod_support.models import Region
-from workspaces.data_engineering.agents.prod_support.ports import (
+from workspaces.data_engineering.agents.production_support.models import Region
+from workspaces.data_engineering.agents.production_support.ports import (
     TaskLogUnavailableError,
 )
 
@@ -54,10 +54,7 @@ class FakeReportRuntime:
                         "  - US Cluster Health: healthy\n"
                         "  - CA Cluster Health: healthy"
                     ),
-                    "data_internal": (
-                        ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:\n"
-                        "US\n- Good\nCA\n- Good"
-                    ),
+                    "data_internal": payload["deterministic_drafts"]["data_internal"],
                     "follow_up": payload["deterministic_drafts"]["follow_up"],
                 }
             ),
@@ -67,7 +64,7 @@ class FakeReportRuntime:
 
 def test_agent_uses_one_reporting_call() -> None:
     runtime = FakeReportRuntime()
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         UnavailableLogAirflow(),
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
         investigation=InvestigationServices(report_runtime=runtime),

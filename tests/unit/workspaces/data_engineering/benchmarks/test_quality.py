@@ -1,7 +1,7 @@
 from datetime import date
 
-from workspaces.data_engineering.agents.prod_support import airflow_failure_url
-from workspaces.data_engineering.agents.prod_support.models import Region
+from workspaces.data_engineering.agents.production_support import airflow_failure_url
+from workspaces.data_engineering.agents.production_support.models import Region
 from workspaces.data_engineering.benchmarks import (
     ComputeKind,
     TaskObservation,

@@ -1,28 +1,24 @@
-import json
-from pathlib import Path
-
 from workspaces.data_engineering.benchmarks import (
     DagProcessorObservation,
     assess_dag_processor,
 )
 
-EVIDENCE = (
-    Path(__file__).parents[5]
-    / "src/workspaces/data_engineering/benchmarks"
-    / "production_support/dates/09-25-26/evidence"
-    / "current-ca-dag-processor-recovery.json"
-)
-
 
 def _observation(name: str) -> DagProcessorObservation:
-    raw = json.loads(EVIDENCE.read_text(encoding="utf-8"))
-    selected = next(item for item in raw["observations"] if item["name"] == name)
+    if name == "pre_bounce":
+        return DagProcessorObservation(
+            expected_l3_main_count=6,
+            observed_l3_main_count=4,
+            logs_available=False,
+            restart_count=3,
+            healthy=False,
+        )
     return DagProcessorObservation(
-        expected_l3_main_count=selected["l3_main"]["expected_count"],
-        observed_l3_main_count=selected["l3_main"]["observed_active_count"],
-        logs_available=selected["dag_processor"]["logs_available"],
-        restart_count=selected["dag_processor"]["restart_count"],
-        healthy=selected["dag_processor"]["healthy"],
+        expected_l3_main_count=6,
+        observed_l3_main_count=6,
+        logs_available=True,
+        restart_count=0,
+        healthy=True,
     )
 
 

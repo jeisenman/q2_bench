@@ -16,6 +16,8 @@ cases:
     large_resend_owner: pd-rix
     kpo_sizing_agent_uri: agent://kpo-sizer/definition
     requirements:
+      - expose the MCP approval prompt as "Do you approve these re-runs?"
+      - list only evidence-supported non-omitted retry candidates after that prompt
       - resolve and include a reviewed application link through Resource Discovery with every offered event resend
       - when routing is unresolved, ask to resolve the production link first and do not offer an unlinked resend
       - when client identity is unresolved, ask a human to resolve it and do not offer remediation for that client

@@ -71,6 +71,31 @@ def test_source_authenticates_and_normalizes_client_lookup() -> None:
     assert lookup.get_header("Authorization") == "Bearer secret-token"
 
 
+def test_source_shortens_scotiabank_data_validation_name() -> None:
+    source = ResourceDiscoveryApiSource(
+        config(),
+        FakeTransport(
+            [
+                {
+                    "name": "Scotiabank - Data Validation",
+                    "provisionedClientId": "b4916353-ef8a-4af8-9601-74305858e905",
+                }
+            ]
+        ),
+    )
+
+    records = asyncio.run(
+        source.lookup(
+            ResourceIdentifier(
+                IdentifierKind.CLIENT_ID,
+                "b4916353-ef8a-4af8-9601-74305858e905",
+            )
+        )
+    )
+
+    assert records[0]["client_name"] == "Scotiabank DV"
+
+
 def test_source_queries_resource_endpoint_for_resource_fields() -> None:
     transport = FakeTransport({"resourceId": "resource-1", "database": "db"})
     source = ResourceDiscoveryApiSource(config(), transport)

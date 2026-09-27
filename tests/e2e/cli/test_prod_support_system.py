@@ -1,11 +1,11 @@
 import asyncio
 from datetime import UTC, datetime
 
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
-    ProdSupportAgent,
+    ProductionSupportWorkflow,
 )
-from workspaces.data_engineering.agents.prod_support.models import Region
+from workspaces.data_engineering.agents.production_support.models import Region
 
 
 class ReplayDay:
@@ -50,7 +50,7 @@ def test_full_day_replay_filters_classifies_and_formats_all_failures() -> None:
         datetime(2026, 9, 24, 13, tzinfo=UTC),
         log="Traceback: application failure",
     )
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         ReplayDay((old, spark, batch)),
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
     )

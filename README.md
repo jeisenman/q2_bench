@@ -116,7 +116,7 @@ Publish a curated recorded case to the experiment's Evaluations view:
 uv run agentbench evaluate prod-support \
   --case prod-support-us-ca-2026-09-25 \
   --recorded-result \
-  var/benchmark_data/prod_support/2026-09-24/steps/06-agent-result.json
+  var/benchmark_data/production_support/2026-09-24/steps/06-agent-result.json
 ```
 
 Local mutable state is written beneath the ignored `var/` directory.
@@ -156,7 +156,7 @@ variables:
 
 ```bash
 CASE_ID=prod-support-us-ca-2026-09-25 \
-DATASET_PATH=/workspace/var/benchmark_data/prod_support/2026-09-24/steps/02-airflow-capture/2026-09-24/airflow_failures.json \
+DATASET_PATH=/workspace/var/benchmark_data/production_support/2026-09-24/steps/02-airflow-capture/2026-09-24/airflow_failures.json \
 docker compose run --rm --no-deps evaluation
 ```
 
@@ -208,15 +208,15 @@ placeholders rather than benchmark case answers.
 ```python
 from pathlib import Path
 
-from workspaces.data_engineering.agents.prod_support import (
-    ProdSupportAgent,
+from workspaces.data_engineering.agents.production_support import (
+    ProductionSupportWorkflow,
     ReplayAirflowFailureSource,
 )
 
 source = ReplayAirflowFailureSource(
-    Path("var/benchmark_data/prod_support/2026-09-25/airflow_failures.json")
+    Path("var/benchmark_data/production_support/2026-09-25/airflow_failures.json")
 )
-agent = ProdSupportAgent(source)
+agent = ProductionSupportWorkflow(source)
 ```
 
 ## Import agents into MCP servers
@@ -258,15 +258,18 @@ docker compose run --rm --no-deps prod-support-mcp
 Production mode fails immediately when any required US or CA Airflow credential
 or Resource Discovery credential is missing. It discovers failed task
 instances, reads exact task logs, and resolves resend clients through genuine
-Resource Discovery API records. It uses the OpenAI Agents SDK with
-`openai.gpt-5.6-luna` for the four report specialists, so the runtime's OpenAI
-authentication must also be configured. It does not retry jobs or mutate
-production systems.
+Resource Discovery API records. Report specialists run through the Codex CLI
+using the Bedrock provider, AWS STS session, and model configured in the
+read-only host `CODEX_HOME` mounted from `~/.bedrock_codex`. OpenAI API keys are
+not required. It does not retry jobs or mutate production systems.
 
 The tool's `output` is delivery-ready and contains `URLs to validate`, `Message
-for developer`, a fenced Markdown `Message for Data Internal Channel`, and
-`Follow Up` sections. The response also exposes the URLs as `validation_urls`
-while retaining the separate channel-specific report fields.
+for developer`, `Message for Data Internal Channel`, and `Follow Up` sections.
+The same complete text is available as `full_report`. The response also exposes
+the requested report sections directly as `links`, `message_for_developer`,
+`message_for_data_internal`, and `follow_up`. The older `validation_urls`,
+`developer_report`, and `data_internal_report` fields remain available for
+compatibility.
 
 The required Airflow `.env` names are `USAIRFLORUSER`,
 `USAIRFLOWPASSWORD`, `CAAIRFLORUSER`, and `CAAIRFLOWPASSWORD`. Resource
@@ -301,7 +304,7 @@ For deterministic replay, configure a captured dataset:
 
 ```bash
 PROD_SUPPORT_SOURCE=replay \
-PROD_SUPPORT_DATASET=var/benchmark_data/prod_support/2026-09-25/airflow_failures.json \
+PROD_SUPPORT_DATASET=var/benchmark_data/production_support/2026-09-25/airflow_failures.json \
 uv run prod-support-mcp
 ```
 
@@ -335,7 +338,7 @@ uv run agentbench capture-prod-support --date 2026-09-25 --scope ca
 The resulting local bundle is written under:
 
 ```text
-var/benchmark_data/prod_support/2026-09-25/
+var/benchmark_data/production_support/2026-09-25/
 ```
 
 It contains redacted Airflow failures, pod/restart/KEDA health, reviewed

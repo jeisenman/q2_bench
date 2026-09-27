@@ -1,5 +1,5 @@
 schema_version: 1
-matrix_id: prod-support-09-27-26
+matrix_id: prod-support-handoffs-09-27-26
 suite: 09-27-26
 benchmark: production-support
 experiment_name: production_operations
@@ -8,72 +8,56 @@ execution:
   container_image: agentsdk-agentbench:local
   parallelism: 5
   sandbox: read-only
-  artifact_root: var/benchmark_matrix/prod-support-09-27-26
+  artifact_root: var/benchmark_matrix/prod-support-handoffs-09-27-26
 judge_configuration: sol-high-judge
 rubric:
-  - id: request_scope
-    weight: 2.5
-    reward: Resolves the date and US, CA, or combined scope; generic requests default to both regions and the previous operational day.
-    punish: Uses the wrong date, queries an unrequested region, or omits a requested region.
-  - id: orchestration_structure
+  - id: named_agent_invocation
     weight: 3.0
-    reward: Starts one Cluster and one Airflow handoff concurrently, allows regional I/O concurrency inside Airflow, and starts Reporting after both return.
-    punish: Serializes Cluster and Airflow, creates regional agents, or reports before either handoff completes.
-  - id: leaf_delegation
+    reward: Invokes every required named agent and no unrelated agent.
+    punish: Omits a required agent, invents a role, or performs specialist work in the orchestrator.
+  - id: parent_child_attribution
     weight: 2.0
-    reward: Only the orchestrator delegates; Cluster, Airflow, and Reporting complete work directly without descendants.
-    punish: Any component or worker spawns, hands off to, or delegates to another agent.
-  - id: bounded_airflow_links
-    weight: 1.5
-    reward: Selected-region failure and DAG-grid links use the exact bounded operational window.
-    punish: Links are one-sided, encoded incorrectly, use the wrong date, or include an unselected region.
-  - id: client_identity_resolution
-    weight: 2.0
-    reward: Uses reviewed names and three-character prefixes; unresolved identities trigger the exact dated human-help action and no remediation for that client.
-    punish: Emits raw identifiers, bare prefixes, guessed names, an unreviewed application route, or a resend or rerun for an unresolved client.
-  - id: cluster_health
-    weight: 2.5
-    reward: Reports selected-region pod state, restarts, KEDA health, warnings, and evidence gaps without requiring DAG or OMS evidence.
-    punish: Omits pods, restarts, or KEDA; checks an unselected region; or invents health.
-  - id: complete_failure_inventory
+    reward: Attributes each handoff to the parent declared by the case contract.
+    punish: Loses parent attribution or reports an incorrect direct orchestrator handoff.
+  - id: handoff_input_contract
     weight: 3.0
-    reward: Airflow returns every selected-region failure exactly once and Reporting preserves every client-job pair.
-    punish: Drops, duplicates, or moves a failure to the wrong region.
-  - id: complete_log_retrieval
-    weight: 2.0
-    reward: Retrieves bounded exact or prior same-task evidence for every failure, including omission candidates, and records unavailable evidence explicitly.
-    punish: Skips a failure, uses unrelated history, prints raw logs, or treats an omission label as permission to avoid the exact failed-task log.
-  - id: omitted_job_routing
-    weight: 2.5
-    reward: Reads the exact failure log, verifies a same-DAG/task success inside the window, then puts each verified omission code on the final regional detail line.
-    punish: Drops an omission candidate, collapses one without an in-window success, penalizes exact-log reading, exposes coded client details, repeats a code, or misplaces codes.
-  - id: conditional_oms
-    weight: 1.5
-    reward: Uses exact OMS only for a proven Spark workload with a supplied source; otherwise performs no OMS work and receives full credit.
-    punish: Queries OMS without both prerequisites, uses a broad query, or penalizes a correct no-OMS path.
-  - id: reporting_boundary
-    weight: 2.0
-    reward: Performs one Reporting pass over compact handoffs and returns its complete Developer, Data Internal, and Follow Up output verbatim.
-    punish: Invokes separate audience agents, repeats reporting, passes raw logs, omits an output, or lets the orchestrator rewrite the Reporting output.
-  - id: grouped_reporting
+    reward: Supplies every required input with the exact date, region, identity, and scope.
+    punish: Sends a broad prompt, omits required fields, or changes task identity.
+  - id: handoff_output_contract
     weight: 3.0
-    reward: Groups clients sharing a job, then lists only each grouped client's other jobs, with every client-job pair once.
-    punish: Repeats a shared job, splits groupable clients, or repeats a client-job pair.
-  - id: regional_consistency
-    weight: 2.5
-    reward: Keeps every finding and health result in its source region and avoids contradictory verdicts.
-    punish: Mixes regions or labels the same cluster both healthy and unhealthy from one evidence set.
-  - id: follow_up_actionability
+    reward: Returns every required output without dropping failures or inventing evidence.
+    punish: Returns an incomplete payload, raw logs, hidden expectations, or unsupported conclusions.
+  - id: handoff_cardinality
     weight: 2.0
-    reward: Returns only canonical dated action templates, including exact client-named resend wording and human escalation for unresolved identities, or says no action is required.
-    punish: Claims a mutation, paraphrases a canonical action, uses broad review or investigation language, includes an undated action, or remediates an omission or unresolved client.
-  - id: automation
-    weight: 1.0
-    reward: Uses the replay parser once; when it supplies the handoffs, avoids redundant manual work and receives full credit.
-    punish: Repeats parser work, probes unavailable tools, or reconstructs mocked evidence manually.
+    reward: Keeps each named handoff within its declared call bounds.
+    punish: Skips, duplicates, retries, or repeats a handoff outside its bounds.
+  - id: handoff_ordering
+    weight: 3.0
+    reward: Honors dependencies and parallelizes independent work within the limit.
+    punish: Violates dependencies, serializes independent work, or exceeds max_parallel.
+  - id: delegation_boundary
+    weight: 2.5
+    reward: Keeps operational specialists leaf-only and allows declared BenchBuilder delegation.
+    punish: A leaf delegates, BenchBuilder exceeds five workers, or work escapes the graph.
+  - id: output_authority
+    weight: 3.0
+    reward: Returns the declared authoritative output verbatim.
+    punish: The orchestrator or BenchBuilder rewrites, truncates, or replaces that output.
+  - id: production_mutation_boundary
+    weight: 3.0
+    reward: Keeps benchmark cases read-only and FollowUp plan-only without approval.
+    punish: Mutates production or treats benchmark construction as retry authorization.
+  - id: benchmark_case_quality
+    weight: 2.5
+    reward: Builds a current-day redacted draft marked for independent review.
+    punish: Retrofitted prior suites, raw logs, credentials, trusted self-authored truth, or overwrites.
+  - id: mcp_output_continuity
+    weight: 3.0
+    reward: Preserves all normal MCP fields while adding namespaced artifact metadata.
+    punish: Replaces or omits normal MCP fields when benchmark construction is requested.
   - id: token_efficiency
-    weight: 2.0
-    reward: Uses bounded handoffs and one report without raw logs, JSONL, repeated inventories, or oversized worker payloads.
-    punish: Emits raw evidence, repeats report or record content, or sends broad unscoped worker prompts.
+    weight: 1.0
+    reward: Uses bounded payloads without repeated inventories or raw evidence.
+    punish: Repeats reports, emits raw logs, or sends oversized unscoped handoffs.
 group_by: [matrix_id, suite, case_id]
 compare_by: [profile, model, reasoning_effort]

@@ -10,7 +10,7 @@ AGENTS_PATH = ROOT / "src/workspaces/data_engineering/benchmarks/agent-manifest.
 BENCHMARK_PATH = (
     ROOT
     / "src/workspaces/data_engineering/benchmarks/production_support"
-    / "dates/09-25-26/evaluation.yaml"
+    / "dates/09-27-26/evaluation.yaml"
 )
 CASES_PATH = BENCHMARK_PATH.with_name("cases.yaml")
 ARTIFACT_COUNT = 2
@@ -126,7 +126,7 @@ def test_publishes_parent_and_nested_matrix_runs(monkeypatch, tmp_path) -> None:
             BENCHMARK_PATH,
             AGENTS_PATH,
             CASES_PATH,
-            "prod-support-us-ca-2026-09-25",
+            "handoff-bench-builder-agent-2026-09-26",
         ),
         (result,),
         tracking_uri="http://localhost:5000",

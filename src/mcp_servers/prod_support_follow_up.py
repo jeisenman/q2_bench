@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 from adapters.airflow import AirflowApiSource
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     FollowUpAgent,
     Region,
     RetryCandidate,

@@ -15,6 +15,7 @@ from workspaces.data_engineering.agents.resource_discovery import (
     IdentifierKind,
     ResourceIdentifier,
     ResourceRecord,
+    parse_client_name,
 )
 
 TOKEN_URL = "https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
@@ -218,7 +219,7 @@ def _normalize_record(record: Mapping[str, object]) -> ResourceRecord:
         "routingSource": "routing_source",
         "prodSupportIgnore": "prod_support_ignore",
     }
-    return {
+    normalized = {
         aliases.get(name, name): value
         for name, value in record.items()
         if aliases.get(name, name)
@@ -242,3 +243,7 @@ def _normalize_record(record: Mapping[str, object]) -> ResourceRecord:
             "prod_support_ignore",
         }
     }
+    client_name = normalized.get("client_name")
+    if isinstance(client_name, str):
+        normalized["client_name"] = parse_client_name(client_name)
+    return normalized

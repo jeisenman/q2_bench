@@ -1,0 +1,62 @@
+schema_version: 1
+capability: named_agent_handoffs
+description: Measure each orchestrator handoff against its explicit responsibility.
+cases:
+  - agent: ClusterAgent
+    parent: Orchestrator
+    responsibility: Return evidence-qualified regional cluster health.
+    tools: [inspect_cluster_health]
+    required_inputs: [regions, operational_start, operational_end]
+    required_outputs: [region, status, observed_at, evidence]
+    production_mutation: prohibited
+  - agent: AirflowAgent
+    parent: Orchestrator
+    responsibility: Run failure discovery and return every failure as a complete bullet.
+    tools:
+      - discover_airflow_failures
+      - fetch_airflow_task_log
+      - inspect_airflow_workload
+      - query_oms_job
+      - classify_failure
+      - trigger_resource_discovery_agent
+    required_inputs: [regions, operational_start, operational_end, omitted_jobs]
+    required_outputs: [developer_message, failures, classifications]
+    production_mutation: prohibited
+  - agent: TriageAgent
+    parent: Orchestrator
+    responsibility: Return the deterministic not-setup placeholder.
+    tools: []
+    required_inputs: [failure]
+    required_outputs: [message]
+    exact_output: "Triage agent hasn't been setup."
+    production_mutation: prohibited
+  - agent: FollowUpAgent
+    parent: Orchestrator
+    responsibility: Plan exact Airflow retries and execute only after approval.
+    tools: [plan_airflow_retries, execute_airflow_retries]
+    required_inputs: [direction, retry_candidates]
+    required_outputs: [plan_id, task_instances, approval_required]
+    production_mutation: approval_gated
+  - agent: Reporter
+    parent: Orchestrator
+    responsibility: Render the complete authoritative production-support report.
+    tools: []
+    required_inputs: [cluster_findings, airflow_findings, follow_up]
+    required_outputs: [full_report, developer, data_internal, follow_up]
+    output_authoritative: true
+    production_mutation: prohibited
+  - agent: BenchBuilderAgent
+    parent: Orchestrator
+    responsibility: Build a redacted review-required case for the current day.
+    tools:
+      - DelegateToClusterAgent
+      - DelegateToAirflowAgent
+      - DelegateToTriageAgent
+      - DelegateToFollowUpAgent
+      - DelegateToReporter
+      - WriteDailyBenchmarkCase
+    required_inputs: [prompt, operational_outcome, correlation_id]
+    required_outputs: [case, expected_behavior, manifest, review_required]
+    max_parallel: 5
+    can_delegate: true
+    production_mutation: benchmark_artifacts_only

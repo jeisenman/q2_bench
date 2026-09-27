@@ -49,7 +49,17 @@ def _kubectl(context: str, resource: str) -> dict[str, Any]:
     return value
 
 
-def _pod_health(payload: dict[str, Any]) -> tuple[bool, int, tuple[str, ...]]:
+def _parse_timestamp(value: object) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _pod_health(
+    payload: dict[str, Any],
+    restart_window_start: datetime,
+    restart_window_end: datetime,
+) -> tuple[bool, int, int, tuple[str, ...]]:
     pods = tuple(
         item
         for item in payload.get("items", ())
@@ -58,11 +68,29 @@ def _pod_health(payload: dict[str, Any]) -> tuple[bool, int, tuple[str, ...]]:
     )
     unready: list[str] = []
     restart_count = 0
+    cumulative_restart_count = 0
     for pod in pods:
         metadata = pod.get("metadata", {})
         status = pod.get("status", {})
         statuses = tuple(status.get("containerStatuses") or ())
-        restart_count += sum(int(item.get("restartCount", 0)) for item in statuses)
+        cumulative_restart_count += sum(
+            int(item.get("restartCount", 0)) for item in statuses
+        )
+        restart_count += sum(
+            1
+            for item in statuses
+            if (
+                (
+                    finished_at := _parse_timestamp(
+                        item.get("lastState", {})
+                        .get("terminated", {})
+                        .get("finishedAt")
+                    )
+                )
+                is not None
+                and restart_window_start <= finished_at < restart_window_end
+            )
+        )
         if (
             status.get("phase") != "Running"
             or not statuses
@@ -74,7 +102,7 @@ def _pod_health(payload: dict[str, Any]) -> tuple[bool, int, tuple[str, ...]]:
         if unready
         else (f"{len(pods)} active pods are running and ready",)
     )
-    return not unready, restart_count, symptoms
+    return not unready, restart_count, cumulative_restart_count, symptoms
 
 
 def _keda_health(payload: dict[str, Any]) -> str:
@@ -94,10 +122,23 @@ def _keda_health(payload: dict[str, Any]) -> str:
     return "unknown"
 
 
-def inspect_region(region: str) -> dict[str, object]:
+def inspect_region(
+    region: str,
+    restart_window_start: datetime,
+    restart_window_end: datetime,
+) -> dict[str, object]:
     """Return one read-only regional cluster-health observation."""
     context = REGION_CONTEXTS[region]
-    pods_healthy, restart_count, symptoms = _pod_health(_kubectl(context, "pods"))
+    (
+        pods_healthy,
+        restart_count,
+        cumulative_restart_count,
+        symptoms,
+    ) = _pod_health(
+        _kubectl(context, "pods"),
+        restart_window_start,
+        restart_window_end,
+    )
     warnings: tuple[str, ...] = ()
     try:
         keda_status = _keda_health(_kubectl(context, "scaledobjects.keda.sh"))
@@ -109,6 +150,9 @@ def inspect_region(region: str) -> dict[str, object]:
         "observed_at": datetime.now(UTC).isoformat(),
         "pods_healthy": pods_healthy,
         "restart_count": restart_count,
+        "cumulative_restart_count": cumulative_restart_count,
+        "restart_window_start": restart_window_start.isoformat(),
+        "restart_window_end": restart_window_end.isoformat(),
         "keda_status": keda_status,
         "symptoms": symptoms,
         "warnings": warnings,
@@ -119,10 +163,21 @@ def main() -> None:
     """Run the selected regional health check and emit JSON."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--region", choices=tuple(REGION_CONTEXTS), required=True)
+    parser.add_argument("--since", type=datetime.fromisoformat, required=True)
+    parser.add_argument("--before", type=datetime.fromisoformat, required=True)
     arguments = parser.parse_args()
-    sys.stdout.write(
-        f"{json.dumps(inspect_region(arguments.region), sort_keys=True)}\n"
+    if (
+        arguments.since.tzinfo is None
+        or arguments.before.tzinfo is None
+        or arguments.since >= arguments.before
+    ):
+        parser.error("--since and --before must be timezone-aware and ordered")
+    payload = inspect_region(
+        arguments.region,
+        arguments.since,
+        arguments.before,
     )
+    sys.stdout.write(f"{json.dumps(payload, sort_keys=True)}\n")
 
 
 if __name__ == "__main__":

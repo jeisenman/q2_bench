@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from domain import AgentRequest, AgentResult
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
     Region,
     RegionalClusterHealth,
@@ -81,7 +81,13 @@ class FakeCluster:
     def __init__(self) -> None:
         self.regions: list[Region] = []
 
-    async def inspect_health(self, region: Region) -> RegionalClusterHealth:
+    async def inspect_health(
+        self,
+        region: Region,
+        restart_window_start: datetime,
+        restart_window_end: datetime,
+    ) -> RegionalClusterHealth:
+        del restart_window_start, restart_window_end
         self.regions.append(region)
         return RegionalClusterHealth(
             region=region,
@@ -206,7 +212,13 @@ def test_replays_captured_cluster_and_resource_results(tmp_path: Path) -> None:
     cluster = collection_replay.CapturedClusterHealthSource(cluster_path)
     resources = collection_replay.CapturedResourceDiscoveryInvoker(resource_path)
 
-    health = asyncio.run(cluster.inspect_health(Region.CA_02))
+    health = asyncio.run(
+        cluster.inspect_health(
+            Region.CA_02,
+            datetime(2026, 9, 25, 5, tzinfo=UTC),
+            datetime(2026, 9, 26, 5, tzinfo=UTC),
+        )
+    )
     found = asyncio.run(
         resources.run(
             AgentRequest(
@@ -237,7 +249,13 @@ def test_replays_captured_cluster_and_resource_results(tmp_path: Path) -> None:
     assert dict(found.attributes)["client_name"] == "Client A"
     assert dict(missing.attributes)["status"] == "not_found"
     with pytest.raises(collection_replay.CaptureReplayError, match="does not contain"):
-        asyncio.run(cluster.inspect_health(Region.US_01))
+        asyncio.run(
+            cluster.inspect_health(
+                Region.US_01,
+                datetime(2026, 9, 25, 5, tzinfo=UTC),
+                datetime(2026, 9, 26, 5, tzinfo=UTC),
+            )
+        )
     with pytest.raises(
         collection_replay.CaptureReplayError,
         match="identifier_value",

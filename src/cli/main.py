@@ -30,9 +30,9 @@ from cli.prod_support_replay import (
     run_replay_case,
     write_recorded_outcome,
 )
-from workspaces.data_engineering.agents.prod_support import (
-    PROD_SUPPORT_AGENT_DEFINITIONS,
+from workspaces.data_engineering.agents.production_support import (
     PROD_SUPPORT_MLFLOW_NAMESPACE,
+    PRODUCTION_SUPPORT_AGENT_DEFINITIONS,
 )
 from workspaces.data_engineering.benchmarks import (
     default_catalog,
@@ -43,7 +43,7 @@ DEFAULT_TRACKING_URI = "sqlite:///var/mlflow/backend.db"
 DEFAULT_ARTIFACT_ROOT = Path("var/mlflow/artifacts")
 PROD_SUPPORT_CASES = Path(
     "src/workspaces/data_engineering/benchmarks/"
-    "production_support/dates/09-25-26/cases.yaml"
+    "production_support/dates/09-27-26/cases.yaml"
 )
 DEFAULT_ASSISTANT_CONFIG = Path.home() / ".mlflow/assistant/config.json"
 DEFAULT_AGENT_CONFIGURATIONS = Path(
@@ -51,13 +51,13 @@ DEFAULT_AGENT_CONFIGURATIONS = Path(
 )
 DEFAULT_MATRIX_BENCHMARK = Path(
     "src/workspaces/data_engineering/benchmarks/production_support/"
-    "dates/09-25-26/evaluation.yaml"
+    "dates/09-27-26/evaluation.yaml"
 )
 DEFAULT_MATRIX_CASES = Path(
     "src/workspaces/data_engineering/benchmarks/production_support/"
-    "dates/09-25-26/cases.yaml"
+    "dates/09-27-26/cases.yaml"
 )
-DEFAULT_MATRIX_CASE = "prod-support-us-ca-2026-09-25"
+DEFAULT_MATRIX_CASE = "prod-support-us-ca-operational-2026-09-26"
 
 
 @click.group()
@@ -108,7 +108,7 @@ def register_agent(agent: str, tracking_uri: str) -> None:
     """Register an agent family in its MLflow namespace."""
     del agent
     registrations = register_agent_definitions(
-        PROD_SUPPORT_AGENT_DEFINITIONS,
+        PRODUCTION_SUPPORT_AGENT_DEFINITIONS,
         tracking_uri=tracking_uri,
         experiment_name="production_operations",
         namespace=PROD_SUPPORT_MLFLOW_NAMESPACE,

@@ -2,68 +2,41 @@ schema_version: 1
 suite_date: "2026-09-27"
 operational_date: "2026-09-26"
 directory_date_format: MM-DD-YY
-benchmark_id: data_engineering.production_operations.prod_support
+benchmark_id: data_engineering.production_operations.production_support
 description: Evaluate prod-support behavior for the 2026-09-26 operational day.
 layers:
   capabilities:
-    description: Test deterministic production-support capabilities independently.
+    description: Test named agent responsibilities and handoff payloads independently.
     fixtures:
-      - capabilities/date_resolution.yaml
-      - capabilities/request_scope.yaml
-      - capabilities/orchestration_structure.yaml
-      - capabilities/failure_discovery.yaml
-      - capabilities/client_identity_resolution.yaml
-      - capabilities/complete_log_retrieval.yaml
-      - capabilities/evidence_efficiency.yaml
-      - capabilities/log_classification.yaml
-      - capabilities/spark_evidence.yaml
-      - capabilities/prior_run_log_fallback.yaml
-      - capabilities/cluster_health.yaml
-      - capabilities/channel_filtering.yaml
-      - capabilities/report_configuration.yaml
-      - capabilities/resend_routing.yaml
-      - capabilities/developer_message.yaml
-      - capabilities/prod_support_message.yaml
-      - capabilities/follow_up_actions.yaml
+      - capabilities/agent_handoffs.yaml
     dimensions:
-      - query_translation
-      - request_scope
-      - orchestration_structure
-      - leaf_delegation
-      - bounded_query_translation
-      - failure_recall
-      - client_identity_resolution
-      - complete_log_retrieval
-      - evidence_efficiency
-      - dag_existence
-      - diagnosis_accuracy
-      - parallel_evidence_collection
-      - timeout_diagnosis
-      - historical_log_fallback
-      - cluster_health
-      - omitted_job_filtering
-      - data_internal_configuration
-      - resource_routing
-      - resend_reporting
-      - regional_reporting
-      - regional_consistency
-      - contradiction_detection
-      - grouped_reporting
-      - remediation_safety
-      - response_formatting
-      - developer_message
-      - prod_support_message
-      - follow_up_actionability
+      - named_agent_invocation
+      - parent_child_attribution
+      - handoff_input_contract
+      - handoff_output_contract
+      - handoff_cardinality
+      - handoff_ordering
+      - delegation_boundary
+      - output_authority
+      - production_mutation_boundary
   coordination:
-    description: Test the fixed one-level component handoffs and reporting boundary.
+    description: Test case-specific orchestration and benchmark-building handoffs.
     dimensions:
-      - scope_handoff
       - cluster_airflow_parallelization
-      - regional_airflow_io_parallelization
-      - compact_evidence_handoff
-      - single_reporting_pass
-      - leaf_delegation
+      - triage_placeholder
+      - follow_up_approval
+      - reporter_authority
+      - bench_builder_trigger
+      - benchmark_delegation_limit
+      - mcp_output_continuity
   system:
-    description: Test the full prompt-to-report workflow against recorded evidence.
+    description: Test focused handoffs and the full report-plus-benchmark workflow.
     cases:
       - prod-support-us-ca-operational-2026-09-26
+      - mcp-prod-support-yesterday-2026-09-26
+      - handoff-cluster-agent-2026-09-26
+      - handoff-airflow-agent-2026-09-26
+      - handoff-triage-agent-2026-09-26
+      - handoff-follow-up-agent-2026-09-26
+      - handoff-reporter-2026-09-26
+      - handoff-bench-builder-agent-2026-09-26

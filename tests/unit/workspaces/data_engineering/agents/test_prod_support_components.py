@@ -5,7 +5,7 @@ from datetime import UTC, date, datetime
 
 import pytest
 
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     AirflowCheckConfigurationError,
     AirflowChecker,
     AirflowFailure,
@@ -17,11 +17,11 @@ from workspaces.data_engineering.agents.prod_support import (
     Region,
     ReportFindings,
 )
-from workspaces.data_engineering.agents.prod_support.cluster_health import (
+from workspaces.data_engineering.agents.production_support.cluster_health import (
     RegionalClusterHealth,
 )
-from workspaces.data_engineering.agents.prod_support.models import FailureKind
-from workspaces.data_engineering.agents.prod_support.reporting import (
+from workspaces.data_engineering.agents.production_support.models import FailureKind
+from workspaces.data_engineering.agents.production_support.reporting import (
     ProdSupportReportContext,
     format_reports_with_context,
 )
@@ -50,7 +50,13 @@ class ConcurrentHealthSource:
         self.started: set[Region] = set()
         self.both_started = asyncio.Event()
 
-    async def inspect_health(self, region: Region) -> RegionalClusterHealth:
+    async def inspect_health(
+        self,
+        region: Region,
+        restart_window_start: datetime,
+        restart_window_end: datetime,
+    ) -> RegionalClusterHealth:
+        del restart_window_start, restart_window_end
         self.started.add(region)
         if len(self.started) == EXPECTED_REGION_COUNT:
             self.both_started.set()
@@ -86,7 +92,13 @@ class RecordingHealthSource:
     def __init__(self) -> None:
         self.started: list[Region] = []
 
-    async def inspect_health(self, region: Region) -> RegionalClusterHealth:
+    async def inspect_health(
+        self,
+        region: Region,
+        restart_window_start: datetime,
+        restart_window_end: datetime,
+    ) -> RegionalClusterHealth:
+        del restart_window_start, restart_window_end
         self.started.append(region)
         return RegionalClusterHealth(region=region, application_healthy=True)
 
@@ -161,7 +173,13 @@ def test_cluster_checker_reads_both_regions_concurrently() -> None:
     source = ConcurrentHealthSource()
 
     observations = asyncio.run(
-        asyncio.wait_for(ClusterChecker(source).check(), timeout=1)
+        asyncio.wait_for(
+            ClusterChecker(source).check(
+                restart_window_start=datetime(2026, 9, 25, 5, tzinfo=UTC),
+                restart_window_end=datetime(2026, 9, 26, 5, tzinfo=UTC),
+            ),
+            timeout=1,
+        )
     )
 
     assert tuple(item.region for item in observations) == (
@@ -173,7 +191,13 @@ def test_cluster_checker_reads_both_regions_concurrently() -> None:
 def test_cluster_checker_honors_single_region_scope() -> None:
     source = RecordingHealthSource()
 
-    observations = asyncio.run(ClusterChecker(source).check((Region.US_01,)))
+    observations = asyncio.run(
+        ClusterChecker(source).check(
+            (Region.US_01,),
+            restart_window_start=datetime(2026, 9, 25, 5, tzinfo=UTC),
+            restart_window_end=datetime(2026, 9, 26, 5, tzinfo=UTC),
+        )
+    )
 
     assert tuple(item.region for item in observations) == (Region.US_01,)
     assert source.started == [Region.US_01]

@@ -24,7 +24,7 @@ def test_benchmarks_lists_visible_benchmarks() -> None:
         "etl\tpipeline_engineering\n"
         "kpo-sizer\tplanning\n"
         "prod-bench\tproduction_operations\n"
-        "prod-support\tproduction_operations\n"
+        "production-support\tproduction_operations\n"
         "resource-discovery\tresource_operations\n"
     )
 
@@ -35,7 +35,8 @@ def test_run_matrix_defaults_to_a_grouped_dry_run() -> None:
 
     assert result.exit_code == 0
     assert (
-        result.output.count('"matrix_id": "prod-support-09-25-26"') == candidate_count
+        result.output.count('"matrix_id": "prod-support-handoffs-09-27-26"')
+        == candidate_count
     )
     assert '"profile": "sol-light"' in result.output
     assert '"judge_profile": "sol-high-judge"' in result.output
@@ -126,7 +127,7 @@ def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
         "etl\trun-1\n"
         "kpo-sizer\trun-1\n"
         "prod-bench\trun-1\n"
-        "prod-support\trun-1\n"
+        "production-support\trun-1\n"
         "resource-discovery\trun-1\n"
     )
     assert seeded == [
@@ -138,7 +139,7 @@ def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
         "etl",
         "kpo-sizer",
         "prod-bench",
-        "prod-support",
+        "production-support",
         "resource-discovery",
     ]
 
@@ -212,7 +213,7 @@ def test_debug_prod_support_reports_local_artifacts(
         assert sources.cluster_health is not None
         assert sources.resource_discovery is not None
         assert operational_date.isoformat() == "2026-09-25"
-        assert output_root == Path("var/benchmark_data/prod_support")
+        assert output_root == Path("var/benchmark_data/production_support")
         assert [region.value for region in regions] == ["US-01", "CA-02"]
         return Artifacts()
 

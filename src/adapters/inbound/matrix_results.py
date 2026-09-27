@@ -20,6 +20,14 @@ def capability_scores(assessment: dict[str, object]) -> list[dict[str, object]]:
     return [item for item in raw if isinstance(item, dict)]
 
 
+def handoff_scores(assessment: dict[str, object]) -> list[dict[str, object]]:
+    """Return validated named-agent handoff score records."""
+    raw = assessment.get("handoff_scores", [])
+    if not isinstance(raw, list):
+        return []
+    return [item for item in raw if isinstance(item, dict)]
+
+
 def write_comparison(
     manifest: MatrixManifest,
     judged: tuple[JudgedRun, ...],
@@ -41,6 +49,7 @@ def write_comparison(
                 "input_tokens": item.candidate.input_tokens,
                 "output_tokens": item.candidate.output_tokens,
                 "capability_scores": capability_scores(item.assessment),
+                "handoff_scores": handoff_scores(item.assessment),
             }
             for item in judged
         ],

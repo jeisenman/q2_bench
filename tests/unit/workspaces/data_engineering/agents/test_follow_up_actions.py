@@ -3,13 +3,13 @@
 from datetime import UTC, date, datetime
 
 from domain import AgentResult
-from workspaces.data_engineering.agents.prod_support.models import (
+from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
     FailureDiagnosis,
     FailureKind,
     Region,
 )
-from workspaces.data_engineering.agents.prod_support.reporting import (
+from workspaces.data_engineering.agents.production_support.reporting import (
     ProdSupportReportContext,
     format_reports_with_context,
 )

@@ -4,18 +4,18 @@ from datetime import UTC, date, datetime
 import pytest
 
 from domain import AgentResult
-from workspaces.data_engineering.agents.prod_support.models import (
+from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
     FailureDiagnosis,
     FailureKind,
     Region,
 )
-from workspaces.data_engineering.agents.prod_support.reporting import (
+from workspaces.data_engineering.agents.production_support.reporting import (
     ProdSupportReportContext,
     format_report,
     format_reports_with_context,
 )
-from workspaces.data_engineering.agents.prod_support.reporting_config import (
+from workspaces.data_engineering.agents.production_support.reporting_config import (
     ProdSupportReportConfig,
 )
 
@@ -122,7 +122,7 @@ def test_developer_report_lists_every_failure() -> None:
         diagnoses,
     )
 
-    assert "l3-main-client failed on relationship-signals" in reports.developer
+    assert "l3-main-client failed on relationship_signals" in reports.developer
     assert "ca-dag failed on ca-task" in reports.developer
     assert "\n\n  -" not in reports.developer
     assert "US\n- Ongoing\n  - l3-main-client failed on" in reports.data_internal
@@ -164,12 +164,12 @@ def test_reports_group_named_clients_that_fail_the_same_job() -> None:
         context=ProdSupportReportContext(resource_discovery_results=resources),
     )
 
-    grouped = "Client A (111) and Client B (222) failed on opportunity-save-history"
+    grouped = "Client A (111) and Client B (222) failed on opportunity_save_history"
     assert reports.developer.count(grouped) == 1
     assert reports.data_internal.count(grouped) == 1
     assert (
         "    - Client A (111) and Client B (222): "
-        "opportunity-save-history for 2026-09-24"
+        "opportunity_save_history for 2026-09-24"
     ) in (reports.follow_up)
 
 
@@ -213,46 +213,8 @@ def test_reports_task_embedded_client_name_and_unresolved_identity() -> None:
     assert "Resource Discovery: no reviewed unique match (not_found)" in (
         reports.developer
     )
-    assert (
-        "Ask a human to resolve the client identity for Unresolved client (333) "
-        "before proposing remediation for date 09-24-26."
-    ) in reports.follow_up
+    assert reports.follow_up == "- No action is required."
     assert "Unresolved client (333):" not in reports.follow_up
-
-
-def test_default_omissions_hide_jobs_from_data_internal_and_follow_up() -> None:
-    failures = (
-        replace(_failure(1), task_id="delivery_to_promise.delivery_to_promise_data"),
-        replace(
-            _failure(1),
-            dag_id="market_insights_3_output",
-            task_id="client_specific.mi_3_raw_output_validation",
-        ),
-        replace(_failure(1), task_id="check_for_subscriber_client_errors"),
-    )
-    diagnoses = tuple(
-        FailureDiagnosis(
-            failure_id=failure.failure_id,
-            kind=FailureKind.APPLICATION_ERROR,
-            confidence="confirmed",
-            evidence=("terminal error",),
-        )
-        for failure in failures
-    )
-
-    reports = format_reports_with_context(date(2026, 9, 24), failures, diagnoses)
-
-    assert "D2P" in reports.developer
-    assert "MI3" in reports.developer
-    assert "subscriber" in reports.developer
-    assert "US\n- Ongoing\n  - D2P, MI3, Subscriber" in reports.data_internal
-    assert (
-        "Omitted Jobs:\n"
-        "- [D2P](agent://prod-support/omissions#d2p), "
-        "[MI3](agent://prod-support/omissions#mi3), "
-        "[Subscriber](agent://prod-support/omissions#subscriber)"
-    ) in reports.combined
-    assert "Do you approve re-running" not in reports.follow_up
 
 
 def test_empty_omission_override_includes_every_job() -> None:

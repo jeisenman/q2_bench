@@ -4,12 +4,12 @@ from datetime import UTC, date, datetime
 
 import pytest
 
-from workspaces.data_engineering.agents.prod_support import AirflowFailure
-from workspaces.data_engineering.agents.prod_support.datasets import (
+from workspaces.data_engineering.agents.production_support import AirflowFailure
+from workspaces.data_engineering.agents.production_support.datasets import (
     ReplayAirflowFailureSource,
     capture_day,
 )
-from workspaces.data_engineering.agents.prod_support.models import Region
+from workspaces.data_engineering.agents.production_support.models import Region
 
 
 class FakeSource:

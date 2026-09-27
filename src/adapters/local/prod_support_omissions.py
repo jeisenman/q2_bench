@@ -7,7 +7,7 @@ import os
 from collections.abc import Sequence
 from pathlib import Path
 
-from workspaces.data_engineering.agents.prod_support.reporting_config import (
+from workspaces.data_engineering.agents.production_support.reporting_config import (
     DEFAULT_DATA_INTERNAL_OMISSIONS,
     ProdSupportReportConfig,
 )

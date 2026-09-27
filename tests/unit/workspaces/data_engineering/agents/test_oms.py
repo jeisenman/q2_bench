@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     OmsJobQueryParameters,
     Region,
     build_oms_job_query,

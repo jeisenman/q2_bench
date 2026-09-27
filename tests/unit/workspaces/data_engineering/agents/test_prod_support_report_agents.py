@@ -5,12 +5,8 @@ from datetime import UTC, date, datetime
 import pytest
 
 from domain import AgentDefinition, AgentRequest, AgentResult
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     LUNA_MODEL,
-    PROD_SUPPORT_AGENT_DEFINITIONS,
-    PROD_SUPPORT_AIRFLOW_DEFINITION,
-    PROD_SUPPORT_CLUSTER_DEFINITION,
-    PROD_SUPPORT_REPORTER_DEFINITION,
     AirflowFailure,
     FailureDiagnosis,
     Region,
@@ -18,8 +14,8 @@ from workspaces.data_engineering.agents.prod_support import (
     ReportFindings,
     ReportingAgent,
 )
-from workspaces.data_engineering.agents.prod_support.models import FailureKind
-from workspaces.data_engineering.agents.prod_support.reporting import (
+from workspaces.data_engineering.agents.production_support.models import FailureKind
+from workspaces.data_engineering.agents.production_support.reporting import (
     ProdSupportReports,
 )
 
@@ -129,6 +125,10 @@ def test_reporting_agent_runs_once_for_all_audiences() -> None:
     assert [call[0].name for call in runtime.calls] == ["prod-support.reporting"]
     assert runtime.calls[0][0].model == LUNA_MODEL
     assert runtime.calls[0][1].correlation_id == "case-1:reporting"
+    assert (
+        '"required_data_internal_heading": '
+        '":bangbang: PROD SUPPORT 2026-09-25 :bangbang:"'
+    ) in runtime.calls[0][1].prompt
 
 
 def test_reporting_agent_rejects_invalid_data_internal() -> None:
@@ -177,7 +177,7 @@ def test_reporting_agent_enforces_developer_template(
         (
             ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
             "US\n  - Client A (111) failed on job\nCA\n- Good",
-            "exactly one",
+            "invalid regional summary",
         ),
         (
             ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Ongoing\nCA\n- Good",
@@ -299,13 +299,13 @@ def test_reporting_agent_rejects_broad_review_follow_ups(follow_up: str) -> None
         )
 
 
-def test_reporting_agent_requires_omission_codes_last() -> None:
+def test_reporting_agent_rejects_shorthand_mixed_with_other_details() -> None:
     data_internal = (
         ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
         "US\n- Ongoing\n  - D2P\n  - another finding\nCA\n- Good"
     )
 
-    with pytest.raises(ReportAgentOutputError, match="final regional detail"):
+    with pytest.raises(ReportAgentOutputError, match="Ongoing details"):
         asyncio.run(
             ReportingAgent(FakeRuntime(_output(data_internal))).write(
                 date(2026, 9, 25),
@@ -316,26 +316,68 @@ def test_reporting_agent_requires_omission_codes_last() -> None:
         )
 
 
-def test_agent_family_is_orchestrator_cluster_airflow_and_reporting() -> None:
-    assert tuple(definition.name for definition in PROD_SUPPORT_AGENT_DEFINITIONS) == (
-        "prod-support",
-        "prod-support.cluster",
-        "prod-support.airflow",
-        "prod-support.follow-up",
-        "prod-support.reporting",
+def test_reporting_agent_accepts_indented_d2p_shorthand() -> None:
+    data_internal = (
+        ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
+        "US\n- Ongoing\n  - D2P\nCA\n- Good"
     )
-    assert "Do not delegate" in PROD_SUPPORT_CLUSTER_DEFINITION.instructions
-    assert "Do not delegate" in PROD_SUPPORT_AIRFLOW_DEFINITION.instructions
-    assert "active DAG count" in PROD_SUPPORT_AIRFLOW_DEFINITION.instructions
-    assert "DAG-processor health" in PROD_SUPPORT_AIRFLOW_DEFINITION.instructions
-    assert PROD_SUPPORT_AIRFLOW_DEFINITION.version == "3"
-    assert "Do not delegate" in PROD_SUPPORT_REPORTER_DEFINITION.instructions
-    assert "immutable" in PROD_SUPPORT_REPORTER_DEFINITION.instructions
-    assert PROD_SUPPORT_REPORTER_DEFINITION.version == "4"
-    assert PROD_SUPPORT_AGENT_DEFINITIONS[0].can_delegate is True
-    assert all(
-        definition.can_delegate is False
-        for definition in PROD_SUPPORT_AGENT_DEFINITIONS[1:]
+
+    reports = asyncio.run(
+        ReportingAgent(FakeRuntime(_output(data_internal))).write(
+            date(2026, 9, 25),
+            _d2p_findings(),
+            _drafts(),
+            correlation_id="case-1",
+        )
     )
-    assert PROD_SUPPORT_REPORTER_DEFINITION.output_template is not None
-    assert PROD_SUPPORT_REPORTER_DEFINITION.output_template.startswith("{")
+
+    assert reports.data_internal == data_internal
+
+
+def test_reporting_agent_rejects_indented_region_label() -> None:
+    data_internal = (
+        ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good\n  CA\n- Good"
+    )
+
+    with pytest.raises(ReportAgentOutputError, match="left-aligned"):
+        asyncio.run(
+            ReportingAgent(FakeRuntime(_output(data_internal))).write(
+                date(2026, 9, 25),
+                ReportFindings((), ()),
+                _drafts(),
+                correlation_id="case-1",
+            )
+        )
+
+
+def test_reporting_agent_rejects_hyphenated_job_identifier() -> None:
+    failure = AirflowFailure(
+        region=Region.US_01,
+        dag_id="l3-main-client",
+        run_id="run-1",
+        task_id="validate_event_bus_opportunities",
+        start_at=datetime(2026, 9, 25, 5, tzinfo=UTC),
+        end_at=datetime(2026, 9, 25, 6, tzinfo=UTC),
+    )
+    diagnosis = FailureDiagnosis(
+        failure_id=failure.failure_id,
+        kind=FailureKind.APPLICATION_ERROR,
+        confidence="confirmed",
+        evidence=("terminal error",),
+    )
+    data_internal = (
+        ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
+        "US\n- Ongoing\n"
+        "  - Client A (111) failed on validate-event-bus-opportunities\n"
+        "CA\n- Good"
+    )
+
+    with pytest.raises(ReportAgentOutputError, match="preserve underscores"):
+        asyncio.run(
+            ReportingAgent(FakeRuntime(_output(data_internal))).write(
+                date(2026, 9, 25),
+                ReportFindings((failure,), (diagnosis,)),
+                _drafts(),
+                correlation_id="case-1",
+            )
+        )

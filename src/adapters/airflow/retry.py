@@ -7,8 +7,8 @@ from collections.abc import Callable, Mapping
 from typing import Protocol, cast
 from urllib.parse import quote
 
-from workspaces.data_engineering.agents.prod_support.models import Region
-from workspaces.data_engineering.agents.prod_support.retry_models import (
+from workspaces.data_engineering.agents.production_support.models import Region
+from workspaces.data_engineering.agents.production_support.retry_models import (
     RetryBatch,
     RetryTaskReference,
 )

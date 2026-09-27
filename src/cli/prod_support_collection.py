@@ -10,8 +10,13 @@ import click
 
 from adapters.airflow import AirflowApiSource
 from adapters.kubernetes import ClusterHealthScriptSource
-from adapters.resource_discovery import ResourceDiscoveryApiSource
-from workspaces.data_engineering.agents.prod_support import Region, run_debug_day
+from adapters.resource_discovery import (
+    IndexedResourceDiscoverySource,
+    JsonClientLookupSource,
+    ResourceDiscoveryApiSource,
+    configured_client_lookup_path,
+)
+from workspaces.data_engineering.agents.production_support import Region, run_debug_day
 from workspaces.data_engineering.agents.resource_discovery import (
     ResourceDiscoveryAgent,
 )
@@ -40,7 +45,7 @@ class ScopeValueError(ValueError):
 @click.option(
     "--output-root",
     type=click.Path(file_okay=False, path_type=Path),
-    default=Path("var/benchmark_data/prod_support"),
+    default=Path("var/benchmark_data/production_support"),
     show_default=True,
 )
 @click.option(
@@ -94,7 +99,7 @@ def debug_prod_support(operational_date: datetime, scope: str) -> None:
         run_debug_day(
             _production_sources(),
             operational_date.date(),
-            Path("var/benchmark_data/prod_support"),
+            Path("var/benchmark_data/production_support"),
             regions=capture_regions(scope),
         )
     )
@@ -124,6 +129,9 @@ def _production_sources() -> ProdSupportCollectionSources:
         airflow=AirflowApiSource.from_environment(),
         cluster_health=ClusterHealthScriptSource.from_repository(),
         resource_discovery=ResourceDiscoveryAgent(
-            ResourceDiscoveryApiSource.from_environment()
+            IndexedResourceDiscoverySource(
+                ResourceDiscoveryApiSource.from_environment(),
+                JsonClientLookupSource(configured_client_lookup_path()),
+            )
         ),
     )

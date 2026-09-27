@@ -5,8 +5,10 @@ from __future__ import annotations
 import pytest
 
 from adapters.airflow.retry import AirflowRetryError, execute_retry, plan_retry
-from workspaces.data_engineering.agents.prod_support.models import Region
-from workspaces.data_engineering.agents.prod_support.retry_models import RetryBatch
+from workspaces.data_engineering.agents.production_support.models import Region
+from workspaces.data_engineering.agents.production_support.retry_models import (
+    RetryBatch,
+)
 
 
 class FakeTransport:

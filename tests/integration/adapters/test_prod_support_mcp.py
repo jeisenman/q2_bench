@@ -5,16 +5,21 @@ from pathlib import Path
 import pytest
 
 from adapters.airflow import AirflowApiSource
-from adapters.openai_agents import OpenAIAgentsRuntime
-from adapters.resource_discovery import ResourceDiscoveryApiSource
+from adapters.codex_cli import CodexCliRuntime
+from adapters.resource_discovery import (
+    IndexedResourceDiscoverySource,
+    JsonClientLookupSource,
+    ResourceDiscoveryApiSource,
+)
 from mcp_servers.prod_support import (
-    EmptyAirflowFailureSource,
     _cluster_health,
     _report_runtime,
+    _requests_benchmark_case,
     _resource_discovery,
     _source,
     get_prod_support_omissions,
     list_prod_support_updates,
+    prod_support_bench_builder_definition,
     prod_support_definition,
     prod_support_prompt,
     prod_support_updates,
@@ -22,8 +27,14 @@ from mcp_servers.prod_support import (
     set_prod_support_omissions,
     setup_prod_support,
 )
-from workspaces.data_engineering.agents.prod_support import (
+from mcp_servers.prod_support_output import retry_approval_message
+from mcp_servers.prod_support_sources import EmptyAirflowFailureSource
+from workspaces.data_engineering.agents.production_support import (
     ReplayAirflowFailureSource,
+)
+from workspaces.data_engineering.agents.production_support.models import (
+    Region,
+    RetryCandidate,
 )
 from workspaces.data_engineering.agents.resource_discovery import (
     ResourceDiscoveryAgent,
@@ -32,6 +43,22 @@ from workspaces.data_engineering.agents.resource_discovery import (
 EXPECTED_REGION_COUNT = 2
 PRIVATE_DIRECTORY_MODE = 0o700
 PRIVATE_FILE_MODE = 0o600
+
+
+def test_retry_approval_message_lists_only_exact_candidates() -> None:
+    candidate = RetryCandidate(
+        number=1,
+        region=Region.CA_02,
+        dag_id="l3-main-client",
+        run_id="run-1",
+        task_id="account_level_opportunity_draw_schedule_history",
+        label="Scotiabank (1f0): account_level_opportunity_draw_schedule_history",
+    )
+
+    assert retry_approval_message((candidate,)) == (
+        "Do you approve these re-runs?\n"
+        "- Scotiabank (1f0): account_level_opportunity_draw_schedule_history"
+    )
 
 
 def test_mcp_tool_runs_prod_support_agent(
@@ -49,6 +76,7 @@ def test_mcp_tool_runs_prod_support_agent(
 
     assert result["correlation_id"] == "incident-1"
     assert "PROD SUPPORT" in result["output"]
+    assert result["full_report"] == result["output"]
     assert result["output"].startswith("# Prod Support Report — ")
     assert " operational day\n\nWindow: `" in result["output"]
     assert "URLs to validate\nhttps://airflow-us01" in result["output"]
@@ -60,9 +88,15 @@ def test_mcp_tool_runs_prod_support_agent(
     assert "Follow Ups:\n\n- No action is required." in result["output"]
     assert "- Good" in result["output"]
     assert result["developer_report"].startswith("Message for developer:")
+    assert result["message_for_developer"] == result["developer_report"]
+    assert result["developer_message"] == result["developer_report"]
     assert result["data_internal_report"].startswith(":bangbang: PROD SUPPORT ")
+    assert result["message_for_data_internal"] == result["data_internal_report"]
+    assert result["data_internal_message"] == result["data_internal_report"]
     assert len(result["validation_urls"]) == EXPECTED_REGION_COUNT
+    assert result["links"] == result["validation_urls"]
     assert result["follow_up"] == "- No action is required."
+    assert result["follow_up_message"] == "No re-runs require approval."
     assert result["attributes"]["service"] == "orders"
     assert result["attributes"]["data_internal_omissions"] == [
         "d2p",
@@ -77,14 +111,15 @@ def test_mcp_tool_runs_prod_support_agent(
         "kpo_sizer": "agent://kpo-sizer/definition",
     }
     assert result["tool_calls"] == (
-        "inspect_cluster_health",
-        "discover_airflow_failures",
-        "fetch_airflow_task_log",
-        "inspect_airflow_workload",
-        "query_oms_job",
-        "classify_failure",
-        "trigger_resource_discovery_agent",
+        "run_prod_support",
+        "DelegateToClusterAgent",
+        "DelegateToAirflowAgent",
+        "DelegateToTriageAgent",
+        "DelegateToFollowUpAgent",
+        "DelegateToReporter",
+        "DelegateToBenchBuilderAgent",
     )
+    assert "benchmark_case" not in result
 
 
 def test_mcp_tool_accepts_empty_data_internal_omission_override() -> None:
@@ -96,6 +131,47 @@ def test_mcp_tool_accepts_empty_data_internal_omission_override() -> None:
     )
 
     assert result["attributes"]["data_internal_omissions"] == []
+
+
+def test_mcp_builds_benchmark_without_replacing_prod_support_fields(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("PROD_SUPPORT_BENCHMARK_ROOT", str(tmp_path))
+
+    result = asyncio.run(
+        run_prod_support(
+            prompt="Do prod support and build benchmark case.",
+            correlation_id="benchmark-1",
+        )
+    )
+
+    benchmark = result["benchmark_case"]
+    assert result["output"] == result["full_report"]
+    assert result["message_for_developer"] == result["developer_report"]
+    assert result["message_for_data_internal"] == result["data_internal_report"]
+    assert result["follow_up"] == "- No action is required."
+    assert result["follow_up_message"] == "No re-runs require approval."
+    assert benchmark["review_required"] is True
+    assert Path(benchmark["case"]).is_file()
+    assert Path(benchmark["expected_behavior"]).is_file()
+    assert result["related_agents"]["bench_builder"] == (
+        "agent://prod-support/bench-builder/definition"
+    )
+
+
+@pytest.mark.parametrize(
+    ("prompt", "expected"),
+    [
+        ("Do prod support and build benchmark case.", True),
+        ("Capture a benchmark while doing prod support.", True),
+        ("Do prod support.", False),
+        ("Show benchmark results.", False),
+        ("Do prod support; do not build a benchmark.", False),
+    ],
+)
+def test_benchmark_request_detection(prompt: str, expected: bool) -> None:
+    assert _requests_benchmark_case(prompt) is expected
 
 
 def test_mcp_sets_up_and_updates_private_omissions(
@@ -110,6 +186,14 @@ def test_mcp_sets_up_and_updates_private_omissions(
     loaded = asyncio.run(get_prod_support_omissions())
 
     assert initialized["path"] == str(root / "omissions.json")
+    assert initialized["data_internal_omissions"] == [
+        "d2p",
+        "mi3",
+        "subscriber",
+        "maintenance",
+        "backfill",
+        "cmm",
+    ]
     assert updated["data_internal_omissions"] == ["d2p", "subscriber"]
     assert loaded == updated
     assert root.stat().st_mode & 0o777 == PRIVATE_DIRECTORY_MODE
@@ -147,9 +231,11 @@ def test_mcp_tool_rejects_invalid_data_internal_omissions(
 
 def test_mcp_resource_and_prompt_describe_agent() -> None:
     definition = asyncio.run(prod_support_definition())
+    bench_builder = asyncio.run(prod_support_bench_builder_definition())
     prompt = prod_support_prompt("Pipeline failed.")
 
     assert "production" in definition.lower()
+    assert "benchmark" in bench_builder.lower()
     assert "Request: Pipeline failed." in prompt
 
 
@@ -204,8 +290,10 @@ def test_mcp_source_uses_production_airflow(
     assert isinstance(_source(), AirflowApiSource)
     resource_discovery = _resource_discovery()
     assert isinstance(resource_discovery, ResourceDiscoveryAgent)
-    assert isinstance(resource_discovery._source, ResourceDiscoveryApiSource)
-    assert isinstance(_report_runtime(), OpenAIAgentsRuntime)
+    assert isinstance(resource_discovery._source, IndexedResourceDiscoverySource)
+    assert isinstance(resource_discovery._source.primary, ResourceDiscoveryApiSource)
+    assert isinstance(resource_discovery._source.fallback, JsonClientLookupSource)
+    assert isinstance(_report_runtime(), CodexCliRuntime)
 
 
 def test_mcp_source_uses_explicit_replay_dataset(

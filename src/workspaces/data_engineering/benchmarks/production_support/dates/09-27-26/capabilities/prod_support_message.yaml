@@ -7,7 +7,8 @@ cases:
       required_alert_heading: ":bangbang: PROD SUPPORT 2026-09-26 :bangbang:"
       alert_heading_is_first_line: true
       required_regions: [US, CA]
-      require_status_under_each_region: true
+      require_summary_under_each_region: true
+      require_region_labels_fully_left_aligned: true
       require_compact_bullets: true
       prohibit_markdown_section_headings: true
       prohibit_blank_lines_between_bullets: true
@@ -22,9 +23,11 @@ cases:
       require_resolved_client_names: true
       client_uuid_prefix_length: 3
       default_omission_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
-      require_represented_omission_codes: true
+      shorthand_omission_groups: [mi3, d2p]
+      shorthand_order: [MI3, D2P]
       omission_code_shape: "<code1>, <code2>"
-      omission_codes_are_final_regional_detail: true
+      shorthand_is_indented_ongoing_detail_when_region_has_no_actionable_details: true
+      other_omission_groups_hidden: [subscriber, maintenance, backfill, cmm]
       mcp_override_parameter: data_internal_omissions
       required_failure_shape: "<client> (<prefix>) failed on <job>"
       regional_consistency:

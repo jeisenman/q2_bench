@@ -4,21 +4,21 @@ from datetime import UTC, datetime
 import pytest
 
 from domain import AgentRequest, AgentResult
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
     AirflowTaskMetadata,
     EvidenceSource,
     InvestigationConfigurationError,
     InvestigationServices,
     PriorTaskLog,
-    ProdSupportAgent,
+    ProductionSupportWorkflow,
     Region,
     TaskLogUnavailableError,
 )
-from workspaces.data_engineering.agents.prod_support.investigation import (
+from workspaces.data_engineering.agents.production_support.investigation import (
     FailureInvestigator,
 )
-from workspaces.data_engineering.agents.prod_support.oms import (
+from workspaces.data_engineering.agents.production_support.oms import (
     OmsJobQueryParameters,
 )
 
@@ -187,7 +187,7 @@ def test_agent_excludes_the_operational_window_end_boundary() -> None:
         dag_id="l3-main-22222222-2222-4222-8222-222222222222",
         end_at=datetime(2026, 9, 26, 5, tzinfo=UTC),
     )
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         LogSource((excluded, included), "Exception: failed"),
         clock=lambda: datetime(2026, 9, 26, 12, tzinfo=UTC),
     )
@@ -214,7 +214,7 @@ class IgnoredResourceDiscovery:
 def test_agent_filters_only_explicitly_reviewed_support_ignores() -> None:
     failure = _failure()
     source = LogSource((failure,), "Exception: should not be fetched")
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         source,
         clock=lambda: datetime(2026, 9, 26, 12, tzinfo=UTC),
         resource_discovery=IgnoredResourceDiscovery(),
@@ -244,7 +244,7 @@ class CountingLogSource(LogSource):
 def test_agent_respects_configured_parallelism() -> None:
     failures = tuple(_failure(dag_id=f"dag-{index}") for index in range(FAILURE_COUNT))
     source = CountingLogSource(failures)
-    agent = ProdSupportAgent(
+    agent = ProductionSupportWorkflow(
         source,
         clock=lambda: datetime(2026, 9, 26, 12, tzinfo=UTC),
         investigation=InvestigationServices(max_parallel=TEST_PARALLELISM),

@@ -10,7 +10,7 @@ import pytest
 
 from adapters.airflow import AirflowApiSource, AirflowRegionConfig
 from adapters.resource_discovery import ResourceDiscoveryApiSource
-from workspaces.data_engineering.agents.prod_support.models import Region
+from workspaces.data_engineering.agents.production_support.models import Region
 from workspaces.data_engineering.agents.resource_discovery import (
     IdentifierKind,
     ResourceIdentifier,

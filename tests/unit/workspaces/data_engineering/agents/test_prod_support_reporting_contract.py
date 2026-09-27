@@ -3,7 +3,7 @@ from datetime import UTC, date, datetime
 import pytest
 
 from domain import AgentResult
-from workspaces.data_engineering.agents.prod_support import (
+from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
     ClusterHealthState,
     ClusterHealthValueError,
@@ -12,12 +12,12 @@ from workspaces.data_engineering.agents.prod_support import (
     Region,
     RegionalClusterHealth,
 )
-from workspaces.data_engineering.agents.prod_support.models import FailureKind
-from workspaces.data_engineering.agents.prod_support.reporting import (
+from workspaces.data_engineering.agents.production_support.models import FailureKind
+from workspaces.data_engineering.agents.production_support.reporting import (
     format_reports,
     format_reports_with_context,
 )
-from workspaces.data_engineering.agents.prod_support.reporting_validation import (
+from workspaces.data_engineering.agents.production_support.reporting_validation import (
     ReportContractError,
 )
 
@@ -138,8 +138,8 @@ def test_unhealthy_cluster_is_reported_only_in_its_region() -> None:
     us_block, ca_block = reports.data_internal.split("\nCA\n", maxsplit=1)
     assert "US\n- Good" in us_block
     assert "cluster is unhealthy" not in us_block
-    assert "CA cluster is unhealthy" in ca_block
-    assert "scheduler pods are unready and task launches are stalled appear" in ca_block
+    assert "CA cluster is unhealthy" not in ca_block
+    assert "scheduler pods are unready" not in ca_block
     assert "." not in reports.data_internal
 
 
@@ -221,7 +221,7 @@ def test_developer_group_preserves_different_evidence_per_client() -> None:
         ),
     )
 
-    assert "Client A (111) and Client B (222) failed on opportunity-save-history" in (
+    assert "Client A (111) and Client B (222) failed on opportunity_save_history" in (
         reports.developer
     )
     assert "evidence by failure:" in reports.developer
@@ -293,7 +293,7 @@ def test_report_rejects_missing_or_duplicate_structured_evidence() -> None:
         )
 
 
-def test_cluster_health_derives_primary_failure_symptoms() -> None:
+def test_cluster_health_stays_in_developer_report() -> None:
     health = RegionalClusterHealth(
         region=Region.CA_02,
         application_healthy=False,
@@ -309,10 +309,9 @@ def test_cluster_health_derives_primary_failure_symptoms() -> None:
     )
 
     assert health.state is ClusterHealthState.UNHEALTHY
-    assert "application health checks are failing" in reports.data_internal
-    assert "pods are unready" in reports.data_internal
-    assert "DAG parsing is unhealthy" in reports.data_internal
-    assert "zero active DAGs" in reports.data_internal
+    assert "CA Cluster Health: unhealthy" in reports.developer
+    assert "0 active DAGs" in reports.developer
+    assert "cluster" not in reports.data_internal.casefold()
 
 
 def test_cluster_health_rejects_invalid_observations() -> None:

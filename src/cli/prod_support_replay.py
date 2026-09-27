@@ -11,9 +11,9 @@ from typing import Any
 
 import yaml
 
-from workspaces.data_engineering.agents.prod_support import (
-    ProdSupportAgent,
+from workspaces.data_engineering.agents.production_support import (
     ProdSupportOutcome,
+    ProductionSupportWorkflow,
     ReplayAirflowFailureSource,
 )
 from workspaces.data_engineering.benchmarks.case_files import (
@@ -96,7 +96,7 @@ def run_replay_case(case: ReplayCase, dataset_path: Path) -> ProdSupportOutcome:
             "replay dataset does not exist",
         )
     source = ReplayAirflowFailureSource(dataset_path)
-    agent = ProdSupportAgent(source, clock=lambda: case.reference_time)
+    agent = ProductionSupportWorkflow(source, clock=lambda: case.reference_time)
     return asyncio.run(agent.investigate(case.prompt))
 
 

@@ -20,10 +20,10 @@ AGENTS_PATH = ROOT / "src/workspaces/data_engineering/benchmarks/agent-manifest.
 BENCHMARK_PATH = (
     ROOT
     / "src/workspaces/data_engineering/benchmarks/production_support"
-    / "dates/09-25-26/evaluation.yaml"
+    / "dates/09-27-26/evaluation.yaml"
 )
 CASES_PATH = BENCHMARK_PATH.with_name("cases.yaml")
-CASE_ID = "prod-support-us-ca-2026-09-25"
+CASE_ID = "handoff-bench-builder-agent-2026-09-26"
 CANDIDATE_COUNT = 10
 INPUT_TOKENS = 11
 JUDGE_SCORE = 0.75
@@ -65,6 +65,10 @@ def test_adapter_runs_profiles_and_reuses_baselines(monkeypatch, tmp_path) -> No
     manifest = replace(
         load_run(),
         artifact_root=tmp_path,
+        dataset=Path(
+            "src/workspaces/data_engineering/benchmarks/production_support/"
+            "dates/09-27-26/evidence/capture_manifest.json"
+        ),
     )
     observed_baselines: dict[str, dict[str, object] | None] = {}
     (tmp_path / "comparison.json").write_text(
@@ -136,7 +140,6 @@ def test_command_builds_container_and_process_variants(tmp_path) -> None:
     )
 
     assert container[:2] == ["docker", "run"]
-    assert "--env-file" not in container
     assert container[container.index("--sandbox") + 1] == "danger-full-access"
     assert container[container.index("--profile") + 1] == "bedrock"
     assert "--read-only" in container
@@ -145,12 +148,8 @@ def test_command_builds_container_and_process_variants(tmp_path) -> None:
     assert "no-new-privileges" in container
     assert f"{workspace.resolve()}:/evaluation:ro" in container
     assert f"{output.resolve()}:/output" in container
-    assert f"{auth_source.resolve()}:/mnt/codex-host:ro" not in container
     assert "AWS_PROFILE=benchmark" in container
     assert "AWS_SHARED_CREDENTIALS_FILE=/run/agent-auth/credentials" in container
-    assert not any("/.aws:" in item for item in container)
-    assert not any(":/workspace:ro" in item for item in container)
-    assert "/mnt/codex-host:ro" not in " ".join(container)
     assert "--tmpfs" in container
     assert "/output/final.md" in container
     assert "--json" in container

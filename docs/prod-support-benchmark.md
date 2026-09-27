@@ -1,193 +1,105 @@
-# Prod-support agent and benchmark
+# Production-support agent and benchmark
 
-The `prod-support` agent is an importable package at:
+The public production-support package is:
 
 ```text
-src/workspaces/data_engineering/agents/prod_support/
+src/workspaces/data_engineering/agents/production_support/
 ```
 
-Its workflow has one top-level orchestrator, concurrent leaf Cluster and
-Airflow components, and one leaf Reporting component. Supporting modules own
-date/scope resolution, evidence retrieval, deterministic formatting, and
-evaluation.
+It keeps the explicit prdbench agent graph and the reusable operational tools
+from both earlier folders. `ProductionSupportWorkflow` is an internal executor,
+not an additional public agent.
 
-## Operational date semantics
+## Agent graph
 
-At a reference time of 2026-09-25:
+Orchestrator coordinates these named subagents:
 
-| Prompt | Airflow `end_date_gte` |
-| --- | --- |
-| `do today's prod support` | `2026-09-24T05:00:00Z` |
-| `do prod support` | `2026-09-24T05:00:00Z` |
-| `Do yesterday's prod support` | `2026-09-23T05:00:00Z` |
-| `Do prod support for 9/21/26.` | `2026-09-21T05:00:00Z` |
-| `run/date_start 2026-03-14, 05:00:00 UTC` | exact supplied timestamp |
+- ClusterAgent checks scoped US and CA cluster health.
+- AirflowAgent runs the baseline failure script, uses baseline results for
+  omitted jobs, and analyzes non-omitted failures.
+- TriageAgent currently returns `Triage agent hasn't been setup.`
+- FollowUpAgent plans exact retries and executes only an unchanged approved
+  plan.
+- Reporter renders the authoritative production-support response.
+- BenchBuilderAgent creates a redacted, review-required benchmark draft when
+  the user requests production support and benchmark construction together.
 
-Discovery uses task `end_date`, not `start_date`, so long-running failures are
-included correctly.
+Prompts are explicit function docstrings in
+`production_support/prompts.py`. Tool assignments are defined by
+`production_support/suite.py`; operational tool metadata remains in
+`production_support/tools.py`.
+
+## Date and scope semantics
+
+Production support defaults to both US and CA and the previous operational day.
+The operational window begins at 05:00 UTC. Explicit region or date requests
+override those defaults.
+
+Airflow discovery uses task end time so long-running failures ending in the
+window are included. Regional findings and client identities must remain
+separate throughout the handoffs.
+
+## Active benchmark
+
+The stable manifest is:
+
+```text
+src/workspaces/data_engineering/benchmarks/production_support/manifest.yaml
+```
+
+It contains one active run:
+
+```text
+dates/09-27-26/
+```
+
+This run was built on September 27, 2026 for the September 26 operational day.
+Removed v1 runs are not retrofitted to current expectations.
+
+The suite includes focused cases for ClusterAgent, AirflowAgent, TriageAgent,
+FollowUpAgent, Reporter, and BenchBuilderAgent. Handoff contracts measure:
+
+- required named agents and parent attribution;
+- exact input and output fields;
+- call cardinality and dependency ordering;
+- parallelism and leaf-agent delegation boundaries;
+- Reporter output authority;
+- retry and production-mutation safety;
+- benchmark draft quality; and
+- continuity of normal MCP output fields.
+
+ClusterAgent and AirflowAgent may run concurrently. Reporter starts after both.
+BenchBuilderAgent starts after Reporter and may add artifact metadata, but it
+must not replace or rewrite the production-support output.
 
 ## Dataset lifecycle
 
-For the day-by-day collection, curation, adversarial distractor, complexity,
-and scaffolding procedure, see
+Sensitive working captures remain ignored under:
+
+```text
+var/benchmark_data/production_support/YYYY-MM-DD/
+```
+
+Only reviewed, minimized, redacted evidence belongs in a dated source suite.
+Raw logs, credentials, hidden expectations, and unrelated customer data must
+not be committed.
+
+For the complete collection procedure, see
 [Prod-support daily data collection](prod-support-data-collection.md).
 
-```text
-production Airflow, cluster, and Resource Discovery sources
-        |
-        v
-concurrent leaf capture + redaction
-        |
-        v
-var/benchmark_data/prod_support/YYYY-MM-DD/
-  airflow_failures.json
-  cluster_health.json
-  resource_discovery.json
-  compact_evidence.json
-  reporting_input.json
-  collection_manifest.json
-        |
-        v
-human-curated expected failure IDs and classifications
-        |
-        v
-replay source + benchmark evaluator
+Useful commands:
+
+```bash
+uv run agentbench debug-prod-support --date 2026-09-26
+
+uv run agentbench run-matrix \
+  --benchmark src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/evaluation.yaml \
+  --cases src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/cases.yaml \
+  --case handoff-bench-builder-agent-2026-09-26 \
+  --execute
+
+uv run python scripts/check.py
 ```
 
-Captured evidence includes one prior day as distractor data. This allows the
-benchmark to measure whether the agent selects every failure in the target
-window without incorrectly including older failures.
-
-For a production-backed investigation that should seed a benchmark, run
-`agentbench debug-prod-support --date YYYY-MM-DD`. It captures once, replays
-the report from the redacted snapshot, and writes an unscored schema draft
-beside the dataset. The YAML contains no expected answers and remains under
-ignored `var/` storage until human curation and anti-leak review.
-
-## Date-versioned benchmark suites
-
-Benchmark definitions are immutable snapshots organized using `MM-DD-YY`:
-
-```text
-production_support/
-├── manifest.yaml
-├── dataset/
-│   └── README.md
-└── dates/
-    ├── 09-25-26/
-    └── 09-26-26/
-        ├── suite.yaml
-        ├── cases.yaml
-        └── evidence/
-```
-
-The root manifest provides the stable benchmark identity. Each dated suite
-captures the cases and evidence available on that date and defines three
-evaluation layers:
-
-- Capabilities test query translation, failure capture, diagnosis, safety, and
-  message construction independently.
-- Coordination tests the fixed one-level graph: Cluster and Airflow start
-  concurrently, regional Airflow reads use ordinary I/O concurrency, Reporting
-  starts after both handoffs, and leaf agents never delegate.
-- System behavior tests the complete prompt-to-final-report workflow against
-  the recorded dataset.
-
-New benchmark snapshots belong in a new `MM-DD-YY` directory rather than
-mutating a prior suite.
-
-The `09-26-26` snapshot evaluates the September 25 operational day. It uses
-the capture at `var/benchmark_data/prod_support/2026-09-25/` and preserves the
-older `09-25-26` snapshot unchanged for reproducible comparisons.
-
-Airflow UI links must use a bounded interval. In the Flask-AppBuilder task
-instance view, `_flt_1_end_date` is the upper, less-than bound and
-`_flt_2_end_date` is the lower, greater-than bound. A link with only one bound
-is incorrect because it includes failures outside the requested day.
-
-OMS evidence is conditional. It is used only when task metadata proves a Spark
-workload and the case supplies an exact OMS source. A case that does not need
-OMS receives full credit when the agent avoids that work.
-
-The same snapshot requires selected-region cluster-health lines backed by pod
-state, restart counts, and KEDA checks. Regional findings must remain in their
-source region, and cluster status cannot contradict the cited evidence. Data
-Internal defaults to collapsing D2P, MI3, subscriber, maintenance, backfill,
-and CMM findings to regional codes. Every omission candidate requires its exact
-failed-task log plus a same-DAG/task success inside the operational window.
-Only verified recoveries collapse to codes, which remain the final detail line
-of their regional block.
-
-Data Internal minimizes repeated subjects: clients sharing one failed job are
-grouped first. If a grouped client has other failed jobs, one separate line
-lists only those remaining jobs. Every client-job pair appears exactly once.
-Validated timeout, OOM, and distinctness failures retain those concise cause
-labels. A `validate_event_bus_opportunities` failure already communicates
-missing snapshots, so the channel message does not repeat that diagnosis.
-
-Follow Ups is a production-safety boundary and contains only dated,
-approval-gated actions. Coded omission groups do not receive rerun suggestions,
-large resends identify `pd-rix`, and jobs above five attempts link the
-`agent://kpo-sizer/definition` interface without invoking it. When no supported
-action exists, the report states that no action is required. Resends use the
-exact template `Resend <number> opportunities for <client names> on [Resend
-Opportunity Snapshots](<approved link>) for date <MM-DD-YY>.` An unresolved
-client receives a dated human-identity action and no resend or rerun proposal.
-Broad `review` or `investigate` items and cluster warnings are not Follow Up
-actions.
-
-The matrix stages one bounded replay parser inside the isolated candidate
-workspace. Its stdout represents the compact Cluster and Airflow handoffs.
-Candidates synthesize from that output without reopening JSON files, printing
-raw logs, or repeating inventories. The Reporting pass runs once after both
-handoffs. Its complete output is authoritative and the orchestrator returns it
-verbatim; rewriting or appending to the report violates the reporting boundary.
-Applicability-gated work receives full credit when it is correctly skipped.
-
-Debug capture records the selected Airflow and cluster boundaries, reviewed
-Resource Discovery metadata, compact evidence, and the direct Reporting input.
-OMS and prior-run fallback remain conditional: curated cases add them only
-when the workload and exact evidence path require them.
-
-## Evaluation dimensions
-
-- Query translation: expected Airflow cutoff.
-- Failure recall: expected task-instance IDs captured.
-- DAG existence: every reported DAG ID must exist in the captured regional
-  inventory; an empty failure set passes without inventing failures.
-- Diagnosis accuracy: evidence-based classification from compact exact logs for
-  every failure, with omission codes limited to same-task recoveries verified
-  inside the operational window.
-- Developer message: exact curated technical analysis and recommended next steps.
-  It includes filtered US and CA Airflow cluster links and expands operational
-  acronyms such as DV (Distinctness Validation), MI (Market Insights), and MI3
-  (Market Insights 3).
-- Prod-support message: exact curated operational channel update, including
-  regional infrastructure findings.
-- Response formatting: required date and regional report structure.
-
-The `prod-support-us-ca-2026-09-25` case is the single curated benchmark for
-the operational window. Its prompt is `Do prod support`, and the resulting
-report must cover US and CA together. It replaces the former US-only,
-CA-only, and uncurated default cases.
-
-The case reuses the existing captured failure dataset. US contributes seven
-expected failures and their curated diagnoses. CA contributes no task failures
-for the same cutoff, but its 35 captured DAG records and infrastructure
-evidence remain part of the regional assessment. No production data was
-recaptured for this refactor.
-
-The captured inventories establish exact regional expectations for
-`l3-main-*` graphs: 78 in US Production and 6 in CA Production. The US
-infrastructure evidence is healthy, while Airflow confirms that the CA DAG
-processor is unhealthy and OMS has a telemetry gap rather than corroborating
-the failure.
-
-Remediation is suggestion-only. The agent and benchmark record no automatic
-actions and never bounce infrastructure. Missing DAGs, unavailable processor
-logs, and repeated restarts may justify suggesting a DAG-processor bounce for
-operator approval.
-
-Real captures are ignored by Git because they may contain sensitive production
-data. Redaction is applied automatically, but every capture still requires
-human review before benchmark use.
+Benchmark construction is read-only and produces a draft requiring independent
+review. It does not authorize FollowUp execution.

@@ -5,10 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol
 
-from workspaces.data_engineering.agents.prod_support.templates import (
+from workspaces.data_engineering.agents.production_support.templates import (
     HUMAN_IDENTITY_ACTION_TEMPLATE,
     RESEND_ACTION_TEMPLATE,
 )
+from workspaces.data_engineering.benchmarks.handoff_contracts import HandoffContract
 
 
 class MatrixPromptManifest(Protocol):
@@ -64,6 +65,11 @@ class MatrixPromptManifest(Protocol):
         """Return criterion applicability declared by the case."""
         ...
 
+    @property
+    def handoff_contract(self) -> HandoffContract | None:
+        """Return the named-agent handoff contract, when configured."""
+        ...
+
 
 class MatrixPromptProfile(Protocol):
     """Model-profile values required by the production-support prompt."""
@@ -84,6 +90,8 @@ def build_prod_support_prompt_lines(
     profile: MatrixPromptProfile,
 ) -> list[str]:
     """Build the production-support orchestrator benchmark prompt."""
+    if manifest.handoff_contract is not None:
+        return _build_handoff_case_prompt_lines(manifest, profile)
     operational_date = manifest.operational_start.partition("T")[0]
     failure_links = tuple(
         (
@@ -137,6 +145,7 @@ def build_prod_support_prompt_lines(
             "  - <represented omission codes, always last>",
         )
     )
+    handoff_lines = _handoff_prompt_lines(manifest.handoff_contract)
     return [
         "Run the prod-support benchmark using only local recorded evidence.",
         f"Case: {manifest.case_id}",
@@ -148,6 +157,7 @@ def build_prod_support_prompt_lines(
         + ", ".join(f"{region}={url}" for region, url in manifest.airflow_base_urls),
         f"Your role: {profile.role}.",
         f"Your measured capabilities: {', '.join(profile.capabilities) or 'all'}.",
+        *handoff_lines,
         "All Cluster, Airflow, identity, and reporting operations are read-only.",
         "Act as the top-level production-support orchestrator. Resolve the requested "
         "date and regional scope first. A generic request selects both regions; "
@@ -251,6 +261,7 @@ def build_prod_support_prompt_lines(
         "source is not supplied or not needed, avoid that work and treat it as "
         "success rather than an evidence gap.",
         "Do not mutate production systems. Return the final report only.",
+        *(f"Case requirement: {item}" for item in manifest.case_instructions),
     ]
 
 
@@ -288,3 +299,53 @@ def build_capability_prompt_lines(
         )
     )
     return lines
+
+
+def _handoff_prompt_lines(contract: HandoffContract | None) -> tuple[str, ...]:
+    if contract is None:
+        return ()
+    lines = [
+        "This case has an explicit named-agent handoff contract.",
+        f"Use no more than {contract.max_parallel} concurrent handoffs.",
+    ]
+    lines.extend(
+        (
+            f"- {agent.parent} -> {agent.name}: "
+            f"calls={agent.min_calls}..{agent.max_calls}; "
+            f"starts_after={','.join(agent.starts_after) or 'none'}; "
+            f"inputs={','.join(agent.required_input_fields) or 'none'}; "
+            f"outputs={','.join(agent.required_output_fields) or 'none'}; "
+            f"mode={agent.expected_mode}; "
+            f"can_delegate={str(agent.can_delegate).lower()}"
+        )
+        for agent in contract.agents
+    )
+    if contract.output_authority is not None:
+        lines.append(
+            f"{contract.output_authority} is the authoritative final-output handoff."
+        )
+    return tuple(lines)
+
+
+def _build_handoff_case_prompt_lines(
+    manifest: MatrixPromptManifest,
+    profile: MatrixPromptProfile,
+) -> list[str]:
+    return [
+        "Run the named-agent production-support handoff benchmark.",
+        f"Case: {manifest.case_id}",
+        f"User request: {manifest.case_prompt}",
+        f"Dataset: {manifest.dataset}",
+        "Additional recorded inputs: "
+        f"{', '.join(map(str, manifest.candidate_inputs)) or 'none'}",
+        f"Operational window: {manifest.operational_start} to "
+        f"{manifest.operational_end}",
+        f"Your role: {profile.role}.",
+        *_handoff_prompt_lines(manifest.handoff_contract),
+        "Requirements:",
+        *(f"- {item}" for item in manifest.case_instructions),
+        "Use only local recorded evidence. Do not access hidden expectations.",
+        "Do not mutate production. FollowUp retry cases must remain plan-only.",
+        "Return the requested operational output even when benchmark artifacts "
+        "are also built.",
+    ]

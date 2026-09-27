@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,6 +11,14 @@ import yaml
 from workspaces.data_engineering.benchmarks.agent_configurations import (
     AgentConfigurationManifestError,
     load_agent_configurations,
+)
+from workspaces.data_engineering.benchmarks.handoff_contracts import (
+    HandoffContract,
+    HandoffContractError,
+    parse_handoff_contract,
+)
+from workspaces.data_engineering.benchmarks.matrix_judge import (
+    build_matrix_judge_prompt as _build_matrix_judge_prompt,
 )
 from workspaces.data_engineering.benchmarks.matrix_prompts import (
     build_capability_prompt_lines,
@@ -81,6 +88,7 @@ class MatrixManifest:
     case_prompt: str
     case_instructions: tuple[str, ...]
     applicability: tuple[tuple[str, bool], ...]
+    handoff_contract: HandoffContract | None
     runtime: str
     container_image: str
     parallelism: int
@@ -149,6 +157,13 @@ def load_matrix_run(
             agent_configurations_path,
             "judge_configuration must reference a judge profile",
         )
+    try:
+        handoff_contract = parse_handoff_contract(
+            case.get("handoff_contract"),
+            cases_path,
+        )
+    except HandoffContractError as error:
+        raise MatrixManifestError(str(error)) from error
     return MatrixManifest(
         matrix_id=_text(raw, "matrix_id", benchmark_path),
         suite=_text(raw, "suite", benchmark_path),
@@ -170,6 +185,7 @@ def load_matrix_run(
             case.get("evaluation_applicability", {}),
             cases_path,
         ),
+        handoff_contract=handoff_contract,
         runtime=str(execution.get("runtime", "process")),
         container_image=str(execution.get("container_image", "")),
         parallelism=int(execution.get("parallelism", len(selected))),
@@ -227,43 +243,8 @@ def build_matrix_judge_prompt(
     *,
     baseline: dict[str, object] | None = None,
 ) -> str:
-    """Build a weighted judge prompt from one normalized candidate trace."""
-    criteria = [
-        {
-            "id": item.criterion_id,
-            "weight": item.weight,
-            "reward": item.reward,
-            "punish": item.punish,
-        }
-        for item in manifest.rubric
-    ]
-    benchmark_kind = (
-        f"isolated {manifest.capability} capability"
-        if manifest.capability is not None
-        else "prod-support"
-    )
-    return "\n".join(
-        (
-            f"Judge this {benchmark_kind} agent trace using the weighted rubric.",
-            "Score each criterion from 0 to 1. Do not excuse deterministic violations.",
-            "Apply the case applicability map before scoring. A criterion explicitly "
-            "marked false is not applicable: award 1.0 when the agent avoids "
-            "fabricating or performing that work. Use the same rule for capability "
-            "scores. In particular, OMS and Spark-race criteria require a supplied "
-            "exact OMS source; absence of that source is not an agent failure.",
-            "For token efficiency, distinguish fresh input from cached input. Cached "
-            "tokens are not evidence of repeated logs; score trace size, uncached "
-            "input, redundant commands, repeated inventories, and worker payloads.",
-            "Return JSON with overall_score, criteria, strengths, violations, "
-            "rationale, and capability_scores. Attribute capability scores to "
-            "the controller and worker models declared in the trace.",
-            "Case applicability: "
-            f"{json.dumps(dict(manifest.applicability), sort_keys=True)}",
-            f"Rubric: {json.dumps(criteria, sort_keys=True)}",
-            f"Trace: {json.dumps(trace, sort_keys=True)}",
-            f"Earlier comparable trace: {json.dumps(baseline or {}, sort_keys=True)}",
-        )
-    )
+    """Build the judge prompt while preserving the public matrix API."""
+    return _build_matrix_judge_prompt(manifest, trace, baseline=baseline)
 
 
 def _mapping(raw: dict[str, Any], field: str, path: Path) -> dict[str, Any]:

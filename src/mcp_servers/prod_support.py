@@ -3,124 +3,62 @@
 from __future__ import annotations
 
 import json
-import os
-from datetime import datetime
-from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from mcp.server.mcpserver import MCPServer
 
-from adapters.airflow import AirflowApiSource
-from adapters.kubernetes import ClusterHealthScriptSource
 from adapters.local import (
     JsonProdSupportOmissionStore,
     filter_prod_support_updates,
     load_prod_support_updates,
 )
-from adapters.openai_agents import OpenAIAgentsRuntime
-from adapters.resource_discovery import ResourceDiscoveryApiSource
 from domain import AgentRequest
+from mcp_servers.prod_support_benchmark import (
+    bench_builder_description,
+    capture_benchmark_case,
+    requests_benchmark_case,
+)
 from mcp_servers.prod_support_follow_up import (
     candidate_output,
     execute_prod_support_follow_up,
     plan_prod_support_follow_up,
 )
-from workspaces.data_engineering.agents.prod_support import (
-    AirflowFailure,
-    AirflowFailureSource,
+from mcp_servers.prod_support_output import (
+    format_mcp_output,
+    retry_approval_message,
+    validation_urls,
+)
+from mcp_servers.prod_support_sources import (
+    airflow_source as _source,
+)
+from mcp_servers.prod_support_sources import (
+    cluster_health as _cluster_health,
+)
+from mcp_servers.prod_support_sources import (
+    report_runtime as _report_runtime,
+)
+from mcp_servers.prod_support_sources import (
+    resource_discovery as _resource_discovery,
+)
+from workspaces.data_engineering.agents.production_support import (
     FollowUpAgent,
     InvestigationServices,
-    ProdSupportAgent,
     ProdSupportReportConfig,
-    ReplayAirflowFailureSource,
+    ProductionSupportWorkflow,
 )
-from workspaces.data_engineering.agents.prod_support.models import ProdSupportOutcome
-from workspaces.data_engineering.agents.prod_support.reporting_config import (
+from workspaces.data_engineering.agents.production_support.reporting_config import (
     update_omission_values,
-)
-from workspaces.data_engineering.agents.resource_discovery import (
-    ResourceDiscoveryAgent,
 )
 
 SERVER_NAME = "prod-support"
-SOURCE_ENV = "PROD_SUPPORT_SOURCE"
-DATASET_ENV = "PROD_SUPPORT_DATASET"
 server = MCPServer(
     SERVER_NAME,
     description="Production-support tools for data-engineering incidents.",
 )
 
 
-class EmptyAirflowFailureSource:
-    """Safe default source when no replay dataset is configured."""
-
-    async def discover_failures(
-        self,
-        since: datetime,
-    ) -> tuple[AirflowFailure, ...]:
-        """Return no production failures."""
-        del since
-        return ()
-
-    async def fetch_log(self, failure: AirflowFailure) -> str:
-        """Return the embedded log when present."""
-        return failure.log
-
-
-def _source() -> AirflowFailureSource:
-    source_mode = os.environ.get(SOURCE_ENV)
-    dataset = os.environ.get(DATASET_ENV)
-    if source_mode is None:
-        return (
-            ReplayAirflowFailureSource(Path(dataset))
-            if dataset
-            else EmptyAirflowFailureSource()
-        )
-    if source_mode == "production":
-        if dataset:
-            message = f"{DATASET_ENV} cannot be set when {SOURCE_ENV}=production"
-            raise ValueError(message)
-        return AirflowApiSource.from_environment()
-    if source_mode == "replay":
-        if not dataset:
-            message = f"{DATASET_ENV} is required when {SOURCE_ENV}=replay"
-            raise ValueError(message)
-        return ReplayAirflowFailureSource(Path(dataset))
-    if source_mode == "empty":
-        if dataset:
-            message = f"{DATASET_ENV} cannot be set when {SOURCE_ENV}=empty"
-            raise ValueError(message)
-        return EmptyAirflowFailureSource()
-    message = (
-        f"unsupported {SOURCE_ENV} value {source_mode!r}; "
-        "expected production, replay, or empty"
-    )
-    raise ValueError(message)
-
-
-def _resource_discovery() -> ResourceDiscoveryAgent | None:
-    """Select genuine Resource Discovery only for explicit production mode."""
-    if os.environ.get(SOURCE_ENV) != "production":
-        return None
-    return ResourceDiscoveryAgent(ResourceDiscoveryApiSource.from_environment())
-
-
-def _report_runtime() -> OpenAIAgentsRuntime | None:
-    """Use Luna report specialists only for explicit production execution."""
-    if os.environ.get(SOURCE_ENV) != "production":
-        return None
-    return OpenAIAgentsRuntime()
-
-
-def _cluster_health() -> ClusterHealthScriptSource | None:
-    """Use the read-only cluster script only for explicit production mode."""
-    if os.environ.get(SOURCE_ENV) != "production":
-        return None
-    return ClusterHealthScriptSource.from_repository()
-
-
-agent = ProdSupportAgent(
+agent = ProductionSupportWorkflow(
     _source(),
     resource_discovery=_resource_discovery(),
     cluster_health=_cluster_health(),
@@ -129,7 +67,8 @@ agent = ProdSupportAgent(
 server.tool(
     name="plan_prod_support_follow_up",
     description=(
-        "Map follow-up direction to exact failed Airflow tasks and dry-run them."
+        "Map follow-up direction to exact failed Airflow tasks. Dry-run them "
+        "if not specified. Run them if explicit directions."
     ),
 )(plan_prod_support_follow_up)
 server.tool(
@@ -138,30 +77,19 @@ server.tool(
 )(execute_prod_support_follow_up)
 
 
-def _validation_urls(report: str) -> tuple[str, ...]:
-    """Extract Airflow validation URLs from the canonical report."""
-    return tuple(
-        url
-        for line in report.splitlines()
-        if (url := _url_from_report_line(line)) is not None
-    )
+_validation_urls = validation_urls
+_format_mcp_output = format_mcp_output
 
 
-def _url_from_report_line(line: str) -> str | None:
-    """Return a standalone Airflow validation URL, if present."""
-    if not line.startswith("https://airflow-"):
-        return None
-    return line.strip()
-
-
-def _format_mcp_output(outcome: ProdSupportOutcome) -> str:
-    """Return the canonical report without adding competing formatting."""
-    return outcome.report
+_requests_benchmark_case = requests_benchmark_case
 
 
 @server.tool(
     name="run_prod_support",
-    description="Investigate a production data-engineering incident.",
+    description=(
+        "Investigate production data-engineering incidents and return the full "
+        "report, validation links, developer message, and follow-up actions."
+    ),
 )
 async def run_prod_support(
     prompt: str,
@@ -186,15 +114,25 @@ async def run_prod_support(
         report_config=report_config,
         correlation_id=request.correlation_id,
     )
-    return {
-        "output": _format_mcp_output(outcome),
+    full_report = _format_mcp_output(outcome)
+    links = _validation_urls(full_report)
+    approval_message = retry_approval_message(outcome.retry_candidates)
+    result: dict[str, Any] = {
+        "output": full_report,
+        "full_report": full_report,
+        "links": links,
+        "message_for_developer": outcome.developer_report,
+        "message_for_data_internal": outcome.data_internal_report,
+        "developer_message": outcome.developer_report,
+        "data_internal_message": outcome.data_internal_report,
+        "follow_up_message": approval_message,
+        "follow_up": outcome.follow_up,
         "developer_report": outcome.developer_report,
         "data_internal_report": outcome.data_internal_report,
-        "follow_up": outcome.follow_up,
         "retry_candidates": [
             candidate_output(candidate) for candidate in outcome.retry_candidates
         ],
-        "validation_urls": _validation_urls(outcome.report),
+        "validation_urls": links,
         "correlation_id": request.correlation_id,
         "tool_calls": tuple(tool.name for tool in agent.definition.tools),
         "attributes": {
@@ -212,6 +150,13 @@ async def run_prod_support(
             "kpo_sizer": "agent://kpo-sizer/definition",
         },
     }
+    if _requests_benchmark_case(prompt):
+        artifacts = capture_benchmark_case(outcome, prompt, request.correlation_id)
+        result["benchmark_case"] = artifacts.as_dict()
+        result["related_agents"]["bench_builder"] = (
+            "agent://prod-support/bench-builder/definition"
+        )
+    return result
 
 
 @server.tool(
@@ -305,6 +250,16 @@ async def prod_support_definition() -> str:
 async def prod_support_follow_up_definition() -> str:
     """Return the follow-up subagent definition."""
     return FollowUpAgent.definition.description
+
+
+@server.resource(
+    "agent://prod-support/bench-builder/definition",
+    name="prod-support benchmark builder definition",
+    description="Review-required daily production-support benchmark builder.",
+)
+async def prod_support_bench_builder_definition() -> str:
+    """Return the BenchBuilder subagent definition."""
+    return bench_builder_description()
 
 
 @server.resource(

@@ -6,6 +6,12 @@ from workspaces.data_engineering.agents.resource_discovery.agent import (
     ResourceDiscoveryAgent,
     ResourceDiscoveryError,
 )
+from workspaces.data_engineering.agents.resource_discovery.index import (
+    AUTHORITATIVE_SOURCES,
+    ClientLookupIndex,
+    client_name_index_key,
+    parse_client_name,
+)
 from workspaces.data_engineering.agents.resource_discovery.models import (
     IdentifierKind,
     ResourceIdentifier,
@@ -22,8 +28,10 @@ from workspaces.data_engineering.agents.resource_discovery.reporting import (
 )
 
 __all__ = [
+    "AUTHORITATIVE_SOURCES",
     "RESOURCE_DISCOVERY_DEFINITION",
     "RESOURCE_DISCOVERY_V1_DEFINITION",
+    "ClientLookupIndex",
     "IdentifierKind",
     "ResourceDiscoveryAgent",
     "ResourceDiscoveryError",
@@ -33,5 +41,7 @@ __all__ = [
     "ResourceRecord",
     "ResourceSearch",
     "SearchStatus",
+    "client_name_index_key",
+    "parse_client_name",
     "render_search",
 ]

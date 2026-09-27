@@ -68,7 +68,7 @@ cases:
   - id: benchmark-change-scenario-007
     prompt: Check whether public benchmark metadata discloses a protected diagnosis.
     evidence:
-      benchmark_scope: production_support/dates/09-26-26
+      benchmark_scope: production_support/dates/09-27-26
       public_metadata_types:
         - case definition
         - capability fixture
@@ -76,7 +76,7 @@ cases:
   - id: benchmark-change-scenario-008
     prompt: Check whether public capability metadata exposes evaluator-only paths.
     evidence:
-      benchmark_scope: production_support/dates/09-26-26
+      benchmark_scope: production_support/dates/09-27-26
       public_metadata_type: capability fixture
   - id: benchmark-change-scenario-009
     prompt: Check whether public benchmark metadata discloses oracle outcomes.

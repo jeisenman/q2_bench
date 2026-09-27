@@ -9,20 +9,20 @@ from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 
 from domain import AgentRequest, AgentResult
-from workspaces.data_engineering.agents.prod_support.datasets import (
+from workspaces.data_engineering.agents.production_support.datasets import (
     ReplayAirflowFailureSource,
     capture_day,
 )
-from workspaces.data_engineering.agents.prod_support.models import (
+from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
     Region,
 )
-from workspaces.data_engineering.agents.prod_support.ports import (
+from workspaces.data_engineering.agents.production_support.ports import (
     AirflowFailureSource,
     ClusterHealthSource,
     ResourceDiscoveryInvoker,
 )
-from workspaces.data_engineering.agents.prod_support.reporting_details import (
+from workspaces.data_engineering.agents.production_support.reporting_details import (
     client_id,
 )
 from workspaces.data_engineering.benchmarks.production_support.compact_brief import (
@@ -93,6 +93,8 @@ async def collect_prod_support_data(
     if observed_at.tzinfo is None:
         raise ProdSupportCollectionError.timezone_required()
     destination.mkdir(parents=True, exist_ok=False)
+    start_at = datetime.combine(operational_date, time(hour=5), tzinfo=UTC)
+    end_at = start_at + timedelta(days=1)
 
     airflow_task = asyncio.create_task(
         capture_day(
@@ -108,12 +110,11 @@ async def collect_prod_support_data(
             regions,
             destination / "cluster_health.json",
             observed_at,
+            (start_at, end_at),
         )
     )
     airflow_path, cluster_path = await asyncio.gather(airflow_task, cluster_task)
 
-    start_at = datetime.combine(operational_date, time(hour=5), tzinfo=UTC)
-    end_at = start_at + timedelta(days=1)
     failures = tuple(
         failure
         for failure in await ReplayAirflowFailureSource(airflow_path).discover_failures(
@@ -182,9 +183,18 @@ async def _capture_cluster_health(
     regions: tuple[Region, ...],
     target: Path,
     captured_at: datetime,
+    restart_window: tuple[datetime, datetime],
 ) -> Path:
+    restart_window_start, restart_window_end = restart_window
     observations = await asyncio.gather(
-        *(source.inspect_health(region) for region in regions)
+        *(
+            source.inspect_health(
+                region,
+                restart_window_start,
+                restart_window_end,
+            )
+            for region in regions
+        )
     )
     _write_json(
         target,
@@ -205,6 +215,17 @@ async def _capture_cluster_health(
                     "dags_parsing_healthy": item.dags_parsing_healthy,
                     "active_dag_count": item.active_dag_count,
                     "restart_count": item.restart_count,
+                    "cumulative_restart_count": item.cumulative_restart_count,
+                    "restart_window_start": (
+                        item.restart_window_start.isoformat()
+                        if item.restart_window_start is not None
+                        else None
+                    ),
+                    "restart_window_end": (
+                        item.restart_window_end.isoformat()
+                        if item.restart_window_end is not None
+                        else None
+                    ),
                     "keda_status": item.keda_status,
                     "symptoms": list(item.symptoms),
                     "warnings": list(item.warnings),

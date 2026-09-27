@@ -4,19 +4,20 @@ The complete daily operating procedure is documented in
 [`docs/prod-support-data-collection.md`](../../../../../../docs/prod-support-data-collection.md).
 
 Each operational date has a complete redacted collection bundle under the
-ignored `var/benchmark_data/prod_support/<date>/` directory. The bundle
+ignored `var/benchmark_data/production_support/<date>/` directory. The bundle
 contains Airflow failures, cluster health, reviewed Resource Discovery
 metadata, compact evidence, direct Reporting input, and a manifest.
 
-Curated benchmark definitions and evidence are versioned separately under
-`dates/09-25-26/`. Suite directory names use `MM-DD-YY`; the suite manifest
-records the unambiguous ISO date.
+Curated benchmark definitions and evidence are versioned separately under the
+current `dates/09-27-26/` suite. Suite directory names use `MM-DD-YY`; the
+suite manifest records the unambiguous ISO date. Removed v1 runs are not used
+as templates for current expected behavior.
 
 Capture a date with:
 
 ```bash
-uv run agentbench capture-prod-support --date 2026-09-25
-uv run agentbench capture-prod-support --date 2026-09-25 --scope ca
+uv run agentbench capture-prod-support --date 2026-09-26
+uv run agentbench capture-prod-support --date 2026-09-26 --scope ca
 ```
 
 The Airflow artifact includes failures from the preceding day as distractors.

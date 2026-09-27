@@ -15,6 +15,7 @@ from workspaces.data_engineering.benchmarks.production_support.compact_evidence 
 )
 
 EXPECTED_EVENT_COUNT = 2
+EXPECTED_CUMULATIVE_RESTARTS = 12
 
 
 def test_compacts_logs_and_normalizes_retired_pod_warning(tmp_path: Path) -> None:
@@ -118,6 +119,9 @@ def test_marks_legacy_omissions_as_unverified(tmp_path: Path) -> None:
                         "state": "healthy",
                         "pods_healthy": True,
                         "restart_count": 0,
+                        "cumulative_restart_count": 12,
+                        "restart_window_start": "2026-09-25T05:00:00+00:00",
+                        "restart_window_end": "2026-09-26T05:00:00+00:00",
                         "keda_status": "healthy",
                         "symptoms": [],
                         "warnings": [],
@@ -141,6 +145,14 @@ def test_marks_legacy_omissions_as_unverified(tmp_path: Path) -> None:
     assert compact["records"][0]["log_status"] == "omitted"
     assert compact["records"][0]["evidence"] == ()
     assert compact["cluster_health"][0]["restart_count"] == 0
+    assert (
+        compact["cluster_health"][0]["cumulative_restart_count"]
+        == EXPECTED_CUMULATIVE_RESTARTS
+    )
+    assert (
+        compact["cluster_health"][0]["restart_window_start"]
+        == "2026-09-25T05:00:00+00:00"
+    )
     assert brief["groups"][0]["root_cause"] == (
         "legacy omission lacks captured exact-log verification"
     )

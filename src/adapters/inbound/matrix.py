@@ -321,12 +321,33 @@ def _judge_schema() -> dict[str, object]:
         "required": ["role", "model", "capability", "score", "rationale"],
         "additionalProperties": False,
     }
+    handoff = {
+        "type": "object",
+        "properties": {
+            "agent": {"type": "string"},
+            "invoked": {"type": "boolean"},
+            "payload_valid": {"type": "boolean"},
+            "ordering_valid": {"type": "boolean"},
+            "score": {"type": "number", "minimum": 0, "maximum": 1},
+            "rationale": {"type": "string"},
+        },
+        "required": [
+            "agent",
+            "invoked",
+            "payload_valid",
+            "ordering_valid",
+            "score",
+            "rationale",
+        ],
+        "additionalProperties": False,
+    }
     return {
         "type": "object",
         "properties": {
             "overall_score": {"type": "number", "minimum": 0, "maximum": 1},
             "criteria": {"type": "array", "items": criterion},
             "capability_scores": {"type": "array", "items": capability},
+            "handoff_scores": {"type": "array", "items": handoff},
             "strengths": {"type": "array", "items": {"type": "string"}},
             "violations": {"type": "array", "items": {"type": "string"}},
             "rationale": {"type": "string"},

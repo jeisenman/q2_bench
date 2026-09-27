@@ -30,7 +30,7 @@ file. Keep timestamps in UTC and include offsets in captured records.
 ## Storage boundaries
 
 ```text
-var/benchmark_data/prod_support/          ignored, sensitive working data
+var/benchmark_data/production_support/          ignored, sensitive working data
 └── YYYY-MM-DD/
     ├── airflow_failures.json             redacted failures and triage policy
     ├── cluster_health.json               pod, restart, and KEDA observations
@@ -82,21 +82,18 @@ is deferred until curation supplies a runnable case and rubric.
 
 ### 1. Scaffold the next day
 
-Start from the debug draft when available. Otherwise, copy the preceding suite
-structure, not its conclusions:
+Start from the debug draft when available. Otherwise, create the new suite from
+the current handoff schema without copying conclusions from a prior run:
 
 ```bash
-previous=src/workspaces/data_engineering/benchmarks/production_support/dates/09-25-26
-next=src/workspaces/data_engineering/benchmarks/production_support/dates/09-26-26
-mkdir -p "$next/capabilities" "$next/evidence"
-cp "$previous/suite.yaml" "$next/suite.yaml"
-cp "$previous/evaluation.yaml" "$next/evaluation.yaml"
-cp "$previous"/capabilities/*.yaml "$next/capabilities/"
+next=src/workspaces/data_engineering/benchmarks/production_support/dates/MM-DD-YY
+mkdir -p "$next/capabilities" "$next/evidence" "$next/hidden"
 ```
 
-Create a new `cases.yaml` from the scaffold below rather than copying prior
-expected failures or messages. Update `suite_date`, descriptions, case IDs,
-dataset paths, and matrix IDs. Until collection is complete, omit the case from
+Create `suite.yaml`, `cases.yaml`, and `evaluation.yaml` from the documented
+schema and current agent responsibilities rather than copying prior expected
+failures or messages. Update `suite_date`, descriptions, case IDs, dataset
+paths, and matrix IDs. Until collection is complete, omit the case from
 `layers.system.cases` or mark its daily dataset `future`.
 
 Never promote the debug draft directly. Review and minimize its dataset, add
@@ -108,7 +105,7 @@ schema_version: 1
 cases: []
 daily_datasets:
   - operational_date: "2026-09-26"
-    evidence_uri: var/benchmark_data/prod_support/2026-09-26/airflow_failures.json
+    evidence_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
     status: future
 ```
 
@@ -307,7 +304,7 @@ Run the curated case against the exact captured dataset:
 ```bash
 uv run agentbench replay-evaluate prod-support \
   --case prod-support-us-ca-2026-09-26 \
-  --dataset var/benchmark_data/prod_support/2026-09-26/airflow_failures.json \
+  --dataset var/benchmark_data/production_support/2026-09-26/airflow_failures.json \
   --output var/mlflow/evaluations/prod-support-us-ca-2026-09-26.json
 ```
 

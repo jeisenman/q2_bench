@@ -14,10 +14,10 @@ AGENTS_PATH = ROOT / "src/workspaces/data_engineering/benchmarks/agent-manifest.
 BENCHMARK_PATH = (
     ROOT
     / "src/workspaces/data_engineering/benchmarks/production_support"
-    / "dates/09-25-26/evaluation.yaml"
+    / "dates/09-27-26/evaluation.yaml"
 )
 CASES_PATH = BENCHMARK_PATH.with_name("cases.yaml")
-CASE_ID = "prod-support-us-ca-2026-09-25"
+CASE_ID = "handoff-bench-builder-agent-2026-09-26"
 
 
 def load_run():

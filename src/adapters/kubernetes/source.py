@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from workspaces.data_engineering.agents.prod_support.cluster_health import (
+from workspaces.data_engineering.agents.production_support.cluster_health import (
     RegionalClusterHealth,
 )
-from workspaces.data_engineering.agents.prod_support.models import Region
+from workspaces.data_engineering.agents.production_support.models import Region
 
 
 class ClusterHealthScriptError(RuntimeError):
@@ -50,7 +50,12 @@ class ClusterHealthScriptSource:
         root = Path(__file__).resolve().parents[3]
         return cls(root / "scripts" / "check_prod_cluster_health.py")
 
-    async def inspect_health(self, region: Region) -> RegionalClusterHealth:
+    async def inspect_health(
+        self,
+        region: Region,
+        restart_window_start: datetime,
+        restart_window_end: datetime,
+    ) -> RegionalClusterHealth:
         """Return script-formatted pod, restart, and KEDA health."""
         result = await asyncio.to_thread(
             subprocess.run,
@@ -59,6 +64,10 @@ class ClusterHealthScriptSource:
                 str(self.script_path),
                 "--region",
                 region.value,
+                "--since",
+                restart_window_start.isoformat(),
+                "--before",
+                restart_window_end.isoformat(),
             ),
             check=True,
             capture_output=True,
@@ -80,6 +89,13 @@ class ClusterHealthScriptSource:
             observed_at=datetime.fromisoformat(str(payload["observed_at"])),
             pods_healthy=bool(payload["pods_healthy"]),
             restart_count=int(payload["restart_count"]),
+            cumulative_restart_count=int(payload["cumulative_restart_count"]),
+            restart_window_start=datetime.fromisoformat(
+                str(payload["restart_window_start"])
+            ),
+            restart_window_end=datetime.fromisoformat(
+                str(payload["restart_window_end"])
+            ),
             keda_status=str(payload["keda_status"]),
             symptoms=tuple(str(item) for item in payload.get("symptoms", ())),
             warnings=tuple(str(item) for item in payload.get("warnings", ())),

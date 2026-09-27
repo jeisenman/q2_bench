@@ -8,10 +8,10 @@ from pathlib import Path
 
 from domain import AgentRequest, AgentResult
 from domain.models import Attributes
-from workspaces.data_engineering.agents.prod_support.cluster_health import (
+from workspaces.data_engineering.agents.production_support.cluster_health import (
     RegionalClusterHealth,
 )
-from workspaces.data_engineering.agents.prod_support.models import Region
+from workspaces.data_engineering.agents.production_support.models import Region
 
 
 class CaptureReplayError(ValueError):
@@ -72,8 +72,14 @@ class CapturedClusterHealthSource:
             for observation in (_cluster_observation(item, path) for item in regions)
         }
 
-    async def inspect_health(self, region: Region) -> RegionalClusterHealth:
+    async def inspect_health(
+        self,
+        region: Region,
+        restart_window_start: datetime,
+        restart_window_end: datetime,
+    ) -> RegionalClusterHealth:
         """Return the captured observation for one region."""
+        del restart_window_start, restart_window_end
         try:
             return self._observations[region]
         except KeyError as error:
@@ -166,6 +172,9 @@ def _cluster_observation(
         dags_parsing_healthy=_optional_bool(raw.get("dags_parsing_healthy")),
         active_dag_count=_optional_int(raw.get("active_dag_count")),
         restart_count=_optional_int(raw.get("restart_count")),
+        cumulative_restart_count=_optional_int(raw.get("cumulative_restart_count")),
+        restart_window_start=_optional_datetime(raw.get("restart_window_start")),
+        restart_window_end=_optional_datetime(raw.get("restart_window_end")),
         keda_status=str(raw.get("keda_status", "unknown")),
         symptoms=tuple(str(value) for value in raw.get("symptoms", ())),
         warnings=tuple(str(value) for value in raw.get("warnings", ())),
@@ -182,6 +191,14 @@ def _optional_int(value: object) -> int | None:
     if value is None or isinstance(value, int):
         return value
     raise CaptureReplayError.optional_integer_required()
+
+
+def _optional_datetime(value: object) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return datetime.fromisoformat(value)
+    raise CaptureReplayError.optional_string_required()
 
 
 def _optional_string(value: object) -> str | None:

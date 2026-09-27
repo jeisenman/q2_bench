@@ -11,7 +11,8 @@ cases:
       - allow an empty list to include every investigated job
       - retain omitted jobs in evidence and the developer message
       - bypass Airflow and OMS triage only for registered d2p and mi3 failures
-      - collapse configured jobs to regional codes in Data Internal
-      - place represented regional codes on the final regional detail line
+      - expose configured MI3 and D2P only as canonical regional shorthand
+      - hide all other configured omission groups from Data Internal
+      - use MI3 then D2P order regardless of discovery order
       - omit configured jobs from rerun follow-ups
       - reject unknown, empty, or duplicate group values

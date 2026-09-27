@@ -30,17 +30,17 @@
   },
   "artifacts": {
     "airflow_capture": {
-      "local_uri": "var/benchmark_data/prod_support/2026-09-26/airflow_failures.json",
+      "local_uri": "var/benchmark_data/production_support/2026-09-26/airflow_failures.json",
       "sha256": "653064380b946733de6b045abeacd6015d907c2295b9429ff3c5904829581251",
       "tracked": false
     },
     "compact_evidence": {
-      "local_uri": "var/benchmark_data/prod_support/2026-09-26/compact_evidence.json",
+      "local_uri": "var/benchmark_data/production_support/2026-09-26/compact_evidence.json",
       "sha256": "db7d60d235cf3255db940c1c6068c55736060816c1e94dcf910b83782c753385",
       "tracked": false
     },
     "reporting_input": {
-      "local_uri": "var/benchmark_data/prod_support/2026-09-26/reporting_input.json",
+      "local_uri": "var/benchmark_data/production_support/2026-09-26/reporting_input.json",
       "sha256": "a6065a32e18c2d050319bb15434fd3079f8c1985afa548110a67c9a9bccc86a6",
       "tracked": false
     }

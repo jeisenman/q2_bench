@@ -33,13 +33,11 @@ SENSITIVE_TEXT = (
 def compact_trace_for_judge(
     events: tuple[dict[str, object], ...],
 ) -> tuple[dict[str, object], ...]:
-    """Retain completed events and clip oversized text fields."""
+    """Retain bounded lifecycle events and clip oversized text fields."""
     compacted: list[dict[str, object]] = []
     characters = 0
     for event in events:
         item = event.get("item")
-        if event.get("type") == "item.started":
-            continue
         if isinstance(item, dict) and _is_ignored_runtime_warning(item):
             continue
         compact = _compact_mapping(event)

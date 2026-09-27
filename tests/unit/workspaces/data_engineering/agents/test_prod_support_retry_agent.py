@@ -7,18 +7,24 @@ from datetime import UTC, datetime
 
 import pytest
 
-from workspaces.data_engineering.agents.prod_support.models import (
+from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
+    FailureDiagnosis,
+    FailureKind,
     Region,
     RetryCandidate,
 )
-from workspaces.data_engineering.agents.prod_support.retry_agent import (
+from workspaces.data_engineering.agents.production_support.report_findings import (
+    ReportFindings,
+)
+from workspaces.data_engineering.agents.production_support.retry_agent import (
     FollowUpAgent,
     RetryDirectionError,
     retry_batches,
+    retry_candidates,
     select_retry_candidates,
 )
-from workspaces.data_engineering.agents.prod_support.retry_models import (
+from workspaces.data_engineering.agents.production_support.retry_models import (
     RetryBatch,
     RetryTaskReference,
 )
@@ -144,3 +150,33 @@ def test_retry_candidate_identity_is_region_bound() -> None:
     candidate = RetryCandidate(1, failure.region, "dag", "run", "task", "job")
 
     assert candidate.identity == "CA-02|dag|run|task"
+
+
+def test_configured_omissions_never_become_retry_candidates() -> None:
+    failures = tuple(
+        AirflowFailure(
+            Region.US_01,
+            dag_id,
+            "run",
+            task_id,
+            datetime(2026, 9, 26, 5, tzinfo=UTC),
+            datetime(2026, 9, 26, 6, tzinfo=UTC),
+            try_number=6,
+        )
+        for dag_id, task_id in (
+            ("subscriber_validation", "check_for_subscriber_client_errors"),
+            ("log_cleanup", "expire-logs-3"),
+            ("market_insights_3_output", "mi_3_raw_output_validation"),
+        )
+    )
+    diagnoses = tuple(
+        FailureDiagnosis(
+            failure.failure_id,
+            FailureKind.APPLICATION_ERROR,
+            "confirmed",
+            ("terminal error",),
+        )
+        for failure in failures
+    )
+
+    assert retry_candidates(ReportFindings(failures, diagnoses)) == ()
