@@ -71,7 +71,7 @@ def test_registers_agent_definition_and_current_alias(monkeypatch) -> None:
 
     assert (run_id, version) == ("run-2", "2")
     assert FakeClient.created[0] == "prod-support"
-    assert FakeClient.created[-1] == "prod-support:agent-v15:2"
+    assert FakeClient.created[-1] == "prod-support:agent-v17:2"
     logged_definition, path = FakeMlflow.logged["definition"]
     assert path == "agent/definition.json"
     assert logged_definition["output_template"].startswith("# Prod Support Report")
@@ -113,7 +113,7 @@ def test_registers_agent_in_namespace(monkeypatch) -> None:
 
     registered_name = "data_engineering.production_operations.prod-support"
     assert FakeClient.created[0] == registered_name
-    assert FakeClient.created[-1] == f"{registered_name}:agent-v15:2"
+    assert FakeClient.created[-1] == f"{registered_name}:agent-v17:2"
     assert FakeMlflow.logged["run"]["tags"]["agent.namespace"] == (
         "data_engineering.production_operations"
     )

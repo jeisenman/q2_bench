@@ -27,6 +27,7 @@ from workspaces.data_engineering.agents.prod_support.report_findings import (
 from workspaces.data_engineering.agents.prod_support.reporting_config import (
     ProdSupportReportConfig,
 )
+from workspaces.data_engineering.agents.prod_support.templates import FOLLOW_UP_HEADING
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,7 +53,7 @@ class ProdSupportReports:
                 self.urls_to_validate,
                 self.developer,
                 self.data_internal,
-                f"Follow Ups:\n\n{self.follow_up}",
+                f"{FOLLOW_UP_HEADING}\n\n{self.follow_up}",
             )
         )
 

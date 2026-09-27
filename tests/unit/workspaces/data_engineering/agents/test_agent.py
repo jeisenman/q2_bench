@@ -100,7 +100,7 @@ class FakeReportRuntime:
                         ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:\n"
                         "US\n- Good\nCA\n- Good"
                     ),
-                    "follow_up": "- No action is required",
+                    "follow_up": "- No action is required.",
                 }
             ),
             correlation_id=request.correlation_id,
@@ -207,7 +207,7 @@ def test_agent_definition_requires_operational_delivery_workflow() -> None:
     assert "trigger_resource_discovery_agent" in {
         tool.name for tool in definition.tools
     }
-    assert definition.version == "15"
+    assert definition.version == "17"
     assert definition.output_template is not None
     assert definition.output_template.startswith("# Prod Support Report")
 

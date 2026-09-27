@@ -1,4 +1,21 @@
-"""Benchmark-shaped templates for the prod-support manager."""
+"""Canonical output templates for the production-support agent."""
+
+DEVELOPER_HEADING = "Message for developer:"
+DATA_INTERNAL_ALERT_TEMPLATE = ":bangbang: PROD SUPPORT {operational_date} :bangbang:"
+FOLLOW_UP_HEADING = "Follow Ups:"
+REPORTER_OUTPUT_TEMPLATE = (
+    "{\n"
+    '  "developer": "Message for developer:\\n'
+    '  - <evidence-qualified finding>",\n'
+    '  "data_internal": ":bangbang: PROD SUPPORT <date> :bangbang:\\n'
+    "US\\n- Ongoing\\n  - <grouped clients with three-character prefixes> "
+    'failed on <job>\\nCA\\n- Good",\n'
+    '  "follow_up": "- Would you like to:\\n'
+    "  - Resend <number> opportunities for <client names> on "
+    "[Resend Opportunity Snapshots](<approved link>) "
+    'for date <MM-DD-YY>."\n'
+    "}\n"
+)
 
 PROD_SUPPORT_REPORT_TEMPLATE = """\
 # Prod Support Report — <operational-date> operational day
@@ -12,11 +29,21 @@ URLs to validate
 <CA-02 bounded failure-list URL>
 <one bounded DAG-grid URL per failed DAG>
 
-<Developer reporter output>
+Message for developer:
+  - <evidence-qualified developer finding>
 
-<Data Internal reporter output>
+:bangbang: PROD SUPPORT <operational-date> :bangbang:
+US
+- <Good or Ongoing>
+  - <grouped clients with three-character prefixes> failed on <job>
+CA
+- <Good or Ongoing>
+  - <grouped clients with three-character prefixes> failed on <job>
 
 Follow Ups:
-
-<Follow Up agent output>
+- Would you like to:
+  - Resend <number> opportunities for <client names> on \
+[Resend Opportunity Snapshots](<approved link>) for date <MM-DD-YY>.
+  - Ask a human to identify the production resend application environment \
+for <client names> for date <MM-DD-YY>.
 """

@@ -51,7 +51,7 @@ def _drafts() -> ProdSupportReports:
         data_internal=(
             ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good\nCA\n- Good"
         ),
-        follow_up="- No action is required",
+        follow_up="- No action is required.",
     )
 
 
@@ -63,7 +63,31 @@ def _output(data_internal: str | None = None) -> str:
             or (
                 ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good\nCA\n- Good"
             ),
-            "follow_up": "- No action is required",
+            "follow_up": "- No action is required.",
+        }
+    )
+
+
+def _action_output(
+    *,
+    developer: str = "Message for developer:\n  - reviewed evidence",
+    data_internal: str = (
+        ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
+        "US\n- Ongoing\n"
+        "  - Client A (111) and Client B (222) failed on opportunity-save-history\n"
+        "CA\n- Good"
+    ),
+    follow_up: str = (
+        "- Would you like to:\n"
+        "  - Do you approve re-running the following jobs:\n"
+        "    - Client A (111) and Client B (222): opportunity-save-history"
+    ),
+) -> str:
+    return json.dumps(
+        {
+            "developer": developer,
+            "data_internal": data_internal,
+            "follow_up": follow_up,
         }
     )
 
@@ -115,6 +139,111 @@ def test_reporting_agent_rejects_invalid_data_internal() -> None:
                 correlation_id="case-1",
             )
         )
+
+
+@pytest.mark.parametrize(
+    ("developer", "message"),
+    [
+        ("Message for Developer:\n  - reviewed evidence", "must start"),
+        ("Message for developer:\n- reviewed evidence", "contiguous"),
+        ("Message for developer:", "contiguous"),
+    ],
+)
+def test_reporting_agent_enforces_developer_template(
+    developer: str,
+    message: str,
+) -> None:
+    with pytest.raises(ReportAgentOutputError, match=message):
+        asyncio.run(
+            ReportingAgent(FakeRuntime(_action_output(developer=developer))).write(
+                date(2026, 9, 25),
+                ReportFindings((), ()),
+                _drafts(),
+                correlation_id="case-1",
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    ("data_internal", "message"),
+    [
+        (
+            ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nCA\n- Good\nUS\n- Good",
+            "selected US then CA order",
+        ),
+        (
+            ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
+            "US\n  - Client A (111) failed on job\nCA\n- Good",
+            "exactly one",
+        ),
+        (
+            ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Ongoing\nCA\n- Good",
+            "Ongoing details",
+        ),
+        (
+            ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
+            "US\n- Good\n  - Client A (111) failed on job\nCA\n- Good",
+            "Good regions",
+        ),
+    ],
+)
+def test_reporting_agent_enforces_regional_template(
+    data_internal: str,
+    message: str,
+) -> None:
+    with pytest.raises(ReportAgentOutputError, match=message):
+        asyncio.run(
+            ReportingAgent(
+                FakeRuntime(_action_output(data_internal=data_internal))
+            ).write(
+                date(2026, 9, 25),
+                ReportFindings((), ()),
+                _drafts(),
+                correlation_id="case-1",
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    "follow_up",
+    [
+        "No action is required.",
+        "- Would you like to:",
+        "- Investigate the failure",
+        "- Would you like to:\nInvestigate the failure",
+        "- Would you like to:\n  - Review 15 recoverable opportunities",
+        (
+            "- Would you like to:\n"
+            "  - [Resend validate_event_bus events for Client A](https://example.com)"
+        ),
+    ],
+)
+def test_reporting_agent_enforces_follow_up_template(follow_up: str) -> None:
+    with pytest.raises(ReportAgentOutputError, match="Follow Up must be"):
+        asyncio.run(
+            ReportingAgent(FakeRuntime(_action_output(follow_up=follow_up))).write(
+                date(2026, 9, 25),
+                ReportFindings((), ()),
+                _drafts(),
+                correlation_id="case-1",
+            )
+        )
+
+
+def test_reporting_agent_accepts_complete_canonical_template() -> None:
+    reports = asyncio.run(
+        ReportingAgent(FakeRuntime(_action_output())).write(
+            date(2026, 9, 25),
+            ReportFindings((), ()),
+            _drafts(),
+            correlation_id="case-1",
+        )
+    )
+
+    assert "US\n- Ongoing\n  - Client A (111) and Client B (222) failed on" in (
+        reports.data_internal
+    )
+    assert reports.follow_up.startswith("- Would you like to:")
 
 
 def test_reporting_agent_requires_omission_codes_last() -> None:

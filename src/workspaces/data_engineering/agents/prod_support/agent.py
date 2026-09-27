@@ -88,7 +88,7 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
         CLASSIFY_FAILURE,
         TRIGGER_RESOURCE_DISCOVERY,
     ),
-    version="15",
+    version="17",
     output_template=PROD_SUPPORT_REPORT_TEMPLATE,
     can_delegate=True,
 )

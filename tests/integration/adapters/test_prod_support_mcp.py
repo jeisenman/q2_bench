@@ -45,6 +45,7 @@ def test_mcp_tool_runs_prod_support_agent() -> None:
     assert "URLs to validate\nhttps://airflow-us01" in result["output"]
     assert "Message for developer:" in result["output"]
     assert "\n\n:bangbang: PROD SUPPORT " in result["output"]
+    assert "\nUS\n- Good\nCA\n- Good\n\nFollow Ups:" in result["output"]
     assert "Message for Data Internal Channel" not in result["output"]
     assert "```markdown" not in result["output"]
     assert "Follow Ups:\n\n- No action is required." in result["output"]

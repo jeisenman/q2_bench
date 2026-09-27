@@ -299,9 +299,12 @@ def test_large_resend_uses_raw_log_count_and_pd_rix_follow_up() -> None:
         in reports.data_internal
     )
     assert (
-        "Follow up with pd-rix about 12,471 validate_event_bus events "
-        "for Bank of Hope (111) on 2026-09-22."
+        "Follow up with pd-rix about 12,471 opportunities "
+        "for Bank of Hope (111) for date 09-22-26."
     ) in reports.follow_up
+    assert "Ask a human to identify the production resend application" in (
+        reports.follow_up
+    )
 
 
 def test_resend_follow_up_uses_resource_discovery_link() -> None:
@@ -316,7 +319,7 @@ def test_resend_follow_up_uses_resource_discovery_link() -> None:
         failure_id=failure.failure_id,
         kind=FailureKind.APPLICATION_ERROR,
         confidence="confirmed",
-        evidence=("missing opportunity snapshots",),
+        evidence=("3 missing opportunity snapshots",),
     )
 
     reports = format_reports_with_context(
@@ -339,9 +342,9 @@ def test_resend_follow_up_uses_resource_discovery_link() -> None:
     )
 
     assert (
-        "[Resend validate_event_bus events for Bank of Hope (111)]"
-        "(https://ca02-app.precisionlender.com/"
-        "Admin/Troubleshooting/ResendOpportunitySnapshots) for 2026-09-22"
+        "Resend 3 opportunities for Bank of Hope (111) on "
+        "[Resend Opportunity Snapshots](https://ca02-app.precisionlender.com/"
+        "Admin/Troubleshooting/ResendOpportunitySnapshots) for date 09-22-26."
     ) in reports.follow_up
 
 

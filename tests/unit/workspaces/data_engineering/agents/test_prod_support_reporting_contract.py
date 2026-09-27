@@ -252,8 +252,11 @@ def test_environment_without_reviewed_mapping_does_not_offer_resend() -> None:
         ),
     )
 
-    assert "Resolve the production resend application" in reports.follow_up
-    assert "[Resend validate_event_bus events" not in reports.follow_up
+    assert (
+        "Ask a human to identify the production resend application environment "
+        "for Client A (111) for date 09-25-26."
+    ) in reports.follow_up
+    assert "Resend 208 opportunities" not in reports.follow_up
 
 
 def test_report_rejects_missing_or_duplicate_structured_evidence() -> None:

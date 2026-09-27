@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from datetime import date, datetime
 from typing import NamedTuple
 from uuid import UUID
 
@@ -18,30 +17,9 @@ from workspaces.data_engineering.agents.prod_support.reporting_config import (
 
 CLIENT_DAG_PREFIX = "l3-main-"
 RESEND_TASK = "validate_event_bus_opportunities"
-LARGE_RESEND_THRESHOLD = 100
-KPO_ATTEMPT_THRESHOLD = 5
 MIN_GROUPED_SUBJECTS = 2
 PAIR_SIZE = 2
 TRUSTED_IDENTITY_STATUSES = frozenset({"unique", "user_confirmed", "reviewed"})
-KPO_SIZER_AGENT_URI = "agent://kpo-sizer/definition"
-RESEND_URLS = {
-    "us01": (
-        "https://us01-app.precisionlender.com/"
-        "Admin/Troubleshooting/ResendOpportunitySnapshots"
-    ),
-    "us02": (
-        "https://us02-app.precisionlender.com/"
-        "Admin/Troubleshooting/ResendOpportunitySnapshots"
-    ),
-    "ent01": (
-        "https://bacprod.precisionlender.com/"
-        "Admin/Troubleshooting/ResendOpportunitySnapshots"
-    ),
-    "ca02": (
-        "https://ca02-app.precisionlender.com/"
-        "Admin/Troubleshooting/ResendOpportunitySnapshots"
-    ),
-}
 UUID_PATTERN = re.compile(
     r"(?i)(?<![0-9a-f])"
     r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
@@ -52,6 +30,10 @@ EVENT_COUNT_PATTERN = re.compile(
     r"(?P<count>\d[\d,]*)\s+"
     r"(?:unique\s+)?(?:missing\s+)?(?:opportunity\s+)?"
     r"(?:snapshots?|events?)",
+    re.IGNORECASE,
+)
+OPPORTUNITY_ID_PATTERN = re.compile(
+    r"OpportunityId:\s*([0-9a-f-]{36})",
     re.IGNORECASE,
 )
 
@@ -248,131 +230,25 @@ def include_in_data_internal(
     return not config.omits(failure)
 
 
-def format_follow_up(
-    operational_date: date,
-    failures: tuple[AirflowFailure, ...],
-    diagnoses: dict[str, FailureDiagnosis],
-    identities: dict[str, ClientIdentity],
-    config: ProdSupportReportConfig,
-) -> str:
-    """Render only explicit, approval-gated remediation choices."""
-    if not failures:
-        return "- No action is required."
-    actions: list[str] = []
-    resend_failures = tuple(
-        failure for failure in failures if is_resend_failure(failure)
-    )
-    unique_resends: dict[tuple[str, str], AirflowFailure] = {}
-    for failure in resend_failures:
-        label = failure_subject(failure, identities)
-        resend_date = logical_date(failure)
-        key = label, resend_date
-        previous = unique_resends.get(key)
-        if previous is None or _resend_count(
-            failure,
-            diagnoses,
-        ) > _resend_count(previous, diagnoses):
-            unique_resends[key] = failure
-    for (label, resend_date), failure in sorted(unique_resends.items()):
-        count = event_count(diagnoses[failure.failure_id], failure.log)
-        identity = identities.get(client_id(failure) or "")
-        url = resend_url(
-            identity.environment if identity is not None else None,
-            identity.reviewed_resend_url if identity is not None else None,
-        )
-        if count is not None and count > LARGE_RESEND_THRESHOLD:
-            actions.append(
-                f"  - Follow up with pd-rix about {count:,} validate_event_bus "
-                f"events for {label} on {resend_date}."
-            )
-        if url is None:
-            actions.append(
-                "  - Resolve the production resend application for "
-                f"{label} before resending validate_event_bus events for "
-                f"{resend_date}."
-            )
-        else:
-            actions.append(
-                f"  - [Resend validate_event_bus events for {label}]({url}) "
-                f"for {resend_date}"
-            )
-    rerun_failures = tuple(
-        failure
-        for failure in failures
-        if not is_resend_failure(failure) and include_in_data_internal(failure, config)
-    )
-    if rerun_failures:
-        actions.append("  - Do you approve re-running the following jobs:")
-        regions = sorted(
-            {failure.region for failure in rerun_failures},
-            key=lambda region: region.value,
-        )
-        for region in regions:
-            regional = tuple(
-                failure for failure in rerun_failures if failure.region is region
-            )
-            for group in group_failures_for_reporting(regional, identities):
-                kpo = (
-                    f"; also move to [KPO sizing agent]({KPO_SIZER_AGENT_URI})"
-                    if any(
-                        failure.try_number > KPO_ATTEMPT_THRESHOLD
-                        for failure in group.failures
-                    )
-                    else ""
-                )
-                actions.append(
-                    f"    - {_join_terms(group.subject_labels)}: "
-                    f"{_join_terms(group.jobs)} for "
-                    f"{operational_date.isoformat()}{kpo}"
-                )
-    if not actions:
-        return "- No action is required."
-    return "\n".join(("- Would you like to:", *actions))
-
-
-def logical_date(failure: AirflowFailure) -> str:
-    """Return the Airflow logical date used for a resend action."""
-    _, separator, timestamp = failure.run_id.partition("__")
-    if separator:
-        try:
-            return datetime.fromisoformat(timestamp).date().isoformat()
-        except ValueError:
-            pass
-    return failure.start_at.date().isoformat()
-
-
-def resend_url(
-    environment: str | None,
-    reviewed_url: str | None = None,
-) -> str | None:
-    """Return the reviewed production resend URL for an environment."""
-    del environment
-    if reviewed_url is not None and reviewed_url in RESEND_URLS.values():
-        return reviewed_url
-    return None
-
-
 def event_count(diagnosis: FailureDiagnosis, log: str = "") -> int | None:
-    """Return the largest event count stated in diagnosis evidence or its log."""
+    """Return the largest stated count or unique captured opportunity-ID count."""
+    sources = (*diagnosis.evidence, log)
     counts = [
         int(match.group("count").replace(",", ""))
-        for evidence in (*diagnosis.evidence, log)
+        for evidence in sources
         for match in EVENT_COUNT_PATTERN.finditer(evidence)
     ]
-    return max(counts, default=None)
+    opportunity_ids = {
+        match.group(1).lower()
+        for evidence in sources
+        for match in OPPORTUNITY_ID_PATTERN.finditer(evidence)
+    }
+    return max((*counts, len(opportunity_ids)), default=None) or None
 
 
 def is_resend_failure(failure: AirflowFailure) -> bool:
     """Return whether a nested or direct task is event-bus validation."""
     return RESEND_TASK in failure.task_id.lower()
-
-
-def _resend_count(
-    failure: AirflowFailure,
-    diagnoses: dict[str, FailureDiagnosis],
-) -> int:
-    """Return a sortable resend count when evidence contains one."""
-    return event_count(diagnoses[failure.failure_id], failure.log) or 0
 
 
 def _failure_sort_key(failure: AirflowFailure) -> tuple[object, ...]:

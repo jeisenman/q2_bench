@@ -95,10 +95,18 @@ agent delegation.
    failures. Raw logs are not passed to reporting.
 8. Build deterministic validation links and audience drafts.
 9. If a reporting runtime is configured, make one leaf Reporting Agent call for
-   all three audience outputs. Validate JSON, headings, regional scope,
-   punctuation, omission placement, and suggestion-only language.
+   all three audience outputs. Fail closed unless Developer starts with
+   `Message for developer:` and contiguous two-space bullets; Data Internal
+   starts with the exclamation banner, renders selected regions in canonical
+   US-then-CA order, puts exactly one `Good` or `Ongoing` status under each
+   region, and uses two-space detail bullets only under `Ongoing`.
 10. Put omitted codes on the last detail line in each represented Data Internal
-    regional block. Follow Up remains last in the combined report.
+    regional block. Follow Up remains last in the combined report and is either
+    `- No action is required.` or a `- Would you like to:` list of indented,
+    suggestion-only actions. Group approved resends by reviewed link and logical
+    date as `Resend <count> opportunities for <clients> on <link> for date
+    <MM-DD-YY>`. When the environment or reviewed link is unavailable, ask a
+    human to identify the production resend application environment.
 11. Return the selected regions and operational date in structured attributes.
 12. For benchmark collection, persist one manifest-backed bundle and replay
     Airflow, cluster health, and Resource Discovery from that bundle.

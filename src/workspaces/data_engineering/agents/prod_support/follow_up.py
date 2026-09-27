@@ -2,15 +2,64 @@
 
 from __future__ import annotations
 
-from datetime import date
+from dataclasses import dataclass
+from datetime import date, datetime
 
+from workspaces.data_engineering.agents.prod_support.models import (
+    AirflowFailure,
+    FailureDiagnosis,
+)
 from workspaces.data_engineering.agents.prod_support.report_findings import (
     ReportFindings,
 )
-from workspaces.data_engineering.agents.prod_support.reporting_details import (
-    client_identities,
-    format_follow_up,
+from workspaces.data_engineering.agents.prod_support.reporting_config import (
+    ProdSupportReportConfig,
 )
+from workspaces.data_engineering.agents.prod_support.reporting_details import (
+    ClientIdentity,
+    client_id,
+    client_identities,
+    event_count,
+    failure_subject,
+    group_failures_for_reporting,
+    include_in_data_internal,
+    is_resend_failure,
+)
+
+LARGE_RESEND_THRESHOLD = 100
+KPO_ATTEMPT_THRESHOLD = 5
+PAIR_SIZE = 2
+KPO_SIZER_AGENT_URI = "agent://kpo-sizer/definition"
+RESEND_URLS = frozenset(
+    {
+        (
+            "https://us01-app.precisionlender.com/"
+            "Admin/Troubleshooting/ResendOpportunitySnapshots"
+        ),
+        (
+            "https://us02-app.precisionlender.com/"
+            "Admin/Troubleshooting/ResendOpportunitySnapshots"
+        ),
+        (
+            "https://bacprod.precisionlender.com/"
+            "Admin/Troubleshooting/ResendOpportunitySnapshots"
+        ),
+        (
+            "https://ca02-app.precisionlender.com/"
+            "Admin/Troubleshooting/ResendOpportunitySnapshots"
+        ),
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ResendCandidate:
+    """One deduplicated client/date resend candidate."""
+
+    label: str
+    resend_date: str
+    count: int | None
+    url: str | None
 
 
 class FollowUp:
@@ -22,10 +71,162 @@ class FollowUp:
         findings: ReportFindings,
     ) -> str:
         """Return actionable resend and approval-gated rerun choices."""
-        return format_follow_up(
+        return _format_follow_up(
             operational_date,
             findings.failures,
             {item.failure_id: item for item in findings.diagnoses},
             client_identities(findings.resource_discovery_results),
             findings.config,
         )
+
+
+def _format_follow_up(
+    operational_date: date,
+    failures: tuple[AirflowFailure, ...],
+    diagnoses: dict[str, FailureDiagnosis],
+    identities: dict[str, ClientIdentity],
+    config: ProdSupportReportConfig,
+) -> str:
+    """Render explicit remediation choices with human help for evidence gaps."""
+    if not failures:
+        return "- No action is required."
+    actions = list(_resend_actions(failures, diagnoses, identities))
+    rerun_failures = tuple(
+        failure
+        for failure in failures
+        if not is_resend_failure(failure) and include_in_data_internal(failure, config)
+    )
+    if rerun_failures:
+        actions.append("  - Do you approve re-running the following jobs:")
+        regions = sorted(
+            {failure.region for failure in rerun_failures},
+            key=lambda region: region.value,
+        )
+        for region in regions:
+            regional = tuple(
+                failure for failure in rerun_failures if failure.region is region
+            )
+            for group in group_failures_for_reporting(regional, identities):
+                kpo = (
+                    f"; also move to [KPO sizing agent]({KPO_SIZER_AGENT_URI})"
+                    if any(
+                        failure.try_number > KPO_ATTEMPT_THRESHOLD
+                        for failure in group.failures
+                    )
+                    else ""
+                )
+                actions.append(
+                    f"    - {_join_terms(group.subject_labels)}: "
+                    f"{_join_terms(group.jobs)} for "
+                    f"{operational_date.isoformat()}{kpo}"
+                )
+    if not actions:
+        return "- No action is required."
+    return "\n".join(("- Would you like to:", *actions))
+
+
+def _resend_actions(
+    failures: tuple[AirflowFailure, ...],
+    diagnoses: dict[str, FailureDiagnosis],
+    identities: dict[str, ClientIdentity],
+) -> tuple[str, ...]:
+    """Group resend actions by approved destination and logical date."""
+    candidates = _resend_candidates(failures, diagnoses, identities)
+    missing_routes: dict[str, list[str]] = {}
+    missing_counts: dict[tuple[str, str], list[str]] = {}
+    actionable: dict[tuple[str, str], list[ResendCandidate]] = {}
+    large_unrouted: list[ResendCandidate] = []
+    for candidate in candidates:
+        if candidate.url is None:
+            missing_routes.setdefault(candidate.resend_date, []).append(candidate.label)
+            if candidate.count is not None and candidate.count > LARGE_RESEND_THRESHOLD:
+                large_unrouted.append(candidate)
+        elif candidate.count is None:
+            missing_counts.setdefault(
+                (candidate.resend_date, candidate.url),
+                [],
+            ).append(candidate.label)
+        else:
+            actionable.setdefault(
+                (candidate.resend_date, candidate.url),
+                [],
+            ).append(candidate)
+
+    actions = [
+        f"  - Follow up with pd-rix about {candidate.count:,} opportunities "
+        f"for {candidate.label} for date {candidate.resend_date}."
+        for candidate in large_unrouted
+        if candidate.count is not None
+    ]
+    actions.extend(
+        "  - Ask a human to identify the production resend application "
+        f"environment for {_join_terms(tuple(labels))} for date {resend_date}."
+        for resend_date, labels in sorted(missing_routes.items())
+    )
+    actions.extend(
+        "  - Ask a human to confirm the opportunity count for "
+        f"{_join_terms(tuple(labels))} on "
+        f"[Resend Opportunity Snapshots]({url}) for date {resend_date}."
+        for (resend_date, url), labels in sorted(missing_counts.items())
+    )
+    for (resend_date, url), grouped in sorted(actionable.items()):
+        labels = tuple(candidate.label for candidate in grouped)
+        count = sum(candidate.count or 0 for candidate in grouped)
+        if count > LARGE_RESEND_THRESHOLD:
+            actions.append(
+                f"  - Follow up with pd-rix about {count:,} opportunities for "
+                f"{_join_terms(labels)} on [Resend Opportunity Snapshots]({url}) "
+                f"for date {resend_date}."
+            )
+        actions.append(
+            f"  - Resend {count:,} opportunities for {_join_terms(labels)} on "
+            f"[Resend Opportunity Snapshots]({url}) for date {resend_date}."
+        )
+    return tuple(actions)
+
+
+def _resend_candidates(
+    failures: tuple[AirflowFailure, ...],
+    diagnoses: dict[str, FailureDiagnosis],
+    identities: dict[str, ClientIdentity],
+) -> tuple[ResendCandidate, ...]:
+    """Deduplicate repeated client/date failures using the largest known count."""
+    selected: dict[tuple[str, str], ResendCandidate] = {}
+    for failure in failures:
+        if not is_resend_failure(failure):
+            continue
+        label = failure_subject(failure, identities)
+        resend_date = _logical_date(failure).strftime("%m-%d-%y")
+        identity = identities.get(client_id(failure) or "")
+        reviewed_url = identity.reviewed_resend_url if identity is not None else None
+        candidate = ResendCandidate(
+            label=label,
+            resend_date=resend_date,
+            count=event_count(diagnoses[failure.failure_id], failure.log),
+            url=reviewed_url if reviewed_url in RESEND_URLS else None,
+        )
+        key = label, resend_date
+        previous = selected.get(key)
+        if previous is None or (candidate.count or 0) > (previous.count or 0):
+            selected[key] = candidate
+    return tuple(selected[key] for key in sorted(selected))
+
+
+def _logical_date(failure: AirflowFailure) -> date:
+    """Return the Airflow logical date used for a resend action."""
+    _, separator, timestamp = failure.run_id.partition("__")
+    if separator:
+        try:
+            return datetime.fromisoformat(timestamp).date()
+        except ValueError:
+            pass
+    return failure.start_at.date()
+
+
+def _join_terms(values: tuple[str, ...]) -> str:
+    """Join labels with natural-language punctuation."""
+    if len(values) < PAIR_SIZE:
+        return values[0] if values else ""
+    if len(values) == PAIR_SIZE:
+        return f"{values[0]} and {values[1]}"
+    return f"{', '.join(values[:-1])}, and {values[-1]}"
