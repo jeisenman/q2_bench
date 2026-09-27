@@ -99,7 +99,7 @@ expected_failure_ids:
   - CA-02|l3-main-47322c85-71cf-45ea-9695-6bdcc1cc1ea9|manual__2026-09-24T05:00:00+00:00|pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history
   - CA-02|opportunity_avro_aggregation_backfill|manual__2026-09-25T16:45:52.063728+00:00|opportunity_avro_aggregation
 expected_diagnoses:
-  triage_omitted:
+  legacy_unverified_omissions:
     - BoFA Delivery to Promise Other Products
     - Scotiabank Delivery to Promise Other Products
     - CA Delivery to Promise Other Products
@@ -124,9 +124,9 @@ expected_developer_message: |
     - CA Cluster Health: CA application health and DAG parsing are healthy as of 2026-09-26T17:04:26Z; one retired DAG processor replica remained unready with 13 restarts and KEDA status is unavailable.
     - These health bullets describe current 2026-09-26 state; the failures below are historical 2026-09-25 evidence.
     - Bremer Bank Relationship Signals time-series aggregation remains an ongoing carry-forward from the prior operational day. Attempt 9 exited -9 without an explicit memory signal; classification: unknown_resource_termination.
-    - BoFA and Scotiabank Delivery to Promise triage was omitted by registered D2P policy.
-    - US Delivery to Promise triage was omitted by registered D2P policy.
-    - US MI3 triage was omitted by registered MI3 policy.
+    - BoFA and Scotiabank Delivery to Promise are legacy omissions without captured exact-log or in-window success verification.
+    - US Delivery to Promise is a legacy omission without captured exact-log or in-window success verification.
+    - US MI3 is a legacy omission without captured exact-log or in-window success verification.
     - Subscriber checks failed on stale OpportunitySaved schema versions.
     - Scotiabank, CIBC Canada, and Scotiabank Data Validation failed validate_event_bus_opportunities for 2026-09-14 with 208, 79, and 11 missing snapshots respectively.
     - Resource Discovery supplied reviewed CA-02 resend-event links for all three clients.
@@ -150,13 +150,11 @@ expected_prod_support_message: |
 follow_on_message: |
   Follow Ups:
   - Would you like to:
-    - Follow up with pd-rix about 208 validate_event_bus events for Scotiabank (1f0) on 2026-09-14.
-    - [Resend validate_event_bus events for Scotiabank (1f0)](https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots) for 2026-09-14
-    - [Resend validate_event_bus events for CIBC Canada (fbf)](https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots) for 2026-09-14
-    - [Resend validate_event_bus events for Scotiabank Data Validation (b49)](https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots) for 2026-09-14
+    - Ask a human to resolve the client identity for Unresolved client (473) before proposing remediation for date 09-25-26.
+    - Follow up with pd-rix about 298 opportunities for Scotiabank (1f0), CIBC Canada (fbf), and Scotiabank Data Validation (b49) on [Resend Opportunity Snapshots](https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots) for date 09-14-26.
+    - Resend 298 opportunities for Scotiabank (1f0), CIBC Canada (fbf), and Scotiabank Data Validation (b49) on [Resend Opportunity Snapshots](https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots) for date 09-14-26.
     - Do you approve re-running the following jobs:
       - CIBC Canada Validation (cef): opportunity-save-history, opportunities-report, and relationship-quadrants for 2026-09-25
-      - Unresolved client (473): relationship-quadrants and downstream opportunity and pipeline history jobs for 2026-09-25
       - CIBC Canada (fbf): engagement-events and high-quality-core-account-financial-statements for 2026-09-25
       - Bremer Bank, National Association (a6f): relationship-signals-time-series for 2026-09-25; also move to [KPO sizing agent](agent://kpo-sizer/definition)
 require_reported_dags_exist: true

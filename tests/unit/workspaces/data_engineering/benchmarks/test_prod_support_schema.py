@@ -9,12 +9,16 @@ ROOT = (
 )
 SNAPSHOTS = (ROOT / "09-25-26", ROOT / "09-26-26")
 V2_SNAPSHOT = ROOT / "09-26-26-v2"
+CAPTURED_SNAPSHOT = ROOT / "09-27-26"
 ALL_SNAPSHOTS = (*SNAPSHOTS, V2_SNAPSHOT)
 EXPECTED_CAPTURE_RECORDS = 65
 EXPECTED_IN_WINDOW_FAILURES = 50
 EXPECTED_MCP_FAILURES = 22
 EXPECTED_TRACE_FAILURES = 23
 EXPECTED_NOT_ACCESSED_FAILURES = 27
+SEPTEMBER_26_CAPTURE_FAILURES = 45
+SEPTEMBER_26_US_FAILURES = 20
+SEPTEMBER_26_CA_FAILURES = 25
 
 
 def _load(path: Path) -> object:
@@ -122,6 +126,46 @@ def test_prod_support_suite_defines_three_evaluation_layers() -> None:
     assert "single_reporting_pass" in suite["layers"]["coordination"]["dimensions"]
     assert "leaf_delegation" in suite["layers"]["coordination"]["dimensions"]
     assert "prod-support-us-ca-2026-09-25" in suite["layers"]["system"]["cases"]
+
+
+def test_september_27_snapshot_registers_a_curated_system_case() -> None:
+    suite = _load(CAPTURED_SNAPSHOT / "suite.yaml")
+    cases = _load(CAPTURED_SNAPSHOT / "cases.yaml")
+    expectations = _load(CAPTURED_SNAPSHOT / "hidden" / "case_expectations.yaml")
+    manifest = _load(CAPTURED_SNAPSHOT / "evidence" / "capture_manifest.json")
+    dag_parsing = _load(CAPTURED_SNAPSHOT / "evidence" / "dag_parsing.json")
+    us_evidence = _load(CAPTURED_SNAPSHOT / "evidence" / "current-us-findings.json")
+    ca_evidence = _load(CAPTURED_SNAPSHOT / "evidence" / "current-ca-findings.json")
+
+    case = cases["cases"][0]
+    assert suite["suite_date"] == "2026-09-27"
+    assert suite["operational_date"] == "2026-09-26"
+    assert suite["layers"]["system"]["cases"] == [
+        "prod-support-us-ca-operational-2026-09-26"
+    ]
+    assert case["id"] == "prod-support-us-ca-operational-2026-09-26"
+    assert case["operational_window"] == {
+        "start": "2026-09-26T05:00:00Z",
+        "end": "2026-09-27T05:00:00Z",
+    }
+    assert len(expectations["expected_failure_ids"]) == SEPTEMBER_26_CAPTURE_FAILURES
+    assert expectations["expected_failure_counts"] == {"US-01": 20, "CA-02": 25}
+    assert manifest["capture"]["in_window_failure_count"] == (
+        SEPTEMBER_26_CAPTURE_FAILURES
+    )
+    assert (
+        sum(item["record_count"] for item in us_evidence["finding_groups"])
+        == SEPTEMBER_26_US_FAILURES
+    )
+    assert (
+        sum(item["record_count"] for item in ca_evidence["finding_groups"])
+        == SEPTEMBER_26_CA_FAILURES
+    )
+    assert manifest["capture"]["raw_logs_retained"] == 0
+    assert {
+        item["region"]: item["active_dag_count"] for item in dag_parsing["regions"]
+    } == {"US-01": 209, "CA-02": 34}
+    assert all(item["dags_parsing_healthy"] for item in dag_parsing["regions"])
 
 
 def test_september_26_v2_holistic_mcp_evidence_contract() -> None:

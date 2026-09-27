@@ -106,6 +106,42 @@ def test_airflow_source_reads_structured_log_content() -> None:
     assert asyncio.run(source.fetch_log(failure)) == "structured task log"
 
 
+def test_airflow_source_checks_same_task_success_inside_window() -> None:
+    transport = FakeTransport()
+    source = AirflowApiSource(
+        (
+            AirflowRegionConfig(
+                Region.US_01,
+                "https://airflow.example.test",
+                "user",
+                "password",
+            ),
+        ),
+        transport,
+    )
+    failure = AirflowFailure(
+        Region.US_01,
+        "l3-main-client",
+        "run",
+        "high_quality_accounts",
+        datetime(2026, 9, 25, 5, tzinfo=UTC),
+        datetime(2026, 9, 25, 6, tzinfo=UTC),
+    )
+
+    recovered = asyncio.run(
+        source.has_success_within(
+            failure,
+            datetime(2026, 9, 25, 5, tzinfo=UTC),
+            datetime(2026, 9, 26, 5, tzinfo=UTC),
+        )
+    )
+
+    assert recovered is True
+    assert transport.payload["state"] == ["success"]
+    assert transport.payload["dag_ids"] == ["l3-main-client"]
+    assert transport.payload["task_ids"] == ["high_quality_accounts"]
+
+
 def test_airflow_source_reads_task_operator_metadata() -> None:
     class MetadataTransport(FakeTransport):
         def request(

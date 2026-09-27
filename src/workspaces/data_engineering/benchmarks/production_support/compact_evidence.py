@@ -83,6 +83,9 @@ def build_compact_evidence(
     )
     regions = Counter(str(record["region"]) for record in compact)
     omitted_count = sum(record.get("triage_status") == "omitted" for record in compact)
+    exact_log_count = sum(
+        record.get("log_retrieval") != "omitted_by_policy" for record in compact
+    )
     result: dict[str, object] = {
         "schema_version": 1,
         "dataset": str(dataset),
@@ -93,7 +96,7 @@ def build_compact_evidence(
         "summary": {
             "record_count": len(compact),
             "regions": dict(sorted(regions.items())),
-            "exact_log_records": len(compact) - omitted_count,
+            "exact_log_records": exact_log_count,
             "triage_omitted_records": omitted_count,
             "raw_logs_retained": 0,
         },
@@ -135,7 +138,8 @@ def summary_record(
 def _compact_record(raw: object) -> dict[str, object]:
     record = _mapping(raw, Path("<dataset-record>"))
     triage_status = str(record.get("triage_status", "investigated"))
-    if triage_status == "omitted":
+    log = str(record.get("log", ""))
+    if triage_status == "omitted" and not log:
         result: dict[str, object] = {
             "region": str(record["region"]),
             "dag_id": str(record["dag_id"]),
@@ -147,14 +151,15 @@ def _compact_record(raw: object) -> dict[str, object]:
             "log_status": "omitted",
             "log_characters": 0,
             "evidence": (),
+            "success_within_window": record.get("success_within_window"),
+            "verification_status": "legacy_unverified",
         }
         omission_code = record.get("omission_code")
         if omission_code is not None:
             result["omission_code"] = str(omission_code)
         return result
-    log = str(record.get("log", ""))
     evidence = _evidence_lines(log)
-    return {
+    result = {
         "region": str(record["region"]),
         "dag_id": str(record["dag_id"]),
         "run_id": str(record["run_id"]),
@@ -166,6 +171,12 @@ def _compact_record(raw: object) -> dict[str, object]:
         "log_characters": len(log),
         "evidence": evidence,
     }
+    if "success_within_window" in record:
+        result["success_within_window"] = bool(record["success_within_window"])
+    omission_code = record.get("omission_code")
+    if omission_code is not None:
+        result["omission_code"] = str(omission_code)
+    return result
 
 
 def _inside_window(

@@ -24,14 +24,13 @@ from workspaces.data_engineering.agents.prod_support.investigation import (
 )
 from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
-    EvidenceSource,
-    EvidenceStatus,
     FailureDiagnosis,
     FailureKind,
     ProdSupportOutcome,
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
+    AirflowSuccessSource,
     ClusterHealthSource,
     ResourceDiscoveryInvoker,
 )
@@ -50,6 +49,9 @@ from workspaces.data_engineering.agents.prod_support.reporting_config import (
 )
 from workspaces.data_engineering.agents.prod_support.reporting_details import (
     client_id as extract_client_id,
+)
+from workspaces.data_engineering.agents.prod_support.retry_agent import (
+    retry_candidates,
 )
 from workspaces.data_engineering.agents.prod_support.scope import resolve_scope
 from workspaces.data_engineering.agents.prod_support.templates import (
@@ -76,8 +78,12 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
         "regions. Run the selected cluster-health and Airflow checks concurrently, "
         "then pass their validated results to one reporting agent. Cluster checks "
         "return pod state, restart counts, and KEDA health. Airflow checks return "
-        "direct errors and do not triage configured D2P or MI3 omissions. No component "
-        "may delegate further or mutate production."
+        "DAG-processor health, active DAG counts, and direct errors. Configured D2P "
+        "or MI3 omission candidates still require the "
+        "exact failed task log and a same-DAG/task success inside the operational "
+        "window before reporting can collapse them to omission codes. No component "
+        "may delegate further or mutate production. The single Reporting Agent output "
+        "is authoritative and must not be rewritten by the orchestrator."
     ),
     tools=(
         INSPECT_CLUSTER_HEALTH,
@@ -88,7 +94,7 @@ PROD_SUPPORT_DEFINITION = AgentDefinition(
         CLASSIFY_FAILURE,
         TRIGGER_RESOURCE_DISCOVERY,
     ),
-    version="17",
+    version="19",
     output_template=PROD_SUPPORT_REPORT_TEMPLATE,
     can_delegate=True,
 )
@@ -108,6 +114,7 @@ class ProdSupportAgent:
     ) -> None:
         """Initialize with either a production or replay Airflow source."""
         services = investigation or InvestigationServices()
+        self._source = source
         self._clock = clock or (lambda: datetime.now(UTC))
         self._resource_discovery = resource_discovery
         self._airflow_checker = AirflowChecker(source)
@@ -183,35 +190,36 @@ class ProdSupportAgent:
             for failure in failures
             if not _ignored_by_resource_discovery(failure, resource_results)
         )
-        investigation_targets = tuple(
-            failure
-            for failure in reportable
-            if not config.skips_airflow_triage(failure)
-        )
         investigated = await self._bounded_map(
-            investigation_targets,
+            reportable,
             self._failure_investigator.investigate,
         )
         investigated_by_id = {item[0].failure_id: item for item in investigated}
-        hydrated: tuple[AirflowFailure, ...] = tuple(
-            (
-                replace(failure, log="")
-                if config.skips_airflow_triage(failure)
-                else investigated_by_id[failure.failure_id][0]
-            )
-            for failure in reportable
+        recovered_omissions = await self._verified_omission_ids(
+            reportable,
+            config,
+            window.failed_since,
+            failed_before,
+        )
+        verified_config = config.with_verified_omissions(recovered_omissions)
+        hydrated = tuple(
+            investigated_by_id[failure.failure_id][0] for failure in reportable
         )
         diagnoses = tuple(
             (
-                _omitted_diagnosis(failure, config)
-                if config.skips_airflow_triage(failure)
+                _omitted_diagnosis(
+                    failure,
+                    verified_config,
+                    investigated_by_id[failure.failure_id][1],
+                )
+                if verified_config.omits(failure)
                 else investigated_by_id[failure.failure_id][1]
             )
             for failure in reportable
         )
         report_context = ProdSupportReportContext(
             resource_discovery_results=resource_results,
-            config=config,
+            config=verified_config,
             cluster_health=cluster_health,
             regions=scope.regions,
         )
@@ -250,7 +258,36 @@ class ProdSupportAgent:
             follow_up=reports.follow_up,
             resource_discovery_results=resource_results,
             regions=scope.regions,
+            retry_candidates=retry_candidates(findings),
         )
+
+    async def _verified_omission_ids(
+        self,
+        failures: tuple[AirflowFailure, ...],
+        config: ProdSupportReportConfig,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> tuple[str, ...]:
+        """Return omission candidates with a bounded same-task success."""
+        source = self._source
+        if not isinstance(source, AirflowSuccessSource):
+            return ()
+        candidates = tuple(
+            failure
+            for failure in failures
+            if config.configured_omission_group(failure) is not None
+        )
+
+        async def verify(failure: AirflowFailure) -> str | None:
+            recovered = await source.has_success_within(
+                failure,
+                start_at,
+                end_at,
+            )
+            return failure.failure_id if recovered else None
+
+        results = await self._bounded_map(candidates, verify)
+        return tuple(item for item in results if item is not None)
 
     async def _trigger_resource_discovery(
         self,
@@ -313,15 +350,18 @@ def _ignored_by_resource_discovery(
 def _omitted_diagnosis(
     failure: AirflowFailure,
     config: ProdSupportReportConfig,
+    diagnosis: FailureDiagnosis,
 ) -> FailureDiagnosis:
-    """Return the registered no-triage diagnosis for D2P or MI3."""
+    """Return a recovered omission while retaining exact-log provenance."""
     group = config.omission_group(failure)
     label = group.value.upper() if group is not None else "configured"
-    return FailureDiagnosis(
-        failure_id=failure.failure_id,
+    return replace(
+        diagnosis,
         kind=FailureKind.OMITTED,
-        confidence="configured",
-        evidence=(f"{label} triage omitted by policy",),
-        source=EvidenceSource.UNKNOWN,
-        status=EvidenceStatus.UNKNOWN,
+        confidence="verified_recovery",
+        evidence=(
+            f"{label} exact failure log reviewed",
+            "same DAG and task succeeded inside the operational window",
+            *diagnosis.evidence,
+        )[:3],
     )

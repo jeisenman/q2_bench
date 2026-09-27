@@ -13,11 +13,14 @@ from mcp_servers.prod_support import (
     _report_runtime,
     _resource_discovery,
     _source,
+    get_prod_support_omissions,
     list_prod_support_updates,
     prod_support_definition,
     prod_support_prompt,
     prod_support_updates,
     run_prod_support,
+    set_prod_support_omissions,
+    setup_prod_support,
 )
 from workspaces.data_engineering.agents.prod_support import (
     ReplayAirflowFailureSource,
@@ -27,9 +30,15 @@ from workspaces.data_engineering.agents.resource_discovery import (
 )
 
 EXPECTED_REGION_COUNT = 2
+PRIVATE_DIRECTORY_MODE = 0o700
+PRIVATE_FILE_MODE = 0o600
 
 
-def test_mcp_tool_runs_prod_support_agent() -> None:
+def test_mcp_tool_runs_prod_support_agent(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("PROD_SUPPORT_HOME", str(tmp_path / ".prod_support"))
     result = asyncio.run(
         run_prod_support(
             prompt="Investigate the orders pipeline.",
@@ -63,7 +72,10 @@ def test_mcp_tool_runs_prod_support_agent() -> None:
         "backfill",
         "cmm",
     ]
-    assert result["related_agents"] == {"kpo_sizer": "agent://kpo-sizer/definition"}
+    assert result["related_agents"] == {
+        "follow_up": "agent://prod-support/follow-up/definition",
+        "kpo_sizer": "agent://kpo-sizer/definition",
+    }
     assert result["tool_calls"] == (
         "inspect_cluster_health",
         "discover_airflow_failures",
@@ -84,6 +96,24 @@ def test_mcp_tool_accepts_empty_data_internal_omission_override() -> None:
     )
 
     assert result["attributes"]["data_internal_omissions"] == []
+
+
+def test_mcp_sets_up_and_updates_private_omissions(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / ".prod_support"
+    monkeypatch.setenv("PROD_SUPPORT_HOME", str(root))
+
+    initialized = asyncio.run(setup_prod_support())
+    updated = asyncio.run(set_prod_support_omissions(["d2p", "subscriber"]))
+    loaded = asyncio.run(get_prod_support_omissions())
+
+    assert initialized["path"] == str(root / "omissions.json")
+    assert updated["data_internal_omissions"] == ["d2p", "subscriber"]
+    assert loaded == updated
+    assert root.stat().st_mode & 0o777 == PRIVATE_DIRECTORY_MODE
+    assert (root / "omissions.json").stat().st_mode & 0o777 == PRIVATE_FILE_MODE
 
 
 def test_cluster_health_source_is_production_only(monkeypatch) -> None:

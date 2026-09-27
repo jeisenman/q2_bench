@@ -1,0 +1,40 @@
+{
+  "captured_at": "2026-09-27T11:20:04.727667+00:00",
+  "regions": [
+    {
+      "active_dag_count": null,
+      "application_healthy": null,
+      "dags_parsing_healthy": null,
+      "keda_status": "unavailable",
+      "observed_at": "2026-09-27T11:20:09.474103+00:00",
+      "pods_healthy": false,
+      "region": "US-01",
+      "restart_count": 3843,
+      "state": "unhealthy",
+      "symptoms": [
+        "unready pods: get-ra-job-status-baz7v3up"
+      ],
+      "warnings": [
+        "KEDA query failed with exit code 1"
+      ]
+    },
+    {
+      "active_dag_count": null,
+      "application_healthy": null,
+      "dags_parsing_healthy": null,
+      "keda_status": "unavailable",
+      "observed_at": "2026-09-27T11:20:08.607064+00:00",
+      "pods_healthy": false,
+      "region": "CA-02",
+      "restart_count": 282,
+      "state": "unhealthy",
+      "symptoms": [
+        "unready pods: airflow-dag-processor-5d89bb769-sdwcn"
+      ],
+      "warnings": [
+        "KEDA query failed with exit code 1"
+      ]
+    }
+  ],
+  "schema_version": 1
+}

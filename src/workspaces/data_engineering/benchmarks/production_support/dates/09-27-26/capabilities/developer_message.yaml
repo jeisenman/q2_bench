@@ -1,0 +1,57 @@
+schema_version: 1
+capability: developer_message
+description: Render a complete, human-readable technical handoff.
+cases:
+  - id: september-26-developer-message
+    expectations:
+      required_heading: "Message for developer:"
+      required_bullet_prefix: "  - "
+      require_compact_bullets: true
+      prohibit_markdown_section_headings: true
+      prohibit_blank_lines_between_bullets: true
+      group_same_job_across_clients: true
+      group_multiple_jobs_per_client: true
+      prohibit_repeated_client_job_pairs: true
+      required_group_shape: "ClientA (123), ClientB (456) failed on <job>"
+      required_client_group_shape: "ClientA (123) failed on <job1>, <job2>, and <job3>"
+      require_region_pure_groups: true
+      prohibit_cross_region_findings: true
+      prohibit_cluster_status_contradictions: true
+      require_one_entry_per_discovered_failure: true
+      require_resource_discovery_name_for_every_client_identifier: true
+      prohibit_bare_uuid_prefixes: true
+      require_evidence_qualified_causality: true
+      high_value_diagnoses: [timeout, OOM, distinctness validation errors]
+      reward_explicit_high_value_diagnoses: true
+      require_grid_link_per_failed_dag: true
+      required_urls_heading: URLs to validate
+      required_url_order: [US-01, CA-02]
+      require_urls_outside_developer_bullets: true
+      required_cluster_link_shape: "<airflow-base>/taskinstance/list/?<bounded end-date filters>&_flt_3_state=failed#"
+      required_terms:
+        DV: Distinctness Validation
+        MI: Market Insights
+        MI3: Market Insights 3
+      required_health_findings:
+        - US Cluster Health
+        - CA Cluster Health
+      cluster_health_position: first
+      required_section_order: [cluster_health, failure_findings]
+      required_failure_fields:
+        - human-readable client or known recurring issue
+        - job
+        - complete error
+        - evidence source
+        - root cause or explicit evidence gap
+      prohibited_claims:
+        - Bare classification labels without explanation.
+        - Raw client UUIDs without client names.
+        - Separate bullets for the same failed job when clients can be grouped.
+        - Multiple bullets for one client when its jobs can be grouped.
+        - A CA finding placed under US or a US finding placed under CA.
+        - Healthy and unhealthy cluster claims based on the same evidence.
+        - Bare client prefixes without resolved names.
+        - Markdown section headings.
+        - Blank lines between bullets.
+        - Failures occurred in an inferred order unsupported by trace evidence.
+        - A nearby error caused a failure without direct task-log evidence.

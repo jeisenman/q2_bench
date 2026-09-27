@@ -1,13 +1,11 @@
 import asyncio
-import json
 from datetime import UTC, datetime
 
 import pytest
 
-from domain import AgentDefinition, AgentRequest, AgentResult
+from domain import AgentRequest
 from workspaces.data_engineering.agents.prod_support import (
     AirflowFailure,
-    InvestigationServices,
     ProdSupportAgent,
 )
 from workspaces.data_engineering.agents.prod_support.models import Region
@@ -50,14 +48,26 @@ class ExactLogAirflow(FakeAirflow):
         self,
         failures: tuple[AirflowFailure, ...],
         exact_log: str,
+        *,
+        recovered: bool = False,
     ) -> None:
         super().__init__(failures)
         self.exact_log = exact_log
         self.fetched: list[str] = []
+        self.recovered = recovered
 
     async def fetch_log(self, failure: AirflowFailure) -> str:
         self.fetched.append(failure.failure_id)
         return self.exact_log
+
+    async def has_success_within(
+        self,
+        failure: AirflowFailure,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> bool:
+        del failure, start_at, end_at
+        return self.recovered
 
 
 class FakeResourceSource:
@@ -75,35 +85,6 @@ class FakeResourceSource:
                 "client_name": "Example Bank",
                 "environment": "production",
             },
-        )
-
-
-class FakeReportRuntime:
-    def __init__(self) -> None:
-        self.calls: list[str] = []
-
-    async def run(
-        self,
-        definition: AgentDefinition,
-        request: AgentRequest,
-    ) -> AgentResult:
-        self.calls.append(definition.name)
-        return AgentResult(
-            output=json.dumps(
-                {
-                    "developer": (
-                        "Message for developer:\n"
-                        "  - US Cluster Health: healthy\n"
-                        "  - CA Cluster Health: healthy"
-                    ),
-                    "data_internal": (
-                        ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:\n"
-                        "US\n- Good\nCA\n- Good"
-                    ),
-                    "follow_up": "- No action is required.",
-                }
-            ),
-            correlation_id=request.correlation_id,
         )
 
 
@@ -178,21 +159,6 @@ def test_agent_normalizes_framework_result() -> None:
     assert dict(result.attributes)["regions"] == "US-01,CA-02"
 
 
-def test_agent_uses_one_reporting_call() -> None:
-    runtime = FakeReportRuntime()
-    unknown = failure(24, "")
-    agent = ProdSupportAgent(
-        UnavailableLogAirflow((unknown,), 404),
-        clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
-        investigation=InvestigationServices(report_runtime=runtime),
-    )
-
-    outcome = asyncio.run(agent.investigate("do prod support", correlation_id="case-1"))
-
-    assert outcome.developer_report.endswith("CA Cluster Health: healthy")
-    assert runtime.calls == ["prod-support.reporting"]
-
-
 def test_agent_definition_requires_operational_delivery_workflow() -> None:
     definition = ProdSupportAgent(FakeAirflow(())).definition
 
@@ -207,7 +173,7 @@ def test_agent_definition_requires_operational_delivery_workflow() -> None:
     assert "trigger_resource_discovery_agent" in {
         tool.name for tool in definition.tools
     }
-    assert definition.version == "17"
+    assert definition.version == "19"
     assert definition.output_template is not None
     assert definition.output_template.startswith("# Prod Support Report")
 
@@ -308,7 +274,7 @@ def test_agent_resolves_valid_client_dags_and_skips_invalid_candidates() -> None
     assert len(outcome.resource_discovery_results) == 1
 
 
-def test_agent_skips_registered_mi3_triage() -> None:
+def test_agent_keeps_mi3_when_recovery_cannot_be_verified() -> None:
     client_id = "621d1ad2-3d0f-4fc4-8245-e3878a6bff7c"
     mi_failure = AirflowFailure(
         region=Region.US_01,
@@ -329,9 +295,9 @@ def test_agent_skips_registered_mi3_triage() -> None:
     outcome = asyncio.run(agent.investigate("do today's prod support"))
 
     assert [identifier.value for identifier in source.identifiers] == [client_id]
-    assert outcome.diagnoses[0].kind.value == "omitted"
-    assert outcome.failures[0].log == ""
-    assert "  - MI3" in outcome.data_internal_report
+    assert outcome.diagnoses[0].kind.value != "omitted"
+    assert outcome.failures[0].log
+    assert "  - MI3" not in outcome.data_internal_report
 
 
 def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
@@ -344,7 +310,11 @@ def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
         end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
         log="discovery excerpt",
     )
-    source = ExactLogAirflow((omitted,), "this should not be fetched")
+    source = ExactLogAirflow(
+        (omitted,),
+        "terminal D2P failure evidence",
+        recovered=True,
+    )
     agent = ProdSupportAgent(
         source,
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
@@ -352,9 +322,34 @@ def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
 
     outcome = asyncio.run(agent.investigate("Do prod support"))
 
-    assert source.fetched == []
+    assert source.fetched == [omitted.failure_id]
     assert outcome.diagnoses[0].kind.value == "omitted"
+    assert outcome.diagnoses[0].confidence == "verified_recovery"
+    assert any(
+        "same DAG and task succeeded" in item for item in outcome.diagnoses[0].evidence
+    )
     assert "  - D2P" in outcome.data_internal_report
+
+
+def test_agent_does_not_omit_without_same_task_success() -> None:
+    candidate = AirflowFailure(
+        region=Region.US_01,
+        dag_id="delivery_to_promise",
+        run_id="run-24",
+        task_id="delivery_to_promise",
+        start_at=datetime(2026, 9, 24, 5, tzinfo=UTC),
+        end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
+    )
+    source = ExactLogAirflow((candidate,), "terminal application failure")
+    agent = ProdSupportAgent(
+        source,
+        clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
+    )
+
+    outcome = asyncio.run(agent.investigate("Do prod support"))
+
+    assert outcome.diagnoses[0].kind.value != "omitted"
+    assert "  - D2P" not in outcome.data_internal_report
 
 
 def test_agent_fetches_exact_log_when_discovery_contains_an_excerpt() -> None:

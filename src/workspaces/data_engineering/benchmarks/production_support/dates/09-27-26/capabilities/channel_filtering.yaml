@@ -1,0 +1,22 @@
+schema_version: 1
+capability: channel_filtering
+description: Discover all failures while collapsing configured jobs to regional codes.
+cases:
+  - id: omitted-jobs
+    default_omission_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+    mcp_override_parameter: data_internal_omissions
+    required_behavior:
+      - retain omitted jobs in captured evidence
+      - read the exact failed-task log for registered D2P and MI3 candidates
+      - collapse a candidate only after a same-DAG and same-task success inside the window
+      - allow other configured omissions in the complete developer diagnosis
+      - include each represented omission group once as a short regional code
+      - place represented omission codes on the final detail line of each regional block
+      - exclude client details and diagnoses for coded groups
+      - exclude omitted jobs from rerun follow-ups
+      - treat credit_migration_matrix and CMM as the cmm omission group
+      - replace defaults when the MCP caller supplies an override
+      - include all jobs when the MCP caller supplies an empty list
+      - keep unverified candidates as ordinary diagnosed failures
+    punish_if_missing_from_discovery: true
+    punish_if_code_missing_from_data_internal: true

@@ -9,4 +9,6 @@ cases:
       - resolve identities before log triage or message construction
       - use the resolved client name and three-character UUID prefix in reports
       - use Unresolved client plus the prefix when no unique reviewed name exists
+      - ask a human to resolve every unresolved client identity before proposing remediation
+      - do not propose a resend or rerun for an unresolved client
       - never emit a bare UUID prefix as the client label

@@ -1,0 +1,17 @@
+schema_version: 1
+capability: report_configuration
+description: Configure Data Internal omissions through the MCP boundary.
+cases:
+  - id: default-and-override-omissions
+    mcp_parameter: data_internal_omissions
+    default_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+    requirements:
+      - apply default groups when the parameter is absent
+      - replace the defaults with the explicitly supplied groups
+      - allow an empty list to include every investigated job
+      - retain omitted jobs in evidence and the developer message
+      - bypass Airflow and OMS triage only for registered d2p and mi3 failures
+      - collapse configured jobs to regional codes in Data Internal
+      - place represented regional codes on the final regional detail line
+      - omit configured jobs from rerun follow-ups
+      - reject unknown, empty, or duplicate group values

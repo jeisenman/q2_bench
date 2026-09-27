@@ -64,6 +64,7 @@ from workspaces.data_engineering.agents.prod_support.models import (
     PriorTaskLog,
     ProdSupportOutcome,
     Region,
+    RetryCandidate,
 )
 from workspaces.data_engineering.agents.prod_support.oms import (
     OmsJobQuery,
@@ -73,8 +74,10 @@ from workspaces.data_engineering.agents.prod_support.oms import (
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
+    AirflowSuccessSource,
     AirflowTaskMetadataSource,
     ClusterHealthSource,
+    OmissionStore,
     OmsEvidenceUnavailableError,
     OmsJobEvidenceSource,
     PriorTaskLogSource,
@@ -101,6 +104,12 @@ from workspaces.data_engineering.agents.prod_support.reporting_config import (
     DataInternalOmissionGroup,
     ProdSupportReportConfig,
 )
+from workspaces.data_engineering.agents.prod_support.retry_agent import (
+    PROD_SUPPORT_FOLLOW_UP_DEFINITION,
+    FollowUpAgent,
+    RetryDirectionError,
+)
+from workspaces.data_engineering.agents.prod_support.retry_models import RetryPlan
 from workspaces.data_engineering.agents.prod_support.scope import (
     ProdSupportScope,
     resolve_scope,
@@ -121,6 +130,7 @@ PROD_SUPPORT_AGENT_DEFINITIONS = (
     PROD_SUPPORT_DEFINITION,
     PROD_SUPPORT_CLUSTER_DEFINITION,
     PROD_SUPPORT_AIRFLOW_DEFINITION,
+    PROD_SUPPORT_FOLLOW_UP_DEFINITION,
     PROD_SUPPORT_REPORTER_DEFINITION,
 )
 
@@ -130,6 +140,7 @@ __all__ = [
     "PROD_SUPPORT_AIRFLOW_DEFINITION",
     "PROD_SUPPORT_CLUSTER_DEFINITION",
     "PROD_SUPPORT_DEFINITION",
+    "PROD_SUPPORT_FOLLOW_UP_DEFINITION",
     "PROD_SUPPORT_MLFLOW_NAMESPACE",
     "PROD_SUPPORT_REPORTER_DEFINITION",
     "PROD_SUPPORT_REPORT_TEMPLATE",
@@ -137,6 +148,7 @@ __all__ = [
     "AirflowChecker",
     "AirflowFailure",
     "AirflowFailureSource",
+    "AirflowSuccessSource",
     "AirflowTaskMetadata",
     "AirflowTaskMetadataError",
     "AirflowTaskMetadataSource",
@@ -153,8 +165,10 @@ __all__ = [
     "EvidenceStatus",
     "FailureDiagnosis",
     "FollowUp",
+    "FollowUpAgent",
     "InvestigationConfigurationError",
     "InvestigationServices",
+    "OmissionStore",
     "OmsEvidenceRoute",
     "OmsEvidenceUnavailableError",
     "OmsJobEvidenceSource",
@@ -179,6 +193,9 @@ __all__ = [
     "ReportFindings",
     "ReportingAgent",
     "ResourceDiscoveryInvoker",
+    "RetryCandidate",
+    "RetryDirectionError",
+    "RetryPlan",
     "TaskLogSummary",
     "TaskLogUnavailableError",
     "WorkloadKind",

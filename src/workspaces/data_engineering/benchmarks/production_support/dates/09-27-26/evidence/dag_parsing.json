@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "source": "Airflow REST API",
+  "captured_at": "2026-09-27T11:45:06Z",
+  "request": {
+    "dags": "/api/v1/dags?limit=1&only_active=true",
+    "health": "/api/v1/health",
+    "read_only": true
+  },
+  "regions": [
+    {
+      "region": "US-01",
+      "active_dag_count": 209,
+      "dags_parsing_healthy": true,
+      "dag_processor_status": "healthy",
+      "dag_processor_latest_heartbeat": "2026-09-27T11:44:57.128081+00:00",
+      "scheduler_status": "healthy",
+      "metadatabase_status": "healthy"
+    },
+    {
+      "region": "CA-02",
+      "active_dag_count": 34,
+      "dags_parsing_healthy": true,
+      "dag_processor_status": "healthy",
+      "dag_processor_latest_heartbeat": "2026-09-27T11:44:57.706267+00:00",
+      "scheduler_status": "healthy",
+      "metadatabase_status": "healthy"
+    }
+  ],
+  "summary": "DAGs parsing properly: 209 active DAGs exist in US and 34 active DAGs exist in CA.",
+  "mutation_performed": false
+}

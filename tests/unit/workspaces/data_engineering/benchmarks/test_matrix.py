@@ -33,6 +33,18 @@ def _assert_reporting_prompt(candidate: str) -> None:
     assert "represented omission codes on the final detail line" in candidate
     assert "Use no periods in Data Internal" in candidate
     assert "suggestion-only" in candidate
+    assert "return it verbatim" in candidate
+    assert "must not rewrite" in candidate
+    assert (
+        "Resend <number> opportunities for <client names> on "
+        "[Resend Opportunity Snapshots](<approved link>) for date <MM-DD-YY>."
+    ) in candidate
+    assert (
+        "Ask a human to resolve the client identity for "
+        "<unresolved client labels> before proposing remediation "
+        "for date <MM-DD-YY>."
+    ) in candidate
+    assert "retired DAG processor" in candidate
 
 
 def load_run(
@@ -100,6 +112,9 @@ def test_matrix_prompts_include_rubric_and_local_evidence() -> None:
         candidate
     )
     assert "regional calls are not additional agents" in candidate
+    assert "active DAG count" in candidate
+    assert "DAG-processor health" in candidate
+    assert "never infer parsing health from the failed-task inventory" in candidate
     assert candidate.startswith(
         "Run the prod-support benchmark using only local recorded evidence."
     )

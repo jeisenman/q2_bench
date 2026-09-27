@@ -3,6 +3,14 @@
 DEVELOPER_HEADING = "Message for developer:"
 DATA_INTERNAL_ALERT_TEMPLATE = ":bangbang: PROD SUPPORT {operational_date} :bangbang:"
 FOLLOW_UP_HEADING = "Follow Ups:"
+RESEND_ACTION_TEMPLATE = (
+    "Resend <number> opportunities for <client names> on "
+    "[Resend Opportunity Snapshots](<approved link>) for date <MM-DD-YY>."
+)
+HUMAN_IDENTITY_ACTION_TEMPLATE = (
+    "Ask a human to resolve the client identity for <unresolved client labels> "
+    "before proposing remediation for date <MM-DD-YY>."
+)
 REPORTER_OUTPUT_TEMPLATE = (
     "{\n"
     '  "developer": "Message for developer:\\n'
@@ -11,9 +19,7 @@ REPORTER_OUTPUT_TEMPLATE = (
     "US\\n- Ongoing\\n  - <grouped clients with three-character prefixes> "
     'failed on <job>\\nCA\\n- Good",\n'
     '  "follow_up": "- Would you like to:\\n'
-    "  - Resend <number> opportunities for <client names> on "
-    "[Resend Opportunity Snapshots](<approved link>) "
-    'for date <MM-DD-YY>."\n'
+    f'  - {RESEND_ACTION_TEMPLATE}"\n'
     "}\n"
 )
 
@@ -30,6 +36,8 @@ URLs to validate
 <one bounded DAG-grid URL per failed DAG>
 
 Message for developer:
+  - DAGs parsing properly: <active DAG count> DAGs exist in US, \
+<active DAG count> DAGs exist in CA
   - <evidence-qualified developer finding>
 
 :bangbang: PROD SUPPORT <operational-date> :bangbang:
@@ -40,10 +48,16 @@ CA
 - <Good or Ongoing>
   - <grouped clients with three-character prefixes> failed on <job>
 
+Omitted Jobs:
+- [<code>](agent://prod-support/omissions#<code>)
+- Ask to add or remove job omissions
+
 Follow Ups:
 - Would you like to:
   - Resend <number> opportunities for <client names> on \
 [Resend Opportunity Snapshots](<approved link>) for date <MM-DD-YY>.
   - Ask a human to identify the production resend application environment \
 for <client names> for date <MM-DD-YY>.
+  - Ask a human to resolve the client identity for \
+<unresolved client labels> before proposing remediation for date <MM-DD-YY>.
 """

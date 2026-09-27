@@ -41,7 +41,9 @@ class FakeRuntime:
         )
 
 
-def _drafts() -> ProdSupportReports:
+def _drafts(
+    follow_up: str = "- No action is required.",
+) -> ProdSupportReports:
     return ProdSupportReports(
         heading="# Prod Support Report",
         window="Window",
@@ -51,7 +53,7 @@ def _drafts() -> ProdSupportReports:
         data_internal=(
             ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good\nCA\n- Good"
         ),
-        follow_up="- No action is required.",
+        follow_up=follow_up,
     )
 
 
@@ -80,7 +82,8 @@ def _action_output(
     follow_up: str = (
         "- Would you like to:\n"
         "  - Do you approve re-running the following jobs:\n"
-        "    - Client A (111) and Client B (222): opportunity-save-history"
+        "    - Client A (111) and Client B (222): opportunity-save-history "
+        "for 2026-09-25"
     ),
 ) -> str:
     return json.dumps(
@@ -231,11 +234,13 @@ def test_reporting_agent_enforces_follow_up_template(follow_up: str) -> None:
 
 
 def test_reporting_agent_accepts_complete_canonical_template() -> None:
+    output = _action_output()
+    follow_up = str(json.loads(output)["follow_up"])
     reports = asyncio.run(
-        ReportingAgent(FakeRuntime(_action_output())).write(
+        ReportingAgent(FakeRuntime(output)).write(
             date(2026, 9, 25),
             ReportFindings((), ()),
-            _drafts(),
+            _drafts(follow_up),
             correlation_id="case-1",
         )
     )
@@ -244,6 +249,54 @@ def test_reporting_agent_accepts_complete_canonical_template() -> None:
         reports.data_internal
     )
     assert reports.follow_up.startswith("- Would you like to:")
+
+
+def test_reporting_agent_rejects_valid_paraphrase_of_deterministic_follow_up() -> None:
+    expected = (
+        "- Would you like to:\n"
+        "  - Ask a human to identify the production resend application "
+        "environment for Client A (111) for date 09-25-26."
+    )
+    changed = (
+        "- Would you like to:\n"
+        "  - Ask a human to identify the production resend application "
+        "environment for Client B (222) for date 09-25-26."
+    )
+
+    with pytest.raises(ReportAgentOutputError, match="preserve deterministic"):
+        asyncio.run(
+            ReportingAgent(FakeRuntime(_action_output(follow_up=changed))).write(
+                date(2026, 9, 25),
+                ReportFindings((), ()),
+                _drafts(expected),
+                correlation_id="case-1",
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    "follow_up",
+    [
+        (
+            "- Would you like to:\n"
+            "  - Review the CA retired DAG processor for date 09-25-26."
+        ),
+        (
+            "- Would you like to:\n"
+            "  - Review the remaining dependency failures before considering reruns"
+        ),
+    ],
+)
+def test_reporting_agent_rejects_broad_review_follow_ups(follow_up: str) -> None:
+    with pytest.raises(ReportAgentOutputError, match="Follow Up must be"):
+        asyncio.run(
+            ReportingAgent(FakeRuntime(_action_output(follow_up=follow_up))).write(
+                date(2026, 9, 25),
+                ReportFindings((), ()),
+                _drafts(follow_up),
+                correlation_id="case-1",
+            )
+        )
 
 
 def test_reporting_agent_requires_omission_codes_last() -> None:
@@ -268,11 +321,17 @@ def test_agent_family_is_orchestrator_cluster_airflow_and_reporting() -> None:
         "prod-support",
         "prod-support.cluster",
         "prod-support.airflow",
+        "prod-support.follow-up",
         "prod-support.reporting",
     )
     assert "Do not delegate" in PROD_SUPPORT_CLUSTER_DEFINITION.instructions
     assert "Do not delegate" in PROD_SUPPORT_AIRFLOW_DEFINITION.instructions
+    assert "active DAG count" in PROD_SUPPORT_AIRFLOW_DEFINITION.instructions
+    assert "DAG-processor health" in PROD_SUPPORT_AIRFLOW_DEFINITION.instructions
+    assert PROD_SUPPORT_AIRFLOW_DEFINITION.version == "3"
     assert "Do not delegate" in PROD_SUPPORT_REPORTER_DEFINITION.instructions
+    assert "immutable" in PROD_SUPPORT_REPORTER_DEFINITION.instructions
+    assert PROD_SUPPORT_REPORTER_DEFINITION.version == "4"
     assert PROD_SUPPORT_AGENT_DEFINITIONS[0].can_delegate is True
     assert all(
         definition.can_delegate is False

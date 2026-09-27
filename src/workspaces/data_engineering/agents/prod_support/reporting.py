@@ -45,16 +45,20 @@ class ProdSupportReports:
     @property
     def combined(self) -> str:
         """Return the backward-compatible combined report."""
+        omitted_jobs = _omitted_jobs_section(self.data_internal)
         return "\n\n".join(
-            (
+            item
+            for item in (
                 self.heading,
                 self.window,
                 self.capture_summary,
                 self.urls_to_validate,
                 self.developer,
                 self.data_internal,
+                omitted_jobs,
                 f"{FOLLOW_UP_HEADING}\n\n{self.follow_up}",
             )
+            if item
         )
 
 
@@ -160,6 +164,27 @@ def format_reports_with_context(
         data_internal=data_internal,
         follow_up=follow_up,
     )
+
+
+def _omitted_jobs_section(data_internal: str) -> str:
+    """Render represented omission codes as links outside Data Internal."""
+    codes = ("D2P", "MI3", "Subscriber", "Maintenance", "Backfill", "CMM")
+    represented = tuple(
+        code
+        for code in codes
+        if any(
+            code in line.removeprefix("  - ").split(", ")
+            for line in data_internal.splitlines()
+            if line.startswith("  - ")
+        )
+    )
+    if not represented:
+        return ""
+    links = ", ".join(
+        f"[{code}](agent://prod-support/omissions#{code.casefold()})"
+        for code in represented
+    )
+    return f"Omitted Jobs:\n- {links}\n- Ask to add or remove job omissions"
 
 
 def airflow_failure_url(

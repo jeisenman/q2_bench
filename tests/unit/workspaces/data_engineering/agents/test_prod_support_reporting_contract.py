@@ -160,6 +160,11 @@ def test_ambiguous_resource_name_is_not_treated_as_reviewed_identity() -> None:
     assert "Wrong Guess Bank" not in reports.developer
     assert "Unresolved client (111)" in reports.developer
     assert "no reviewed unique match (ambiguous)" in reports.developer
+    assert (
+        "Ask a human to resolve the client identity for Unresolved client (111) "
+        "before proposing remediation for date 09-25-26."
+    ) in reports.follow_up
+    assert "Do you approve re-running" not in reports.follow_up
 
 
 def test_long_shared_job_groups_split_without_losing_or_repeating_clients() -> None:

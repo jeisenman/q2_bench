@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "region": "US-01",
+  "captured_at": "2026-09-27T11:20:09.474103+00:00",
+  "operational_window": {
+    "start": "2026-09-26T05:00:00+00:00",
+    "end": "2026-09-27T05:00:00+00:00"
+  },
+  "failure_count": 20,
+  "cluster_health": {
+    "state": "unhealthy",
+    "pods_healthy": false,
+    "restart_count": 3843,
+    "symptoms": [
+      "unready pods: get-ra-job-status-baz7v3up"
+    ],
+    "keda_status": "unavailable",
+    "warnings": [
+      "KEDA query failed with exit code 1"
+    ]
+  },
+  "dag_parsing": {
+    "observed_at": "2026-09-27T11:45:06Z",
+    "active_dag_count": 209,
+    "dags_parsing_healthy": true,
+    "dag_processor_status": "healthy"
+  },
+  "finding_groups": [
+    {
+      "dag_id": "event_bus_to_payloads_historical",
+      "task_id": "check_for_subscriber_client_errors",
+      "record_count": 4,
+      "run_ids": [
+        "scheduled__2026-09-25T03:00:00+00:00",
+        "scheduled__2026-09-25T15:00:00+00:00",
+        "scheduled__2026-09-26T03:00:00+00:00",
+        "scheduled__2026-09-26T15:00:00+00:00"
+      ],
+      "classification": "application_error",
+      "confidence": "confirmed",
+      "evidence_source": "airflow_exact_task_attempt",
+      "evidence_status": "terminal",
+      "evidence": [
+        "Task failed with exception",
+        "Traceback (most recent call last)",
+        "Marking task as FAILED"
+      ],
+      "data_internal_omission_code": "Subscriber"
+    },
+    {
+      "dag_ids": [
+        "l3-main-792f7424-402e-4a7e-b4de-69f811435d9c",
+        "l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042"
+      ],
+      "jobs": [
+        "delivery_to_promise_other_products",
+        "delivery_to_promise"
+      ],
+      "record_count": 4,
+      "classification": "omitted",
+      "omission_reason": "D2P triage omitted by registered policy",
+      "task_logs_requested": false,
+      "data_internal_omission_code": "D2P"
+    },
+    {
+      "dag_ids": [
+        "market_insights_3_output",
+        "market_insights_3_reporting"
+      ],
+      "record_count": 12,
+      "classification": "omitted",
+      "omission_reason": "MI3 triage omitted by registered policy",
+      "task_logs_requested": false,
+      "data_internal_omission_code": "MI3"
+    }
+  ],
+  "mutation_performed": false
+}

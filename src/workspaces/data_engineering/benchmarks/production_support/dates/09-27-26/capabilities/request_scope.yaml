@@ -1,0 +1,19 @@
+schema_version: 1
+capability: request_scope
+description: Resolve production-support date and regional scope before delegation.
+cases:
+  - id: default-both
+    prompt: Do prod support
+    reference_time: "2026-09-27T16:00:00Z"
+    operational_date: "2026-09-26"
+    regions: [US-01, CA-02]
+  - id: us-only
+    prompt: Do US prod support
+    reference_time: "2026-09-27T16:00:00Z"
+    operational_date: "2026-09-26"
+    regions: [US-01]
+  - id: ca-only
+    prompt: Do CA prod support
+    reference_time: "2026-09-27T16:00:00Z"
+    operational_date: "2026-09-26"
+    regions: [CA-02]

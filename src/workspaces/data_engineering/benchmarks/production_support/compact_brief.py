@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .compact_evidence import build_compact_evidence, write_compact_evidence
+from .regional_handoff import errors_by_region
 
 UUID_PATTERN = re.compile(
     r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
@@ -63,6 +64,7 @@ def build_report_brief(
         "summary": compact["summary"],
         "cluster_health": compact.get("cluster_health", []),
         "groups": groups,
+        "errors_by_region": errors_by_region(groups),
         "dag_ids_by_region": _dag_ids_by_region(records, selected),
         "instructions": {
             "complete_inventory": True,
@@ -101,9 +103,17 @@ def _group_summary(
     logs = tuple(str(record.get("log", "")) for record in records)
     identity = identities.get(client_id, {})
     client = _client_label(client_id, identity)
+    identity_resolved = _identity_is_resolved(client_id, identity)
     omitted = all(record.get("triage_status") == "omitted" for record in records)
+    verified_recovery = omitted and all(
+        record.get("success_within_window") is True for record in records
+    )
     statuses = Counter(
-        "omitted" if record.get("triage_status") == "omitted" else _log_status(log)
+        (
+            "legacy_unverified"
+            if record.get("triage_status") == "omitted" and not log
+            else _log_status(log)
+        )
         for record, log in zip(records, logs, strict=True)
     )
     event_ids = {
@@ -125,8 +135,17 @@ def _group_summary(
         "job": job,
         "record_count": len(records),
         "log_status_counts": dict(sorted(statuses.items())),
-        "root_cause": ("triage omitted by policy" if omitted else _root_cause(logs)),
+        "root_cause": (
+            "recovered in-window after exact failure-log review"
+            if verified_recovery
+            else "legacy omission lacks captured exact-log verification"
+            if omitted
+            else _root_cause(logs)
+        ),
+        "identity_resolution_required": bool(client_id) and not identity_resolved,
     }
+    if omitted:
+        result["success_within_window"] = verified_recovery
     omission_code = _omission_code(records)
     if omission_code is not None:
         result["omission_code"] = omission_code
@@ -142,6 +161,18 @@ def _group_summary(
     if max_attempt > KPO_ATTEMPT_THRESHOLD:
         result["max_attempt"] = max_attempt
     return result
+
+
+def _identity_is_resolved(
+    client_id: str,
+    identity: dict[str, Any],
+) -> bool:
+    """Return whether a client has a reviewed unique name."""
+    return bool(
+        client_id
+        and identity.get("client_name")
+        and str(identity.get("match", "")) in {"unique", "user_confirmed", "reviewed"}
+    )
 
 
 def _dag_ids_by_region(

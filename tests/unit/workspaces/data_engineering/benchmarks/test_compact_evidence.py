@@ -82,7 +82,7 @@ def test_compacts_logs_and_normalizes_retired_pod_warning(tmp_path: Path) -> Non
     assert summary_record(result)["raw_logs_retained"] == 0
 
 
-def test_compacts_policy_omissions_without_log_evidence(tmp_path: Path) -> None:
+def test_marks_legacy_omissions_as_unverified(tmp_path: Path) -> None:
     dataset = tmp_path / "failures.json"
     dataset.write_text(
         json.dumps(
@@ -141,8 +141,11 @@ def test_compacts_policy_omissions_without_log_evidence(tmp_path: Path) -> None:
     assert compact["records"][0]["log_status"] == "omitted"
     assert compact["records"][0]["evidence"] == ()
     assert compact["cluster_health"][0]["restart_count"] == 0
-    assert brief["groups"][0]["root_cause"] == "triage omitted by policy"
-    assert brief["groups"][0]["log_status_counts"] == {"omitted": 1}
+    assert brief["groups"][0]["root_cause"] == (
+        "legacy omission lacks captured exact-log verification"
+    )
+    assert brief["groups"][0]["log_status_counts"] == {"legacy_unverified": 1}
+    assert brief["groups"][0]["success_within_window"] is False
 
 
 def test_report_brief_groups_resend_counts_and_reviewed_route(
@@ -209,6 +212,9 @@ def test_report_brief_groups_resend_counts_and_reviewed_route(
     assert group["resend_supported"] is True
     assert group["resend_url"] == "https://example.test/resend"
     assert group["root_cause"] == "missing opportunity snapshots"
+    assert brief["errors_by_region"]["CA-02"][0] == (
+        "For CA-02 Cluster the following errors exist:"
+    )
 
 
 def test_report_brief_includes_fallback_context_and_omission_groups(

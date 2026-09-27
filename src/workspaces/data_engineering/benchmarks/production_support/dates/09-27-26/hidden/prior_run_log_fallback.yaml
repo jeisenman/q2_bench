@@ -1,0 +1,14 @@
+schema_version: 1
+case_id: latest-log-unavailable
+expected:
+  selected_run_id: "manual__2026-09-24T05:00:00+00:00"
+  selected_try_number: 2
+  evidence_type: airflow_task_log
+  classification: timeout
+  required_evidence:
+    - airflow.exceptions.AirflowTaskTimeout
+    - "Timeout, PID: 2555323"
+prohibited:
+  - classify the latest HTTP 404 as the job root cause
+  - stop after the unavailable latest log
+  - select the older successful run

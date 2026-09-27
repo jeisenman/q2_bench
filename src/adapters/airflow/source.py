@@ -14,6 +14,7 @@ from urllib.error import HTTPError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from adapters.airflow.retry import AirflowRetryMixin
 from workspaces.data_engineering.agents.prod_support.models import (
     AirflowFailure,
     Region,
@@ -93,8 +94,10 @@ class UrllibAirflowTransport:
         return json.loads(content) if content_type == "application/json" else content
 
 
-class AirflowApiSource:
-    """Discover failed tasks and retrieve their exact Airflow logs."""
+class AirflowApiSource(AirflowRetryMixin):
+    """Discover failures, exact logs, and bounded same-task successes."""
+
+    _transport: AirflowTransport
 
     def __init__(
         self,
@@ -197,6 +200,27 @@ class AirflowApiSource:
         message = "Airflow task log response must contain text content"
         raise AirflowApiError(message)
 
+    async def has_success_within(
+        self,
+        failure: AirflowFailure,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> bool:
+        """Return whether the same DAG and task succeeded in the window."""
+        if start_at.tzinfo is None or end_at.tzinfo is None:
+            message = "Airflow success window must be timezone-aware"
+            raise ValueError(message)
+        if end_at <= start_at:
+            message = "Airflow success window end must be later than its start"
+            raise ValueError(message)
+        return await asyncio.to_thread(
+            self._has_success_within,
+            self._config_for(failure.region),
+            failure,
+            start_at,
+            end_at,
+        )
+
     async def fetch_task_metadata(
         self,
         failure: AirflowFailure,
@@ -255,6 +279,55 @@ class AirflowApiSource:
                 return tuple(failures)
             payload["page_offset"] = len(failures)
 
+    def _has_success_within(
+        self,
+        config: AirflowRegionConfig,
+        failure: AirflowFailure,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> bool:
+        """Query exact same-task successes and enforce the half-open window."""
+        payload: dict[str, object] = {
+            "dag_ids": [failure.dag_id],
+            "task_ids": [failure.task_id],
+            "state": ["success"],
+            "end_date_gte": start_at.astimezone(UTC)
+            .isoformat()
+            .replace(
+                "+00:00",
+                "Z",
+            ),
+            "end_date_lte": end_at.astimezone(UTC)
+            .isoformat()
+            .replace(
+                "+00:00",
+                "Z",
+            ),
+            "page_limit": 100,
+            "page_offset": 0,
+        }
+        page_offset = 0
+        while True:
+            response = self._transport.request(
+                config,
+                "POST",
+                "/api/v1/dags/~/dagRuns/~/taskInstances/list",
+                payload,
+            )
+            page, total = _task_instances(response)
+            if any(
+                str(item.get("dag_id")) == failure.dag_id
+                and str(item.get("task_id")) == failure.task_id
+                and start_at <= _end_at(item) < end_at
+                for item in page
+                if item.get("end_date") is not None
+            ):
+                return True
+            page_offset += len(page)
+            if not page or page_offset >= total:
+                return False
+            payload["page_offset"] = page_offset
+
     def _config_for(self, region: Region) -> AirflowRegionConfig:
         config = next((item for item in self._regions if item.region is region), None)
         if config is None:
@@ -276,7 +349,7 @@ def _task_instances(response: object) -> tuple[list[dict[str, Any]], int]:
 
 
 def _failure(region: Region, value: dict[str, Any]) -> AirflowFailure:
-    end_at = datetime.fromisoformat(str(value["end_date"]).replace("Z", "+00:00"))
+    end_at = _end_at(value)
     raw_start = value.get("start_date")
     start_at = (
         datetime.fromisoformat(str(raw_start).replace("Z", "+00:00"))
@@ -292,3 +365,8 @@ def _failure(region: Region, value: dict[str, Any]) -> AirflowFailure:
         end_at=end_at,
         try_number=int(value.get("try_number") or 1),
     )
+
+
+def _end_at(value: Mapping[str, object]) -> datetime:
+    """Parse a task-instance end timestamp."""
+    return datetime.fromisoformat(str(value["end_date"]).replace("Z", "+00:00"))

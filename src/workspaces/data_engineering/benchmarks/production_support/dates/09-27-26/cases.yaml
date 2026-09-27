@@ -1,0 +1,46 @@
+schema_version: 1
+cases:
+  - id: prod-support-us-ca-operational-2026-09-26
+    reference_time: "2026-09-27T16:00:00Z"
+    prompt: Do prod support
+    scope: [US-01, CA-02]
+    dataset_uri: var/benchmark_data/prod_support/2026-09-26/airflow_failures.json
+    operational_window:
+      start: "2026-09-26T05:00:00Z"
+      end: "2026-09-27T05:00:00Z"
+    airflow_base_urls:
+      US-01: "https://airflow-us01.precisionlender.com"
+      CA-02: "https://airflow-ca02.precisionlender.com"
+    candidate_inputs:
+      - src/workspaces/data_engineering/benchmarks/production_support/compact_brief.py
+      - src/workspaces/data_engineering/benchmarks/production_support/compact_evidence.py
+      - src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/assets/cluster_health_snapshot.json
+      - src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/assets/resource_discovery_snapshot.json
+    evidence_uris:
+      - evidence/capture_manifest.json
+      - evidence/dag_parsing.json
+      - evidence/current-us-findings.json
+      - evidence/current-ca-findings.json
+    evaluation_applicability:
+      request_scope: true
+      orchestration_structure: true
+      leaf_delegation: true
+      complete_log_retrieval: true
+      automation: true
+      conditional_oms: false
+      cluster_health: true
+      follow_up_actionability: true
+    reporting_contract_version: "4.0"
+    instructions:
+      - Resolve the default scope to US and CA and the date to the previous operational day
+      - Start exactly one Cluster handoff and one Airflow handoff concurrently
+      - Keep Cluster, Airflow, and Reporting as leaf agents with no nested delegation
+      - Run one Reporting pass only after Cluster and Airflow return
+      - Return the complete Reporting output verbatim without orchestrator rewriting
+      - Keep every finding under its source region and never mix US and CA
+      - Do not issue contradictory cluster-health verdicts from the same evidence
+      - Group clients sharing one job first, then list only their other jobs separately
+      - Read each omission candidate log and require a same-DAG/task success inside the window
+      - Put represented omission codes on the final detail line of each regional block
+      - Use only canonical dated Follow Up actions and request human help for unresolved identities
+    prohibit_agent_changes: true

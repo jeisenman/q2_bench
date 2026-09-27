@@ -12,7 +12,7 @@ from domain import AgentDefinition, AgentRequest
 from ports import AgentRuntime
 from workspaces.data_engineering.agents.prod_support.models import Region
 from workspaces.data_engineering.agents.prod_support.report_action_validation import (
-    resend_actions_follow_template,
+    follow_up_actions_follow_template,
 )
 from workspaces.data_engineering.agents.prod_support.report_findings import (
     ReportFindings,
@@ -23,7 +23,9 @@ from workspaces.data_engineering.agents.prod_support.reporting import (
 from workspaces.data_engineering.agents.prod_support.templates import (
     DATA_INTERNAL_ALERT_TEMPLATE,
     DEVELOPER_HEADING,
+    HUMAN_IDENTITY_ACTION_TEMPLATE,
     REPORTER_OUTPUT_TEMPLATE,
+    RESEND_ACTION_TEMPLATE,
 )
 
 LUNA_MODEL = "openai.gpt-5.6-luna"
@@ -42,14 +44,16 @@ PROD_SUPPORT_REPORTER_DEFINITION = AgentDefinition(
         "mention each client-job pair once, and put configured omission codes on the "
         "final detail line of each regional block. Follow Up must be either exactly "
         "'- No action is required.' or a '- Would you like to:' action list. It is "
-        "suggestion-only and never claims a production mutation. Resend actions say "
-        "'Resend <number> opportunities for <client names> on <approved link> for "
-        "date <MM-DD-YY>.' Never summarize them as recoverable opportunities without "
-        "client names. When the production resend environment or reviewed URL is "
-        "unknown, ask a human to identify the environment. "
+        "suggestion-only and never claims a production mutation. Copy the supplied "
+        "deterministic follow_up string exactly; it is immutable and must not be "
+        "paraphrased. The canonical resend action is "
+        f"'{RESEND_ACTION_TEMPLATE}' Never summarize it as recoverable opportunities "
+        "without client names. When the production resend environment or reviewed "
+        "URL is unknown, ask a human to identify the environment. When a reviewed "
+        f"client identity is unavailable, use '{HUMAN_IDENTITY_ACTION_TEMPLATE}' "
         "Do not delegate."
     ),
-    version="3",
+    version="4",
     model=LUNA_MODEL,
     output_template=REPORTER_OUTPUT_TEMPLATE,
 )
@@ -144,6 +148,11 @@ class ReportAgentOutputError(ValueError):
         """Return an error for a claimed production mutation."""
         return cls("Follow Up report claimed that a production mutation occurred")
 
+    @classmethod
+    def follow_up_changed(cls) -> ReportAgentOutputError:
+        """Return an error when deterministic actions were paraphrased."""
+        return cls("Reporting Agent must preserve deterministic Follow Up verbatim")
+
 
 class ReportingAgent:
     """Run one reporting call and validate all audience outputs."""
@@ -178,7 +187,7 @@ class ReportingAgent:
         developer, data_internal, follow_up = _parse_output(result.output)
         _validate_developer(developer)
         _validate_data_internal(data_internal, operational_date, findings)
-        _validate_follow_up(follow_up)
+        _validate_follow_up(follow_up, drafts.follow_up)
         return replace(
             drafts,
             developer=developer,
@@ -230,16 +239,15 @@ def _payload(
         },
     }
     return (
-        "Format the validated source below. The deterministic drafts are the baseline; "
-        "do not add facts or actions.\n\n"
+        "Format the validated source below. The deterministic Developer and Data "
+        "Internal drafts are the baseline; do not add facts. Copy "
+        "deterministic_drafts.follow_up exactly without rewriting, summarizing, or "
+        "adding actions.\n\n"
         f"{json.dumps(source, default=_json_default, sort_keys=True)}"
     )
 
 
-def _diagnosis_payload(
-    failure_id: str,
-    findings: ReportFindings,
-) -> dict[str, object]:
+def _diagnosis_payload(failure_id: str, findings: ReportFindings) -> dict[str, object]:
     diagnosis = next(
         item for item in findings.diagnoses if item.failure_id == failure_id
     )
@@ -322,10 +330,8 @@ def _validate_data_internal(
 
 
 def _regional_blocks(
-    lines: list[str],
-    regions: tuple[Region, ...],
+    lines: list[str], regions: tuple[Region, ...]
 ) -> tuple[tuple[Region, str, str, list[str]], ...]:
-    """Parse exact regional blocks in canonical selected-region order."""
     blocks: list[tuple[Region, str, str, list[str]]] = []
     cursor = 0
     for index, region in enumerate(regions):
@@ -360,18 +366,18 @@ def _regional_blocks(
 
 
 def _validate_omission_line_is_last(
-    details: list[str],
-    label: str,
-    codes: tuple[str, ...],
+    details: list[str], label: str, codes: tuple[str, ...]
 ) -> None:
     expected = f"  - {', '.join(codes)}"
     if not details or details[-1] != expected:
         raise ReportAgentOutputError.omissions_not_last(label)
 
 
-def _validate_follow_up(output: str) -> None:
+def _validate_follow_up(output: str, expected: str) -> None:
     lines = output.splitlines()
     if lines == ["- No action is required."]:
+        if output != expected:
+            raise ReportAgentOutputError.follow_up_changed()
         return
     if (
         not lines
@@ -382,9 +388,11 @@ def _validate_follow_up(output: str) -> None:
             or not line.lstrip().removeprefix("- ").strip()
             for line in lines[1:]
         )
-        or not resend_actions_follow_template(lines[1:])
+        or not follow_up_actions_follow_template(lines[1:])
     ):
         raise ReportAgentOutputError.follow_up_structure()
     mutation_claims = ("i reran", "we reran", "was rerun", "have resent", "was resent")
     if any(claim in output.lower() for claim in mutation_claims):
         raise ReportAgentOutputError.mutation_claim()
+    if output != expected:
+        raise ReportAgentOutputError.follow_up_changed()

@@ -67,6 +67,15 @@ class FakeAirflow:
         self.fetched.append(failure.task_id)
         return "Missing opportunity snapshot(s)"
 
+    async def has_success_within(
+        self,
+        failure: AirflowFailure,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> bool:
+        del start_at, end_at
+        return failure.task_id == "delivery_to_promise"
+
 
 class FakeCluster:
     def __init__(self) -> None:
@@ -122,7 +131,10 @@ def test_collects_compact_scope_aware_bundle(tmp_path: Path) -> None:
     )
 
     assert airflow.regions == [Region.CA_02]
-    assert airflow.fetched == ["validate_event_bus_opportunities"]
+    assert airflow.fetched == [
+        "delivery_to_promise",
+        "validate_event_bus_opportunities",
+    ]
     assert cluster.regions == [Region.CA_02]
     assert resources.identifiers == [CLIENT_ID]
     assert all(
@@ -141,7 +153,7 @@ def test_collects_compact_scope_aware_bundle(tmp_path: Path) -> None:
     manifest = json.loads(bundle.manifest.read_text(encoding="utf-8"))
 
     assert compact["summary"]["record_count"] == EXPECTED_RECORD_COUNT
-    assert compact["summary"]["exact_log_records"] == 1
+    assert compact["summary"]["exact_log_records"] == EXPECTED_RECORD_COUNT
     assert compact["summary"]["triage_omitted_records"] == 1
     assert reporting["cluster_health"][0]["pods_healthy"] is True
     assert reporting["groups"][0]["omission_code"] == "D2P"

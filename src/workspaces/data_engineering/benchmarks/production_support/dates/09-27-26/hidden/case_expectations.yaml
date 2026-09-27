@@ -1,0 +1,202 @@
+schema_version: 1
+case_id: prod-support-us-ca-operational-2026-09-26
+expected_regions: [US-01, CA-02]
+expected_since: "2026-09-26T05:00:00Z"
+expected_api_window:
+  end_date_gte: "2026-09-26T05:00:00Z"
+  end_date_lt: "2026-09-27T05:00:00Z"
+expected_ui_window:
+  end_date_gte: "2026-09-26T05:00:00Z"
+  end_date_lt: "2026-09-27T05:00:00Z"
+expected_cluster_links:
+  US-01: "https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-27T05:00:00Z&_flt_3_state=failed&_flt_2_end_date=2026-09-26T05:00:00Z#"
+  CA-02: "https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-27T05:00:00Z&_flt_3_state=failed&_flt_2_end_date=2026-09-26T05:00:00Z#"
+expected_failure_counts:
+  US-01: 20
+  CA-02: 25
+required_output_format:
+  urls_heading: URLs to validate
+  developer_heading: "Message for developer:"
+  data_internal_alert_heading: ":bangbang: PROD SUPPORT 2026-09-26 :bangbang:"
+  data_internal_alert_is_first_line: true
+  follow_up_heading: "Follow Ups:"
+  prohibit_markdown_section_headings: true
+  prohibit_blank_lines_between_bullets: true
+  prohibit_periods_in_data_internal: true
+  group_same_job_across_clients: true
+  group_shared_jobs_before_remaining_client_jobs: true
+  group_multiple_jobs_per_client: true
+  prohibit_repeated_client_job_pairs: true
+  prohibit_shared_job_on_remaining_client_line: true
+  prohibit_cross_region_findings: true
+  prohibit_cluster_status_contradictions: true
+  require_resolved_client_names: true
+  client_uuid_prefix_length: 3
+  developer_cluster_health_position: first
+  default_data_internal_omission_groups: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+  require_represented_omission_codes: true
+  omission_codes_are_final_regional_detail: true
+  data_internal_failure_shape: "<client> (<prefix>) failed on <job>"
+  data_internal_client_group_shape: "<client> (<prefix>) failed on <job1>, <job2>, and <job3>"
+  data_internal_cluster_shape: "<region> cluster is <status>; <symptoms> appear"
+  data_internal_max_bullet_characters: 180
+  validate_event_bus_implies_missing_snapshots: true
+  preferred_explicit_causes: [timeout, OOM, distinctness validation errors]
+  kpo_sizing_agent_uri: agent://kpo-sizer/definition
+orchestration_contract:
+  top_level_agent: orchestrator
+  concurrent_leaf_handoffs: [cluster, airflow]
+  airflow_regions_concurrent: true
+  reporting_calls: 1
+  reporting_starts_after: [cluster, airflow]
+  prohibit_nested_delegation: true
+expected_failure_ids:
+  - CA-02|event_bus_to_payloads_historical|scheduled__2026-09-26T03:00:00+00:00|check_for_subscriber_client_errors
+  - CA-02|event_bus_to_payloads_historical|scheduled__2026-09-25T15:00:00+00:00|check_for_subscriber_client_errors
+  - CA-02|l3-main-b4916353-ef8a-4af8-9601-74305858e905|manual__2026-09-16T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-cefa3c2a-e1da-4c24-8676-532dc2b59056|manual__2026-09-15T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-b4916353-ef8a-4af8-9601-74305858e905|manual__2026-09-15T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|log_cleanup|scheduled__2026-09-25T00:00:00+00:00|expire_logs_3
+  - CA-02|l3-main-b4916353-ef8a-4af8-9601-74305858e905|manual__2026-09-14T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-fbfcd207-8a85-4f28-a787-3ed1e2736f28|manual__2026-09-16T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-fbfcd207-8a85-4f28-a787-3ed1e2736f28|manual__2026-09-15T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-fbfcd207-8a85-4f28-a787-3ed1e2736f28|manual__2026-09-14T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543|manual__2026-09-15T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543|manual__2026-09-14T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543|manual__2026-09-16T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|event_bus_to_payloads_historical|scheduled__2026-09-25T03:00:00+00:00|check_for_subscriber_client_errors
+  - CA-02|opportunity_avro_aggregation_backfill|manual__2026-09-25T17:47:44.651058+00:00|account_level_opportunities_history.account_level_opportunities_history
+  - CA-02|l3-main-b4916353-ef8a-4af8-9601-74305858e905|manual__2026-09-17T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-fbfcd207-8a85-4f28-a787-3ed1e2736f28|manual__2026-09-17T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543|manual__2026-09-17T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-fbfcd207-8a85-4f28-a787-3ed1e2736f28|manual__2026-09-18T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-b4916353-ef8a-4af8-9601-74305858e905|manual__2026-09-18T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543|manual__2026-09-18T05:00:00+00:00|validate_event_bus_opportunities
+  - CA-02|log_cleanup|scheduled__2026-09-26T00:00:00+00:00|expire_logs_3
+  - CA-02|l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543|manual__2026-09-19T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data
+  - CA-02|event_bus_to_payloads_historical|scheduled__2026-09-26T15:00:00+00:00|check_for_subscriber_client_errors
+  - CA-02|l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543|manual__2026-09-20T05:00:00+00:00|account_level_opportunity_draw_schedule_history.account_level_opportunity_draw_schedule_history
+  - US-01|event_bus_to_payloads_historical|scheduled__2026-09-25T15:00:00+00:00|check_for_subscriber_client_errors
+  - US-01|event_bus_to_payloads_historical|scheduled__2026-09-25T03:00:00+00:00|check_for_subscriber_client_errors
+  - US-01|event_bus_to_payloads_historical|scheduled__2026-09-26T03:00:00+00:00|check_for_subscriber_client_errors
+  - US-01|market_insights_3_output|scheduled__2026-09-25T00:00:00+00:00|client_specific.client_specific_mi_3_raw_output_validation_621d1ad2-3d0f-4fc4-8245-e3878a6bff7c
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_5301628b-e85f-4ff9-b5b3-e8d13c5926a7.opportunity_spread_guidance_data.opportunity_spread_guidance_data
+  - US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-24T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data
+  - US-01|market_insights_3_output|scheduled__2026-09-26T00:00:00+00:00|client_specific.client_specific_mi_3_raw_output_validation_621d1ad2-3d0f-4fc4-8245-e3878a6bff7c
+  - US-01|l3-main-792f7424-402e-4a7e-b4de-69f811435d9c|manual__2026-09-25T05:00:00+00:00|delivery_to_promise_other_products.delivery_to_promise_other_products_data
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_9e344fed-d096-4827-8985-992c8a021369.opportunity_cross_sell_data.opportunity_cross_sell_data
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_385c35bf-29c4-48a7-9527-a91963b7af69.opportunity_cross_sell_data.opportunity_cross_sell_data
+  - US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-24T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_60009dc8-695b-4b58-b512-1fc72c3c98e7.opportunity_cross_sell_data.opportunity_cross_sell_data
+  - US-01|l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042|manual__2026-09-25T05:00:00+00:00|delivery_to_promise.delivery_to_promise_data
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_dff9e5f7-c60a-4e43-b7a9-845ab44f34d0.opportunity_cross_sell_data.opportunity_cross_sell_data
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_5301628b-e85f-4ff9-b5b3-e8d13c5926a7.opportunity_cross_sell_data.opportunity_cross_sell_data
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_951ddcc6-dc43-408e-a4f4-bf0a67015ccc.opportunity_cross_sell_data.opportunity_cross_sell_data
+  - US-01|event_bus_to_payloads_historical|scheduled__2026-09-26T15:00:00+00:00|check_for_subscriber_client_errors
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_022312e6-2997-4156-bf22-921fdb1cbf40.opportunity_spread_guidance_data.opportunity_spread_guidance_data
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_951ddcc6-dc43-408e-a4f4-bf0a67015ccc.opportunity_spread_guidance_data.opportunity_spread_guidance_data
+  - US-01|market_insights_3_reporting|scheduled__2026-09-19T15:00:00+00:00|mi3_reporting_49f3873c-deb0-4846-88bd-4628cef8abfe.opportunity_reporting_data.opportunity_reporting_data
+expected_diagnoses:
+  triage_omitted:
+    - Seventeen D2P and MI3 task instances
+  missing_opportunity_snapshots:
+    - Scotiabank
+    - Scotiabank Data Validation
+    - CIBC Canada Validation
+    - CIBC Canada
+  airflow_confirmed_timeout:
+    - Scotiabank account-level opportunity draw-schedule history
+  parser_error:
+    - Two CA log-cleanup task instances
+  distinctness_validation_failure:
+    - CA account-level opportunity-history backfill
+  application_error:
+    - US and CA subscriber checks
+expected_developer_message: |
+  Message for developer:
+    - US Cluster Health: unhealthy as of 2026-09-27T11:20:09Z; get-ra-job-status-baz7v3up was unready, restart count was 3843, and KEDA evidence was unavailable.
+    - CA Cluster Health: unhealthy as of 2026-09-27T11:20:08Z; airflow-dag-processor-5d89bb769-sdwcn was unready, restart count was 282, and KEDA evidence was unavailable.
+    - US D2P and MI3 triage was omitted by registered policy; subscriber checks retained terminal application-error evidence.
+    - Scotiabank, Scotiabank Data Validation, CIBC Canada Validation, and CIBC Canada failed validate_event_bus_opportunities across 2026-09-14 through 2026-09-18 because opportunity snapshots were missing.
+    - Resource Discovery resolved all four CA clients but supplied no reviewed production resend route.
+    - Scotiabank account-level opportunity draw-schedule history has an Airflow-confirmed timeout.
+    - CA log cleanup failed with parser errors, and CA opportunity-history backfill retained distinctness-validation evidence.
+expected_prod_support_message: |
+  :bangbang: PROD SUPPORT 2026-09-26 :bangbang:
+  US
+  - Ongoing
+    - US cluster is unhealthy; get-ra-job-status-baz7v3up is unready and KEDA evidence is unavailable
+    - D2P, MI3, Subscriber
+  CA
+  - Ongoing
+    - CA cluster is unhealthy; airflow-dag-processor-5d89bb769-sdwcn is unready and KEDA evidence is unavailable
+    - Scotiabank (1f0) failed on account-level-opportunity-draw-schedule-history with timeout
+    - Scotiabank (1f0), Scotiabank Data Validation (b49), CIBC Canada Validation (cef), and CIBC Canada (fbf) failed on validate-event-bus-opportunities
+    - D2P, Subscriber, Maintenance, Backfill
+follow_on_message: |
+  Follow Ups:
+  - Would you like to:
+    - Ask a human to identify the production resend application environment for Scotiabank (1f0), Scotiabank Data Validation (b49), and CIBC Canada (fbf) for date 09-14-26.
+    - Ask a human to identify the production resend application environment for Scotiabank (1f0), Scotiabank Data Validation (b49), CIBC Canada Validation (cef), and CIBC Canada (fbf) for date 09-15-26.
+    - Ask a human to identify the production resend application environment for Scotiabank (1f0), Scotiabank Data Validation (b49), and CIBC Canada (fbf) for date 09-16-26.
+    - Ask a human to identify the production resend application environment for Scotiabank (1f0), Scotiabank Data Validation (b49), and CIBC Canada (fbf) for date 09-17-26.
+    - Ask a human to identify the production resend application environment for Scotiabank (1f0), Scotiabank Data Validation (b49), and CIBC Canada (fbf) for date 09-18-26.
+    - Do you approve re-running the following jobs:
+      - Scotiabank (1f0): account-level-opportunity-draw-schedule-history for 2026-09-26
+require_reported_dags_exist: true
+evidence_captured_at:
+  US-01: "2026-09-27T11:20:09Z"
+  CA-02: "2026-09-27T11:20:08Z"
+infrastructure_evidence_uris:
+  US-01: assets/cluster_health_snapshot.json
+  CA-02: assets/cluster_health_snapshot.json
+failure_evidence_uris:
+  manifest: evidence/capture_manifest.json
+  dag_parsing: evidence/dag_parsing.json
+  US-01: evidence/current-us-findings.json
+  CA-02: evidence/current-ca-findings.json
+expected_infrastructure_statuses:
+  US-01: unhealthy_unready_pod_keda_unavailable
+  CA-02: unhealthy_unready_dag_processor_keda_unavailable
+expected_active_dag_counts:
+  US-01: 209
+  CA-02: 34
+expected_dag_parsing_statuses:
+  US-01: healthy
+  CA-02: healthy
+expected_oms_corroboration:
+  US-01: false
+  CA-02: false
+required_investigations:
+  - fetch compact exact evidence for every failure except registered D2P and MI3 triage omissions
+  - never query task logs or OMS for registered D2P and MI3 triage omissions
+  - query OMS only for a proven Spark workload when an exact OMS source is supplied
+  - check pod state, restart counts, and KEDA health in both regions
+  - resolve every client UUID found in a DAG or task identifier through resource discovery before triage
+omitted_from_data_internal: [d2p, mi3, subscriber, maintenance, backfill, cmm]
+resend_policy:
+  require_correct_application_for_client: true
+  require_resource_discovery: true
+  require_date_per_client: true
+  require_reviewed_link_for_offered_resend: true
+  unresolved_routing_requires_resolution_action: true
+  multiple_clients_are_line_by_line: true
+  large_resend_threshold: 100
+required_cluster_health_lines: [US Cluster Health, CA Cluster Health]
+require_root_cause_per_reported_failure: true
+expected_remediation_policy:
+  mode: suggestion_only
+  automatic_bounce: false
+  automatic_actions: []
+expected_dag_ids:
+  - event_bus_to_payloads_historical
+  - l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543
+  - l3-main-792f7424-402e-4a7e-b4de-69f811435d9c
+  - l3-main-9d272969-2cdd-401b-a373-6a73cf5a3042
+  - l3-main-b4916353-ef8a-4af8-9601-74305858e905
+  - l3-main-cefa3c2a-e1da-4c24-8676-532dc2b59056
+  - l3-main-fbfcd207-8a85-4f28-a787-3ed1e2736f28
+  - log_cleanup
+  - market_insights_3_output
+  - market_insights_3_reporting
+  - opportunity_avro_aggregation_backfill

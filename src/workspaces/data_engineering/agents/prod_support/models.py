@@ -103,6 +103,23 @@ class AirflowFailure:
 
 
 @dataclass(frozen=True, slots=True)
+class RetryCandidate:
+    """One numbered failed task eligible for follow-up planning."""
+
+    number: int
+    region: Region
+    dag_id: str
+    run_id: str
+    task_id: str
+    label: str
+
+    @property
+    def identity(self) -> str:
+        """Return the stable regional task-instance identity."""
+        return "|".join((self.region.value, self.dag_id, self.run_id, self.task_id))
+
+
+@dataclass(frozen=True, slots=True)
 class PriorTaskLog:
     """One earlier exact attempt for the same DAG and task."""
 
@@ -145,3 +162,4 @@ class ProdSupportOutcome:
     follow_up: str = ""
     resource_discovery_results: tuple[AgentResult, ...] = ()
     regions: tuple[Region, ...] = (Region.US_01, Region.CA_02)
+    retry_candidates: tuple[RetryCandidate, ...] = ()

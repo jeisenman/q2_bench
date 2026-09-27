@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "region": "CA-02",
+  "captured_at": "2026-09-27T11:20:08.607064+00:00",
+  "operational_window": {
+    "start": "2026-09-26T05:00:00+00:00",
+    "end": "2026-09-27T05:00:00+00:00"
+  },
+  "failure_count": 25,
+  "cluster_health": {
+    "state": "unhealthy",
+    "pods_healthy": false,
+    "restart_count": 282,
+    "symptoms": [
+      "unready pods: airflow-dag-processor-5d89bb769-sdwcn"
+    ],
+    "keda_status": "unavailable",
+    "warnings": [
+      "KEDA query failed with exit code 1"
+    ]
+  },
+  "dag_parsing": {
+    "observed_at": "2026-09-27T11:45:06Z",
+    "active_dag_count": 34,
+    "dags_parsing_healthy": true,
+    "dag_processor_status": "healthy"
+  },
+  "finding_groups": [
+    {
+      "dag_id": "event_bus_to_payloads_historical",
+      "task_id": "check_for_subscriber_client_errors",
+      "record_count": 4,
+      "classification": "application_error",
+      "confidence": "confirmed",
+      "evidence_source": "airflow_exact_task_attempt",
+      "evidence_status": "terminal",
+      "evidence": [
+        "Task failed with exception",
+        "Traceback (most recent call last)",
+        "Marking task as FAILED"
+      ],
+      "data_internal_omission_code": "Subscriber"
+    },
+    {
+      "task_id": "validate_event_bus_opportunities",
+      "record_count": 16,
+      "classification": "application_error",
+      "root_cause": "missing opportunity snapshots",
+      "confidence": "confirmed",
+      "evidence_source": "airflow_exact_task_attempt",
+      "evidence": [
+        "datamart.jobs.OpportunityValidation:Missing opportunity snapshot(s)",
+        "di_pyjobs.jobs.validate_event_bus_opportunities:Unhandled Exception"
+      ],
+      "clients": [
+        {
+          "client_id": "1f06da19-2f61-401c-a1b7-38902e4f3543",
+          "client_name": "Scotiabank",
+          "record_count": 5,
+          "representative_action_date": "2026-09-15",
+          "unique_event_count": 958,
+          "reviewed_resend_route": null
+        },
+        {
+          "client_id": "b4916353-ef8a-4af8-9601-74305858e905",
+          "client_name": "Scotiabank - Data Validation",
+          "record_count": 5,
+          "representative_action_date": "2026-09-16",
+          "unique_event_count": 76,
+          "reviewed_resend_route": null
+        },
+        {
+          "client_id": "cefa3c2a-e1da-4c24-8676-532dc2b59056",
+          "client_name": "CIBC Canada Validation",
+          "record_count": 1,
+          "representative_action_date": "2026-09-15",
+          "unique_event_count": 1,
+          "reviewed_resend_route": null
+        },
+        {
+          "client_id": "fbfcd207-8a85-4f28-a787-3ed1e2736f28",
+          "client_name": "CIBC Canada",
+          "record_count": 5,
+          "representative_action_date": "2026-09-16",
+          "unique_event_count": 343,
+          "reviewed_resend_route": null
+        }
+      ],
+      "routing_conclusion": "Resolve the production resend application before offering a resend."
+    },
+    {
+      "dag_id": "log_cleanup",
+      "task_id": "expire_logs_3",
+      "record_count": 2,
+      "classification": "application_error",
+      "root_cause": "parser error",
+      "confidence": "confirmed",
+      "evidence_source": "airflow_exact_task_attempt",
+      "evidence": [
+        "Task failed with exception",
+        "raise ParserError",
+        "Unable to parse string"
+      ],
+      "data_internal_omission_code": "Maintenance"
+    },
+    {
+      "dag_id": "opportunity_avro_aggregation_backfill",
+      "run_id": "manual__2026-09-25T17:47:44.651058+00:00",
+      "task_id": "account_level_opportunities_history.account_level_opportunities_history",
+      "record_count": 1,
+      "classification": "application_error",
+      "root_cause": "failed source-file read during distinctness validation",
+      "confidence": "confirmed",
+      "evidence_source": "airflow_exact_task_attempt",
+      "evidence": [
+        "Validate distinctness - begin: AccountLevelOpportunitiesHistory",
+        "SparkException: [FAILED_READ_FILE.NO_HINT] Encountered error while reading file"
+      ],
+      "data_internal_omission_code": "Backfill"
+    },
+    {
+      "dag_id": "l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543",
+      "run_id": "manual__2026-09-20T05:00:00+00:00",
+      "task_id": "account_level_opportunity_draw_schedule_history.account_level_opportunity_draw_schedule_history",
+      "record_count": 1,
+      "client_id": "1f06da19-2f61-401c-a1b7-38902e4f3543",
+      "client_name": "Scotiabank",
+      "classification": "airflow_confirmed_timeout",
+      "confidence": "confirmed",
+      "evidence_source": "airflow_exact_task_attempt",
+      "evidence": [
+        "Task failed with exception",
+        "raise AirflowTaskTimeout(self.error_message)"
+      ]
+    },
+    {
+      "dag_id": "l3-main-1f06da19-2f61-401c-a1b7-38902e4f3543",
+      "run_id": "manual__2026-09-19T05:00:00+00:00",
+      "task_id": "delivery_to_promise_other_products.delivery_to_promise_other_products_data",
+      "record_count": 1,
+      "classification": "omitted",
+      "omission_reason": "D2P triage omitted by registered policy",
+      "task_logs_requested": false,
+      "data_internal_omission_code": "D2P"
+    }
+  ],
+  "mutation_performed": false
+}

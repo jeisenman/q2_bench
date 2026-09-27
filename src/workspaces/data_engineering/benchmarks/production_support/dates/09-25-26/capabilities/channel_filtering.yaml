@@ -7,7 +7,8 @@ cases:
     mcp_override_parameter: data_internal_omissions
     required_behavior:
       - retain omitted jobs in captured evidence
-      - bypass task-log and OMS triage for registered D2P and MI3 failures
+      - read the exact failed-task log for registered D2P and MI3 candidates
+      - collapse a candidate only after a same-DAG and same-task success inside the window
       - allow other configured omissions to retain technical diagnosis in Developer
       - include each represented omission group once as a short regional code
       - place represented omission codes on the final detail line of each regional block
@@ -16,6 +17,6 @@ cases:
       - treat credit_migration_matrix and CMM as the cmm omission group
       - replace defaults when the MCP caller supplies an override
       - include all jobs when the MCP caller supplies an empty list
-      - do not create another agent to triage omitted jobs
+      - keep unverified candidates as ordinary diagnosed failures
     punish_if_missing_from_discovery: true
     punish_if_code_missing_from_data_internal: true

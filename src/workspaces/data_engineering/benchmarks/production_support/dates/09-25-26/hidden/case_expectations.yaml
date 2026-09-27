@@ -103,11 +103,11 @@ cases:
         - US Cluster Health: healthy; scheduler, DAG processor, and pods were ready at the evidence timestamp.
         - CA Cluster Health: DAG processor unhealthy; pod was running with 13 restarts and 0 active DAGs.
         - Terminology: DV means Distinctness Validation. MI means Market Insights; MI3 means Market Insights 3.
-        - BoFA (792): Delivery to Promise Other Products triage was omitted by registered D2P policy.
+        - BoFA (792): Delivery to Promise Other Products is a legacy omission without captured exact-log or in-window success verification.
         - Valley National Bank (8b2): Core Account Financial Statements high quality failed on attempt 4 during DV (Distinctness Validation); classification: distinctness.
         - Bremer Bank, National Association (a6f): Relationship Signals aggregation exited -9 without corroborating OOM evidence; classification: unknown_resource_termination.
-        - Glacier Bancorp (9d2): Delivery to Promise triage was omitted by registered D2P policy.
-        - Andi Application Owner (621): MI3 triage was omitted by registered MI3 policy.
+        - Glacier Bancorp (9d2): Delivery to Promise is a legacy omission without captured exact-log or in-window success verification.
+        - Andi Application Owner (621): MI3 is a legacy omission without captured exact-log or in-window success verification.
         - Event Bus subscriber validation failed in both observed runs because OpportunitySaved schema versions 8.6 and 8.9 have newer versions available; classification: application_error.
         - CA-02 had no task failures, but its DAG processor was unhealthy: 0 active DAGs versus 6 expected l3-main graphs, processor logs were unavailable, and 13 restarts were observed. OMS did not corroborate the failure.
         - Suggest a CA DAG-processor bounce for operator approval. No production mutation was performed.
@@ -125,11 +125,11 @@ cases:
     follow_on_message: |
       Follow Ups:
       - Would you like to:
-        - Follow up with pd-rix about 12,471 validate_event_bus events for Bank of Hope (Los Angeles, CA) (63e) on 2026-09-22.
-        - [Resend validate_event_bus events for Bank of Hope (Los Angeles, CA) (63e)](https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots) for 2026-09-22
+        - Follow up with pd-rix about 12,471 opportunities for Bank of Hope (Los Angeles, CA) (63e) on [Resend Opportunity Snapshots](https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots) for date 09-22-26.
+        - Resend 12,471 opportunities for Bank of Hope (Los Angeles, CA) (63e) on [Resend Opportunity Snapshots](https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots) for date 09-22-26.
         - Do you approve re-running the following jobs:
-          - Valley National Bank (8b2): high-quality-core-account-financial-statements
-          - Bremer Bank, National Association (a6f): relationship-signals-time-series; also move to [KPO sizing agent](agent://kpo-sizer/definition)
+          - Valley National Bank (8b2): high-quality-core-account-financial-statements for 2026-09-24
+          - Bremer Bank, National Association (a6f): relationship-signals-time-series for 2026-09-24; also move to [KPO sizing agent](agent://kpo-sizer/definition)
 
     require_reported_dags_exist: true
     evidence_captured_at:

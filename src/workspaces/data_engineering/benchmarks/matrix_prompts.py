@@ -5,6 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol
 
+from workspaces.data_engineering.agents.prod_support.templates import (
+    HUMAN_IDENTITY_ACTION_TEMPLATE,
+    RESEND_ACTION_TEMPLATE,
+)
+
 
 class MatrixPromptManifest(Protocol):
     """Matrix values required by the production-support prompt."""
@@ -156,7 +161,11 @@ def build_prod_support_prompt_lines(
         "3. The Airflow Agent may query selected regions concurrently with ordinary "
         "I/O concurrency; those regional calls are not additional agents.",
         "4. After both handoffs complete, make one Reporting Agent pass that produces "
-        "Developer, Data Internal, and Follow Up outputs.",
+        "the complete final report with Developer, Data Internal, and Follow Up "
+        "outputs. The Reporting Agent output is authoritative: return it verbatim. "
+        "The orchestrator must not rewrite, reconstruct, summarize, repair, or append "
+        "to it. If it violates the contract, fail instead of performing a second "
+        "reporting pass.",
         "Final response structure is strict. The first line must be exactly:",
         f"# Prod Support Report — {operational_date} operational day",
         "The next non-empty line must be exactly:",
@@ -193,20 +202,34 @@ def build_prod_support_prompt_lines(
         "total restart count, KEDA health, warnings, and evidence gaps. Do not require "
         "DAG parsing or OMS evidence to establish Kubernetes/KEDA health.",
         "Airflow Agent requirements: return every selected-region failure and direct "
-        "validated error. D2P and MI3 are registered triage omissions: retain them in "
-        "the inventory, but do not fetch task logs or query OMS for them. Retrieve "
-        "bounded exact evidence for other failures. Query OMS only for a proven Spark "
-        "workload when an exact OMS source is supplied.",
+        "validated error under 'For <region> Cluster the following errors exist:'. "
+        "Use the source region from errors_by_region and never remap an error based "
+        "on client environment, DAG name, or report position. Also return each "
+        "selected region's active DAG count and "
+        "DAG-processor health from the recorded Airflow handoff. Report the combined "
+        "'DAGs parsing properly' line only when both selected regions have healthy "
+        "DAG processors and nonzero active counts; never infer parsing health from "
+        "the failed-task inventory. For every configured omission candidate, "
+        "including D2P and MI3, read the bounded exact failed task log and check "
+        "whether the same DAG "
+        "and task had a success inside the operational window. Collapse it to an "
+        "omission code only when that success is present. Do not query OMS merely to "
+        "verify an omission. Retrieve bounded exact evidence for all failures. Query "
+        "OMS only for a proven Spark workload when an exact OMS source is supplied.",
         "Resolve every client UUID found in a DAG or task identifier through the "
         "recorded Resource Discovery input before triage or reporting. Use the "
         "resolved name and first three UUID characters in parentheses. When no "
-        "unique reviewed name exists, use 'Unresolved client (<prefix>)'; never "
-        "emit a bare prefix.",
+        "unique reviewed name exists, keep 'Unresolved client (<prefix>)' in the "
+        "evidence inventory, do not propose a resend or rerun for it, and add this "
+        "exact human-help action before any remediation: "
+        f"'{HUMAN_IDENTITY_ACTION_TEMPLATE}' Never emit a bare prefix.",
         "Reporting Agent requirements: use one reporting pass only. Group clients "
         "that failed on the same job on one line. If a grouped client has other jobs, "
         "list that client separately with only the other jobs. Mention every "
         "client-job pair exactly once. Put represented omission codes on the final "
-        "detail line of each regional Data Internal block.",
+        "detail line of each regional Data Internal block. An unverified omission "
+        "candidate remains a normal failure with its diagnosis and supported "
+        "follow-up.",
         "Never place a CA finding in US or a US finding in CA. Do not describe one "
         "cluster as both healthy and unhealthy from the same evidence. Use no periods "
         "in Data Internal and no blank lines between its bullets.",
@@ -214,9 +237,16 @@ def build_prod_support_prompt_lines(
         "<airflow-base-url>/dags/<dag-id>/grid?status=failed"
         f"&execution_start={manifest.operational_start}"
         f"&execution_end={manifest.operational_end}",
-        "Follow Up is suggestion-only. Never claim a rerun, resend, bounce, or other "
-        "production mutation occurred. Include the operational date on any proposed "
-        "action and return 'No action is required' when no supported action exists.",
+        "Follow Up is an action list, not an investigation summary. Never claim a "
+        "rerun, resend, bounce, or other production mutation occurred. Include the "
+        "date on every proposed action and return '- No action is required.' when no "
+        "supported action exists. The canonical resend action is exactly:",
+        f"  - {RESEND_ACTION_TEMPLATE}",
+        "Instantiate that template from the report brief without paraphrasing it. "
+        "Do not write 'consider resending', 'review', 'investigate', 'before "
+        "considering reruns', or generic infrastructure follow-ups. Cluster warnings "
+        "such as a retired DAG processor or KEDA read-access limitation remain "
+        "Developer evidence and do not create a Follow Up by themselves.",
         "Use case applicability. If OMS, Spark-race, automation, or another optional "
         "source is not supplied or not needed, avoid that work and treat it as "
         "success rather than an evidence gap.",

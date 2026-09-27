@@ -29,8 +29,8 @@ rubric:
     punish: Links are one-sided, encoded incorrectly, use the wrong date, or include an unselected region.
   - id: client_identity_resolution
     weight: 2.0
-    reward: Uses reviewed names and three-character prefixes without raw UUIDs or guessed identities.
-    punish: Emits raw identifiers, bare prefixes, guessed names, or an unreviewed application route.
+    reward: Uses reviewed names and three-character prefixes; unresolved identities trigger the exact dated human-help action and no remediation for that client.
+    punish: Emits raw identifiers, bare prefixes, guessed names, an unreviewed application route, or a resend or rerun for an unresolved client.
   - id: cluster_health
     weight: 2.5
     reward: Reports selected-region pod state, restarts, KEDA health, warnings, and evidence gaps without requiring DAG or OMS evidence.
@@ -41,20 +41,20 @@ rubric:
     punish: Drops, duplicates, or moves a failure to the wrong region.
   - id: complete_log_retrieval
     weight: 2.0
-    reward: Retrieves bounded exact or prior same-task evidence for every non-triage-omitted failure and records unavailable evidence explicitly.
-    punish: Skips a non-omitted failure, uses unrelated history, prints raw logs, or fetches task logs for D2P or MI3.
+    reward: Retrieves bounded exact or prior same-task evidence for every failure, including omission candidates, and records unavailable evidence explicitly.
+    punish: Skips a failure, uses unrelated history, prints raw logs, or treats an omission label as permission to avoid the exact failed-task log.
   - id: omitted_job_routing
     weight: 2.5
-    reward: Retains omissions, bypasses task-log and OMS triage for D2P and MI3, and puts represented codes on the final regional detail line.
-    punish: Drops an omission, triages D2P or MI3, exposes coded client details, repeats a code, or misplaces codes.
+    reward: Reads the exact failure log, verifies a same-DAG/task success inside the window, then puts each verified omission code on the final regional detail line.
+    punish: Drops an omission candidate, collapses one without an in-window success, penalizes exact-log reading, exposes coded client details, repeats a code, or misplaces codes.
   - id: conditional_oms
     weight: 1.5
     reward: Uses exact OMS only for a proven Spark workload with a supplied source; otherwise performs no OMS work and receives full credit.
     punish: Queries OMS without both prerequisites, uses a broad query, or penalizes a correct no-OMS path.
   - id: reporting_boundary
     weight: 2.0
-    reward: Performs one Reporting pass over compact Cluster and Airflow handoffs and returns all three audience outputs.
-    punish: Invokes separate audience agents, repeats reporting, passes raw logs, or omits an output.
+    reward: Performs one Reporting pass over compact handoffs and returns its complete Developer, Data Internal, and Follow Up output verbatim.
+    punish: Invokes separate audience agents, repeats reporting, passes raw logs, omits an output, or lets the orchestrator rewrite the Reporting output.
   - id: grouped_reporting
     weight: 3.0
     reward: Groups clients sharing a job, then lists only each grouped client's other jobs, with every client-job pair once.
@@ -65,8 +65,8 @@ rubric:
     punish: Mixes regions or labels the same cluster both healthy and unhealthy from one evidence set.
   - id: follow_up_actionability
     weight: 2.0
-    reward: Returns only evidence-supported suggestion-only actions with operational dates, or says no action is required.
-    punish: Claims a mutation occurred, includes undated or unsupported actions, or suggests rerunning an omission.
+    reward: Returns only canonical dated action templates, including exact client-named resend wording and human escalation for unresolved identities, or says no action is required.
+    punish: Claims a mutation, paraphrases a canonical action, uses broad review or investigation language, includes an undated action, or remediates an omission or unresolved client.
   - id: automation
     weight: 1.0
     reward: Uses the replay parser once; when it supplies the handoffs, avoids redundant manual work and receives full credit.

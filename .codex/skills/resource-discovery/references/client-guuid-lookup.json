@@ -106,6 +106,32 @@
     "last_checked": "2026-09-26",
     "source": "unresolved"
   },
+  "473d12cb-26ce-46b5-9568-222b5b55b060": {
+    "api_status": "unique-match",
+    "last_checked": "2026-09-27",
+    "name": "First State Bank of Gainesville (Gainesville, TX)",
+    "q2_client_id": null,
+    "source": "resource-discovery-api-plus-user-confirmed-production-resources",
+    "subdomain": "application",
+    "user_confirmed_production_resources": {
+      "data_studio": {
+        "data_lake": "pladls2usdatamartprod",
+        "service_environment": "Data Studio US"
+      },
+      "plapp": {
+        "data_lake": "pladls2usprod",
+        "database": "PrecisionLender_Production",
+        "database_server": "pl-sqlfailover-us-application-01.database.windows.net",
+        "service_environment": "US01",
+        "storage": "plstorageusapplication01"
+      },
+      "radar": {
+        "data_lake": "pladls2usprod",
+        "service_environment": "US01",
+        "storage": "plstusrelsrvarchprod"
+      }
+    }
+  },
   "5301628b-e85f-4ff9-b5b3-e8d13c5926a7": {
     "api_status": "unique-match",
     "last_checked": "2026-09-26",

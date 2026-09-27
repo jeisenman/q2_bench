@@ -27,17 +27,19 @@ cases:
       conditional_oms: false
       cluster_health: true
       follow_up_actionability: true
-    reporting_contract_version: "2.5"
+    reporting_contract_version: "4.0"
     instructions:
       - Resolve the default scope to US and CA and the date to the previous operational day
       - Start exactly one Cluster handoff and one Airflow handoff concurrently
       - Keep Cluster, Airflow, and Reporting as leaf agents with no nested delegation
       - Run one Reporting pass only after Cluster and Airflow return
+      - Return the complete Reporting output verbatim without orchestrator rewriting
       - Keep every finding under its source region and never mix US and CA
       - Do not issue contradictory cluster-health verdicts from the same evidence
       - Group clients sharing one job first, then list only their other jobs separately
-      - Do not fetch task logs or query OMS for registered D2P and MI3 triage omissions
+      - Read each omission candidate log and require a same-DAG/task success inside the window
       - Put represented omission codes on the final detail line of each regional block
+      - Use only canonical dated Follow Up actions and request human help for unresolved identities
     prohibit_agent_changes: true
   - id: current-ca-deployment-events-2026-09-25
     reference_time: "2026-09-25T15:18:00Z"

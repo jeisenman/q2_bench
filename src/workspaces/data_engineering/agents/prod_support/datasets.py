@@ -16,6 +16,7 @@ from workspaces.data_engineering.agents.prod_support.models import (
 )
 from workspaces.data_engineering.agents.prod_support.ports import (
     AirflowFailureSource,
+    AirflowSuccessSource,
     RegionalAirflowFailureSource,
     TaskLogUnavailableError,
 )
@@ -89,15 +90,7 @@ async def capture_day(
     semaphore = asyncio.Semaphore(MAX_PARALLEL)
 
     async def collect(failure: AirflowFailure) -> dict[str, Any]:
-        group = config.omission_group(failure)
-        if config.skips_airflow_triage(failure):
-            return _serialize(
-                failure,
-                "",
-                triage_status="omitted",
-                log_retrieval="omitted_by_policy",
-                omission_code=group.value.upper() if group is not None else None,
-            )
+        group = config.configured_omission_group(failure)
         try:
             async with semaphore:
                 log = await source.fetch_log(failure)
@@ -105,11 +98,20 @@ async def capture_day(
         except TaskLogUnavailableError as error:
             log = str(error)
             retrieval = "unavailable"
+        recovered = False
+        if group is not None and isinstance(source, AirflowSuccessSource):
+            async with semaphore:
+                recovered = await source.has_success_within(
+                    failure,
+                    cutoff,
+                    cutoff + timedelta(days=1),
+                )
         return _serialize(
             failure,
             scrubber.redact(log),
-            triage_status="investigated",
+            triage_status="omitted" if recovered else "investigated",
             log_retrieval=retrieval,
+            omission=((group.value.upper(), recovered) if group is not None else None),
         )
 
     records = await asyncio.gather(*(collect(failure) for failure in candidates))
@@ -176,6 +178,11 @@ class ReplayAirflowFailureSource:
             message = f"{dataset_path}: records must be a list"
             raise TypeError(message)
         self._failures = tuple(_deserialize(item) for item in records)
+        self._success_within_window = {
+            failure.failure_id: bool(record.get("success_within_window", False))
+            for failure, record in zip(self._failures, records, strict=True)
+            if isinstance(record, dict)
+        }
 
     async def discover_failures(self, since: datetime) -> tuple[AirflowFailure, ...]:
         """Return all records so the agent's cutoff filtering is testable."""
@@ -186,6 +193,16 @@ class ReplayAirflowFailureSource:
         """Return the captured log embedded in a replay record."""
         return failure.log
 
+    async def has_success_within(
+        self,
+        failure: AirflowFailure,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> bool:
+        """Replay the captured bounded success verification."""
+        del start_at, end_at
+        return self._success_within_window.get(failure.failure_id, False)
+
 
 def _serialize(
     failure: AirflowFailure,
@@ -193,7 +210,7 @@ def _serialize(
     *,
     triage_status: str,
     log_retrieval: str,
-    omission_code: str | None = None,
+    omission: tuple[str, bool] | None = None,
 ) -> dict[str, Any]:
     value = asdict(failure)
     value["region"] = failure.region.value
@@ -202,8 +219,11 @@ def _serialize(
     value["log"] = log
     value["triage_status"] = triage_status
     value["log_retrieval"] = log_retrieval
-    if omission_code is not None:
-        value["omission_code"] = omission_code
+    if omission is not None:
+        omission_code, success_within_window = omission
+        value["success_within_window"] = success_within_window
+        if success_within_window:
+            value["omission_code"] = omission_code
     return value
 
 

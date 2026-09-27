@@ -1,0 +1,41 @@
+{
+  "lookups": [
+    {
+      "client_id": "1f06da19-2f61-401c-a1b7-38902e4f3543",
+      "client_name": "Scotiabank",
+      "environment": null,
+      "match": "unique",
+      "prod_support_ignore": false,
+      "reviewed_production_resend_url": null,
+      "routing_source": null
+    },
+    {
+      "client_id": "b4916353-ef8a-4af8-9601-74305858e905",
+      "client_name": "Scotiabank - Data Validation",
+      "environment": null,
+      "match": "unique",
+      "prod_support_ignore": false,
+      "reviewed_production_resend_url": null,
+      "routing_source": null
+    },
+    {
+      "client_id": "cefa3c2a-e1da-4c24-8676-532dc2b59056",
+      "client_name": "CIBC Canada Validation",
+      "environment": null,
+      "match": "unique",
+      "prod_support_ignore": false,
+      "reviewed_production_resend_url": null,
+      "routing_source": null
+    },
+    {
+      "client_id": "fbfcd207-8a85-4f28-a787-3ed1e2736f28",
+      "client_name": "CIBC Canada",
+      "environment": null,
+      "match": "unique",
+      "prod_support_ignore": false,
+      "reviewed_production_resend_url": null,
+      "routing_source": null
+    }
+  ],
+  "schema_version": 1
+}

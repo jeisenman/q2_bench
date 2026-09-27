@@ -47,7 +47,10 @@ uv run python \
   bullets, no Markdown section headings, resolved client labels, and an
   alert-first Data Internal message.
 - OMS is queried only for a proven Spark workload with a supplied exact source.
-- D2P and MI3 remain discovered but bypass task-log and OMS triage.
+- D2P and MI3 remain discovered. Current expectations reward reading their
+  exact failed-task logs and require an in-window same-task success before
+  collapsing them to omission codes. This historical capture lacks that newer
+  verification and is marked legacy-unverified.
 - Cluster, Airflow, and Reporting are leaf agents and cannot delegate.
 - Reporting runs once after Cluster and Airflow return.
 - Developer output starts with US and CA Cluster Health lines.

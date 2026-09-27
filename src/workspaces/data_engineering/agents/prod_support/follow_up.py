@@ -90,11 +90,23 @@ def _format_follow_up(
     """Render explicit remediation choices with human help for evidence gaps."""
     if not failures:
         return "- No action is required."
-    actions = list(_resend_actions(failures, diagnoses, identities))
+    unresolved = _unresolved_client_labels(failures, identities)
+    actions = (
+        [
+            "  - Ask a human to resolve the client identity for "
+            f"{_join_terms(unresolved)} before proposing remediation for date "
+            f"{operational_date.strftime('%m-%d-%y')}."
+        ]
+        if unresolved
+        else []
+    )
+    actions.extend(_resend_actions(failures, diagnoses, identities))
     rerun_failures = tuple(
         failure
         for failure in failures
-        if not is_resend_failure(failure) and include_in_data_internal(failure, config)
+        if not is_resend_failure(failure)
+        and include_in_data_internal(failure, config)
+        and not _has_unresolved_client(failure, identities)
     )
     if rerun_failures:
         actions.append("  - Do you approve re-running the following jobs:")
@@ -123,6 +135,34 @@ def _format_follow_up(
     if not actions:
         return "- No action is required."
     return "\n".join(("- Would you like to:", *actions))
+
+
+def _unresolved_client_labels(
+    failures: tuple[AirflowFailure, ...],
+    identities: dict[str, ClientIdentity],
+) -> tuple[str, ...]:
+    """Return stable unresolved client labels requiring human resolution."""
+    return tuple(
+        sorted(
+            {
+                failure_subject(failure, identities)
+                for failure in failures
+                if _has_unresolved_client(failure, identities)
+            }
+        )
+    )
+
+
+def _has_unresolved_client(
+    failure: AirflowFailure,
+    identities: dict[str, ClientIdentity],
+) -> bool:
+    """Return whether a client-scoped failure lacks a reviewed identity."""
+    identifier = client_id(failure)
+    if identifier is None:
+        return False
+    identity = identities.get(identifier)
+    return identity is None or identity.name is None
 
 
 def _resend_actions(
@@ -193,7 +233,10 @@ def _resend_candidates(
     """Deduplicate repeated client/date failures using the largest known count."""
     selected: dict[tuple[str, str], ResendCandidate] = {}
     for failure in failures:
-        if not is_resend_failure(failure):
+        if not is_resend_failure(failure) or _has_unresolved_client(
+            failure,
+            identities,
+        ):
             continue
         label = failure_subject(failure, identities)
         resend_date = _logical_date(failure).strftime("%m-%d-%y")

@@ -118,7 +118,10 @@ This snapshot remains uncurated until these gaps are reviewed:
   exact source.
 - If the latest task log is unavailable or non-diagnostic, search earlier runs
   of the same region, DAG, and task in reverse chronological order.
-- D2P and MI3 remain discovered but bypass task-log and OMS triage.
+- D2P and MI3 remain discovered. Current expectations reward reading their
+  exact failed-task logs and require an in-window same-task success before
+  collapsing them to omission codes. This historical capture lacks that newer
+  verification and is marked legacy-unverified.
 - One Cluster and one Airflow leaf handoff start concurrently; one Reporting
   pass follows both, and no leaf agent may delegate.
 - Event resends include exact dates, event counts, and a clickable Resource

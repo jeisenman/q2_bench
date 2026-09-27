@@ -152,13 +152,14 @@ The capture contract is:
 - Selected Airflow regions are queried concurrently.
 - `airflow_failures.json` includes target-window records and preceding-day
   temporal distractors.
-- D2P and MI3 records remain present with their omission code, but collection
-  does not request their task logs or OMS evidence.
+- Omission candidates remain present, collection retrieves their exact failed
+  task logs, and it records whether the same DAG and task succeeded inside the
+  operational window. Only verified recoveries receive an omission code.
 - Other Airflow records identify whether the exact task-attempt log was
   retrieved or unavailable.
 - `cluster_health.json` records pod readiness, restart count, KEDA status,
   symptoms, and warnings for every selected region.
-- Resource Discovery is bounded to exact client IDs from non-omitted failures.
+- Resource Discovery is bounded to exact client IDs from all failures.
 - `compact_evidence.json` retains only bounded terminal evidence; it never
   copies complete logs.
 - `reporting_input.json` groups each client-job pair once and carries omission
@@ -192,9 +193,9 @@ The collector already performs deterministic extraction and grouping. Review:
 - Stable failure ID:
   `region|dag_id|run_id|task_id`.
 - Operational-window membership based on task `end_at`.
-- Exact client identity from Resource Discovery for non-omitted failures.
+- Exact client identity from Resource Discovery for all failures.
 - Bounded terminal evidence and attempt number.
-- Explicit `omitted_by_policy` records for D2P and MI3.
+- Exact-log evidence and `success_within_window` for omission candidates.
 - Repeated DAG/task signatures across runs.
 - Candidate classification and the exact supporting evidence.
 - Regional pod readiness, restart count, and KEDA status.

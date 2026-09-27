@@ -22,9 +22,6 @@ from workspaces.data_engineering.agents.prod_support.ports import (
     ClusterHealthSource,
     ResourceDiscoveryInvoker,
 )
-from workspaces.data_engineering.agents.prod_support.reporting_config import (
-    ProdSupportReportConfig,
-)
 from workspaces.data_engineering.agents.prod_support.reporting_details import (
     client_id,
 )
@@ -160,7 +157,7 @@ async def collect_prod_support_data(
                 "reporting_input_builds_after_handoffs": True,
                 "nested_delegation": False,
             },
-            "triage_omissions": ["D2P", "MI3"],
+            "omission_verification": "exact_log_and_same_task_success_in_window",
             "artifacts": {
                 "airflow": airflow_path.name,
                 "cluster_health": cluster_path.name,
@@ -224,13 +221,11 @@ async def _capture_resources(
     failures: tuple[AirflowFailure, ...],
     target: Path,
 ) -> Path:
-    config = ProdSupportReportConfig()
     identifiers = tuple(
         sorted(
             {
                 identifier
                 for failure in failures
-                if not config.skips_airflow_triage(failure)
                 if (identifier := client_id(failure)) is not None
             }
         )

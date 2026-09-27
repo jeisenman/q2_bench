@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "source": "production_agentic_debug_capture",
+  "captured_at": "2026-09-27T11:20:04.727667+00:00",
+  "operational_date": "2026-09-26",
+  "window": {
+    "start": "2026-09-26T05:00:00+00:00",
+    "end": "2026-09-27T05:00:00+00:00"
+  },
+  "capture": {
+    "record_count": 48,
+    "in_window_failure_count": 45,
+    "temporal_distractor_count": 3,
+    "failures_by_region": {
+      "US-01": 20,
+      "CA-02": 25
+    },
+    "exact_log_records": 28,
+    "triage_omitted_records": 17,
+    "raw_logs_retained": 0
+  },
+  "orchestration": {
+    "concurrent_leaf_handoffs": [
+      "cluster",
+      "airflow"
+    ],
+    "airflow_regions_concurrent": true,
+    "reporting_input_builds_after_handoffs": true,
+    "nested_delegation": false
+  },
+  "artifacts": {
+    "airflow_capture": {
+      "local_uri": "var/benchmark_data/prod_support/2026-09-26/airflow_failures.json",
+      "sha256": "653064380b946733de6b045abeacd6015d907c2295b9429ff3c5904829581251",
+      "tracked": false
+    },
+    "compact_evidence": {
+      "local_uri": "var/benchmark_data/prod_support/2026-09-26/compact_evidence.json",
+      "sha256": "db7d60d235cf3255db940c1c6068c55736060816c1e94dcf910b83782c753385",
+      "tracked": false
+    },
+    "reporting_input": {
+      "local_uri": "var/benchmark_data/prod_support/2026-09-26/reporting_input.json",
+      "sha256": "a6065a32e18c2d050319bb15434fd3079f8c1985afa548110a67c9a9bccc86a6",
+      "tracked": false
+    }
+  },
+  "tracked_evidence": {
+    "US-01": "current-us-findings.json",
+    "CA-02": "current-ca-findings.json",
+    "dag_parsing": "dag_parsing.json",
+    "cluster_health": "../assets/cluster_health_snapshot.json",
+    "resource_discovery": "../assets/resource_discovery_snapshot.json"
+  },
+  "mutation_performed": false
+}

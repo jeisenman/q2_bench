@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from domain import AgentRequest, AgentResult
 from workspaces.data_engineering.agents.prod_support.cluster_health import (
@@ -17,9 +18,18 @@ from workspaces.data_engineering.agents.prod_support.models import (
 from workspaces.data_engineering.agents.prod_support.oms import (
     OmsJobQueryParameters,
 )
+from workspaces.data_engineering.agents.prod_support.retry_models import (
+    RetryBatch,
+    RetryTaskReference,
+)
 from workspaces.data_engineering.agents.prod_support.workloads import (
     AirflowTaskMetadata,
 )
+
+if TYPE_CHECKING:
+    from workspaces.data_engineering.agents.prod_support.reporting_config import (
+        ProdSupportReportConfig,
+    )
 
 
 class TaskLogUnavailableError(RuntimeError):
@@ -52,6 +62,32 @@ class AirflowFailureSource(Protocol):
 
     async def fetch_log(self, failure: AirflowFailure) -> str:
         """Return the exact task-instance log for a failure."""
+        ...
+
+
+@runtime_checkable
+class AirflowSuccessSource(Protocol):
+    """Verify recovery for the same DAG and task in a bounded window."""
+
+    async def has_success_within(
+        self,
+        failure: AirflowFailure,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> bool:
+        """Return whether the same DAG/task succeeded inside the window."""
+        ...
+
+
+class OmissionStore(Protocol):
+    """Persist operator-configured Data Internal omission groups."""
+
+    def load(self) -> ProdSupportReportConfig:
+        """Return validated omission configuration."""
+        ...
+
+    def save(self, values: Sequence[str]) -> ProdSupportReportConfig:
+        """Validate and persist omission values."""
         ...
 
 
@@ -104,6 +140,25 @@ class ClusterHealthSource(Protocol):
 
     async def inspect_health(self, region: Region) -> RegionalClusterHealth:
         """Return one evidence-derived regional observation."""
+        ...
+
+
+class AirflowRetrySource(Protocol):
+    """Dry-run and execute exact regional Airflow task retries."""
+
+    async def plan_retry(
+        self,
+        batch: RetryBatch,
+    ) -> tuple[RetryTaskReference, ...]:
+        """Return Airflow's dry-run selection for one exact DAG run."""
+        ...
+
+    async def execute_retry(
+        self,
+        batch: RetryBatch,
+        approval_id: str,
+    ) -> tuple[RetryTaskReference, ...]:
+        """Clear the exact approved tasks and return their current states."""
         ...
 
 

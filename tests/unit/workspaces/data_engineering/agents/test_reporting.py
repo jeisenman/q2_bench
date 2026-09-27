@@ -213,6 +213,11 @@ def test_reports_task_embedded_client_name_and_unresolved_identity() -> None:
     assert "Resource Discovery: no reviewed unique match (not_found)" in (
         reports.developer
     )
+    assert (
+        "Ask a human to resolve the client identity for Unresolved client (333) "
+        "before proposing remediation for date 09-24-26."
+    ) in reports.follow_up
+    assert "Unresolved client (333):" not in reports.follow_up
 
 
 def test_default_omissions_hide_jobs_from_data_internal_and_follow_up() -> None:
@@ -241,6 +246,12 @@ def test_default_omissions_hide_jobs_from_data_internal_and_follow_up() -> None:
     assert "MI3" in reports.developer
     assert "subscriber" in reports.developer
     assert "US\n- Ongoing\n  - D2P, MI3, Subscriber" in reports.data_internal
+    assert (
+        "Omitted Jobs:\n"
+        "- [D2P](agent://prod-support/omissions#d2p), "
+        "[MI3](agent://prod-support/omissions#mi3), "
+        "[Subscriber](agent://prod-support/omissions#subscriber)"
+    ) in reports.combined
     assert "Do you approve re-running" not in reports.follow_up
 
 

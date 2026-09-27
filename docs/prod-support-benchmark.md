@@ -113,9 +113,10 @@ The same snapshot requires selected-region cluster-health lines backed by pod
 state, restart counts, and KEDA checks. Regional findings must remain in their
 source region, and cluster status cannot contradict the cited evidence. Data
 Internal defaults to collapsing D2P, MI3, subscriber, maintenance, backfill,
-and CMM findings to regional codes. D2P and MI3 bypass task-log and OMS triage;
-other configured omissions may still be investigated. Represented codes are
-always the final detail line of their regional block.
+and CMM findings to regional codes. Every omission candidate requires its exact
+failed-task log plus a same-DAG/task success inside the operational window.
+Only verified recoveries collapse to codes, which remain the final detail line
+of their regional block.
 
 Data Internal minimizes repeated subjects: clients sharing one failed job are
 grouped first. If a grouped client has other failed jobs, one separate line
@@ -128,14 +129,20 @@ Follow Ups is a production-safety boundary and contains only dated,
 approval-gated actions. Coded omission groups do not receive rerun suggestions,
 large resends identify `pd-rix`, and jobs above five attempts link the
 `agent://kpo-sizer/definition` interface without invoking it. When no supported
-action exists, the report states that no action is required.
+action exists, the report states that no action is required. Resends use the
+exact template `Resend <number> opportunities for <client names> on [Resend
+Opportunity Snapshots](<approved link>) for date <MM-DD-YY>.` An unresolved
+client receives a dated human-identity action and no resend or rerun proposal.
+Broad `review` or `investigate` items and cluster warnings are not Follow Up
+actions.
 
 The matrix stages one bounded replay parser inside the isolated candidate
 workspace. Its stdout represents the compact Cluster and Airflow handoffs.
 Candidates synthesize from that output without reopening JSON files, printing
 raw logs, or repeating inventories. The Reporting pass runs once after both
-handoffs. Applicability-gated work receives full credit when it is correctly
-skipped.
+handoffs. Its complete output is authoritative and the orchestrator returns it
+verbatim; rewriting or appending to the report violates the reporting boundary.
+Applicability-gated work receives full credit when it is correctly skipped.
 
 Debug capture records the selected Airflow and cluster boundaries, reviewed
 Resource Discovery metadata, compact evidence, and the direct Reporting input.
@@ -149,7 +156,8 @@ when the workload and exact evidence path require them.
 - DAG existence: every reported DAG ID must exist in the captured regional
   inventory; an empty failure set passes without inventing failures.
 - Diagnosis accuracy: evidence-based classification from compact exact logs for
-  non-omitted failures, with explicit D2P/MI3 no-triage outcomes.
+  every failure, with omission codes limited to same-task recoveries verified
+  inside the operational window.
 - Developer message: exact curated technical analysis and recommended next steps.
   It includes filtered US and CA Airflow cluster links and expands operational
   acronyms such as DV (Distinctness Validation), MI (Market Insights), and MI3

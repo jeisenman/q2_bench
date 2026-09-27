@@ -73,6 +73,16 @@ class RegionalFakeSource:
         self.fetched.append(failure.task_id)
         return "terminal failure"
 
+    async def has_success_within(
+        self,
+        failure: AirflowFailure,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> bool:
+        assert start_at == datetime(2026, 9, 25, 5, tzinfo=UTC)
+        assert end_at == datetime(2026, 9, 26, 5, tzinfo=UTC)
+        return failure.task_id == "delivery_to_promise"
+
 
 def test_capture_and_replay_redacted_airflow_evidence(tmp_path) -> None:
     target = asyncio.run(capture_day(FakeSource(), date(2026, 9, 24), tmp_path))
@@ -87,7 +97,7 @@ def test_capture_and_replay_redacted_airflow_evidence(tmp_path) -> None:
     assert failures[0].log.endswith("OOMKilled")
 
 
-def test_capture_uses_selected_regions_and_skips_omitted_logs(tmp_path) -> None:
+def test_capture_reads_omission_logs_and_verifies_recovery(tmp_path) -> None:
     source = RegionalFakeSource()
 
     target = asyncio.run(
@@ -101,13 +111,14 @@ def test_capture_uses_selected_regions_and_skips_omitted_logs(tmp_path) -> None:
     captured = json.loads(target.read_text(encoding="utf-8"))
 
     assert source.regions == [Region.CA_02]
-    assert source.fetched == ["ordinary_task"]
+    assert source.fetched == ["delivery_to_promise", "ordinary_task"]
     assert captured["regions"] == ["CA-02"]
     omitted, investigated = captured["records"]
     assert omitted["triage_status"] == "omitted"
-    assert omitted["log_retrieval"] == "omitted_by_policy"
+    assert omitted["log_retrieval"] == "exact_task_attempt"
     assert omitted["omission_code"] == "D2P"
-    assert omitted["log"] == ""
+    assert omitted["log"] == "terminal failure"
+    assert omitted["success_within_window"] is True
     assert investigated["triage_status"] == "investigated"
 
 
