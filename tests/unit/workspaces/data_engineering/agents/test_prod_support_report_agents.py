@@ -47,7 +47,7 @@ def _drafts(
         urls_to_validate="URLs",
         developer="Message for developer:\n  - deterministic",
         data_internal=(
-            ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good\nCA\n- Good"
+            ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good\n\nCA\n- Good"
         ),
         follow_up=follow_up,
     )
@@ -59,7 +59,8 @@ def _output(data_internal: str | None = None) -> str:
             "developer": "Message for developer:\n  - reviewed evidence",
             "data_internal": data_internal
             or (
-                ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good\nCA\n- Good"
+                ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
+                "US\n- Good\n\nCA\n- Good"
             ),
             "follow_up": "- No action is required.",
         }
@@ -73,7 +74,7 @@ def _action_output(
         ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
         "US\n- Ongoing\n"
         "  - Client A (111) and Client B (222) failed on opportunity-save-history\n"
-        "CA\n- Good"
+        "\nCA\n- Good"
     ),
     follow_up: str = (
         "- Would you like to:\n"
@@ -132,7 +133,7 @@ def test_reporting_agent_runs_once_for_all_audiences() -> None:
 
 
 def test_reporting_agent_rejects_invalid_data_internal() -> None:
-    invalid = ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good.\nCA\n- Good"
+    invalid = ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good.\n\nCA\n- Good"
     with pytest.raises(ReportAgentOutputError, match="must not contain periods"):
         asyncio.run(
             ReportingAgent(FakeRuntime(_output(data_internal=invalid))).write(
@@ -180,12 +181,13 @@ def test_reporting_agent_enforces_developer_template(
             "invalid regional summary",
         ),
         (
-            ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Ongoing\nCA\n- Good",
+            ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
+            "US\n- Ongoing\n\nCA\n- Good",
             "Ongoing details",
         ),
         (
             ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
-            "US\n- Good\n  - Client A (111) failed on job\nCA\n- Good",
+            "US\n- Good\n  - Client A (111) failed on job\n\nCA\n- Good",
             "Good regions",
         ),
     ],
@@ -302,7 +304,7 @@ def test_reporting_agent_rejects_broad_review_follow_ups(follow_up: str) -> None
 def test_reporting_agent_rejects_shorthand_mixed_with_other_details() -> None:
     data_internal = (
         ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
-        "US\n- Ongoing\n  - D2P\n  - another finding\nCA\n- Good"
+        "US\n- Ongoing\n  - D2P\n  - another finding\n\nCA\n- Good"
     )
 
     with pytest.raises(ReportAgentOutputError, match="Ongoing details"):
@@ -319,7 +321,7 @@ def test_reporting_agent_rejects_shorthand_mixed_with_other_details() -> None:
 def test_reporting_agent_accepts_indented_d2p_shorthand() -> None:
     data_internal = (
         ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\n"
-        "US\n- Ongoing\n  - D2P\nCA\n- Good"
+        "US\n- Ongoing\n  - D2P\n\nCA\n- Good"
     )
 
     reports = asyncio.run(
@@ -336,7 +338,7 @@ def test_reporting_agent_accepts_indented_d2p_shorthand() -> None:
 
 def test_reporting_agent_rejects_indented_region_label() -> None:
     data_internal = (
-        ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good\n  CA\n- Good"
+        ":bangbang: PROD SUPPORT 2026-09-25 :bangbang:\nUS\n- Good\n\n  CA\n- Good"
     )
 
     with pytest.raises(ReportAgentOutputError, match="left-aligned"):

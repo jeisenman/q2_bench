@@ -23,9 +23,10 @@ RESOURCE_DISCOVERY_V1_DEFINITION = AgentDefinition(
     description="Find non-secret client and resource metadata by identifier.",
     instructions=(
         "Search the injected read-only source using the supplied structured "
-        "identifier. Return only allowlisted non-secret metadata. Report zero, "
-        "one, or multiple matches explicitly; never infer a client or expose "
-        "credentials."
+        "identifier. A client_id must be the complete client UUID, never its "
+        "three-character report prefix. Return only allowlisted non-secret "
+        "metadata. Report zero, one, or multiple matches explicitly; never "
+        "infer a client or expose credentials."
     ),
     tools=(
         ToolDefinition(
@@ -34,7 +35,7 @@ RESOURCE_DISCOVERY_V1_DEFINITION = AgentDefinition(
             input_schema=(
                 ("identifier", "string"),
                 ("identifier_kind", "string"),
-                ("identifier_value", "string"),
+                ("identifier_value", "complete UUID when kind is client_id"),
             ),
         ),
     ),

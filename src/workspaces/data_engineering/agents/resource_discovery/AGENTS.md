@@ -51,7 +51,8 @@ occur in this package.
 
 1. Validate the structured identifier or the request's `identifier` (or
    `identifier_kind`/`identifier_value`) attributes. The free-form prompt is
-   never parsed for search values.
+   never parsed for search values. A `client_id` must be a complete UUID;
+   three-character prefixes are valid only in rendered production reports.
 2. Call and await the injected source's read-only `lookup` method with the
    immutable `ResourceIdentifier`.
 3. A production adapter accepts a unique API result. For an empty or ambiguous

@@ -84,6 +84,16 @@ def test_specialists_have_explicit_scoped_prompts_and_tools() -> None:
     assert suite.reporter.tools == ()
     assert "Never treat missing evidence as proof" in suite.cluster_agent.instructions
     assert "explicit terminal evidence" in suite.airflow_agent.instructions
+    assert "complete client UUID to Resource Discovery" in (
+        suite.airflow_agent.instructions
+    )
+    resource_tool = next(
+        tool
+        for tool in suite.airflow_agent.tools
+        if tool.name == "trigger_resource_discovery_agent"
+    )
+    assert resource_tool.input_schema == (("client_id", "complete UUID string"),)
+    assert "three-character prefixes are report-only" in resource_tool.description
     assert "explicitly authorized Airflow task instances" in (
         suite.follow_up_agent.instructions
     )

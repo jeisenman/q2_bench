@@ -23,6 +23,7 @@ from workspaces.data_engineering.agents.production_support.reporting_validation 
 
 MAX_DATA_INTERNAL_BULLET_CHARACTERS = 180
 EXPECTED_REGION_COUNT = 2
+EXPECTED_URL_SECTION_LINE_COUNT = 3
 
 
 def _failure(
@@ -114,7 +115,7 @@ def test_cluster_warnings_do_not_contradict_primary_healthy_status() -> None:
         reports.developer
     )
     assert "cluster is unhealthy" not in reports.data_internal
-    assert "US\n- Good\nCA\n- Good" in reports.data_internal
+    assert "US\n- Good\n\nCA\n- Good" in reports.data_internal
 
 
 def test_unhealthy_cluster_is_reported_only_in_its_region() -> None:
@@ -229,7 +230,7 @@ def test_developer_group_preserves_different_evidence_per_client() -> None:
     assert "second terminal cause" in reports.developer
 
 
-def test_grid_links_are_separate_from_the_compact_developer_message() -> None:
+def test_validation_links_only_include_regional_task_instance_urls() -> None:
     client_id = "11111111-1111-4111-8111-111111111111"
     failure = _failure(client_id)
     reports = format_reports(
@@ -238,7 +239,9 @@ def test_grid_links_are_separate_from_the_compact_developer_message() -> None:
         (_diagnosis(failure),),
     )
 
-    assert "/grid?status=failed" in reports.urls_to_validate
+    assert len(reports.urls_to_validate.splitlines()) == EXPECTED_URL_SECTION_LINE_COUNT
+    assert "/taskinstance/list/" in reports.urls_to_validate
+    assert "/grid?status=failed" not in reports.urls_to_validate
     assert "/grid?status=failed" not in reports.developer
 
 

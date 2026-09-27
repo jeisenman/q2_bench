@@ -61,9 +61,10 @@ TRIGGER_RESOURCE_DISCOVERY = ToolDefinition(
     name="trigger_resource_discovery_agent",
     description=(
         "Invoke the read-only Resource Discovery agent for a resend client's "
-        "provisioned client identifier."
+        "complete provisioned client UUID. Pass all UUID characters from the "
+        "DAG or task identifier; three-character prefixes are report-only."
     ),
-    input_schema=(("client_id", "string"),),
+    input_schema=(("client_id", "complete UUID string"),),
 )
 PLAN_AIRFLOW_RETRIES = ToolDefinition(
     name="plan_airflow_retries",

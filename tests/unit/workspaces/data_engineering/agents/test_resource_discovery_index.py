@@ -100,6 +100,5 @@ def test_index_rejects_non_authoritative_and_invalid_lookup_values() -> None:
         )
         == ()
     )
-    assert (
-        index.lookup(ResourceIdentifier(IdentifierKind.CLIENT_ID, "not-a-uuid")) == ()
-    )
+    with pytest.raises(ValueError, match="client_id must be a complete UUID"):
+        ResourceIdentifier(IdentifierKind.CLIENT_ID, "not-a-uuid")

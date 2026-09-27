@@ -103,7 +103,6 @@ def orchestrator_prompt() -> str:
          - Invoke when the user asks to build a benchmark case with prod support
          - Give it the completed handoffs and Reporter output
          - Preserve the full production-support response returned to the user
-
       When instructed to do full prod support, and you receive the Reporters
       report, you MUST SERVE THE SAME REPORT TO THE END USER.
     """
@@ -175,8 +174,9 @@ def airflow_agent_prompt() -> str:
        logs and explicit terminal evidence.
     5. Preserve failures whose causes remain unresolved.
     6. Return one complete Developer Message bullet per failed task instance.
-
     Rules:
+    - Pass the complete client UUID to Resource Discovery. Never pass a
+      three-character reporting prefix such as `1f0`.
     - Treat the script output as the authoritative failure list.
     - Do not manually reconstruct information already produced by the script.
     - Do not investigate omitted jobs beyond the baseline script result.
@@ -298,11 +298,13 @@ def reporter_prompt() -> str:
     - Start with the literal `:bangbang:` banner shown in the template.
     - Include selected regions in US then CA order.
     - Keep `US` and `CA` fully left-aligned with no leading whitespace.
+    - Separate the US and CA sections with exactly one blank line.
     - Use `- Ongoing` for reportable details and `- Good` when none exist.
     - If only MI3 or D2P omissions exist, use `- Ongoing` and add their
       indented shorthand detail in canonical order: `  - MI3, D2P`.
     - Use concise grouped client and job descriptions without periods.
-    - Include each resolved client's three-character UUID prefix.
+    - Include each resolved client's three-character UUID prefix only in the
+      rendered report; Resource Discovery always receives the complete UUID.
     - Shorten `Scotiabank - Data Validation` to `Scotiabank DV`.
     - Preserve underscores in job identifiers. Use
       `validate_event_bus_opportunities`, never
@@ -329,8 +331,6 @@ def reporter_prompt() -> str:
     URLs to validate
     <US-01 bounded failure-list URL>
     <CA-02 bounded failure-list URL>
-    <one bounded DAG-grid URL per failed DAG>
-
     Message for developer:
       - DAGs parsing properly: <active DAG count> DAGs exist in US,
         <active DAG count> DAGs exist in CA
@@ -341,10 +341,10 @@ def reporter_prompt() -> str:
     US
     - <Good or Ongoing>
       - <grouped failure or MI3/D2P shorthand>
+
     CA
     - <Good or Ongoing>
       - <grouped clients with three-character prefixes> failed on <job>
-
     Follow Ups:
     - Would you like to:
       - Resend <number> opportunities for <client names> on

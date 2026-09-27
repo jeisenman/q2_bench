@@ -16,7 +16,7 @@ REPORTER_OUTPUT_TEMPLATE = (
     '  "developer": "Message for developer:\\n'
     '  - <evidence-qualified finding>",\n'
     '  "data_internal": ":bangbang: PROD SUPPORT <date> :bangbang:\\n'
-    "US\\n- Ongoing\\n  - MI3, D2P\\nCA\\n- Ongoing\\n"
+    "US\\n- Ongoing\\n  - MI3, D2P\\n\\nCA\\n- Ongoing\\n"
     "  - <grouped clients with three-character prefixes> "
     'failed on <job>",\n'
     '  "follow_up": "- Would you like to:\\n'
@@ -34,7 +34,6 @@ Window: `<operational-start> UTC` through `<operational-end> UTC`
 URLs to validate
 <US-01 bounded failure-list URL>
 <CA-02 bounded failure-list URL>
-<one bounded DAG-grid URL per failed DAG>
 
 Message for developer:
   - DAGs parsing properly: <active DAG count> DAGs exist in US, \
@@ -45,6 +44,7 @@ Message for developer:
 US
 - <Good or Ongoing>
   - <grouped failure or MI3/D2P shorthand>
+
 CA
 - <Good or Ongoing>
   - <grouped clients with three-character prefixes> failed on <job>

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from uuid import UUID
 
 
 def _require_text(value: str, field_name: str) -> None:
@@ -58,6 +59,15 @@ class ResourceIdentifier:
             message = "kind must be an IdentifierKind"
             raise TypeError(message)
         _require_text(self.value, "value")
+        if self.kind is IdentifierKind.CLIENT_ID:
+            try:
+                UUID(self.value)
+            except ValueError as error:
+                message = (
+                    "client_id must be a complete UUID; three-character "
+                    "prefixes are report-only"
+                )
+                raise ValueError(message) from error
 
     def __eq__(self, other: object) -> bool:
         """Compare identifiers by value when a legacy source expects text."""

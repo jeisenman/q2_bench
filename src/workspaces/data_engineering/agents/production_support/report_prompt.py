@@ -30,6 +30,7 @@ Compliant Data Internal example:
 US
 - Ongoing
   - MI3, D2P
+
 CA
 - Ongoing
 {COMPLIANT_ACCOUNT_LINE}
@@ -82,7 +83,8 @@ PROD_SUPPORT_REPORTER_DEFINITION = AgentDefinition(
         "with the exact configured exclamation banner supplied in the request. Its "
         "first line must preserve the literal `:bangbang:` tokens; never render or "
         "replace them with emoji or Unicode punctuation. Use selected US then CA "
-        "sections with region labels fully left-aligned. Use '- Ongoing' for "
+        "sections with region labels fully left-aligned and exactly one blank line "
+        "between the US and CA sections. Use '- Ongoing' for "
         "reportable details and '- Good' for no findings. When only shorthand "
         "omissions exist, use '- Ongoing' with an indented '  - MI3, D2P' detail. "
         "Never put cluster health, "

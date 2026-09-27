@@ -309,8 +309,6 @@ def _validate_data_internal(
         for marker in ("cluster health", "cluster unhealthy", "unready pod", "keda")
     ):
         raise ReportAgentOutputError.data_cluster_health()
-    if any(not line for line in lines):
-        raise ReportAgentOutputError.region_order()
     if violation := data_internal_job_violation(output, findings):
         raise ReportAgentOutputError.data_job_policy(violation)
     blocks = _regional_blocks(lines[1:], findings.regions)
@@ -342,6 +340,10 @@ def _regional_blocks(
     blocks: list[tuple[Region, str, str, list[str]]] = []
     cursor = 0
     for index, region in enumerate(regions):
+        if index:
+            if cursor >= len(lines) or lines[cursor] != "":
+                raise ReportAgentOutputError.region_order()
+            cursor += 1
         label = "US" if region is Region.US_01 else "CA"
         if cursor >= len(lines) or lines[cursor] != label:
             if label not in lines and any(line.strip() == label for line in lines):
@@ -354,17 +356,10 @@ def _regional_blocks(
             raise ReportAgentOutputError.regional_status(label)
         status = lines[cursor]
         cursor += 1
-        next_region = regions[index + 1] if index + 1 < len(regions) else None
-        next_label = (
-            "US"
-            if next_region is Region.US_01
-            else "CA"
-            if next_region is Region.CA_02
-            else None
-        )
+        has_next_region = index + 1 < len(regions)
         start = cursor
-        if next_label is not None:
-            while cursor < len(lines) and lines[cursor] != next_label:
+        if has_next_region:
+            while cursor < len(lines) and lines[cursor] != "":
                 cursor += 1
         else:
             cursor = len(lines)

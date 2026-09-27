@@ -49,6 +49,8 @@ cases:
       - Read each omission candidate log and require a same-DAG/task success inside the window
       - Use Ongoing with an indented MI3 then D2P shorthand detail when those are the only regional findings
       - Keep US and CA labels fully left-aligned
+      - Separate the US and CA sections with exactly one blank line
+      - Return exactly two validation links, the US and CA bounded task-instance URLs
       - Hide all configured omissions from retry suggestions
       - Use only canonical dated Follow Up actions and request human help for unresolved identities
     prohibit_agent_changes: true

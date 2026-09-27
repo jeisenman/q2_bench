@@ -16,12 +16,13 @@ expected_failure_counts:
   CA-02: 25
 required_output_format:
   urls_heading: URLs to validate
+  validation_url_count: 2
   developer_heading: "Message for developer:"
   data_internal_alert_heading: ":bangbang: PROD SUPPORT 2026-09-26 :bangbang:"
   data_internal_alert_is_first_line: true
   follow_up_heading: "Follow Ups:"
   prohibit_markdown_section_headings: true
-  prohibit_blank_lines_between_bullets: true
+  require_one_blank_line_between_region_sections: true
   prohibit_periods_in_data_internal: true
   group_same_job_across_clients: true
   group_shared_jobs_before_remaining_client_jobs: true
@@ -136,6 +137,7 @@ expected_prod_support_message: |
   US
   - Ongoing
     - MI3, D2P
+
   CA
   - Ongoing
     - Scotiabank (1f0) failed on account_level_opportunity_draw_schedule_history with timeout

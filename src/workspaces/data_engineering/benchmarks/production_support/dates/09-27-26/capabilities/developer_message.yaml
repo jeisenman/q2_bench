@@ -8,7 +8,7 @@ cases:
       required_bullet_prefix: "  - "
       require_compact_bullets: true
       prohibit_markdown_section_headings: true
-      prohibit_blank_lines_between_bullets: true
+      required_validation_url_count: 2
       group_same_job_across_clients: true
       group_multiple_jobs_per_client: true
       prohibit_repeated_client_job_pairs: true
@@ -23,7 +23,7 @@ cases:
       require_evidence_qualified_causality: true
       high_value_diagnoses: [timeout, OOM, distinctness validation errors]
       reward_explicit_high_value_diagnoses: true
-      require_grid_link_per_failed_dag: true
+      prohibit_dag_grid_links: true
       required_urls_heading: URLs to validate
       required_url_order: [US-01, CA-02]
       require_urls_outside_developer_bullets: true

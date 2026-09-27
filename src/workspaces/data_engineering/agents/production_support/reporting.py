@@ -131,12 +131,6 @@ def format_reports_with_context(
                 airflow_failure_url(region, operational_date)
                 for region in report_context.regions
             ),
-            *tuple(
-                dict.fromkeys(
-                    airflow_dag_failure_url(failure, operational_date)
-                    for failure in failures
-                )
-            ),
         )
     )
     developer = DeveloperReporter().render(findings)

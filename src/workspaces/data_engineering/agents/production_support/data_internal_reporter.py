@@ -32,7 +32,9 @@ class DataInternalReporter:
         diagnosis_by_id = {item.failure_id: item for item in findings.diagnoses}
         identities = client_identities(findings.resource_discovery_results)
         lines = [f":bangbang: PROD SUPPORT {operational_date.isoformat()} :bangbang:"]
-        for region in findings.regions:
+        for index, region in enumerate(findings.regions):
+            if index:
+                lines.append("")
             label = "US" if region is Region.US_01 else "CA"
             all_regional = tuple(
                 item for item in findings.failures if item.region is region

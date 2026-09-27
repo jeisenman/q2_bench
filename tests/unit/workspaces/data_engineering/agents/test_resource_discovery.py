@@ -15,6 +15,8 @@ from workspaces.data_engineering.agents.resource_discovery import (
     SearchStatus,
 )
 
+CLIENT_UUID = "1f06da19-2f61-401c-a1b7-38902e4f3543"
+
 
 class FakeResourceDiscovery:
     """Replay deterministic Resource Discovery responses."""
@@ -87,7 +89,7 @@ def run_agent(
 def test_agent_reports_a_unique_resource_match() -> None:
     source = FakeResourceDiscovery((unique_record(),))
 
-    result = run_agent(source, "client-123")
+    result = run_agent(source, CLIENT_UUID)
 
     assert result.correlation_id == "resource-discovery-test"
     assert "Finding: unique match" in result.output
@@ -95,9 +97,9 @@ def test_agent_reports_a_unique_resource_match() -> None:
     assert "client-123" in result.output
     assert "provisioned-123" in result.output
     assert "production" in result.output
-    assert source.identifiers == ["client-123"]
+    assert source.identifiers == [CLIENT_UUID]
     assert ("status", "unique") in result.attributes
-    assert ("identifier_value", "client-123") in result.attributes
+    assert ("identifier_value", CLIENT_UUID) in result.attributes
     assert ("client_name", "Example Bank") in result.attributes
     assert ("provisioned_client_id", "provisioned-123") in result.attributes
     assert ("environment", "production") in result.attributes
@@ -127,11 +129,11 @@ def test_agent_surfaces_provider_failure_without_a_partial_result() -> None:
     )
 
     with pytest.raises(ResourceDiscoveryError, match="API unavailable"):
-        run_agent(source, "client-123")
+        run_agent(source, CLIENT_UUID)
 
 
 def test_agent_reports_no_match_without_inventing_a_client() -> None:
-    result = run_agent(FakeResourceDiscovery(), "missing-client")
+    result = run_agent(FakeResourceDiscovery(), CLIENT_UUID)
 
     assert "Finding: no unique match" in result.output
     assert "No unique match was returned" in result.output
@@ -153,7 +155,7 @@ def test_agent_reports_all_ambiguous_matches_deterministically() -> None:
         },
     )
 
-    result = run_agent(FakeResourceDiscovery(records), "shared-client")
+    result = run_agent(FakeResourceDiscovery(records), CLIENT_UUID)
 
     assert "Finding: Ambiguous matches" in result.output
     assert "Alpha Bank" in result.output
@@ -166,8 +168,8 @@ def test_agent_reports_all_ambiguous_matches_deterministically() -> None:
 def test_agent_output_is_deterministic_and_contains_no_secret_fields() -> None:
     source = FakeResourceDiscovery((unique_record(),))
 
-    first = run_agent(source, "client-123").output
-    second = run_agent(source, "client-123").output
+    first = run_agent(source, CLIENT_UUID).output
+    second = run_agent(source, CLIENT_UUID).output
 
     assert first == second
     for secret in (
@@ -219,7 +221,19 @@ def test_agent_rejects_invalid_provider_metadata() -> None:
     source = FakeResourceDiscovery(({"client_name": ["not", "text"]},))
 
     with pytest.raises(ResourceDiscoveryError, match="invalid resource metadata"):
-        run_agent(source, "client-123")
+        run_agent(source, CLIENT_UUID)
+
+
+def test_agent_rejects_a_three_character_client_prefix() -> None:
+    source = FakeResourceDiscovery((unique_record(),))
+
+    with pytest.raises(
+        ResourceDiscoveryError,
+        match="complete UUID; three-character prefixes are report-only",
+    ):
+        run_agent(source, "1f0")
+
+    assert source.identifiers == []
 
 
 def test_resource_models_validate_boundaries_and_statuses() -> None:

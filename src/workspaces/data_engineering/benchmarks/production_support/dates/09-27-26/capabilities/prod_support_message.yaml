@@ -11,7 +11,7 @@ cases:
       require_region_labels_fully_left_aligned: true
       require_compact_bullets: true
       prohibit_markdown_section_headings: true
-      prohibit_blank_lines_between_bullets: true
+      require_one_blank_line_between_region_sections: true
       prohibit_periods: true
       group_same_job_across_clients: true
       group_shared_jobs_before_remaining_client_jobs: true

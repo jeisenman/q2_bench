@@ -19,6 +19,8 @@ from workspaces.data_engineering.agents.production_support.reporting_config impo
     ProdSupportReportConfig,
 )
 
+EXPECTED_URL_SECTION_LINE_COUNT = 3
+
 
 def _failure(try_number: int) -> AirflowFailure:
     return AirflowFailure(
@@ -82,12 +84,9 @@ def test_formats_channel_reports_and_suggestion_only_follow_up() -> None:
         "no CA failures were recorded."
     )
     assert reports.urls_to_validate.startswith("URLs to validate\n")
+    assert len(reports.urls_to_validate.splitlines()) == EXPECTED_URL_SECTION_LINE_COUNT
     assert reports.developer.startswith("Message for developer:\n  -")
-    assert (
-        "/dags/l3-main-client/grid?status=failed"
-        "&execution_start=2026-09-24T05:00:00Z"
-        "&execution_end=2026-09-25T05:00:00Z"
-    ) in reports.urls_to_validate
+    assert "/grid?" not in reports.urls_to_validate
     assert reports.data_internal.startswith(
         ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:"
     )
@@ -126,7 +125,7 @@ def test_developer_report_lists_every_failure() -> None:
     assert "ca-dag failed on ca-task" in reports.developer
     assert "\n\n  -" not in reports.developer
     assert "US\n- Ongoing\n  - l3-main-client failed on" in reports.data_internal
-    assert "CA\n- Ongoing\n  - ca-dag failed on" in reports.data_internal
+    assert "\n\nCA\n- Ongoing\n  - ca-dag failed on" in reports.data_internal
     assert reports.capture_summary == (
         "Local capture contains 2 failures: 1 from US-01 and 1 from CA-02."
     )

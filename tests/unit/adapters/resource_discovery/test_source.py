@@ -14,6 +14,8 @@ from workspaces.data_engineering.agents.resource_discovery import (
     ResourceIdentifier,
 )
 
+CLIENT_UUID = "1f06da19-2f61-401c-a1b7-38902e4f3543"
+
 
 class FakeTransport:
     """Return deterministic authentication and lookup responses."""
@@ -44,7 +46,7 @@ def test_source_authenticates_and_normalizes_client_lookup() -> None:
         [
             {
                 "name": "Example Bank",
-                "provisionedClientId": "client-123",
+                "provisionedClientId": CLIENT_UUID,
                 "subdomain": "example",
                 "clientSecret": "must-not-cross-boundary",
             }
@@ -53,20 +55,20 @@ def test_source_authenticates_and_normalizes_client_lookup() -> None:
     source = ResourceDiscoveryApiSource(config(), transport)
 
     records = asyncio.run(
-        source.lookup(ResourceIdentifier(IdentifierKind.CLIENT_ID, "client-123"))
+        source.lookup(ResourceIdentifier(IdentifierKind.CLIENT_ID, CLIENT_UUID))
     )
 
     assert records == (
         {
             "client_name": "Example Bank",
-            "provisioned_client_id": "client-123",
+            "provisioned_client_id": CLIENT_UUID,
             "subdomain": "example",
         },
     )
     lookup = transport.requests[1]
     assert urlparse(lookup.full_url).path == "/api/v1/clients"
     assert parse_qs(urlparse(lookup.full_url).query) == {
-        "provisionedClientId": ["client-123"]
+        "provisionedClientId": [CLIENT_UUID]
     }
     assert lookup.get_header("Authorization") == "Bearer secret-token"
 
@@ -115,7 +117,7 @@ def test_source_rejects_invalid_api_shapes() -> None:
 
     with pytest.raises(ResourceDiscoveryApiError, match="object or list"):
         asyncio.run(
-            source.lookup(ResourceIdentifier(IdentifierKind.CLIENT_ID, "client-123"))
+            source.lookup(ResourceIdentifier(IdentifierKind.CLIENT_ID, CLIENT_UUID))
         )
 
 
