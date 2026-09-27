@@ -30,10 +30,10 @@ def test_orchestrator_delegates_only_to_declared_subagents() -> None:
         "DelegateToAirflowAgent",
         "DelegateToReporter",
     }
-    assert "smallest complete task" in suite.orchestrator.instructions
-    assert "send only evidence-qualified findings to Reporter" in (
+    assert "check production support for both CA and US" in (
         suite.orchestrator.instructions
     )
+    assert "SERVE THE SAME REPORT TO THE END USER" in suite.orchestrator.instructions
 
 
 def test_specialists_have_explicit_scoped_prompts_and_tools() -> None:
@@ -45,9 +45,12 @@ def test_specialists_have_explicit_scoped_prompts_and_tools() -> None:
         "ReadTaskLog",
     }
     assert suite.reporter.tools == ()
-    assert "absence of evidence is unknown" in suite.cluster_agent.instructions
+    assert "Never treat missing evidence as proof" in suite.cluster_agent.instructions
     assert "explicit terminal evidence" in suite.airflow_agent.instructions
-    assert "Accept only evidence-qualified findings" in suite.reporter.instructions
+    assert "# Prod Support Report" in suite.reporter.instructions
+    assert "Message for developer:" in suite.reporter.instructions
+    assert ":bangbang: PROD SUPPORT" in suite.reporter.instructions
+    assert "Follow Ups:" in suite.reporter.instructions
 
 
 def test_suite_accepts_per_agent_model_overrides() -> None:

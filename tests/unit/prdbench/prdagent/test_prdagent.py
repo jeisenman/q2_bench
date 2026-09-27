@@ -22,7 +22,7 @@ def test_build_agent_definition_uses_documented_prompt() -> None:
     assert definition.name == "Orchestrator"
     assert definition.model == "test-model"
     assert definition.instructions.startswith(
-        "You are the production-support orchestrator."
+        "You are a helpful production operations agent."
     )
     assert "ClusterAgent" in definition.instructions
     assert "AirflowAgent" in definition.instructions
