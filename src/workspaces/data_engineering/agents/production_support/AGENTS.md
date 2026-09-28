@@ -41,6 +41,8 @@ Tool ownership is explicit:
 but executes the existing injected adapters and domain logic. The reusable
 implementation remains split across date, scope, cluster, Airflow,
 investigation, classification, reporting, retry, dataset, and port modules.
+Shared OMS routing, query construction, and evidence protocols are owned by
+[`../oms_agent/`](../oms_agent/); this package retains compatibility exports.
 It is an internal workflow, not a second public agent.
 
 ```mermaid
@@ -103,7 +105,8 @@ flowchart LR
    fully left-aligned with one blank line between US and CA, renders only
    MI3/D2P omission shorthand, excludes all omissions from Follow Up, and
    returns the authoritative report. The links section contains exactly the US
-   and CA bounded task-instance URLs.
+   and CA task-instance list URLs, bounded by greater-than-start and
+   less-than-end `end_date` filters.
 7. Orchestrator serves the Reporter output without rewriting it. The MCP
    response exposes `links`, `developer_message`, `data_internal_message`, and
    an approval-only `follow_up_message`. The user-facing response presents

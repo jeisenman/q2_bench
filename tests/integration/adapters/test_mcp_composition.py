@@ -53,7 +53,7 @@ class FakeWorkspaceAgent:
     @property
     def definition(self) -> AgentDefinition:
         return AgentDefinition(
-            name="prod_support",
+            name="untested-agent",
             description="Triage production pipeline incidents.",
             instructions="Use evidence from the incident.",
         )
@@ -74,7 +74,14 @@ def test_workspace_agent_binding_exposes_tool_resource_and_prompt() -> None:
         )
     )
 
-    assert result["output"] == "triaged: pipeline failed"
+    assert result["output"] == (
+        "warning: this agent has not been tested thoroughly.\n\n"
+        "triaged: pipeline failed"
+    )
+    assert result["benchmark_case_count"] == 0
+    assert result["warnings"] == (
+        "warning: this agent has not been tested thoroughly.",
+    )
     assert (
         asyncio.run(binding.resources[0].reader())
         == "Triage production pipeline incidents."

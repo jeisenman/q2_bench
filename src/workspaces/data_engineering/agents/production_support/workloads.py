@@ -5,8 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from workspaces.data_engineering.agents.oms_agent import (
+    OMS_TABLE,
+    OmsEnvironment,
+    OmsRegion,
+    resolve_workspace,
+)
 from workspaces.data_engineering.agents.production_support.models import Region
-from workspaces.data_engineering.agents.production_support.oms import OMS_TABLE
 
 SPARK_OPERATORS = frozenset(
     {
@@ -86,8 +91,9 @@ def route_oms_evidence(
     """Route confirmed Spark jobs to OMS; keep other workloads in Airflow."""
     if workload is not WorkloadKind.SPARK_BATCH:
         return None
-    workspace = {
-        Region.US_01: "pl-oms-us-primary",
-        Region.CA_02: "pl-oms-ca-primary",
+    oms_region = {
+        Region.US_01: OmsRegion.US,
+        Region.CA_02: OmsRegion.CA,
     }[region]
-    return OmsEvidenceRoute(workspace_name=workspace, table=OMS_TABLE)
+    workspace = resolve_workspace(OmsEnvironment.PRODUCTION, oms_region)
+    return OmsEvidenceRoute(workspace_name=workspace.name, table=OMS_TABLE)

@@ -41,6 +41,7 @@ from workspaces.data_engineering.agents.resource_discovery import (
 )
 
 EXPECTED_REGION_COUNT = 2
+EXPECTED_BENCHMARK_CASE_COUNT = 8
 PRIVATE_DIRECTORY_MODE = 0o700
 PRIVATE_FILE_MODE = 0o600
 
@@ -75,6 +76,8 @@ def test_mcp_tool_runs_prod_support_agent(
     )
 
     assert result["correlation_id"] == "incident-1"
+    assert result["benchmark_case_count"] == EXPECTED_BENCHMARK_CASE_COUNT
+    assert result["warnings"] == ()
     assert "PROD SUPPORT" in result["output"]
     assert result["full_report"] == result["output"]
     assert result["output"].startswith("# Prod Support Report — ")

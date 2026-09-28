@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 
 from adapters.inbound import MatrixInboundAdapter
 from workspaces.data_engineering.benchmarks import (
@@ -105,7 +106,8 @@ def test_matrix_prompts_include_handoff_contract_and_local_evidence() -> None:
     assert "output_authority" in judge
     assert "mcp_output_continuity" in judge
     assert "Case applicability" in judge
-    assert "marked false is not applicable" in judge
+    assert "marked false are excluded" in judge
+    assert "handoff_ordering is false" in judge
 
 
 def test_matrix_plan_groups_profiles_under_one_matrix() -> None:
@@ -222,7 +224,7 @@ def test_loads_today_bench_builder_handoff_contract() -> None:
     prompt = build_candidate_prompt(manifest)
     judge = build_matrix_judge_prompt(manifest, {"events": []})
     assert "Orchestrator -> BenchBuilderAgent" in prompt
-    assert "starts_after=Reporter" in prompt
+    assert "starts_after=none" in prompt
     assert "Retain all normal MCP report fields" in prompt
     assert "handoff_scores" in judge
     assert "BenchBuilderAgent" in judge
@@ -234,7 +236,7 @@ def test_rejects_handoff_parallelism_above_repository_limit(
     cases = CASES_PATH.read_text(encoding="utf-8")
     path = tmp_path / "cases.yaml"
     path.write_text(
-        cases.replace("      max_parallel: 2", "      max_parallel: 6", 1),
+        cases.replace("      max_parallel: 2", "      max_parallel: 6"),
         encoding="utf-8",
     )
 
@@ -247,5 +249,49 @@ def test_rejects_handoff_parallelism_above_repository_limit(
             AGENTS_PATH,
             path,
             "handoff-bench-builder-agent-2026-09-26",
+            ("sol-light",),
+        )
+
+
+def test_full_system_case_declares_unordered_handoffs_and_complete_inputs() -> None:
+    manifest = load_matrix_run(
+        BENCHMARK_PATH,
+        AGENTS_PATH,
+        CASES_PATH,
+        "prod-support-us-ca-operational-2026-09-26",
+        ("sol-light-luna-high-workers",),
+    )
+
+    assert manifest.handoff_contract is not None
+    assert [agent.name for agent in manifest.handoff_contract.agents] == [
+        "ClusterAgent",
+        "AirflowAgent",
+        "Reporter",
+    ]
+    assert all(not agent.starts_after for agent in manifest.handoff_contract.agents)
+    assert dict(manifest.applicability)["handoff_ordering"] is False
+    assert any(path.name == "regional_handoff.py" for path in manifest.candidate_inputs)
+    assert build_candidate_prompt(manifest).startswith(
+        "Run the prod-support benchmark using only local recorded evidence."
+    )
+
+
+def test_rejects_incomplete_or_unknown_applicability(tmp_path: Path) -> None:
+    document = yaml.safe_load(CASES_PATH.read_text(encoding="utf-8"))
+    selected = document["cases"][0]["evaluation_applicability"]
+    selected.pop("token_efficiency")
+    selected["unknown_metric"] = True
+    path = tmp_path / "cases.yaml"
+    path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(
+        MatrixManifestError,
+        match="missing: token_efficiency; unknown: unknown_metric",
+    ):
+        load_matrix_run(
+            BENCHMARK_PATH,
+            AGENTS_PATH,
+            path,
+            "prod-support-us-ca-operational-2026-09-26",
             ("sol-light",),
         )

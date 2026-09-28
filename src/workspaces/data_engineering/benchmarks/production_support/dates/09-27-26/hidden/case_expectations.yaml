@@ -9,8 +9,8 @@ expected_ui_window:
   end_date_gte: "2026-09-26T05:00:00Z"
   end_date_lt: "2026-09-27T05:00:00Z"
 expected_cluster_links:
-  US-01: "https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-27T05:00:00Z&_flt_3_state=failed&_flt_2_end_date=2026-09-26T05:00:00Z#"
-  CA-02: "https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_1_end_date=2026-09-27T05:00:00Z&_flt_3_state=failed&_flt_2_end_date=2026-09-26T05:00:00Z#"
+  US-01: "https://airflow-us01.precisionlender.com/taskinstance/list/?_flt_3_state=failed&_flt_2_end_date=09%2F26%2F2026+5%3A00+AM&_flt_1_end_date=09%2F27%2F2026+5%3A00+AM#"
+  CA-02: "https://airflow-ca02.precisionlender.com/taskinstance/list/?_flt_3_state=failed&_flt_2_end_date=09%2F26%2F2026+5%3A00+AM&_flt_1_end_date=09%2F27%2F2026+5%3A00+AM#"
 expected_failure_counts:
   US-01: 20
   CA-02: 25

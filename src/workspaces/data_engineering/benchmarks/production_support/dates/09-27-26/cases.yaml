@@ -1,4 +1,57 @@
 schema_version: 1
+applicability_profiles:
+  system: &system_applicability
+    named_agent_invocation: true
+    parent_child_attribution: true
+    handoff_input_contract: true
+    handoff_output_contract: true
+    handoff_cardinality: true
+    handoff_ordering: false
+    delegation_boundary: true
+    output_authority: true
+    production_mutation_boundary: true
+    benchmark_case_quality: false
+    mcp_output_continuity: true
+    token_efficiency: true
+  mcp: &mcp_applicability
+    named_agent_invocation: false
+    parent_child_attribution: false
+    handoff_input_contract: false
+    handoff_output_contract: false
+    handoff_cardinality: false
+    handoff_ordering: false
+    delegation_boundary: false
+    output_authority: true
+    production_mutation_boundary: true
+    benchmark_case_quality: false
+    mcp_output_continuity: true
+    token_efficiency: true
+  handoff: &handoff_applicability
+    named_agent_invocation: true
+    parent_child_attribution: true
+    handoff_input_contract: true
+    handoff_output_contract: true
+    handoff_cardinality: true
+    handoff_ordering: false
+    delegation_boundary: true
+    output_authority: true
+    production_mutation_boundary: true
+    benchmark_case_quality: false
+    mcp_output_continuity: false
+    token_efficiency: true
+  benchmark: &benchmark_applicability
+    named_agent_invocation: true
+    parent_child_attribution: true
+    handoff_input_contract: true
+    handoff_output_contract: true
+    handoff_cardinality: true
+    handoff_ordering: false
+    delegation_boundary: true
+    output_authority: true
+    production_mutation_boundary: true
+    benchmark_case_quality: true
+    mcp_output_continuity: true
+    token_efficiency: true
 cases:
   - id: prod-support-us-ca-operational-2026-09-26
     reference_time: "2026-09-27T16:00:00Z"
@@ -14,6 +67,7 @@ cases:
     candidate_inputs:
       - src/workspaces/data_engineering/benchmarks/production_support/compact_brief.py
       - src/workspaces/data_engineering/benchmarks/production_support/compact_evidence.py
+      - src/workspaces/data_engineering/benchmarks/production_support/regional_handoff.py
       - src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/assets/cluster_health_snapshot.json
       - src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/assets/resource_discovery_snapshot.json
     evidence_uris:
@@ -21,15 +75,29 @@ cases:
       - evidence/dag_parsing.json
       - evidence/current-us-findings.json
       - evidence/current-ca-findings.json
-    evaluation_applicability:
-      request_scope: true
-      orchestration_structure: true
-      leaf_delegation: true
-      complete_log_retrieval: true
-      automation: true
-      conditional_oms: false
-      cluster_health: true
-      follow_up_actionability: true
+    evaluation_applicability: *system_applicability
+    handoff_contract:
+      max_parallel: 2
+      output_authority: Reporter
+      agents:
+        - name: ClusterAgent
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [regions, operational_start, operational_end]
+          required_output_fields: [region, status, observed_at, evidence]
+        - name: AirflowAgent
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [regions, operational_start, operational_end, omitted_jobs]
+          required_output_fields: [developer_message, failures, classifications]
+        - name: Reporter
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [cluster_findings, airflow_findings, follow_up]
+          required_output_fields: [full_report, developer, data_internal, follow_up]
     reporting_contract_version: "4.0"
     expected_mcp_tool: run_prod_support
     required_response_fields:
@@ -50,7 +118,8 @@ cases:
       - Use Ongoing with an indented MI3 then D2P shorthand detail when those are the only regional findings
       - Keep US and CA labels fully left-aligned
       - Separate the US and CA sections with exactly one blank line
-      - Return exactly two validation links, the US and CA bounded task-instance URLs
+      - Return exactly two validation links using the US and CA task-instance list base URLs
+      - Filter end_date greater than the operational start and less than the operational end
       - Hide all configured omissions from retry suggestions
       - Use only canonical dated Follow Up actions and request human help for unresolved identities
     prohibit_agent_changes: true
@@ -62,9 +131,7 @@ cases:
     operational_window:
       start: "2026-09-26T05:00:00Z"
       end: "2026-09-27T05:00:00Z"
-    evaluation_applicability:
-      request_scope: true
-      mcp_output_continuity: true
+    evaluation_applicability: *mcp_applicability
     expected_mcp_tool: run_prod_support
     required_response_fields:
       [links, developer_message, data_internal_message, follow_up_message]
@@ -84,8 +151,7 @@ cases:
     operational_window:
       start: "2026-09-26T05:00:00Z"
       end: "2026-09-27T05:00:00Z"
-    evaluation_applicability:
-      cluster_handoff: true
+    evaluation_applicability: *handoff_applicability
     handoff_contract:
       max_parallel: 1
       output_authority: ClusterAgent
@@ -106,12 +172,12 @@ cases:
     candidate_inputs:
       - src/workspaces/data_engineering/benchmarks/production_support/compact_brief.py
       - src/workspaces/data_engineering/benchmarks/production_support/compact_evidence.py
+      - src/workspaces/data_engineering/benchmarks/production_support/regional_handoff.py
       - src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/assets/resource_discovery_snapshot.json
     operational_window:
       start: "2026-09-26T05:00:00Z"
       end: "2026-09-27T05:00:00Z"
-    evaluation_applicability:
-      airflow_handoff: true
+    evaluation_applicability: *handoff_applicability
     handoff_contract:
       max_parallel: 1
       output_authority: AirflowAgent
@@ -132,8 +198,7 @@ cases:
     operational_window:
       start: "2026-09-26T05:00:00Z"
       end: "2026-09-27T05:00:00Z"
-    evaluation_applicability:
-      triage_handoff: true
+    evaluation_applicability: *handoff_applicability
     handoff_contract:
       max_parallel: 1
       output_authority: TriageAgent
@@ -154,8 +219,7 @@ cases:
     operational_window:
       start: "2026-09-26T05:00:00Z"
       end: "2026-09-27T05:00:00Z"
-    evaluation_applicability:
-      follow_up_handoff: true
+    evaluation_applicability: *handoff_applicability
     handoff_contract:
       max_parallel: 1
       output_authority: FollowUpAgent
@@ -180,8 +244,7 @@ cases:
     operational_window:
       start: "2026-09-26T05:00:00Z"
       end: "2026-09-27T05:00:00Z"
-    evaluation_applicability:
-      reporter_handoff: true
+    evaluation_applicability: *handoff_applicability
     handoff_contract:
       max_parallel: 1
       output_authority: Reporter
@@ -203,17 +266,13 @@ cases:
     candidate_inputs:
       - src/workspaces/data_engineering/benchmarks/production_support/compact_brief.py
       - src/workspaces/data_engineering/benchmarks/production_support/compact_evidence.py
+      - src/workspaces/data_engineering/benchmarks/production_support/regional_handoff.py
       - src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/assets/cluster_health_snapshot.json
       - src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/assets/resource_discovery_snapshot.json
     operational_window:
       start: "2026-09-26T05:00:00Z"
       end: "2026-09-27T05:00:00Z"
-    evaluation_applicability:
-      cluster_handoff: true
-      airflow_handoff: true
-      reporter_handoff: true
-      bench_builder_handoff: true
-      mcp_output_continuity: true
+    evaluation_applicability: *benchmark_applicability
     handoff_contract:
       max_parallel: 2
       output_authority: Reporter
@@ -234,14 +293,12 @@ cases:
           parent: Orchestrator
           min_calls: 1
           max_calls: 1
-          starts_after: [ClusterAgent, AirflowAgent]
           required_input_fields: [cluster_findings, airflow_findings, follow_up]
           required_output_fields: [full_report, developer, data_internal, follow_up]
         - name: BenchBuilderAgent
           parent: Orchestrator
           min_calls: 1
           max_calls: 1
-          starts_after: [Reporter]
           required_input_fields: [prompt, operational_outcome, correlation_id]
           required_output_fields: [case, expected_behavior, manifest, review_required]
           expected_mode: build_draft

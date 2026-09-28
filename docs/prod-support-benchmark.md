@@ -72,6 +72,24 @@ ClusterAgent and AirflowAgent may run concurrently. Reporter starts after both.
 BenchBuilderAgent starts after Reporter and may add artifact metadata, but it
 must not replace or rewrite the production-support output.
 
+## Matrix validity and scoring
+
+Before any candidate model or judge is invoked, the matrix runner stages the
+declared evidence inputs and executes the same compact-evidence command inside
+the configured runtime. A missing module, malformed dataset, or failed parser
+invalidates the run immediately and produces no candidate score or token use.
+
+Every case declares a complete applicability map using the rubric criterion
+IDs. Unknown or missing criteria fail manifest loading. The runner recomputes
+the weighted overall score from applicable criteria only; inapplicable criteria
+cannot inflate or reduce the result.
+
+Named handoff contracts measure agent identity, parent attribution, payloads,
+cardinality, delegation boundaries, and output authority. Ordering remains in
+the agent prompt as expected operational behavior but is not a scored contract.
+The container runtime explicitly enables Codex multi-agent tools so candidates
+can produce genuine handoff traces.
+
 ## Dataset lifecycle
 
 Sensitive working captures remain ignored under:

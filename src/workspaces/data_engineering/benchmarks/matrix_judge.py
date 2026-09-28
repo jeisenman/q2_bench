@@ -42,10 +42,10 @@ def build_matrix_judge_prompt(
         (
             f"Judge this {benchmark_kind} agent trace using the weighted rubric.",
             "Score each criterion from 0 to 1. Do not excuse deterministic violations.",
-            "Apply the case applicability map before scoring. A criterion explicitly "
-            "marked false is not applicable: award 1.0 when the agent avoids "
-            "fabricating or performing that work. Use the same rule for capability "
-            "scores. Optional work receives full credit when correctly skipped.",
+            "Apply the complete case applicability map before scoring. Criteria "
+            "marked false are excluded from the runner's weighted overall score. "
+            "Do not use an inapplicable criterion to reward or punish the agent. "
+            "When handoff_ordering is false, do not enforce relative call ordering.",
             "For token efficiency, distinguish fresh input from cached input. Score "
             "trace size, uncached input, redundant commands, repeated inventories, "
             "and oversized worker payloads.",

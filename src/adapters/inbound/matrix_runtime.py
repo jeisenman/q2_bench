@@ -55,6 +55,48 @@ class MatrixRunError(RuntimeError):
         """Create an error for an empty candidate evidence set."""
         return cls("matrix candidate inputs must not be empty")
 
+    @classmethod
+    def preflight_failed(cls, reason: str) -> MatrixRunError:
+        """Create an error for deterministic evidence validation failure."""
+        return cls(
+            f"recorded-evidence preflight failed before model invocation: {reason}"
+        )
+
+    @classmethod
+    def missing_score_criteria(cls) -> MatrixRunError:
+        """Create an error for a judgment without a criteria list."""
+        return cls("invalid judge score: judge assessment must include criteria")
+
+    @classmethod
+    def invalid_score_criterion(cls) -> MatrixRunError:
+        """Create an error for a non-object criterion."""
+        return cls("invalid judge score: judge criteria must be objects")
+
+    @classmethod
+    def invalid_score_fields(cls) -> MatrixRunError:
+        """Create an error for malformed criterion fields."""
+        return cls(
+            "invalid judge score: criterion requires string id and numeric score"
+        )
+
+    @classmethod
+    def duplicate_score_criterion(cls, criterion_id: str) -> MatrixRunError:
+        """Create an error for a duplicated criterion."""
+        return cls(f"invalid judge score: criterion is duplicated: {criterion_id}")
+
+    @classmethod
+    def no_applicable_score_criteria(cls) -> MatrixRunError:
+        """Create an error for a case without applicable criteria."""
+        return cls("invalid judge score: case must have an applicable rubric criterion")
+
+    @classmethod
+    def omitted_score_criteria(cls, criterion_ids: tuple[str, ...]) -> MatrixRunError:
+        """Create an error for applicable criteria omitted by the judge."""
+        return cls(
+            "invalid judge score: judge omitted applicable criteria: "
+            + ", ".join(sorted(criterion_ids))
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class _CommandOptions:
@@ -85,6 +127,8 @@ def _codex_command(profile: ModelProfile, options: _CommandOptions) -> list[str]
         f'model_reasoning_effort="{profile.reasoning_effort}"',
         "-c",
         'model_providers.amazon-bedrock.aws.profile="benchmark"',
+        "-c",
+        "features.multi_agent=true",
         "--sandbox",
         codex_sandbox,
         "--ask-for-approval",

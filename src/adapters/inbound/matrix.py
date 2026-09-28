@@ -17,6 +17,7 @@ from adapters.inbound.matrix_outputs import (
     _redact_output,
     _write_output,
 )
+from adapters.inbound.matrix_preflight import preflight_recorded_evidence
 from adapters.inbound.matrix_results import write_comparison
 from adapters.inbound.matrix_runtime import (
     SAFE_PROFILE,
@@ -26,6 +27,7 @@ from adapters.inbound.matrix_runtime import (
     _codex_command,
     _CommandOptions,
 )
+from adapters.inbound.matrix_scoring import applicable_weighted_score
 from adapters.inbound.trace_compaction import compact_trace_for_judge, redact_text
 from workspaces.data_engineering.benchmarks.matrix import (
     MatrixManifest,
@@ -108,34 +110,33 @@ class MatrixInboundAdapter:
             raise MatrixRunError(message)
         root.mkdir(parents=True, exist_ok=True)
         baselines = _load_baselines(root / "comparison.json", root)
-        with (
-            _candidate_workspace(
-                self._workspace,
-                (manifest.dataset, *manifest.candidate_inputs),
-            ) as runtime,
-            _codex_auth_source() as auth_source,
-        ):
-            context = _ExecutionContext(runtime, root, auth_source)
-            with ThreadPoolExecutor(max_workers=manifest.parallelism) as executor:
-                candidates = tuple(
-                    executor.map(
-                        lambda profile: _run_candidate(
-                            manifest,
-                            profile,
-                            context,
-                        ),
-                        manifest.candidates,
+        with _candidate_workspace(
+            self._workspace,
+            (manifest.dataset, *manifest.candidate_inputs),
+        ) as runtime:
+            preflight_recorded_evidence(manifest, runtime)
+            with _codex_auth_source() as auth_source:
+                context = _ExecutionContext(runtime, root, auth_source)
+                with ThreadPoolExecutor(max_workers=manifest.parallelism) as executor:
+                    candidates = tuple(
+                        executor.map(
+                            lambda profile: _run_candidate(
+                                manifest,
+                                profile,
+                                context,
+                            ),
+                            manifest.candidates,
+                        )
                     )
+                judged = tuple(
+                    _judge_candidate(
+                        manifest,
+                        candidate,
+                        context,
+                        baseline=baselines.get(candidate.profile),
+                    )
+                    for candidate in candidates
                 )
-            judged = tuple(
-                _judge_candidate(
-                    manifest,
-                    candidate,
-                    context,
-                    baseline=baselines.get(candidate.profile),
-                )
-                for candidate in candidates
-            )
         write_comparison(manifest, judged, root / "comparison.json")
         return judged
 
@@ -263,9 +264,11 @@ def _judge_candidate(
     assessment = json.loads(assessment_text)
     if not isinstance(assessment, dict):
         raise MatrixRunError.invalid_judgment(candidate.profile)
+    overall_score = applicable_weighted_score(manifest, assessment)
+    assessment["overall_score"] = overall_score
     return JudgedRun(
         candidate=candidate,
-        overall_score=float(assessment["overall_score"]),
+        overall_score=overall_score,
         assessment=assessment,
         assessment_path=assessment_path,
     )

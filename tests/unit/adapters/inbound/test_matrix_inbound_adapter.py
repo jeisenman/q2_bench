@@ -95,6 +95,7 @@ def test_adapter_runs_profiles_and_reuses_baselines(monkeypatch, tmp_path) -> No
 
     monkeypatch.setattr(matrix, "_run_candidate", fake_candidate)
     monkeypatch.setattr(matrix, "_judge_candidate", fake_judge)
+    monkeypatch.setattr(matrix, "preflight_recorded_evidence", lambda *_args: None)
 
     results = MatrixInboundAdapter(Path.cwd()).run(manifest)
 
@@ -142,6 +143,7 @@ def test_command_builds_container_and_process_variants(tmp_path) -> None:
     assert container[:2] == ["docker", "run"]
     assert container[container.index("--sandbox") + 1] == "danger-full-access"
     assert container[container.index("--profile") + 1] == "bedrock"
+    assert "features.multi_agent=true" in container
     assert "--read-only" in container
     assert "--skip-git-repo-check" in container
     assert container[container.index("--cap-drop") + 1] == "ALL"
@@ -378,9 +380,20 @@ def test_judge_process_returns_structured_assessment(monkeypatch, tmp_path) -> N
         return ["judge", str(options.final_path)]
 
     def fake_run(command, **_kwargs):
+        criteria = [
+            {"id": item.criterion_id, "score": 0.75, "rationale": "ok"}
+            for item in manifest.rubric
+        ]
         Path(command[1]).write_text(
-            '{"overall_score": 0.75, "criteria": [], "strengths": [], '
-            '"violations": [], "rationale": "ok"}',
+            json.dumps(
+                {
+                    "overall_score": 0.1,
+                    "criteria": criteria,
+                    "strengths": [],
+                    "violations": [],
+                    "rationale": "ok",
+                }
+            ),
             encoding="utf-8",
         )
         return SimpleNamespace(returncode=0, stdout="", stderr="")

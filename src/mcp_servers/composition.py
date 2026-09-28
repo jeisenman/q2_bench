@@ -9,6 +9,11 @@ from typing import Any
 
 from domain import AgentRequest
 from workspaces.data_engineering.agents.contracts import WorkspaceAgent
+from workspaces.data_engineering.benchmarks import (
+    benchmark_case_count,
+    insufficient_benchmark_warning,
+    prepend_benchmark_warning,
+)
 
 ToolHandler = Callable[[Mapping[str, Any]], Awaitable[Mapping[str, Any]]]
 ResourceReader = Callable[[], Awaitable[str]]
@@ -116,10 +121,13 @@ def bind_workspace_agent(agent: WorkspaceAgent) -> AgentMcpBinding:
         result = await agent.run(
             AgentRequest(prompt=prompt, correlation_id=correlation_id)
         )
+        warning = insufficient_benchmark_warning(definition.name)
         return {
-            "output": result.output,
+            "output": prepend_benchmark_warning(result.output, warning),
             "correlation_id": result.correlation_id,
             "tool_calls": result.tool_calls,
+            "benchmark_case_count": benchmark_case_count(definition.name),
+            "warnings": (warning,) if warning is not None else (),
         }
 
     async def read_definition() -> str:

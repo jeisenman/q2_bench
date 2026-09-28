@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
+from urllib.parse import urlencode
 
 from domain import AgentResult
 from workspaces.data_engineering.agents.production_support.cluster_health import (
@@ -164,19 +165,21 @@ def airflow_failure_url(
     operational_date: date,
     reference_date: date | None = None,
 ) -> str:
-    """Return the filtered Airflow task-instance URL for one region and day."""
+    """Return the bounded Airflow task-instance URL for one region and day."""
     del reference_date
     host = {
         Region.US_01: "airflow-us01.precisionlender.com",
         Region.CA_02: "airflow-ca02.precisionlender.com",
     }[region]
     start, end = _operational_bounds(operational_date)
-    return (
-        f"https://{host}/taskinstance/list/"
-        f"?_flt_1_end_date={_iso_utc(end)}"
-        "&_flt_3_state=failed"
-        f"&_flt_2_end_date={_iso_utc(start)}#"
+    query = urlencode(
+        (
+            ("_flt_3_state", "failed"),
+            ("_flt_2_end_date", _airflow_ui_datetime(start)),
+            ("_flt_1_end_date", _airflow_ui_datetime(end)),
+        )
     )
+    return f"https://{host}/taskinstance/list/?{query}#"
 
 
 def airflow_dag_failure_url(
@@ -208,6 +211,11 @@ def _iso_utc(value: datetime) -> str:
 
 def _display_utc(value: datetime) -> str:
     return f"{value:%Y-%m-%d %H:%M:%S} UTC"
+
+
+def _airflow_ui_datetime(value: datetime) -> str:
+    hour = value.strftime("%I").lstrip("0") or "0"
+    return f"{value:%m/%d/%Y} {hour}:{value:%M} {value:%p}"
 
 
 def _capture_summary(failures: tuple[AirflowFailure, ...]) -> str:

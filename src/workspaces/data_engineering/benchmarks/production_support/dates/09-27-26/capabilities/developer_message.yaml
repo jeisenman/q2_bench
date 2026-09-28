@@ -27,7 +27,7 @@ cases:
       required_urls_heading: URLs to validate
       required_url_order: [US-01, CA-02]
       require_urls_outside_developer_bullets: true
-      required_cluster_link_shape: "<airflow-base>/taskinstance/list/?<bounded end-date filters>&_flt_3_state=failed#"
+      required_cluster_link_shape: "<airflow-base>/taskinstance/list/?_flt_3_state=failed&<end-date greater-than start>&<end-date less-than end>#"
       required_terms:
         DV: Distinctness Validation
         MI: Market Insights

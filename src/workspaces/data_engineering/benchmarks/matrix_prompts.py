@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import urlencode
 
 from workspaces.data_engineering.agents.production_support.templates import (
     HUMAN_IDENTITY_ACTION_TEMPLATE,
     RESEND_ACTION_TEMPLATE,
 )
 from workspaces.data_engineering.benchmarks.handoff_contracts import HandoffContract
+from workspaces.data_engineering.benchmarks.matrix_evidence import (
+    compact_brief_shell_command,
+)
 
 
 class MatrixPromptManifest(Protocol):
@@ -90,46 +95,26 @@ def build_prod_support_prompt_lines(
     profile: MatrixPromptProfile,
 ) -> list[str]:
     """Build the production-support orchestrator benchmark prompt."""
-    if manifest.handoff_contract is not None:
+    if manifest.handoff_contract is not None and manifest.case_id.startswith(
+        "handoff-"
+    ):
         return _build_handoff_case_prompt_lines(manifest, profile)
     operational_date = manifest.operational_start.partition("T")[0]
     failure_links = tuple(
         (
             region,
-            f"{base_url}/taskinstance/list/"
-            f"?_flt_1_end_date={manifest.operational_end}"
-            "&_flt_3_state=failed"
-            f"&_flt_2_end_date={manifest.operational_start}#",
+            _task_instance_url(
+                base_url,
+                manifest.operational_start,
+                manifest.operational_end,
+            ),
         )
         for region, base_url in manifest.airflow_base_urls
     )
-    compact_parser = (
-        "workspaces.data_engineering.benchmarks.production_support.compact_brief"
-    )
-    inputs_by_name = {path.name: str(path) for path in manifest.candidate_inputs}
-    applicability = dict(manifest.applicability)
-    optional_inputs = (
-        ("cluster_health_snapshot.json", "--cluster-health", "cluster_health"),
-        ("resource_discovery_snapshot.json", "--resource-discovery", None),
-        (
-            "multi_run_log_fallback.json",
-            "--prior-run-logs",
-            "prior_run_log_fallback",
-        ),
-        ("relationship_signals_prior_day.json", "--prior-context", None),
-    )
-    optional_arguments = " ".join(
-        f"{argument} {inputs_by_name[name]}"
-        for name, argument, criterion in optional_inputs
-        if name in inputs_by_name
-        and (criterion is None or applicability.get(criterion, True))
-    )
-    compact_command = (
-        f"PYTHONPATH=src python3 -m {compact_parser} --dataset {manifest.dataset} "
-        f"--start {manifest.operational_start} --end {manifest.operational_end} "
-        f"{optional_arguments} "
-        "--output /tmp/prod-support-compact-evidence.json"
-    )
+    compact_command = compact_brief_shell_command(manifest)
+    if compact_command is None:
+        msg = "full production-support case requires compact_brief.py"
+        raise ValueError(msg)
     region_labels = tuple(region.partition("-")[0] for region, _ in failure_links)
     developer_health = tuple(
         f"  - {label} Cluster Health: <pod state, restart count, and KEDA health>"
@@ -299,6 +284,23 @@ def build_capability_prompt_lines(
         )
     )
     return lines
+
+
+def _task_instance_url(base_url: str, start: str, end: str) -> str:
+    query = urlencode(
+        (
+            ("_flt_3_state", "failed"),
+            ("_flt_2_end_date", _airflow_ui_datetime(start)),
+            ("_flt_1_end_date", _airflow_ui_datetime(end)),
+        )
+    )
+    return f"{base_url}/taskinstance/list/?{query}#"
+
+
+def _airflow_ui_datetime(value: str) -> str:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    hour = parsed.strftime("%I").lstrip("0") or "0"
+    return f"{parsed:%m/%d/%Y} {hour}:{parsed:%M} {parsed:%p}"
 
 
 def _handoff_prompt_lines(contract: HandoffContract | None) -> tuple[str, ...]:

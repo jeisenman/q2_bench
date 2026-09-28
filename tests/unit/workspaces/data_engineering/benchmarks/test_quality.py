@@ -22,9 +22,8 @@ def test_airflow_links_filter_each_region_at_operational_cutoff() -> None:
     assert "airflow-us01.precisionlender.com" in us_url
     assert "airflow-ca02.precisionlender.com" in ca_url
     assert "_flt_3_state=failed" in us_url
-    assert "_flt_1_end_date=2026-09-25T05:00:00Z" in us_url
-    assert "_flt_2_end_date=2026-09-24T05:00:00Z" in us_url
-    assert "%" not in us_url
+    assert "_flt_2_end_date=09%2F24%2F2026+5%3A00+AM" in us_url
+    assert "_flt_1_end_date=09%2F25%2F2026+5%3A00+AM" in us_url
 
 
 def test_airflow_links_bound_historical_dates_to_one_day() -> None:
@@ -34,8 +33,8 @@ def test_airflow_links_bound_historical_dates_to_one_day() -> None:
         reference_date=date(2026, 9, 25),
     )
 
-    assert "_flt_1_end_date=2026-09-24T05:00:00Z" in url
-    assert "_flt_2_end_date=2026-09-23T05:00:00Z" in url
+    assert "_flt_2_end_date=09%2F23%2F2026+5%3A00+AM" in url
+    assert "_flt_1_end_date=09%2F24%2F2026+5%3A00+AM" in url
 
 
 def test_filter_failures_excludes_successes() -> None:

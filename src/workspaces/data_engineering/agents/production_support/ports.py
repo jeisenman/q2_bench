@@ -7,6 +7,10 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from domain import AgentRequest, AgentResult
+from workspaces.data_engineering.agents.oms_agent import (
+    OmsEvidenceUnavailableError,
+    OmsJobEvidenceSource,
+)
 from workspaces.data_engineering.agents.production_support.cluster_health import (
     RegionalClusterHealth,
 )
@@ -14,9 +18,6 @@ from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
     PriorTaskLog,
     Region,
-)
-from workspaces.data_engineering.agents.production_support.oms import (
-    OmsJobQueryParameters,
 )
 from workspaces.data_engineering.agents.production_support.retry_models import (
     RetryBatch,
@@ -31,6 +32,21 @@ if TYPE_CHECKING:
         ProdSupportReportConfig,
     )
 
+__all__ = [
+    "AirflowFailureSource",
+    "AirflowRetrySource",
+    "AirflowSuccessSource",
+    "AirflowTaskMetadataSource",
+    "ClusterHealthSource",
+    "OmissionStore",
+    "OmsEvidenceUnavailableError",
+    "OmsJobEvidenceSource",
+    "PriorTaskLogSource",
+    "RegionalAirflowFailureSource",
+    "ResourceDiscoveryInvoker",
+    "TaskLogUnavailableError",
+]
+
 
 class TaskLogUnavailableError(RuntimeError):
     """Raised when Airflow has a task instance but no retrievable log."""
@@ -42,15 +58,6 @@ class TaskLogUnavailableError(RuntimeError):
         super().__init__(
             f"Airflow task log unavailable for {failure_id}: HTTP {status_code}"
         )
-
-
-class OmsEvidenceUnavailableError(RuntimeError):
-    """Raised when an exact OMS query cannot return evidence."""
-
-    @classmethod
-    def not_configured(cls) -> OmsEvidenceUnavailableError:
-        """Return an error for a missing OMS evidence source."""
-        return cls("OMS source is not configured")
 
 
 class AirflowFailureSource(Protocol):
@@ -124,14 +131,6 @@ class PriorTaskLogSource(Protocol):
         limit: int,
     ) -> tuple[PriorTaskLog, ...]:
         """Return attempts before the supplied failure, newest first."""
-        ...
-
-
-class OmsJobEvidenceSource(Protocol):
-    """Read one exact OMS job identity."""
-
-    async def query_job(self, parameters: OmsJobQueryParameters) -> str:
-        """Return bounded log evidence for one exact Spark attempt."""
         ...
 
 

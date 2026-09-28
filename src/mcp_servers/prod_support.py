@@ -50,6 +50,11 @@ from workspaces.data_engineering.agents.production_support import (
 from workspaces.data_engineering.agents.production_support.reporting_config import (
     update_omission_values,
 )
+from workspaces.data_engineering.benchmarks import (
+    benchmark_case_count,
+    insufficient_benchmark_warning,
+    prepend_benchmark_warning,
+)
 
 SERVER_NAME = "prod-support"
 server = MCPServer(
@@ -114,7 +119,8 @@ async def run_prod_support(
         report_config=report_config,
         correlation_id=request.correlation_id,
     )
-    full_report = _format_mcp_output(outcome)
+    warning = insufficient_benchmark_warning(SERVER_NAME)
+    full_report = prepend_benchmark_warning(_format_mcp_output(outcome), warning)
     links = _validation_urls(full_report)
     approval_message = retry_approval_message(outcome.retry_candidates)
     result: dict[str, Any] = {
@@ -135,6 +141,8 @@ async def run_prod_support(
         "validation_urls": links,
         "correlation_id": request.correlation_id,
         "tool_calls": tuple(tool.name for tool in agent.definition.tools),
+        "benchmark_case_count": benchmark_case_count(SERVER_NAME),
+        "warnings": (warning,) if warning is not None else (),
         "attributes": {
             **dict(request.attributes),
             "operational_date": outcome.operational_date.isoformat(),

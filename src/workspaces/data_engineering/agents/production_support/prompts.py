@@ -329,8 +329,8 @@ def reporter_prompt() -> str:
 
     <capture-summary>
     URLs to validate
-    <US-01 bounded failure-list URL>
-    <CA-02 bounded failure-list URL>
+    <US-01 task-instance URL with end_date greater-than start and less-than end>
+    <CA-02 task-instance URL with end_date greater-than start and less-than end>
     Message for developer:
       - DAGs parsing properly: <active DAG count> DAGs exist in US,
         <active DAG count> DAGs exist in CA

@@ -6,6 +6,11 @@ import asyncio
 from dataclasses import dataclass, replace
 
 from ports import AgentRuntime
+from workspaces.data_engineering.agents.oms_agent import (
+    OmsEvidenceUnavailableError,
+    OmsJobEvidenceSource,
+    OmsJobQueryParameters,
+)
 from workspaces.data_engineering.agents.production_support.classification import (
     classify_log,
 )
@@ -20,14 +25,9 @@ from workspaces.data_engineering.agents.production_support.models import (
     FailureKind,
     PriorTaskLog,
 )
-from workspaces.data_engineering.agents.production_support.oms import (
-    OmsJobQueryParameters,
-)
 from workspaces.data_engineering.agents.production_support.ports import (
     AirflowFailureSource,
     AirflowTaskMetadataSource,
-    OmsEvidenceUnavailableError,
-    OmsJobEvidenceSource,
     PriorTaskLogSource,
     TaskLogUnavailableError,
 )

@@ -17,6 +17,10 @@ from workspaces.data_engineering.benchmarks.handoff_contracts import (
     HandoffContractError,
     parse_handoff_contract,
 )
+from workspaces.data_engineering.benchmarks.matrix_applicability import (
+    ApplicabilityError,
+    parse_evaluation_applicability,
+)
 from workspaces.data_engineering.benchmarks.matrix_judge import (
     build_matrix_judge_prompt as _build_matrix_judge_prompt,
 )
@@ -157,6 +161,15 @@ def load_matrix_run(
             agent_configurations_path,
             "judge_configuration must reference a judge profile",
         )
+    rubric_items = tuple(_criterion(item, benchmark_path) for item in rubric)
+    try:
+        applicability = parse_evaluation_applicability(
+            case,
+            tuple(item.criterion_id for item in rubric_items),
+            cases_path,
+        )
+    except ApplicabilityError as error:
+        raise MatrixManifestError(str(error)) from error
     try:
         handoff_contract = parse_handoff_contract(
             case.get("handoff_contract"),
@@ -181,10 +194,7 @@ def load_matrix_run(
         capability=capability,
         case_prompt=case_prompt,
         case_instructions=_string_tuple(case.get("instructions", []), cases_path),
-        applicability=_boolean_pairs(
-            case.get("evaluation_applicability", {}),
-            cases_path,
-        ),
+        applicability=applicability,
         handoff_contract=handoff_contract,
         runtime=str(execution.get("runtime", "process")),
         container_image=str(execution.get("container_image", "")),
@@ -193,7 +203,7 @@ def load_matrix_run(
         artifact_root=Path(str(execution.get("artifact_root", "var/benchmark_matrix"))),
         judge=judge,
         candidates=selected,
-        rubric=tuple(_criterion(item, benchmark_path) for item in rubric),
+        rubric=rubric_items,
     )
 
 
@@ -335,18 +345,6 @@ def _string_pairs(raw: object, path: Path) -> tuple[tuple[str, str], ...]:
         raise MatrixManifestError.invalid(
             path,
             "airflow_base_urls must be a string mapping",
-        )
-    return tuple((key, value) for key, value in raw.items())
-
-
-def _boolean_pairs(raw: object, path: Path) -> tuple[tuple[str, bool], ...]:
-    if not isinstance(raw, dict) or not all(
-        isinstance(key, str) and key.strip() and isinstance(value, bool)
-        for key, value in raw.items()
-    ):
-        raise MatrixManifestError.invalid(
-            path,
-            "evaluation_applicability must be a boolean mapping",
         )
     return tuple((key, value) for key, value in raw.items())
 

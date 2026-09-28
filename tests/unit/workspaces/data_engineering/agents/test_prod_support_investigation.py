@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 import pytest
 
 from domain import AgentRequest, AgentResult
+from workspaces.data_engineering.agents.oms_agent import OmsJobQueryParameters
 from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
     AirflowTaskMetadata,
@@ -17,9 +18,6 @@ from workspaces.data_engineering.agents.production_support import (
 )
 from workspaces.data_engineering.agents.production_support.investigation import (
     FailureInvestigator,
-)
-from workspaces.data_engineering.agents.production_support.oms import (
-    OmsJobQueryParameters,
 )
 
 EXPECTED_TRY_NUMBER = 2

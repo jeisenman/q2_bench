@@ -9,6 +9,14 @@ from workspaces.data_engineering.benchmarks.catalog import (
     BenchmarkManifestError,
     default_catalog,
 )
+from workspaces.data_engineering.benchmarks.coverage import (
+    INSUFFICIENT_BENCHMARK_WARNING,
+    MINIMUM_BENCHMARK_CASES,
+    BenchmarkCoverageError,
+    benchmark_case_count,
+    insufficient_benchmark_warning,
+    prepend_benchmark_warning,
+)
 from workspaces.data_engineering.benchmarks.infrastructure import (
     DagProcessorAssessment,
     DagProcessorObservation,
@@ -42,9 +50,12 @@ from workspaces.data_engineering.benchmarks.quality import (
 )
 
 __all__ = [
+    "INSUFFICIENT_BENCHMARK_WARNING",
+    "MINIMUM_BENCHMARK_CASES",
     "AgentConfigurationManifest",
     "Benchmark",
     "BenchmarkCatalog",
+    "BenchmarkCoverageError",
     "BenchmarkManifestError",
     "ComputeKind",
     "DagProcessorAssessment",
@@ -58,6 +69,7 @@ __all__ = [
     "ToolStep",
     "TrajectoryScore",
     "assess_dag_processor",
+    "benchmark_case_count",
     "build_candidate_prompt",
     "build_efficiency_judge_prompt",
     "build_matrix_judge_prompt",
@@ -67,7 +79,9 @@ __all__ = [
     "evaluate_trajectory",
     "failure_recall",
     "filter_failures",
+    "insufficient_benchmark_warning",
     "load_agent_configurations",
     "load_matrix_run",
+    "prepend_benchmark_warning",
     "regional_count_accuracy",
 ]
