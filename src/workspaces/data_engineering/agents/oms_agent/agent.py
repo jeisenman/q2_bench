@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import TypeVar
 
 from domain import AgentDefinition, AgentRequest, AgentResult, ToolDefinition
+from observability import traced_agent_run
 from workspaces.data_engineering.agents.oms_agent.models import (
     OmsEnvironment,
     OmsLogRecord,
@@ -91,6 +92,7 @@ class OmsAgent:
             raise OmsAgentError(message)
         await self._log_sink.write(resolve_workspace(environment, region), record)
 
+    @traced_agent_run
     async def run(self, request: AgentRequest) -> AgentResult:
         """Execute a structured query or log-write request."""
         attributes = _attributes(request)

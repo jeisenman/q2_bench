@@ -26,6 +26,7 @@ approved display conventions, including shortening
 original and parsed names as lookup keys.
 `reporting.py` renders a fixed, deterministic non-secret field set, and
 `__init__.py` defines the public API.
+The shared observability boundary emits `agent.resource-discovery.run`.
 
 The agent is stateless after construction. Provider and network concerns remain
 behind the source protocol; no concurrency, persistence, or production writes
@@ -46,6 +47,8 @@ occur in this package.
 - Credentials: owned and validated by the external API adapter, never this
   package.
 - Mutable storage: None. The packaged JSON index is read-only at runtime.
+- OpenTelemetry API: bounded invocation and tool metadata. Exporters are owned
+  by the application composition root.
 
 ## Workflow
 
@@ -66,6 +69,8 @@ occur in this package.
    consumers; never derive either value from a subdomain or environment.
 7. Return the report, correlation ID, tool name `ResourceDiscovery`, and safe
    cardinality attributes.
+8. End the delegated agent span; async context preserves its MCP or
+   production-support parent.
 
 Invalid identifiers, duplicate request attributes, invalid source records, and
 source exceptions fail immediately. The workflow has no externally visible
@@ -79,6 +84,8 @@ exclusion, parsed-name indexing, authoritative fallback behavior, maintained
 UUID resolution, and `AgentResult` tool metadata. Repository formatting, lint,
 typing, test, file-length, and documentation checks verify the package
 boundaries.
+Shared observability tests verify W3C parentage, error recording, and exclusion
+of arbitrary source and request payloads.
 
 ## Change policy
 

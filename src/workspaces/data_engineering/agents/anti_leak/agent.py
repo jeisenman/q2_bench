@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from domain import AgentDefinition, AgentRequest, AgentResult, ToolDefinition
+from observability import traced_agent_run
 from workspaces.data_engineering.agents.anti_leak.ports import (
     AntiLeakEvidenceSource,
 )
@@ -39,6 +40,7 @@ class AntiLeakAgent:
         """Return the intentionally weak version-one definition."""
         return ANTI_LEAK_V1_DEFINITION
 
+    @traced_agent_run
     async def run(self, request: AgentRequest) -> AgentResult:
         """Load evidence, run the v1 scanner, and return its incomplete report."""
         evidence = self._evidence_source.load()

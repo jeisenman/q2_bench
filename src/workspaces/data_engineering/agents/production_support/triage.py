@@ -1,6 +1,7 @@
 """Deterministic placeholder for production failure triage."""
 
 from domain import AgentDefinition, AgentRequest, AgentResult
+from observability import traced_agent_run
 from workspaces.data_engineering.agents.production_support.prompts import (
     triage_agent_prompt,
 )
@@ -18,6 +19,7 @@ class TriageAgent:
 
     definition = TRIAGE_AGENT_DEFINITION
 
+    @traced_agent_run
     async def run(self, request: AgentRequest) -> AgentResult:
         """Return the unimplemented status without invoking tools."""
         return AgentResult(

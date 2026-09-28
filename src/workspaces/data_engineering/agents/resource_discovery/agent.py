@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from domain import AgentDefinition, AgentRequest, AgentResult, ToolDefinition
+from observability import traced_agent_run
 from workspaces.data_engineering.agents.resource_discovery.models import (
     IdentifierKind,
     ResourceIdentifier,
@@ -142,6 +143,7 @@ class ResourceDiscoveryAgent:
             matches=tuple(sorted(matches, key=_metadata_sort_key)),
         )
 
+    @traced_agent_run
     async def run(self, request: AgentRequest) -> AgentResult:
         """Run a structured search request and render its safe report."""
         try:

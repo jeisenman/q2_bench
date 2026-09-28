@@ -17,6 +17,8 @@ owned by production support. [`ports.py`](ports.py) separates general queries,
 exact-job evidence, and log writes.
 [`__init__.py`](__init__.py) exports the public API. Azure-specific HTTP and
 authentication behavior lives in `src/adapters/oms/`.
+`observability` emits the root `agent.oms-agent.run` span around structured
+execution.
 
 ## Dependencies
 
@@ -27,6 +29,8 @@ External services or SDKs: Azure Log Analytics Query API and the OMS Data
 Collector API, accessed only by adapters.
 Runtime configuration: an authenticated Azure CLI session for queries and an
 injected workspace shared key for writes.
+Telemetry: the shared OpenTelemetry API records bounded agent and tool
+metadata; composition roots own exporters.
 
 ## Workflow
 
@@ -36,6 +40,8 @@ port; and return deterministic routing metadata. Canadian staging and
 development fail immediately because `di-scheduling` defines no such route.
 Queries are read-only. Log writes append one custom record and are the only
 externally visible mutation.
+Trace context enters at `run`, remains active across the awaited query or
+write port, and ends after safe result metadata is recorded.
 
 ## Verification
 
@@ -45,6 +51,8 @@ routing, validation, deterministic query output, and mutation policy.
 exact workload query construction. `tests/unit/adapters/oms/test_oms_source.py`
 verifies Azure request construction, response validation, signing, and
 provider failure behavior without network writes.
+Shared observability tests verify W3C parent context, exception recording, and
+payload redaction.
 
 ## Change policy
 

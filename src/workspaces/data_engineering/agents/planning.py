@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from domain import AgentDefinition, AgentRequest, AgentResult
+from observability import traced_agent_run
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +45,7 @@ class DeterministicPlanningAgent:
         """Return the immutable agent definition."""
         return self._definition
 
+    @traced_agent_run
     async def run(self, request: AgentRequest) -> AgentResult:
         """Return the deterministic plan for an already validated request."""
         rendered_steps = "\n".join(

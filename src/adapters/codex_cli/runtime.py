@@ -8,6 +8,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from domain import AgentDefinition, AgentRequest, AgentResult
+from observability import traced_runtime_run
 
 
 class CodexCliRuntimeError(RuntimeError):
@@ -61,6 +62,7 @@ class CodexCliRuntime:
         """Initialize the runtime with a Codex executable."""
         self._executable = executable
 
+    @traced_runtime_run
     async def run(
         self,
         definition: AgentDefinition,

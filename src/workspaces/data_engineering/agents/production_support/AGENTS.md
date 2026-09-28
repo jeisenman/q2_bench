@@ -45,6 +45,11 @@ Shared OMS routing, query construction, and evidence protocols are owned by
 [`../oms_agent/`](../oms_agent/); this package retains compatibility exports.
 It is an internal workflow, not a second public agent.
 
+OpenTelemetry spans mirror execution: MCP is the root, Orchestrator
+investigation is its child, delegated Resource Discovery and reporting are
+children of investigation, and provider runtime calls are children of
+reporting. Follow-up planning and execution have separate agent spans.
+
 ```mermaid
 flowchart LR
     Request --> Orchestrator
@@ -82,6 +87,9 @@ flowchart LR
 - Side effects: investigations and benchmark construction are read-only.
   Approved FollowUp execution may clear only the exact validated task
   instances in its unchanged retry plan.
+- Telemetry: shared OpenTelemetry API instrumentation and an SDK console
+  exporter configured by the MCP composition root. W3C context may enter from
+  MCP input; console JSON is written to stderr.
 
 ## Workflow
 
@@ -117,6 +125,8 @@ flowchart LR
 9. If the request also asks to build a benchmark case, Orchestrator invokes
    BenchBuilderAgent after normal support. The MCP response keeps every normal
    production-support field and adds benchmark artifact metadata.
+10. The MCP response includes the active trace and span IDs. Spans end after
+    bounded result metadata is recorded.
 
 Invalid dates, empty scopes, malformed handoffs, unsupported parallelism,
 report-contract violations, and changed retry plans fail immediately.
@@ -139,6 +149,8 @@ Tests under `tests/unit/workspaces/data_engineering/agents/` cover prompt
 docstrings, tool ownership, suite structure, workflow behavior, reporting,
 retry safety, and benchmark construction. Integration and end-to-end tests
 cover MCP output continuity, adapters, registration, and matrix execution.
+Observability tests assert parent-child context, exception status, safe
+attributes, and redaction.
 
 Run `uv run python scripts/check.py` before completing a change.
 

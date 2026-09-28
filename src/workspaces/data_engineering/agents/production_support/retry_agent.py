@@ -8,6 +8,7 @@ from collections import defaultdict
 from collections.abc import Mapping
 
 from domain import AgentDefinition
+from observability import traced_operation
 from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
     Region,
@@ -102,6 +103,21 @@ class FollowUpAgent:
         candidates: tuple[RetryCandidate, ...],
     ) -> RetryPlan:
         """Validate a conversational selection through Airflow dry-run calls."""
+        async with traced_operation(
+            "agent.prod-support-follow-up.plan",
+            attributes={
+                "q2.agent.name": self.definition.name,
+                "q2.agent.candidate_count": len(candidates),
+            },
+        ):
+            return await self._plan(direction, candidates)
+
+    async def _plan(
+        self,
+        direction: str,
+        candidates: tuple[RetryCandidate, ...],
+    ) -> RetryPlan:
+        """Build the retry plan within its trace span."""
         selected = select_retry_candidates(direction, candidates)
         batches = retry_batches(selected)
         references: list[RetryTaskReference] = []
@@ -121,6 +137,21 @@ class FollowUpAgent:
         approval_id: str,
     ) -> tuple[RetryTaskReference, ...]:
         """Execute an approved plan and return Airflow state read-back."""
+        async with traced_operation(
+            "agent.prod-support-follow-up.execute",
+            attributes={
+                "q2.agent.name": self.definition.name,
+                "q2.agent.candidate_count": len(plan.candidates),
+            },
+        ):
+            return await self._execute(plan, approval_id)
+
+    async def _execute(
+        self,
+        plan: RetryPlan,
+        approval_id: str,
+    ) -> tuple[RetryTaskReference, ...]:
+        """Execute an approved retry plan within its trace span."""
         if not approval_id.strip():
             raise RetryDirectionError.approval_required()
         if plan.plan_id != _plan_id(plan.batches):

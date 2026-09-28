@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TypeVar
 
 from domain import AgentDefinition, AgentRequest, AgentResult
+from observability import traced_agent_run, traced_operation
 from workspaces.data_engineering.agents.production_support.airflow_checker import (
     AirflowChecker,
 )
@@ -95,6 +96,7 @@ class ProductionSupportWorkflow:
         """Return the sole public production-support orchestrator definition."""
         return build_production_support_suite().orchestrator
 
+    @traced_agent_run
     async def run(self, request: AgentRequest) -> AgentResult:
         """Execute the read-only production-support workflow."""
         outcome = await self.investigate(
@@ -133,6 +135,27 @@ class ProductionSupportWorkflow:
         correlation_id: str | None = None,
     ) -> ProdSupportOutcome:
         """Return structured evidence and reporting for benchmark evaluation."""
+        async with traced_operation(
+            "agent.prod-support.investigate",
+            attributes={
+                "q2.agent.name": self.definition.name,
+                "q2.agent.correlation_id": correlation_id or "generated",
+            },
+        ):
+            return await self._investigate(
+                prompt,
+                report_config=report_config,
+                correlation_id=correlation_id,
+            )
+
+    async def _investigate(
+        self,
+        prompt: str,
+        *,
+        report_config: ProdSupportReportConfig | None,
+        correlation_id: str | None,
+    ) -> ProdSupportOutcome:
+        """Execute the structured investigation inside its trace boundary."""
         reference_time = self._clock()
         window = resolve_query_window(prompt, reference_time)
         scope = resolve_scope(prompt)

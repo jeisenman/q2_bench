@@ -1,6 +1,7 @@
 """Instructional agent that explains prod-support prompt evolution."""
 
 from domain import AgentDefinition, AgentRequest, AgentResult
+from observability import traced_agent_run
 from workspaces.data_engineering.agents.prod_support_evolution.catalog import (
     prompt_versions,
 )
@@ -28,6 +29,7 @@ class ProdSupportEvolutionAgent:
         """Return the framework-neutral agent definition."""
         return PROD_SUPPORT_EVOLUTION_DEFINITION
 
+    @traced_agent_run
     async def run(self, request: AgentRequest) -> AgentResult:
         """Return the complete instructional evolution report."""
         versions = prompt_versions()

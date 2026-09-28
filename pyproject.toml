@@ -10,6 +10,8 @@ dependencies = [
     "mcp>=1.0",
     "mlflow==3.16.1",
     "openai-agents>=0.22.3",
+    "opentelemetry-api>=1.44",
+    "opentelemetry-sdk>=1.44",
     "pyyaml>=6.0",
 ]
 
@@ -38,6 +40,7 @@ packages = [
     "src/cli",
     "src/domain",
     "src/mcp_servers",
+    "src/observability",
     "src/ports",
     "src/workspaces",
 ]

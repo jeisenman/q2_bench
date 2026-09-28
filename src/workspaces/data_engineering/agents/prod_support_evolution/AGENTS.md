@@ -14,7 +14,8 @@ definition. `catalog.py` contains the deterministic prompt-version catalog,
 renders the catalog. `__init__.py` defines the package's public API.
 
 The implementation is stateless, deterministic, and independent of network or
-provider SDKs.
+provider SDKs. The root `agent.prod-support-evolution.run` span surrounds the
+catalog and rendering workflow.
 
 ## Dependencies
 
@@ -22,6 +23,7 @@ provider SDKs.
 - Internal catalog, model, and reporting modules in this package.
 - External services, runtime configuration, credentials, and mutable storage:
   None.
+- Shared OpenTelemetry API instrumentation; exporter configuration is external.
 
 ## Workflow
 
@@ -29,6 +31,7 @@ provider SDKs.
 2. Load the ordered in-process prompt catalog.
 3. Render every version and its evidence-backed lessons.
 4. Return the report with the request correlation ID and provenance attributes.
+5. End the current agent span after recording bounded result metadata.
 
 There are no branches, parallel operations, network calls, or external side
 effects. Invalid catalog construction fails during typed model initialization.
@@ -38,6 +41,7 @@ effects. Invalid catalog construction fails during typed model initialization.
 Focused agent tests verify the returned chronology and attributes. The
 repository type, lint, test, file-length, and documentation checks protect the
 documented module and API boundaries.
+Shared observability tests verify trace hierarchy, failures, and redaction.
 
 ## Change policy
 

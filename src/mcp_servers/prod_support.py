@@ -13,6 +13,7 @@ from adapters.local import (
     filter_prod_support_updates,
     load_prod_support_updates,
 )
+from adapters.telemetry import configure_telemetry
 from domain import AgentRequest
 from mcp_servers.prod_support_benchmark import (
     bench_builder_description,
@@ -40,6 +41,11 @@ from mcp_servers.prod_support_sources import (
 )
 from mcp_servers.prod_support_sources import (
     resource_discovery as _resource_discovery,
+)
+from observability import (
+    current_trace_metadata,
+    extracted_trace_context,
+    traced_operation,
 )
 from workspaces.data_engineering.agents.production_support import (
     FollowUpAgent,
@@ -101,8 +107,37 @@ async def run_prod_support(
     service: str | None = None,
     correlation_id: str | None = None,
     data_internal_omissions: list[str] | None = None,
+    trace_context: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Run the production-support agent with optional service context."""
+    resolved_correlation_id = correlation_id or uuid4().hex
+    async with traced_operation(
+        "mcp.run_prod_support",
+        attributes={
+            "q2.mcp.tool.name": "run_prod_support",
+            "q2.agent.name": agent.definition.name,
+            "q2.agent.correlation_id": resolved_correlation_id,
+        },
+        context=extracted_trace_context(trace_context or {}),
+    ):
+        result = await _run_prod_support(
+            prompt,
+            service=service,
+            correlation_id=resolved_correlation_id,
+            data_internal_omissions=data_internal_omissions,
+        )
+        result["trace"] = current_trace_metadata()
+        return result
+
+
+async def _run_prod_support(
+    prompt: str,
+    *,
+    service: str | None,
+    correlation_id: str,
+    data_internal_omissions: list[str] | None,
+) -> dict[str, Any]:
+    """Execute production support inside the MCP trace boundary."""
     report_config = (
         JsonProdSupportOmissionStore().load()
         if data_internal_omissions is None
@@ -111,7 +146,7 @@ async def run_prod_support(
     attributes = (("service", service),) if service else ()
     request = AgentRequest(
         prompt=prompt,
-        correlation_id=correlation_id or uuid4().hex,
+        correlation_id=correlation_id,
         attributes=attributes,
     )
     outcome = await agent.investigate(
@@ -335,6 +370,7 @@ def prod_support_prompt(request: str) -> str:
 
 def main() -> None:
     """Run the MCP server over stdio."""
+    configure_telemetry(default_service_name=SERVER_NAME)
     JsonProdSupportOmissionStore().ensure()
     server.run(transport="stdio")
 

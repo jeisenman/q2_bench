@@ -82,6 +82,7 @@ def test_workspace_agent_binding_exposes_tool_resource_and_prompt() -> None:
     assert result["warnings"] == (
         "warning: this agent has not been tested thoroughly.",
     )
+    assert result["trace"] == {}
     assert (
         asyncio.run(binding.resources[0].reader())
         == "Triage production pipeline incidents."

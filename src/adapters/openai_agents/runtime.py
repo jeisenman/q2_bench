@@ -5,6 +5,7 @@ from __future__ import annotations
 from agents import Agent, Runner
 
 from domain import AgentDefinition, AgentRequest, AgentResult
+from observability import traced_runtime_run
 
 
 class OpenAIAgentsRuntimeError(RuntimeError):
@@ -14,6 +15,7 @@ class OpenAIAgentsRuntimeError(RuntimeError):
 class OpenAIAgentsRuntime:
     """Run tool-free specialist agents through the OpenAI Agents SDK."""
 
+    @traced_runtime_run
     async def run(
         self,
         definition: AgentDefinition,

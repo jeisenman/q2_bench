@@ -9,6 +9,7 @@ from datetime import date, datetime
 from enum import Enum
 
 from domain import AgentRequest
+from observability import traced_async_operation
 from ports import AgentRuntime
 from workspaces.data_engineering.agents.production_support import report_prompt
 from workspaces.data_engineering.agents.production_support.models import Region
@@ -152,6 +153,10 @@ class ReportingAgent:
         """Initialize with an injected provider-neutral runtime."""
         self._runtime = runtime
 
+    @traced_async_operation(
+        "agent.prod-support-reporting.write",
+        agent_name=PROD_SUPPORT_REPORTER_DEFINITION.name,
+    )
     async def write(
         self,
         operational_date: date,

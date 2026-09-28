@@ -8,6 +8,11 @@ from types import MappingProxyType
 from typing import Any
 
 from domain import AgentRequest
+from observability import (
+    current_trace_metadata,
+    extracted_trace_context,
+    traced_operation,
+)
 from workspaces.data_engineering.agents.contracts import WorkspaceAgent
 from workspaces.data_engineering.benchmarks import (
     benchmark_case_count,
@@ -118,17 +123,27 @@ def bind_workspace_agent(agent: WorkspaceAgent) -> AgentMcpBinding:
         if not isinstance(correlation_id, str) or not correlation_id.strip():
             msg = "MCP agent tool requires a non-empty string 'correlation_id'"
             raise ValueError(msg)
-        result = await agent.run(
-            AgentRequest(prompt=prompt, correlation_id=correlation_id)
-        )
-        warning = insufficient_benchmark_warning(definition.name)
-        return {
-            "output": prepend_benchmark_warning(result.output, warning),
-            "correlation_id": result.correlation_id,
-            "tool_calls": result.tool_calls,
-            "benchmark_case_count": benchmark_case_count(definition.name),
-            "warnings": (warning,) if warning is not None else (),
-        }
+        async with traced_operation(
+            f"mcp.run_{mcp_name}",
+            attributes={
+                "q2.mcp.tool.name": f"run_{mcp_name}",
+                "q2.agent.name": definition.name,
+                "q2.agent.correlation_id": correlation_id,
+            },
+            context=extracted_trace_context(arguments),
+        ):
+            result = await agent.run(
+                AgentRequest(prompt=prompt, correlation_id=correlation_id)
+            )
+            warning = insufficient_benchmark_warning(definition.name)
+            return {
+                "output": prepend_benchmark_warning(result.output, warning),
+                "correlation_id": result.correlation_id,
+                "tool_calls": result.tool_calls,
+                "benchmark_case_count": benchmark_case_count(definition.name),
+                "warnings": (warning,) if warning is not None else (),
+                "trace": current_trace_metadata(),
+            }
 
     async def read_definition() -> str:
         return definition.description
