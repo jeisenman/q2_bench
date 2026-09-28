@@ -124,23 +124,20 @@ from workspaces.data_engineering.agents.production_support.scope import (
     resolve_scope,
 )
 from workspaces.data_engineering.agents.production_support.suite import (
-    AIRFLOW_AGENT_NAME,
     CLUSTER_AGENT_NAME,
     FOLLOW_UP_AGENT_NAME,
     ORCHESTRATOR_NAME,
     REPORTER_NAME,
     SUBAGENT_NAMES,
-    TRIAGE_AGENT_NAME,
+    TRIAGE_MANAGER_NAME,
     ProductionSupportSuite,
     build_production_support_suite,
 )
 from workspaces.data_engineering.agents.production_support.templates import (
     PROD_SUPPORT_REPORT_TEMPLATE,
 )
-from workspaces.data_engineering.agents.production_support.triage import (
-    TRIAGE_AGENT_DEFINITION,
-    TRIAGE_NOT_SETUP,
-    TriageAgent,
+from workspaces.data_engineering.agents.production_support.triage_manager import (
+    TriageManager,
 )
 from workspaces.data_engineering.agents.production_support.workflow import (
     ProductionSupportWorkflow,
@@ -161,7 +158,6 @@ PRODUCTION_SUPPORT_DEFINITION = PRODUCTION_SUPPORT_SUITE.orchestrator
 PRODUCTION_SUPPORT_AGENT_DEFINITIONS = PRODUCTION_SUPPORT_SUITE.definitions
 
 __all__ = [
-    "AIRFLOW_AGENT_NAME",
     "BENCH_BUILDER_DELEGATES",
     "BENCH_BUILDER_MAX_PARALLEL",
     "BENCH_BUILDER_NAME",
@@ -178,9 +174,7 @@ __all__ = [
     "PROD_SUPPORT_REPORT_TEMPLATE",
     "REPORTER_NAME",
     "SUBAGENT_NAMES",
-    "TRIAGE_AGENT_DEFINITION",
-    "TRIAGE_AGENT_NAME",
-    "TRIAGE_NOT_SETUP",
+    "TRIAGE_MANAGER_NAME",
     "AirflowCheckConfigurationError",
     "AirflowChecker",
     "AirflowFailure",
@@ -242,7 +236,7 @@ __all__ = [
     "RetryPlan",
     "TaskLogSummary",
     "TaskLogUnavailableError",
-    "TriageAgent",
+    "TriageManager",
     "WorkloadKind",
     "airflow_dag_failure_url",
     "airflow_failure_url",

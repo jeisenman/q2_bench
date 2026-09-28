@@ -9,12 +9,14 @@ from pathlib import Path
 from adapters.airflow import AirflowApiSource
 from adapters.codex_cli import CodexCliRuntime
 from adapters.kubernetes import ClusterHealthScriptSource
+from adapters.postgres import agent_memory_from_environment
 from adapters.resource_discovery import (
     IndexedResourceDiscoverySource,
     JsonClientLookupSource,
     ResourceDiscoveryApiSource,
     configured_client_lookup_path,
 )
+from agent_memory import AgentMemory
 from workspaces.data_engineering.agents.production_support import (
     AirflowFailure,
     AirflowFailureSource,
@@ -84,7 +86,17 @@ def resource_discovery() -> ResourceDiscoveryAgent | None:
         ResourceDiscoveryApiSource.from_environment(),
         JsonClientLookupSource(configured_client_lookup_path()),
     )
-    return ResourceDiscoveryAgent(source)
+    return ResourceDiscoveryAgent(
+        source,
+        memory=agent_memory_from_environment("resource-discovery"),
+    )
+
+
+def memory() -> AgentMemory | None:
+    """Return scoped durable memory for production-support summaries."""
+    if os.environ.get(SOURCE_ENV) != "production":
+        return None
+    return agent_memory_from_environment("production-support")
 
 
 def report_runtime() -> CodexCliRuntime | None:

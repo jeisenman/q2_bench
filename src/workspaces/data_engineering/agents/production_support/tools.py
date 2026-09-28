@@ -66,18 +66,15 @@ TRIGGER_RESOURCE_DISCOVERY = ToolDefinition(
     ),
     input_schema=(("client_id", "complete UUID string"),),
 )
-PLAN_AIRFLOW_RETRIES = ToolDefinition(
-    name="plan_airflow_retries",
-    description=(
-        "Dry-run exact regional Airflow retry targets selected from the prior "
-        "production-support failure inventory."
-    ),
-    input_schema=(("direction", "string"), ("candidates", "array")),
-)
 EXECUTE_AIRFLOW_RETRIES = ToolDefinition(
     name="execute_airflow_retries",
     description=(
-        "Execute an unchanged validated Airflow retry plan after exact approval."
+        "Execute exact retries selected and authorized by a developer follow-up, "
+        "then return the original US and CA validation links."
     ),
-    input_schema=(("plan_id", "string"), ("approval_id", "string")),
+    input_schema=(
+        ("direction", "string"),
+        ("candidates", "array"),
+        ("validation_urls", "array"),
+    ),
 )

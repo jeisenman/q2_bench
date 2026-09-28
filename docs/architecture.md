@@ -60,6 +60,20 @@ composition roots. Spans must use bounded, redacted attributes and must never
 contain credentials, secrets, hidden benchmark answers, or unrestricted
 production payloads.
 
+## Agent memory
+
+Durable memory uses the provider-neutral contracts in `agent_memory`. A shared
+physical store is partitioned by agent, tenant, and user/team/organization
+scope. PostgreSQL details remain in `adapters.postgres`; local tests use the
+in-memory adapter.
+
+Memory records have explicit kinds and lifecycle states. Structured aliases
+use exact normalized keys and typed canonical identifiers. Optional vector
+fields support future semantic retrieval but do not replace deterministic
+identity lookup. Agents may persist only bounded confirmations, corrections,
+facts, preferences, or summaries; raw conversations and unrestricted provider
+payloads are not memory.
+
 ## Public API
 
 Only names deliberately exported from package `__init__.py` files are

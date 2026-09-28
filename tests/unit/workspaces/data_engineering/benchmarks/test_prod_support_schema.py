@@ -10,8 +10,7 @@ SYSTEM_CASES = [
     "prod-support-us-ca-operational-2026-09-26",
     "mcp-prod-support-yesterday-2026-09-26",
     "handoff-cluster-agent-2026-09-26",
-    "handoff-airflow-agent-2026-09-26",
-    "handoff-triage-agent-2026-09-26",
+    "handoff-triage-manager-2026-09-26",
     "handoff-follow-up-agent-2026-09-26",
     "handoff-reporter-2026-09-26",
     "handoff-bench-builder-agent-2026-09-26",
@@ -47,12 +46,11 @@ def test_current_run_covers_every_agent_handoff() -> None:
     }
 
     assert expected_agents == {
-        "AirflowAgent",
+        "TriageManager",
         "BenchBuilderAgent",
         "ClusterAgent",
         "FollowUpAgent",
         "Reporter",
-        "TriageAgent",
     }
 
 

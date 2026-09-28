@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from enum import StrEnum
 
+from agent_memory import MemoryRecord
 from domain import AgentResult
 
 
@@ -34,6 +35,7 @@ class EvidenceSource(StrEnum):
     """Read-only source used for one diagnosis."""
 
     UNKNOWN = "unknown"
+    AIRFLOW_FAILURE_MESSAGE = "airflow_failure_message"
     AIRFLOW_EXACT_TASK_ATTEMPT = "airflow_exact_task_attempt"
     AIRFLOW_PRIOR_SAME_TASK = "airflow_prior_same_task"
     OMS_EXACT_JOB = "oms_exact_job"
@@ -163,3 +165,4 @@ class ProdSupportOutcome:
     resource_discovery_results: tuple[AgentResult, ...] = ()
     regions: tuple[Region, ...] = (Region.US_01, Region.CA_02)
     retry_candidates: tuple[RetryCandidate, ...] = ()
+    memory_summaries: tuple[MemoryRecord, ...] = ()

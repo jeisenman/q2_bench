@@ -27,6 +27,7 @@ class FakeSource:
 
     def __init__(self, records: tuple[Mapping[str, object], ...]) -> None:
         self.records = records
+        self.calls = 0
 
     async def lookup(
         self,
@@ -34,6 +35,7 @@ class FakeSource:
     ) -> tuple[Mapping[str, object], ...]:
         """Return the configured records."""
         del identifier
+        self.calls += 1
         return self.records
 
 
@@ -59,16 +61,17 @@ def identifier() -> ResourceIdentifier:
     return ResourceIdentifier(IdentifierKind.CLIENT_ID, CLIENT_UUID)
 
 
-def test_unique_primary_result_wins_over_local_index(tmp_path: Path) -> None:
+def test_unique_local_result_short_circuits_primary(tmp_path: Path) -> None:
     primary = FakeSource(({"client_name": "Live API Name"},))
     source = IndexedResourceDiscoverySource(
         primary,
         write_lookup(tmp_path / "lookup.json"),
     )
 
-    assert asyncio.run(source.lookup(identifier())) == (
-        {"client_name": "Live API Name"},
-    )
+    records = asyncio.run(source.lookup(identifier()))
+
+    assert records[0]["client_name"] == "Renasant Bank (Tupelo, MS)"
+    assert primary.calls == 0
 
 
 @pytest.mark.parametrize(
@@ -110,6 +113,54 @@ def test_missing_local_fallback_preserves_ambiguous_api_results(tmp_path: Path) 
             )
         )
         == ambiguous
+    )
+
+
+def test_local_index_generates_acronym_candidates(tmp_path: Path) -> None:
+    source = write_lookup(tmp_path / "lookup.json")
+
+    records = asyncio.run(source.alias_candidates("RB"))
+
+    assert records[0]["client_name"] == "Renasant Bank (Tupelo, MS)"
+
+
+def test_local_index_exposes_confirmed_operational_resource_fields(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "lookup.json"
+    path.write_text(
+        json.dumps(
+            {
+                CLIENT_UUID: {
+                    "api_status": "no-unique-match",
+                    "client_id": "fa00b19e-33d9-4f03-b26d-88ff801c19c0",
+                    "environment": "US01",
+                    "name": "City National Bank",
+                    "resource_id": "9189ffa8-c2a4-4ca4-b3c3-5f1b4458270b",
+                    "resource_set": "CNB Production",
+                    "service": "PLApp",
+                    "source": "user-confirmed",
+                    "subdomain": "cnb",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    records = asyncio.run(JsonClientLookupSource(path).lookup(identifier()))
+
+    assert records == (
+        {
+            "provisioned_client_id": CLIENT_UUID,
+            "client_name": "City National Bank",
+            "routing_source": "local-client-index:user-confirmed",
+            "client_id": "fa00b19e-33d9-4f03-b26d-88ff801c19c0",
+            "subdomain": "cnb",
+            "environment": "US01",
+            "service": "PLApp",
+            "resource_id": "9189ffa8-c2a4-4ca4-b3c3-5f1b4458270b",
+            "resource_set": "CNB Production",
+        },
     )
 
 

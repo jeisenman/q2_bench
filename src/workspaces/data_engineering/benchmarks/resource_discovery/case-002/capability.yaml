@@ -2,6 +2,6 @@ schema_version: 1
 capability: resource_query
 description: Resolve one synthetic resource query using non-secret fields.
 cases:
-  - id: resource-discovery-case-002
-    asset_uri: assets/case_002.json
+  - id: case-002
+    asset_uri: case-002/asset.json
     query_type: client_name

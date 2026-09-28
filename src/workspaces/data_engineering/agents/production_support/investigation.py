@@ -1,10 +1,10 @@
-"""Bounded exact-evidence retrieval for one production failure."""
+"""Short-circuiting evidence retrieval for production failures."""
 
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass, replace
 
+from agent_memory import AgentMemory
 from ports import AgentRuntime
 from workspaces.data_engineering.agents.oms_agent import (
     OmsEvidenceUnavailableError,
@@ -61,6 +61,7 @@ class InvestigationServices:
     task_metadata: AirflowTaskMetadataSource | None = None
     oms: OmsJobEvidenceSource | None = None
     report_runtime: AgentRuntime | None = None
+    memory: AgentMemory | None = None
     max_parallel: int = MAX_PARALLEL_LIMIT
 
     def __post_init__(self) -> None:
@@ -90,7 +91,10 @@ class FailureInvestigator:
         self,
         failure: AirflowFailure,
     ) -> tuple[AirflowFailure, FailureDiagnosis]:
-        """Investigate one failure without changing task identity."""
+        """Use the cheapest conclusive evidence before fetching detailed logs."""
+        message_result = _failure_message_result(failure)
+        if message_result is not None and not _needs_prior(message_result[1]):
+            return message_result
         if await self._is_spark(failure) and self._oms is not None:
             identifier = client_id(failure)
             if identifier is not None:
@@ -109,21 +113,14 @@ class FailureInvestigator:
         failure: AirflowFailure,
         identifier: str,
     ) -> tuple[AirflowFailure, FailureDiagnosis]:
-        """Race exact Airflow and OMS evidence for a confirmed Spark task."""
-        airflow_task = asyncio.create_task(self._investigate_airflow(failure))
-        oms_task = asyncio.create_task(
-            self._query_oms(failure, identifier),
-        )
-        airflow_result = await airflow_task
-        airflow_diagnosis = airflow_result[1]
-        if airflow_diagnosis.kind is FailureKind.AIRFLOW_CONFIRMED_TIMEOUT:
-            oms_task.cancel()
-            await asyncio.gather(oms_task, return_exceptions=True)
-            return airflow_result
+        """Use exact OMS evidence first and fetch Airflow logs only if unresolved."""
         try:
-            oms_result = await oms_task
+            oms_result = await self._query_oms(failure, identifier)
         except OmsEvidenceUnavailableError:
-            return airflow_result
+            return await self._investigate_airflow(failure)
+        if not _needs_prior(oms_result[1]):
+            return oms_result
+        airflow_result = await self._investigate_airflow(failure)
         return _prefer_stronger_evidence(airflow_result, oms_result)
 
     async def _query_oms(
@@ -193,6 +190,19 @@ def _classified_result(
     diagnosis = classify_log(failure, log, source=source)
     hydrated = replace(failure, log=summary.excerpt)
     return hydrated, replace(diagnosis, status=summary.status)
+
+
+def _failure_message_result(
+    failure: AirflowFailure,
+) -> tuple[AirflowFailure, FailureDiagnosis] | None:
+    """Classify a discovery-provided failure message without another API call."""
+    if not failure.log.strip():
+        return None
+    return _classified_result(
+        failure,
+        failure.log,
+        EvidenceSource.AIRFLOW_FAILURE_MESSAGE,
+    )
 
 
 def _prior_result(

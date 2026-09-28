@@ -44,7 +44,7 @@ def _candidate(number: int, region: Region) -> RetryCandidate:
 
 
 class FakeRetrySource:
-    """Capture dry-run and execution requests."""
+    """Capture retry execution requests."""
 
     def __init__(self) -> None:
         self.planned: list[RetryBatch] = []
@@ -111,7 +111,7 @@ def test_rejects_unknown_or_non_retry_direction() -> None:
         select_retry_candidates("inspect job 1", candidates)
 
 
-def test_follow_up_agent_dry_runs_then_executes_approved_plan() -> None:
+def test_follow_up_agent_executes_selected_tasks_immediately() -> None:
     source = FakeRetrySource()
     agent = FollowUpAgent(source)
     candidates = (
@@ -119,23 +119,13 @@ def test_follow_up_agent_dry_runs_then_executes_approved_plan() -> None:
         _candidate(2, Region.CA_02),
     )
 
-    plan = asyncio.run(agent.plan("retry all jobs", candidates))
-    states = asyncio.run(agent.execute(plan, "approval-1"))
+    states = asyncio.run(agent.execute("retry all jobs", candidates))
 
-    assert plan.candidates == candidates
-    assert retry_batches(candidates) == plan.batches
-    assert len(source.planned) == EXPECTED_REGIONAL_BATCHES
+    assert retry_batches(candidates)
+    assert source.planned == []
     assert [item.state for item in states] == ["queued", "queued"]
-    assert all(item[1] == "approval-1" for item in source.executed)
-
-
-def test_follow_up_agent_requires_approval() -> None:
-    source = FakeRetrySource()
-    agent = FollowUpAgent(source)
-    plan = asyncio.run(agent.plan("follow up", (_candidate(1, Region.US_01),)))
-
-    with pytest.raises(RetryDirectionError, match="approval ID"):
-        asyncio.run(agent.execute(plan, ""))
+    assert len(source.executed) == EXPECTED_REGIONAL_BATCHES
+    assert all(item[1] == "retry all jobs" for item in source.executed)
 
 
 def test_retry_candidate_identity_is_region_bound() -> None:

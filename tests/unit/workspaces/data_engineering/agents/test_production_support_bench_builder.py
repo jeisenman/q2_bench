@@ -18,6 +18,8 @@ from workspaces.data_engineering.agents.production_support.models import (
     Region,
 )
 
+EXPECTED_BENCH_BUILDER_DELEGATES = 4
+
 
 def _outcome() -> ProdSupportOutcome:
     failure = AirflowFailure(
@@ -48,7 +50,7 @@ def _outcome() -> ProdSupportOutcome:
     )
 
 
-def test_bench_builder_can_delegate_to_five_operational_agents() -> None:
+def test_bench_builder_can_delegate_to_operational_agents() -> None:
     definition = build_bench_builder_definition("builder-model")
 
     assert definition.can_delegate is True
@@ -56,7 +58,8 @@ def test_bench_builder_can_delegate_to_five_operational_agents() -> None:
     delegate_tools = [
         tool for tool in definition.tools if tool.name.startswith("Delegate")
     ]
-    assert len(delegate_tools) == BENCH_BUILDER_MAX_PARALLEL
+    assert len(delegate_tools) == EXPECTED_BENCH_BUILDER_DELEGATES
+    assert len(delegate_tools) <= BENCH_BUILDER_MAX_PARALLEL
     assert "Never retrofit an earlier" in definition.instructions
 
 

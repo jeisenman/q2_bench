@@ -25,25 +25,19 @@ from workspaces.data_engineering.agents.production_support.tools import (
     FETCH_TASK_LOG,
     INSPECT_CLUSTER_HEALTH,
     INSPECT_WORKLOAD,
-    PLAN_AIRFLOW_RETRIES,
     QUERY_OMS_JOB,
     RUN_PROD_SUPPORT_MCP,
     TRIGGER_RESOURCE_DISCOVERY,
 )
-from workspaces.data_engineering.agents.production_support.triage import (
-    TRIAGE_AGENT_DEFINITION,
-)
 
 ORCHESTRATOR_NAME = "Orchestrator"
 CLUSTER_AGENT_NAME = "ClusterAgent"
-AIRFLOW_AGENT_NAME = "AirflowAgent"
 FOLLOW_UP_AGENT_NAME = "FollowUpAgent"
-TRIAGE_AGENT_NAME = "TriageAgent"
+TRIAGE_MANAGER_NAME = "TriageManager"
 REPORTER_NAME = "Reporter"
 SUBAGENT_NAMES = (
     CLUSTER_AGENT_NAME,
-    AIRFLOW_AGENT_NAME,
-    TRIAGE_AGENT_NAME,
+    TRIAGE_MANAGER_NAME,
     FOLLOW_UP_AGENT_NAME,
     REPORTER_NAME,
     BENCH_BUILDER_NAME,
@@ -56,8 +50,7 @@ class ProductionSupportSuite:
 
     orchestrator: AgentDefinition
     cluster_agent: AgentDefinition
-    airflow_agent: AgentDefinition
-    triage_agent: AgentDefinition
+    triage_manager: AgentDefinition
     follow_up_agent: AgentDefinition
     reporter: AgentDefinition
     bench_builder_agent: AgentDefinition
@@ -67,8 +60,7 @@ class ProductionSupportSuite:
         """Return subagents in stable execution order."""
         return (
             self.cluster_agent,
-            self.airflow_agent,
-            self.triage_agent,
+            self.triage_manager,
             self.follow_up_agent,
             self.reporter,
             self.bench_builder_agent,
@@ -106,12 +98,12 @@ def build_production_support_suite(
         ),
         selected_prompts,
     )
-    airflow_agent = build_agent_definition(
+    triage_manager = build_agent_definition(
         ProductionSupportAgentConfiguration(
-            name=AIRFLOW_AGENT_NAME,
-            description="Investigate scoped Airflow task failures.",
-            prompt_name="airflow_agent",
-            model=_model(selected_models, AIRFLOW_AGENT_NAME),
+            name=TRIAGE_MANAGER_NAME,
+            description="Short-circuit triage for the complete failure batch.",
+            prompt_name="triage_manager",
+            model=_model(selected_models, TRIAGE_MANAGER_NAME),
             tools=(
                 DISCOVER_FAILURES,
                 FETCH_TASK_LOG,
@@ -129,10 +121,7 @@ def build_production_support_suite(
             description="Retry explicitly authorized Airflow task instances.",
             prompt_name="follow_up_agent",
             model=_model(selected_models, FOLLOW_UP_AGENT_NAME),
-            tools=(
-                PLAN_AIRFLOW_RETRIES,
-                EXECUTE_AIRFLOW_RETRIES,
-            ),
+            tools=(EXECUTE_AIRFLOW_RETRIES,),
         ),
         selected_prompts,
     )
@@ -179,8 +168,7 @@ def build_production_support_suite(
     return ProductionSupportSuite(
         orchestrator=orchestrator,
         cluster_agent=cluster_agent,
-        airflow_agent=airflow_agent,
-        triage_agent=TRIAGE_AGENT_DEFINITION,
+        triage_manager=triage_manager,
         follow_up_agent=follow_up_agent,
         reporter=reporter,
         bench_builder_agent=bench_builder,

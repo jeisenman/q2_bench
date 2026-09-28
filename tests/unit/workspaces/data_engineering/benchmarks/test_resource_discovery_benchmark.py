@@ -7,6 +7,8 @@ BENCHMARK_ROOT = (
     Path(__file__).parents[5]
     / "src/workspaces/data_engineering/benchmarks/resource_discovery"
 )
+EXPECTED_CONVERSATIONS = 2
+EXPECTED_CONFIRMATION_THRESHOLD = 3
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -29,27 +31,37 @@ def test_resource_discovery_manifest_declares_a_typed_benchmark() -> None:
 
 
 def test_resource_discovery_suite_defines_opaque_synthetic_cases() -> None:
-    suite_root = BENCHMARK_ROOT / "dates" / "09-26-26"
+    suite_root = BENCHMARK_ROOT
     suite = load_yaml(suite_root / "suite.yaml")
     cases = load_yaml(suite_root / "cases.yaml")
     assert suite["schema_version"] == 1
     assert suite["benchmark_id"]
     assert set(suite["layers"]) >= {"capabilities", "system"}
     assert [case["id"] for case in cases["cases"]] == [
-        "resource-discovery-case-001",
-        "resource-discovery-case-002",
-        "resource-discovery-case-003",
+        "case-001",
+        "case-002",
+        "case-003",
+        "case-004",
     ]
+    assert all(
+        (suite_root / case_id / "asset.json").is_file()
+        and (suite_root / case_id / "capability.yaml").is_file()
+        for case_id in suite["system_cases"]
+    )
 
 
 def test_public_assets_and_hidden_expectations_are_disjoint() -> None:
-    suite_root = BENCHMARK_ROOT / "dates" / "09-26-26"
+    suite_root = BENCHMARK_ROOT
     manifest = load_yaml(BENCHMARK_ROOT / "manifest.yaml")
     suite = load_yaml(suite_root / "suite.yaml")
 
     public_paths = set(manifest.get("public_assets", ()))
     public_paths.update(suite.get("public_assets", ()))
-    hidden_paths = {"hidden/expected_results.yaml", "hidden/rubric.yaml"}
+    hidden_paths = {
+        "hidden/expected_results.yaml",
+        "hidden/resource_query_rubric.yaml",
+        "hidden/alias_memory_rubric.yaml",
+    }
 
     assert public_paths
     assert hidden_paths
@@ -60,7 +72,7 @@ def test_public_assets_and_hidden_expectations_are_disjoint() -> None:
 
 
 def test_public_case_metadata_does_not_name_hidden_expectations_or_secrets() -> None:
-    suite_root = BENCHMARK_ROOT / "dates" / "09-26-26"
+    suite_root = BENCHMARK_ROOT
     manifest = load_yaml(BENCHMARK_ROOT / "manifest.yaml")
     suite = load_yaml(suite_root / "suite.yaml")
     public_case_and_fixture_text = "\n".join(
@@ -68,11 +80,11 @@ def test_public_case_metadata_does_not_name_hidden_expectations_or_secrets() -> 
             (suite_root / "cases.yaml").read_text(encoding="utf-8"),
             *(
                 path.read_text(encoding="utf-8")
-                for path in (suite_root / "capabilities").glob("*.yaml")
+                for path in suite_root.glob("case-*/capability.yaml")
             ),
             *(
                 path.read_text(encoding="utf-8")
-                for path in (suite_root / "assets").glob("*")
+                for path in suite_root.glob("case-*/asset.json")
             ),
         )
     ).lower()
@@ -83,3 +95,23 @@ def test_public_case_metadata_does_not_name_hidden_expectations_or_secrets() -> 
         assert hidden_path.lower() not in public_case_and_fixture_text
     for secret_marker in ("client_secret", "access_token", "refresh_token"):
         assert secret_marker not in public_case_and_fixture_text
+
+
+def test_alias_memory_suite_requires_repeated_cross_conversation_evidence() -> None:
+    suite_root = BENCHMARK_ROOT
+    suite = load_yaml(suite_root / "suite.yaml")
+    cases = load_yaml(suite_root / "cases.yaml")
+    expected = load_yaml(suite_root / "hidden" / "expected_results.yaml")
+
+    case = cases["cases"][3]
+    expectation = expected["cases"][3]
+
+    assert suite["system_cases"][-1] == "case-004"
+    assert (suite_root / "case-004" / "asset.json").is_file()
+    assert (suite_root / "case-004" / "capability.yaml").is_file()
+    assert len(case["conversations"]) == EXPECTED_CONVERSATIONS
+    assert expectation["initial_memory_count"] == 0
+    assert expectation["confirmation_threshold"] == EXPECTED_CONFIRMATION_THRESHOLD
+    assert expectation["expected_memory"]["evidence_count"] == 1
+    assert expectation["expected_memory"]["status"] == "proposed"
+    assert expectation["expected_events"][-1]["status"] == "confirmation_required"

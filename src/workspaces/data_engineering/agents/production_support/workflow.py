@@ -8,6 +8,7 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import TypeVar
 
+from agent_memory import MemoryRecord
 from domain import AgentDefinition, AgentRequest, AgentResult
 from observability import traced_agent_run, traced_operation
 from workspaces.data_engineering.agents.production_support.airflow_checker import (
@@ -58,6 +59,9 @@ from workspaces.data_engineering.agents.production_support.scope import resolve_
 from workspaces.data_engineering.agents.production_support.suite import (
     build_production_support_suite,
 )
+from workspaces.data_engineering.agents.production_support.triage_manager import (
+    TriageManager,
+)
 
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")
@@ -83,12 +87,16 @@ class ProductionSupportWorkflow:
         self._airflow_checker = AirflowChecker(source)
         self._cluster_checker = ClusterChecker(cluster_health)
         self._report_runtime = services.report_runtime
+        self._memory = services.memory
         self._max_parallel = services.max_parallel
-        self._failure_investigator = FailureInvestigator(
-            source,
-            prior_logs=services.prior_logs,
-            task_metadata=services.task_metadata,
-            oms=services.oms,
+        self._triage_manager = TriageManager(
+            FailureInvestigator(
+                source,
+                prior_logs=services.prior_logs,
+                task_metadata=services.task_metadata,
+                oms=services.oms,
+            ),
+            max_parallel=services.max_parallel,
         )
 
     @property
@@ -124,6 +132,7 @@ class ProductionSupportWorkflow:
                     "evidence_characters_retained",
                     sum(len(item.log) for item in outcome.failures),
                 ),
+                ("memory_summary_count", len(outcome.memory_summaries)),
             ),
         )
 
@@ -173,16 +182,18 @@ class ProductionSupportWorkflow:
                 restart_window_end=failed_before,
             ),
         )
-        resource_results = await self._trigger_resource_discovery(failures)
+        identity_failures = tuple(
+            failure
+            for failure in failures
+            if config.configured_omission_group(failure) is None
+        )
+        resource_results = await self._trigger_resource_discovery(identity_failures)
         reportable = tuple(
             failure
             for failure in failures
             if not _ignored_by_resource_discovery(failure, resource_results)
         )
-        investigated = await self._bounded_map(
-            reportable,
-            self._failure_investigator.investigate,
-        )
+        investigated = await self._triage_manager.triage(reportable)
         investigated_by_id = {item[0].failure_id: item for item in investigated}
         recovered_omissions = await self._verified_omission_ids(
             reportable,
@@ -236,6 +247,7 @@ class ProductionSupportWorkflow:
                     or f"prod-support:{window.operational_date.isoformat()}"
                 ),
             )
+        memory_summaries = await self._remember_diagnoses(hydrated, diagnoses)
         return ProdSupportOutcome(
             operational_date=window.operational_date,
             failed_since=window.failed_since,
@@ -248,7 +260,43 @@ class ProductionSupportWorkflow:
             resource_discovery_results=resource_results,
             regions=scope.regions,
             retry_candidates=retry_candidates(findings),
+            memory_summaries=memory_summaries,
         )
+
+    async def _remember_diagnoses(
+        self,
+        failures: tuple[AirflowFailure, ...],
+        diagnoses: tuple[FailureDiagnosis, ...],
+    ) -> tuple[MemoryRecord, ...]:
+        """Persist bounded summaries without retaining logs or report content."""
+        memory = self._memory
+        if memory is None:
+            return ()
+        failure_by_id = {failure.failure_id: failure for failure in failures}
+
+        async def remember(diagnosis: FailureDiagnosis) -> MemoryRecord:
+            failure = failure_by_id[diagnosis.failure_id]
+            return await memory.remember_summary(
+                key=(
+                    f"{diagnosis.failure_id}:{diagnosis.kind.value}:"
+                    f"{diagnosis.source.value}:{diagnosis.status.value}"
+                ),
+                content=(
+                    f"{failure.region.value} {failure.dag_id} "
+                    f"{failure.task_id}: {diagnosis.kind.value}"
+                ),
+                metadata=(
+                    ("region", failure.region.value),
+                    ("dag_id", failure.dag_id),
+                    ("task_id", failure.task_id),
+                    ("diagnosis", diagnosis.kind.value),
+                    ("confidence", diagnosis.confidence),
+                    ("evidence_source", diagnosis.source.value),
+                    ("evidence_status", diagnosis.status.value),
+                ),
+            )
+
+        return await self._bounded_map(diagnoses, remember)
 
     async def _verified_omission_ids(
         self,
@@ -261,11 +309,7 @@ class ProductionSupportWorkflow:
         source = self._source
         if not isinstance(source, AirflowSuccessSource):
             return ()
-        candidates = tuple(
-            failure
-            for failure in failures
-            if config.configured_omission_group(failure) is not None
-        )
+        candidates = tuple(filter(config.configured_omission_group, failures))
 
         async def verify(failure: AirflowFailure) -> str | None:
             recovered = await source.has_success_within(

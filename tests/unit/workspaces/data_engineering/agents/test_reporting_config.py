@@ -58,6 +58,24 @@ def test_default_omissions_register_mi3_subscriber_and_log_cleanup() -> None:
     assert config.omission_codes((failure,)) == ("log_cleanup",)
 
 
+def test_cmm_omission_matches_credit_migration_matrix_visualization() -> None:
+    failure = AirflowFailure(
+        region=Region.US_01,
+        dag_id="l3-main-cb635fb3-df32-4dd0-9f4f-258959ef8d15",
+        run_id="manual__2026-09-26T05:00:00+00:00",
+        task_id=(
+            "credit_migration_matrix_visualization.credit_migration_matrix_visual"
+        ),
+        start_at=datetime(2026, 9, 27, 9, tzinfo=UTC),
+        end_at=datetime(2026, 9, 27, 10, 19, tzinfo=UTC),
+    )
+
+    assert (
+        ProdSupportReportConfig().configured_omission_group(failure)
+        is DataInternalOmissionGroup.CMM
+    )
+
+
 def test_shorthand_codes_include_only_mi3_and_d2p_in_canonical_order() -> None:
     failures = (
         AirflowFailure(

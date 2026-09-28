@@ -143,7 +143,7 @@ expected_prod_support_message: |
     - Scotiabank (1f0) failed on account_level_opportunity_draw_schedule_history with timeout
     - Scotiabank (1f0), Scotiabank DV (b49), CIBC Canada Validation (cef), and CIBC Canada (fbf) failed on validate_event_bus_opportunities
 expected_mcp_follow_up_message: |
-  Do you approve these re-runs?
+  Reply with follow up to execute these re-runs:
   - Scotiabank (1f0): account_level_opportunity_draw_schedule_history
 follow_on_message: |
   Follow Ups:

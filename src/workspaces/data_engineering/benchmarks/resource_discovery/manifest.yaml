@@ -1,11 +1,11 @@
 schema_version: 1
 benchmark_id: data_engineering.resource_operations.resource_discovery
 display_name: resource-discovery
-version: 1.0.0
+version: 1.2.0
 group: resource_operations
-description: Evaluate deterministic lookup and reporting of synthetic client resources.
+description: Evaluate deterministic resource lookup, reporting, and cautious alias memory.
 dataset:
-  root: src/workspaces/data_engineering/benchmarks/resource_discovery/dates
+  root: src/workspaces/data_engineering/benchmarks/resource_discovery
   capture_window_days: 0
 evaluation:
   layers:
@@ -17,6 +17,7 @@ evaluation:
     - uncertainty_reporting
     - evidence_safety
 public_assets:
-  - assets/case_001.json
-  - assets/case_002.json
-  - assets/case_003.json
+  - case-001/asset.json
+  - case-002/asset.json
+  - case-003/asset.json
+  - case-004/asset.json

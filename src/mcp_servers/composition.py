@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
-from domain import AgentRequest
+from domain import AgentRequest, Scalar
 from observability import (
     current_trace_metadata,
     extracted_trace_context,
@@ -117,12 +117,25 @@ def bind_workspace_agent(agent: WorkspaceAgent) -> AgentMcpBinding:
     async def invoke(arguments: Mapping[str, Any]) -> Mapping[str, Any]:
         prompt = arguments.get("prompt")
         correlation_id = arguments.get("correlation_id")
+        request_attributes = arguments.get("attributes", {})
         if not isinstance(prompt, str) or not prompt.strip():
             msg = "MCP agent tool requires a non-empty string 'prompt'"
             raise ValueError(msg)
         if not isinstance(correlation_id, str) or not correlation_id.strip():
             msg = "MCP agent tool requires a non-empty string 'correlation_id'"
             raise ValueError(msg)
+        if not isinstance(request_attributes, Mapping):
+            msg = "MCP agent tool 'attributes' must be an object"
+            raise TypeError(msg)
+        attributes: list[tuple[str, Scalar]] = []
+        for name, value in request_attributes.items():
+            if not isinstance(name, str) or not isinstance(
+                value,
+                (str, int, float, bool, type(None)),
+            ):
+                msg = "MCP agent attributes must contain scalar string keys"
+                raise TypeError(msg)
+            attributes.append((name, value))
         async with traced_operation(
             f"mcp.run_{mcp_name}",
             attributes={
@@ -133,7 +146,11 @@ def bind_workspace_agent(agent: WorkspaceAgent) -> AgentMcpBinding:
             context=extracted_trace_context(arguments),
         ):
             result = await agent.run(
-                AgentRequest(prompt=prompt, correlation_id=correlation_id)
+                AgentRequest(
+                    prompt=prompt,
+                    correlation_id=correlation_id,
+                    attributes=tuple(attributes),
+                )
             )
             warning = insufficient_benchmark_warning(definition.name)
             return {

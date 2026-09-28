@@ -1,0 +1,39 @@
+schema_version: 1
+benchmark_id: data_engineering.resource_operations.resource_discovery
+description: Evaluate deterministic resource lookup and cautious alias memory.
+layers:
+  capabilities:
+    description: Test resource lookup and scoped alias-memory behavior.
+    fixtures:
+      - case-001/capability.yaml
+      - case-002/capability.yaml
+      - case-003/capability.yaml
+      - case-004/capability.yaml
+    dimensions:
+      - query_accuracy
+      - result_completeness
+      - uncertainty_reporting
+      - cross_conversation_memory
+      - promotion_threshold
+      - evidence_safety
+  system:
+    description: Test complete prompt-to-report and alias-memory workflows.
+    cases:
+      - case-001
+      - case-002
+      - case-003
+      - case-004
+public_assets:
+  - case-001/asset.json
+  - case-002/asset.json
+  - case-003/asset.json
+  - case-004/asset.json
+system_cases:
+  - case-001
+  - case-002
+  - case-003
+  - case-004
+hidden_expectations:
+  - hidden/expected_results.yaml
+  - hidden/resource_query_rubric.yaml
+  - hidden/alias_memory_rubric.yaml

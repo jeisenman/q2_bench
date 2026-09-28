@@ -6,48 +6,48 @@
       "record_id": "syn-record-003",
       "resource_type": "client",
       "client_guid": "00000000-0000-4000-8000-000000000301",
-      "client_name": "Orchid Valley Financial",
-      "provisioned_client_id": "ovf-301",
-      "subdomain": "orchid-valley-east",
+      "client_name": "Scotiabank",
+      "provisioned_client_id": "benchmark-client-301",
+      "subdomain": "benchmark-301-east",
       "environment": "production",
       "zone": "us-east",
       "service": "application",
       "resource_set": "core",
       "database": {
         "server": "syn-db-east-02",
-        "name": "orchid_valley_core"
+        "name": "benchmark_client_301"
       },
       "storage": {
-        "account": "synstorchidvalleyeast",
+        "account": "synstbenchmark301east",
         "container": "client-data"
       },
       "datalake": {
         "account": "syn-dl-east-02",
-        "filesystem": "orchid-valley-east"
+        "filesystem": "benchmark-301-east"
       }
     },
     {
       "record_id": "syn-record-004",
       "resource_type": "client",
       "client_guid": "00000000-0000-4000-8000-000000000302",
-      "client_name": "Orchid Valley Financial",
-      "provisioned_client_id": "ovf-302",
-      "subdomain": "orchid-valley-west",
+      "client_name": "Scotiabank",
+      "provisioned_client_id": "benchmark-client-302",
+      "subdomain": "benchmark-302-west",
       "environment": "staging",
       "zone": "us-west",
       "service": "application",
       "resource_set": "core",
       "database": {
         "server": "syn-db-west-02",
-        "name": "orchid_valley_core"
+        "name": "benchmark_client_302"
       },
       "storage": {
-        "account": "synstorchidvalleywest",
+        "account": "synstbenchmark302west",
         "container": "client-data"
       },
       "datalake": {
         "account": "syn-dl-west-02",
-        "filesystem": "orchid-valley-west"
+        "filesystem": "benchmark-302-west"
       }
     }
   ]

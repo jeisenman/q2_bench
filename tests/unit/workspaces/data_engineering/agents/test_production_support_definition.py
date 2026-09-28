@@ -28,8 +28,12 @@ def test_build_agent_definition_uses_documented_prompt() -> None:
         "You are a helpful production operations agent."
     )
     assert "ClusterAgent" in definition.instructions
-    assert "AirflowAgent" in definition.instructions
-    assert "Slack-friendly mrkdwn" in definition.instructions
+    assert "TriageManager" in definition.instructions
+    assert (
+        "Present only data_internal_message as Slack-friendly mrkdwn"
+        in definition.instructions
+    )
+    assert "follow_up_message verbatim as plain text" in definition.instructions
     assert "Use no code fences" in definition.instructions
 
 
@@ -64,9 +68,9 @@ def test_prompt_registry_reports_available_prompts() -> None:
     with pytest.raises(
         KeyError,
         match=(
-            "available prompts: airflow_agent, bench_builder_agent, cluster_agent, "
+            "available prompts: bench_builder_agent, cluster_agent, "
             "follow_up_agent, orchestrator, production_benchmark_judge, "
-            "reporter, triage_agent"
+            "reporter, triage_manager"
         ),
     ):
         prompts.render("missing")

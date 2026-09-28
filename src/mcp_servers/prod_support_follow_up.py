@@ -9,10 +9,10 @@ from workspaces.data_engineering.agents.production_support import (
     FollowUpAgent,
     Region,
     RetryCandidate,
-    RetryPlan,
 )
 
 SOURCE_ENV = "PROD_SUPPORT_SOURCE"
+REGIONAL_VALIDATION_URL_COUNT = 2
 
 
 class FollowUpToolError(ValueError):
@@ -24,9 +24,9 @@ class FollowUpToolError(ValueError):
         return cls("invalid prod-support retry candidate")
 
     @classmethod
-    def plan_mismatch(cls) -> FollowUpToolError:
-        """Return an error when approval does not match the dry run."""
-        return cls("approved plan ID does not match the current dry-run plan")
+    def invalid_validation_urls(cls) -> FollowUpToolError:
+        """Return an error when both regional validation links are unavailable."""
+        return cls("follow-up requires the original US and CA validation URLs")
 
 
 class FollowUpConfigurationError(RuntimeError):
@@ -70,31 +70,16 @@ def candidate_input(value: dict[str, object]) -> RetryCandidate:
         raise FollowUpToolError.invalid_candidate() from error
 
 
-async def plan_prod_support_follow_up(
-    direction: str,
-    retry_candidates: list[dict[str, object]],
-) -> dict[str, object]:
-    """Return an exact Airflow retry plan without mutating production."""
-    candidates = tuple(candidate_input(item) for item in retry_candidates)
-    return _plan_output(await _follow_up_agent().plan(direction, candidates))
-
-
 async def execute_prod_support_follow_up(
     direction: str,
     retry_candidates: list[dict[str, object]],
-    plan_id: str,
-    approval_id: str,
+    validation_urls: list[str],
 ) -> dict[str, object]:
-    """Revalidate and execute an operator-approved retry plan."""
+    """Execute developer-authorized retries and return regional validation links."""
     candidates = tuple(candidate_input(item) for item in retry_candidates)
-    agent = _follow_up_agent()
-    plan = await agent.plan(direction, candidates)
-    if plan.plan_id != plan_id:
-        raise FollowUpToolError.plan_mismatch()
-    states = await agent.execute(plan, approval_id)
+    links = _validation_urls(validation_urls)
+    states = await _follow_up_agent().execute(direction, candidates)
     return {
-        "plan_id": plan.plan_id,
-        "approval_id": approval_id,
         "task_instances": [
             {
                 "region": item.region.value,
@@ -105,6 +90,8 @@ async def execute_prod_support_follow_up(
             }
             for item in states
         ],
+        "links": links,
+        "validation_urls": links,
     }
 
 
@@ -114,20 +101,10 @@ def _follow_up_agent() -> FollowUpAgent:
     return FollowUpAgent(AirflowApiSource.from_environment())
 
 
-def _plan_output(plan: RetryPlan) -> dict[str, object]:
-    return {
-        "plan_id": plan.plan_id,
-        "direction": plan.direction,
-        "candidates": [candidate_output(item) for item in plan.candidates],
-        "task_instances": [
-            {
-                "region": item.region.value,
-                "dag_id": item.dag_id,
-                "run_id": item.run_id,
-                "task_id": item.task_id,
-                "state": item.state,
-            }
-            for item in plan.task_instances
-        ],
-        "approval_required": True,
-    }
+def _validation_urls(values: list[str]) -> tuple[str, str]:
+    links = tuple(value.strip() for value in values if value.strip())
+    has_us = any("airflow-us01" in item for item in links)
+    has_ca = any("airflow-ca02" in item for item in links)
+    if len(links) != REGIONAL_VALIDATION_URL_COUNT or not has_us or not has_ca:
+        raise FollowUpToolError.invalid_validation_urls()
+    return links[0], links[1]

@@ -6,24 +6,24 @@
       "record_id": "syn-record-002",
       "resource_type": "client",
       "client_guid": "00000000-0000-4000-8000-000000000201",
-      "client_name": "Cedar Lantern Mutual",
-      "provisioned_client_id": "clm-201",
-      "subdomain": "cedar-lantern",
+      "client_name": "Busey Bank",
+      "provisioned_client_id": "benchmark-client-201",
+      "subdomain": "benchmark-201",
       "environment": "production",
       "zone": "us-central",
       "service": "application",
       "resource_set": "core",
       "database": {
         "server": "syn-db-central-01",
-        "name": "cedar_lantern_core"
+        "name": "benchmark_client_201"
       },
       "storage": {
-        "account": "synstcedarlantern01",
+        "account": "synstbenchmark201",
         "container": "client-data"
       },
       "datalake": {
         "account": "syn-dl-central-01",
-        "filesystem": "cedar-lantern"
+        "filesystem": "benchmark-201"
       }
     }
   ]

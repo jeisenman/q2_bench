@@ -60,9 +60,13 @@ class JsonClientLookupSource:
         """Return indexed records without network access."""
         return self.index.lookup(identifier)
 
+    async def alias_candidates(self, alias: str) -> tuple[ResourceRecord, ...]:
+        """Return deterministic acronym candidates from the local index."""
+        return self.index.alias_candidates(alias)
+
 
 class IndexedResourceDiscoverySource:
-    """Prefer a unique API result and fall back to the local client index."""
+    """Short-circuit unique local identities before querying the live API."""
 
     def __init__(
         self,
@@ -77,12 +81,23 @@ class IndexedResourceDiscoverySource:
         self,
         identifier: ResourceIdentifier,
     ) -> tuple[ResourceRecord, ...]:
-        """Return a unique live result or an authoritative indexed fallback."""
-        records = await self.primary.lookup(identifier)
-        if len(records) == 1:
-            return records
+        """Return a unique local result or query the live provider."""
         indexed = await self.fallback.lookup(identifier)
-        return indexed or records
+        if len(indexed) == 1:
+            return indexed
+        records = await self.primary.lookup(identifier)
+        return records or indexed
+
+    async def alias_candidates(self, alias: str) -> tuple[ResourceRecord, ...]:
+        """Return local authoritative candidates without a network request."""
+        return await self.fallback.alias_candidates(alias)
+
+    async def lookup_local(
+        self,
+        identifier: ResourceIdentifier,
+    ) -> tuple[ResourceRecord, ...]:
+        """Return local exact matches without invoking the live API."""
+        return await self.fallback.lookup(identifier)
 
 
 def configured_client_lookup_path() -> Path:

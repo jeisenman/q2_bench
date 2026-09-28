@@ -41,10 +41,10 @@ uv run python scripts/check.py
 ## Review status
 
 This suite starts the handoff-contract benchmark design on September 27 only.
-It does not retrofit v1 runs or use their expectations. Six focused cases
-invoke ClusterAgent, AirflowAgent, TriageAgent, FollowUpAgent, Reporter, and
-BenchBuilderAgent. The full BenchBuilder case requires Cluster and Airflow to
-finish before Reporter, then invokes BenchBuilder without replacing Reporter's
+It does not retrofit v1 runs or use their expectations. Five focused cases
+invoke ClusterAgent, TriageManager, FollowUpAgent, Reporter, and
+BenchBuilderAgent. The full BenchBuilder case requires Cluster and TriageManager
+to finish before Reporter, then invokes BenchBuilder without replacing Reporter's
 authoritative production-support output. Judge results include named
 `handoff_scores` for invocation, payload validity, ordering, and score.
 

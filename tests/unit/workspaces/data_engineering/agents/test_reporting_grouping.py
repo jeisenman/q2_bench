@@ -164,7 +164,7 @@ def test_data_internal_retains_high_value_causes() -> None:
 
     assert "with OOM" in report.data_internal
     assert "with timeout" in report.data_internal
-    assert "with distinctness validation errors" in report.data_internal
+    assert "failed DV" in report.data_internal
 
 
 def test_cmm_is_excluded_from_data_internal_and_follow_up_by_default() -> None:
@@ -190,7 +190,7 @@ def test_cmm_is_excluded_from_data_internal_and_follow_up_by_default() -> None:
     assert "Do you approve re-running" not in report.follow_up
 
 
-def test_mi3_and_d2p_omissions_use_regional_shorthand() -> None:
+def test_mi3_and_d2p_omissions_are_hidden() -> None:
     client_id = "11111111-1111-4111-8111-111111111111"
     failures = (
         _failure(client_id, "delivery_to_promise.delivery_to_promise_data"),
@@ -207,7 +207,7 @@ def test_mi3_and_d2p_omissions_use_regional_shorthand() -> None:
         ),
     )
 
-    assert "CA\n- Ongoing\n  - MI3, D2P" in report.data_internal
-    assert report.data_internal.count("D2P") == 1
-    assert report.data_internal.count("MI3") == 1
+    assert "CA\n- Good" in report.data_internal
+    assert "D2P" not in report.data_internal
+    assert "MI3" not in report.data_internal
     assert "Client A (111)" not in report.data_internal

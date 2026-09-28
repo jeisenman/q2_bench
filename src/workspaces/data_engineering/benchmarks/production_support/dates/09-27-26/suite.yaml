@@ -22,8 +22,8 @@ layers:
   coordination:
     description: Test case-specific orchestration and benchmark-building handoffs.
     dimensions:
-      - cluster_airflow_parallelization
-      - triage_placeholder
+      - cluster_triage_parallelization
+      - triage_short_circuiting
       - follow_up_approval
       - reporter_authority
       - bench_builder_trigger
@@ -35,8 +35,7 @@ layers:
       - prod-support-us-ca-operational-2026-09-26
       - mcp-prod-support-yesterday-2026-09-26
       - handoff-cluster-agent-2026-09-26
-      - handoff-airflow-agent-2026-09-26
-      - handoff-triage-agent-2026-09-26
+      - handoff-triage-manager-2026-09-26
       - handoff-follow-up-agent-2026-09-26
       - handoff-reporter-2026-09-26
       - handoff-bench-builder-agent-2026-09-26

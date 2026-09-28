@@ -28,7 +28,7 @@ from mcp_servers.prod_support import (
     setup_prod_support,
 )
 from mcp_servers.prod_support_output import retry_approval_message
-from mcp_servers.prod_support_sources import EmptyAirflowFailureSource
+from mcp_servers.prod_support_sources import EmptyAirflowFailureSource, memory
 from workspaces.data_engineering.agents.production_support import (
     ReplayAirflowFailureSource,
 )
@@ -41,7 +41,7 @@ from workspaces.data_engineering.agents.resource_discovery import (
 )
 
 EXPECTED_REGION_COUNT = 2
-EXPECTED_BENCHMARK_CASE_COUNT = 8
+EXPECTED_BENCHMARK_CASE_COUNT = 7
 PRIVATE_DIRECTORY_MODE = 0o700
 PRIVATE_FILE_MODE = 0o600
 
@@ -57,7 +57,7 @@ def test_retry_approval_message_lists_only_exact_candidates() -> None:
     )
 
     assert retry_approval_message((candidate,)) == (
-        "Do you approve these re-runs?\n"
+        "Reply with follow up to execute these re-runs:\n"
         "- Scotiabank (1f0): account_level_opportunity_draw_schedule_history"
     )
 
@@ -99,7 +99,7 @@ def test_mcp_tool_runs_prod_support_agent(
     assert len(result["validation_urls"]) == EXPECTED_REGION_COUNT
     assert result["links"] == result["validation_urls"]
     assert result["follow_up"] == "- No action is required."
-    assert result["follow_up_message"] == "No re-runs require approval."
+    assert result["follow_up_message"] == "No re-runs are available."
     assert result["attributes"]["service"] == "orders"
     assert result["attributes"]["data_internal_omissions"] == [
         "d2p",
@@ -116,8 +116,7 @@ def test_mcp_tool_runs_prod_support_agent(
     assert result["tool_calls"] == (
         "run_prod_support",
         "DelegateToClusterAgent",
-        "DelegateToAirflowAgent",
-        "DelegateToTriageAgent",
+        "DelegateToTriageManager",
         "DelegateToFollowUpAgent",
         "DelegateToReporter",
         "DelegateToBenchBuilderAgent",
@@ -154,7 +153,7 @@ def test_mcp_builds_benchmark_without_replacing_prod_support_fields(
     assert result["message_for_developer"] == result["developer_report"]
     assert result["message_for_data_internal"] == result["data_internal_report"]
     assert result["follow_up"] == "- No action is required."
-    assert result["follow_up_message"] == "No re-runs require approval."
+    assert result["follow_up_message"] == "No re-runs are available."
     assert benchmark["review_required"] is True
     assert Path(benchmark["case"]).is_file()
     assert Path(benchmark["expected_behavior"]).is_file()
@@ -320,6 +319,7 @@ def test_mcp_source_defaults_to_safe_empty(
     assert isinstance(_source(), EmptyAirflowFailureSource)
     assert _resource_discovery() is None
     assert _report_runtime() is None
+    assert memory() is None
 
 
 @pytest.mark.parametrize(

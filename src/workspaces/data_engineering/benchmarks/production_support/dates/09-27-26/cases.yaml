@@ -86,12 +86,12 @@ cases:
           max_calls: 1
           required_input_fields: [regions, operational_start, operational_end]
           required_output_fields: [region, status, observed_at, evidence]
-        - name: AirflowAgent
+        - name: TriageManager
           parent: Orchestrator
           min_calls: 1
           max_calls: 1
-          required_input_fields: [regions, operational_start, operational_end, omitted_jobs]
-          required_output_fields: [developer_message, failures, classifications]
+          required_input_fields: [failures, omitted_jobs]
+          required_output_fields: [failures, classifications]
         - name: Reporter
           parent: Orchestrator
           min_calls: 1
@@ -102,14 +102,15 @@ cases:
     expected_mcp_tool: run_prod_support
     required_response_fields:
       [links, developer_message, data_internal_message, follow_up_message]
-    response_format: slack_mrkdwn
+    response_format: data_internal_slack_mrkdwn
     instructions:
       - Invoke run_prod_support exactly once for "Do prod support"
       - Present the MCP fields as Slack-friendly mrkdwn without code fences
       - Resolve the default scope to US and CA and the date to the previous operational day
-      - Start exactly one Cluster handoff and one Airflow handoff concurrently
-      - Keep Cluster, Airflow, and Reporting as leaf agents with no nested delegation
-      - Run one Reporting pass only after Cluster and Airflow return
+      - Start exactly one Cluster handoff and one TriageManager handoff concurrently
+      - Give TriageManager the complete failure inventory in one call
+      - Query direct Airflow or OMS evidence before fetching unresolved task logs
+      - Run one Reporting pass only after Cluster and TriageManager return
       - Return the complete Reporting output verbatim without orchestrator rewriting
       - Keep every finding under its source region and never mix US and CA
       - Do not issue contradictory cluster-health verdicts from the same evidence
@@ -140,8 +141,8 @@ cases:
       - Invoke run_prod_support exactly once
       - Resolve yesterday to the prior 05:00 UTC operational day
       - Return every required MCP field without rewriting it
-      - Present the response as Slack-friendly mrkdwn without code fences
-      - Begin follow_up_message with "Do you approve these re-runs?" when reruns exist
+      - Present only data_internal_message as Slack-friendly mrkdwn
+      - Begin follow_up_message with "Reply with follow up to execute these re-runs:" when reruns exist
   - id: handoff-cluster-agent-2026-09-26
     reference_time: "2026-09-27T16:00:00Z"
     prompt: Check US and CA production cluster health for the operational day.
@@ -165,9 +166,9 @@ cases:
     instructions:
       - Invoke ClusterAgent exactly once with both requested regions and the exact window
       - Return its complete regional health findings without inventing missing evidence
-  - id: handoff-airflow-agent-2026-09-26
+  - id: handoff-triage-manager-2026-09-26
     reference_time: "2026-09-27T16:00:00Z"
-    prompt: Find Airflow failures for US and CA for the operational day.
+    prompt: Triage all US and CA Airflow failures for the operational day.
     dataset_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
     candidate_inputs:
       - src/workspaces/data_engineering/benchmarks/production_support/compact_brief.py
@@ -180,38 +181,18 @@ cases:
     evaluation_applicability: *handoff_applicability
     handoff_contract:
       max_parallel: 1
-      output_authority: AirflowAgent
+      output_authority: TriageManager
       agents:
-        - name: AirflowAgent
+        - name: TriageManager
           parent: Orchestrator
           min_calls: 1
           max_calls: 1
-          required_input_fields: [regions, operational_start, operational_end, omitted_jobs]
-          required_output_fields: [developer_message, failures, classifications]
+          required_input_fields: [failures, omitted_jobs]
+          required_output_fields: [failures, classifications]
     instructions:
-      - Invoke AirflowAgent exactly once and preserve one bullet per failed task instance
-      - Use baseline script results for omitted jobs and analyze other failures
-  - id: handoff-triage-agent-2026-09-26
-    reference_time: "2026-09-27T16:00:00Z"
-    prompt: Ask TriageAgent to triage the supplied production failure.
-    dataset_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
-    operational_window:
-      start: "2026-09-26T05:00:00Z"
-      end: "2026-09-27T05:00:00Z"
-    evaluation_applicability: *handoff_applicability
-    handoff_contract:
-      max_parallel: 1
-      output_authority: TriageAgent
-      agents:
-        - name: TriageAgent
-          parent: Orchestrator
-          min_calls: 1
-          max_calls: 1
-          required_input_fields: [failure]
-          required_output_fields: [message]
-          expected_mode: placeholder
-    instructions:
-      - Return exactly "Triage agent hasn't been setup."
+      - Invoke TriageManager exactly once with the complete failure inventory
+      - Stop on resolved failure messages or OMS evidence
+      - Fetch exact task logs only for unresolved failures
   - id: handoff-follow-up-agent-2026-09-26
     reference_time: "2026-09-27T16:00:00Z"
     prompt: Plan follow-up retries for the eligible failed Airflow tasks.
@@ -228,12 +209,13 @@ cases:
           parent: Orchestrator
           min_calls: 1
           max_calls: 1
-          required_input_fields: [direction, retry_candidates]
-          required_output_fields: [plan_id, task_instances, approval_required]
-          expected_mode: plan_only
+          required_input_fields: [direction, retry_candidates, validation_urls]
+          required_output_fields: [task_instances, validation_urls]
+          expected_mode: execute
     instructions:
-      - Build an exact retry plan but do not execute it without explicit approval
+      - Treat the developer follow-up as authorization and execute exact retries
       - Preserve region, DAG ID, run ID, and task ID for each candidate
+      - Return the original US and CA validation links
   - id: handoff-reporter-2026-09-26
     reference_time: "2026-09-27T16:00:00Z"
     prompt: Render the completed production-support handoffs into the final report.
@@ -283,17 +265,17 @@ cases:
           max_calls: 1
           required_input_fields: [regions, operational_start, operational_end]
           required_output_fields: [region, status, observed_at, evidence]
-        - name: AirflowAgent
+        - name: TriageManager
           parent: Orchestrator
           min_calls: 1
           max_calls: 1
-          required_input_fields: [regions, operational_start, operational_end, omitted_jobs]
-          required_output_fields: [developer_message, failures, classifications]
+          required_input_fields: [failures, omitted_jobs]
+          required_output_fields: [failures, classifications]
         - name: Reporter
           parent: Orchestrator
           min_calls: 1
           max_calls: 1
-          required_input_fields: [cluster_findings, airflow_findings, follow_up]
+          required_input_fields: [cluster_findings, triage_findings, follow_up]
           required_output_fields: [full_report, developer, data_internal, follow_up]
         - name: BenchBuilderAgent
           parent: Orchestrator

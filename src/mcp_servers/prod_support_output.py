@@ -29,12 +29,12 @@ def format_mcp_output(outcome: ProdSupportOutcome) -> str:
 
 
 def retry_approval_message(candidates: tuple[RetryCandidate, ...]) -> str:
-    """Return the generic approval prompt for eligible exact reruns."""
+    """Return the direct follow-up instruction for eligible exact reruns."""
     if not candidates:
-        return "No re-runs require approval."
+        return "No re-runs are available."
     return "\n".join(
         (
-            "Do you approve these re-runs?",
+            "Reply with follow up to execute these re-runs:",
             *(f"- {candidate.label}" for candidate in candidates),
         )
     )

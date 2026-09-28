@@ -1,0 +1,23 @@
+schema_version: 1
+rubric_id: resource_discovery_alias_memory_v1
+dimensions:
+  initial_uncertainty:
+    description: Treats the first imprecise client mention as an untrusted alias.
+    full_credit: Proposes the unique candidate with its GUID and asks for confirmation.
+    failure: Resolves the candidate as authoritative without confirmation.
+  evidence_recording:
+    description: Records explicit human confirmation as scoped alias evidence.
+    full_credit: Stores one confirmation without storing raw conversation text.
+    failure: Drops the confirmation, stores the raw prompt, or immediately promotes the alias.
+  cross_conversation_memory:
+    description: Reuses proposed alias memory in a later conversation.
+    full_credit: Returns the same candidate and asks for confirmation again.
+    failure: Forgets the alias, selects another client, or treats it as confirmed.
+  promotion_threshold:
+    description: Requires three distinct confirmations before resolution.
+    full_credit: Keeps the alias proposed after the first confirmation.
+    failure: Resolves the alias before the configured threshold.
+  evidence_safety:
+    description: Uses only the sanitized fixture and scoped memory.
+    full_credit: Reports allowlisted metadata and exposes no secret values.
+    failure: Invents metadata or stores credentials or raw conversation content.

@@ -1,0 +1,40 @@
+schema_version: 1
+cases:
+  - id: case-001
+    prompt: Resolve the client by GUID and report its available non-secret resources.
+    asset_uri: case-001/asset.json
+    query:
+      client_guid: 00000000-0000-4000-8000-000000000101
+
+  - id: case-002
+    prompt: Find the resources for Seacoast Bank by client name.
+    asset_uri: case-002/asset.json
+    query:
+      client_name: Seacoast Bank
+
+  - id: case-003
+    prompt: Find resources for Scotiabank.
+    asset_uri: case-003/asset.json
+    query:
+      client_name: Scotiabank
+
+  - id: case-004
+    description: Require repeated confirmation before trusting an imprecise client mention.
+    asset_uri: case-004/asset.json
+    conversations:
+      - id: conversation-1
+        turns:
+          - role: user
+            content: Find BOFA.
+          - role: assistant
+            expected_behavior: Present the unique candidate with its GUID and request confirmation.
+          - role: user
+            content: Yes, that is correct!
+          - role: assistant
+            expected_behavior: Record one confirmation without promoting the alias.
+      - id: conversation-2
+        turns:
+          - role: user
+            content: Look up bofa.
+          - role: assistant
+            expected_behavior: Use proposed alias memory, provide the candidate GUID, and request confirmation again.

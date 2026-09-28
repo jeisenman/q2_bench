@@ -44,9 +44,8 @@ class DataInternalReporter:
                 for item in all_regional
                 if include_in_data_internal(item, findings.config)
             )
-            shorthand = findings.config.shorthand_codes(all_regional)
             lines.append(label)
-            lines.append("- Ongoing" if regional or shorthand else "- Good")
+            lines.append("- Ongoing" if regional else "- Good")
             lines.extend(
                 line
                 for group in group_failures_for_reporting(regional, identities)
@@ -56,6 +55,4 @@ class DataInternalReporter:
                     identities,
                 )
             )
-            if not regional and shorthand:
-                lines.append(f"  - {', '.join(shorthand)}")
         return "\n".join(lines).replace(".", "")

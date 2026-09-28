@@ -17,6 +17,7 @@ from workspaces.data_engineering.agents.production_support.reporting_config impo
 )
 from workspaces.data_engineering.agents.production_support.reporting_details import (
     ClientIdentity,
+    FailureGroup,
     client_id,
     client_identities,
     event_count,
@@ -99,7 +100,7 @@ def _format_follow_up(
     unresolved = _unresolved_client_labels(actionable_failures, identities)
     actions = (
         [
-            "  - Ask a human to resolve the client identity for "
+            "- Ask a human to resolve the client identity for "
             f"{_join_terms(unresolved)} before proposing remediation for date "
             f"{operational_date.strftime('%m-%d-%y')}."
         ]
@@ -114,7 +115,7 @@ def _format_follow_up(
         and not _has_unresolved_client(failure, identities)
     )
     if rerun_failures:
-        actions.append("  - Do you approve re-running the following jobs:")
+        actions.append("- Would you like to re-run:")
         regions = sorted(
             {failure.region for failure in rerun_failures},
             key=lambda region: region.value,
@@ -123,7 +124,7 @@ def _format_follow_up(
             regional = tuple(
                 failure for failure in rerun_failures if failure.region is region
             )
-            for group in group_failures_for_reporting(regional, identities):
+            for group in _group_reruns_by_subject(regional, identities):
                 kpo = (
                     f"; also move to [KPO sizing agent]({KPO_SIZER_AGENT_URI})"
                     if any(
@@ -132,14 +133,54 @@ def _format_follow_up(
                     )
                     else ""
                 )
+                dag_ids = tuple(
+                    dict.fromkeys(failure.dag_id for failure in group.failures)
+                )
+                displayed_dag_ids = tuple(
+                    dag_id for dag_id in dag_ids if dag_id not in group.subject_labels
+                )
+                dag_text = (
+                    f" {_join_terms(displayed_dag_ids)}" if displayed_dag_ids else ""
+                )
+                job_suffix = "job" if len(group.jobs) == 1 else "jobs"
                 actions.append(
-                    f"    - {_join_terms(group.subject_labels)}: "
-                    f"{_join_terms(group.jobs)} for "
-                    f"{operational_date.isoformat()}{kpo}"
+                    f"  - {_join_terms(group.subject_labels)}{dag_text} "
+                    f"{_join_terms(group.jobs)} "
+                    f"{job_suffix}{kpo}"
                 )
     if not actions:
         return "- No action is required."
-    return "\n".join(("- Would you like to:", *actions))
+    return "\n".join(actions)
+
+
+def _group_reruns_by_subject(
+    failures: tuple[AirflowFailure, ...],
+    identities: dict[str, ClientIdentity],
+) -> tuple[FailureGroup, ...]:
+    """Group rerun choices by one client so bullets never combine clients."""
+    grouped = group_failures_for_reporting(failures, identities)
+    by_subject: dict[str, list[AirflowFailure]] = {}
+    for group in grouped:
+        for failure in group.failures:
+            subject = failure_subject(failure, identities)
+            by_subject.setdefault(subject, []).append(failure)
+    return tuple(
+        FailureGroup(
+            (subject,),
+            tuple(
+                dict.fromkeys(
+                    job for failure in subject_failures for job in _rerun_jobs(failure)
+                )
+            ),
+            tuple(subject_failures),
+        )
+        for subject, subject_failures in sorted(by_subject.items())
+    )
+
+
+def _rerun_jobs(failure: AirflowFailure) -> tuple[str, ...]:
+    """Return concise task names while preserving validated task identity."""
+    return (failure.task_id.rsplit(".", maxsplit=1)[-1],)
 
 
 def _unresolved_client_labels(
@@ -198,18 +239,18 @@ def _resend_actions(
             ).append(candidate)
 
     actions = [
-        f"  - Follow up with pd-rix about {candidate.count:,} opportunities "
+        f"- Follow up with pd-rix about {candidate.count:,} opportunities "
         f"for {candidate.label} for date {candidate.resend_date}."
         for candidate in large_unrouted
         if candidate.count is not None
     ]
     actions.extend(
-        "  - Ask a human to identify the production resend application "
+        "- Ask a human to identify the production resend application "
         f"environment for {_join_terms(tuple(labels))} for date {resend_date}."
         for resend_date, labels in sorted(missing_routes.items())
     )
     actions.extend(
-        "  - Ask a human to confirm the opportunity count for "
+        "- Ask a human to confirm the opportunity count for "
         f"{_join_terms(tuple(labels))} on "
         f"[Resend Opportunity Snapshots]({url}) for date {resend_date}."
         for (resend_date, url), labels in sorted(missing_counts.items())
@@ -219,12 +260,12 @@ def _resend_actions(
         count = sum(candidate.count or 0 for candidate in grouped)
         if count > LARGE_RESEND_THRESHOLD:
             actions.append(
-                f"  - Follow up with pd-rix about {count:,} opportunities for "
+                f"- Follow up with pd-rix about {count:,} opportunities for "
                 f"{_join_terms(labels)} on [Resend Opportunity Snapshots]({url}) "
                 f"for date {resend_date}."
             )
         actions.append(
-            f"  - Resend {count:,} opportunities for {_join_terms(labels)} on "
+            f"- Send events for {_join_terms(labels)} on "
             f"[Resend Opportunity Snapshots]({url}) for date {resend_date}."
         )
     return tuple(actions)

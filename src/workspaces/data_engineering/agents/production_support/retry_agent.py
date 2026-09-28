@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import re
 from collections import defaultdict
 from collections.abc import Mapping
@@ -30,12 +29,10 @@ from workspaces.data_engineering.agents.production_support.reporting_details imp
 )
 from workspaces.data_engineering.agents.production_support.retry_models import (
     RetryBatch,
-    RetryPlan,
     RetryTaskReference,
 )
 from workspaces.data_engineering.agents.production_support.tools import (
     EXECUTE_AIRFLOW_RETRIES,
-    PLAN_AIRFLOW_RETRIES,
 )
 
 NUMBER_PATTERN = re.compile(r"\b\d+\b")
@@ -49,28 +46,18 @@ PROD_SUPPORT_FOLLOW_UP_DEFINITION = AgentDefinition(
     instructions=(
         "Receive follow-up direction after a production-support run. Keep every "
         "candidate's source Airflow region. Interpret 'follow up', 'retry CA', "
-        "'retry all jobs', or numbered include/exclude requests. First create and "
-        "present a dry-run plan. Execute only the identical plan after explicit "
-        "approval identifies its plan ID. Never retry verified omissions, resend "
-        "tasks, unresolved clients, upstream, downstream, past, or future tasks."
+        "'retry all jobs', or numbered include/exclude requests as authorization "
+        "to execute the exact selected tasks immediately. Return the original US "
+        "and CA validation links after execution. Never retry verified omissions, "
+        "resend tasks, unresolved clients, upstream, downstream, past, or future tasks."
     ),
-    tools=(PLAN_AIRFLOW_RETRIES, EXECUTE_AIRFLOW_RETRIES),
+    tools=(EXECUTE_AIRFLOW_RETRIES,),
     version="1",
 )
 
 
 class RetryDirectionError(ValueError):
     """Raised when follow-up direction cannot select safe retry candidates."""
-
-    @classmethod
-    def approval_required(cls) -> RetryDirectionError:
-        """Return an error for execution without explicit approval."""
-        return cls("retry execution requires an approval ID")
-
-    @classmethod
-    def plan_mismatch(cls) -> RetryDirectionError:
-        """Return an error for changed retry targets."""
-        return cls("retry plan ID does not match its targets")
 
     @classmethod
     def direction_required(cls) -> RetryDirectionError:
@@ -89,7 +76,7 @@ class RetryDirectionError(ValueError):
 
 
 class FollowUpAgent:
-    """Create and execute exact, approval-gated Airflow retry plans."""
+    """Execute exact Airflow retries authorized by a developer follow-up."""
 
     definition = PROD_SUPPORT_FOLLOW_UP_DEFINITION
 
@@ -97,68 +84,32 @@ class FollowUpAgent:
         """Initialize with an injected production retry boundary."""
         self._source = source
 
-    async def plan(
+    async def execute(
         self,
         direction: str,
         candidates: tuple[RetryCandidate, ...],
-    ) -> RetryPlan:
-        """Validate a conversational selection through Airflow dry-run calls."""
+    ) -> tuple[RetryTaskReference, ...]:
+        """Select and execute retries from one developer follow-up."""
         async with traced_operation(
-            "agent.prod-support-follow-up.plan",
+            "agent.prod-support-follow-up.execute",
             attributes={
                 "q2.agent.name": self.definition.name,
                 "q2.agent.candidate_count": len(candidates),
             },
         ):
-            return await self._plan(direction, candidates)
+            return await self._execute(direction, candidates)
 
-    async def _plan(
+    async def _execute(
         self,
         direction: str,
         candidates: tuple[RetryCandidate, ...],
-    ) -> RetryPlan:
-        """Build the retry plan within its trace span."""
+    ) -> tuple[RetryTaskReference, ...]:
+        """Execute the selected retries within the trace span."""
         selected = select_retry_candidates(direction, candidates)
         batches = retry_batches(selected)
         references: list[RetryTaskReference] = []
         for batch in batches:
-            references.extend(await self._source.plan_retry(batch))
-        return RetryPlan(
-            plan_id=_plan_id(batches),
-            direction=direction,
-            candidates=selected,
-            batches=batches,
-            task_instances=tuple(references),
-        )
-
-    async def execute(
-        self,
-        plan: RetryPlan,
-        approval_id: str,
-    ) -> tuple[RetryTaskReference, ...]:
-        """Execute an approved plan and return Airflow state read-back."""
-        async with traced_operation(
-            "agent.prod-support-follow-up.execute",
-            attributes={
-                "q2.agent.name": self.definition.name,
-                "q2.agent.candidate_count": len(plan.candidates),
-            },
-        ):
-            return await self._execute(plan, approval_id)
-
-    async def _execute(
-        self,
-        plan: RetryPlan,
-        approval_id: str,
-    ) -> tuple[RetryTaskReference, ...]:
-        """Execute an approved retry plan within its trace span."""
-        if not approval_id.strip():
-            raise RetryDirectionError.approval_required()
-        if plan.plan_id != _plan_id(plan.batches):
-            raise RetryDirectionError.plan_mismatch()
-        references: list[RetryTaskReference] = []
-        for batch in plan.batches:
-            references.extend(await self._source.execute_retry(batch, approval_id))
+            references.extend(await self._source.execute_retry(batch, direction))
         return tuple(references)
 
 
@@ -255,11 +206,3 @@ def _identity_resolved(
         return True
     identity = identities.get(identifier)
     return bool(identity is not None and getattr(identity, "name", None))
-
-
-def _plan_id(batches: tuple[RetryBatch, ...]) -> str:
-    canonical = "\n".join(
-        "|".join((batch.region.value, batch.dag_id, batch.run_id, *batch.task_ids))
-        for batch in batches
-    )
-    return hashlib.sha256(canonical.encode()).hexdigest()[:16]

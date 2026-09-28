@@ -43,7 +43,7 @@ def test_groups_clients_by_date_and_link_with_deduplicated_opportunity_count() -
     )
 
     assert (
-        "Resend 2 opportunities for Client One (111) and Client Two (222) on "
+        "Send events for Client One (111) and Client Two (222) on "
         f"[Resend Opportunity Snapshots]({RESEND_URL}) for date 09-18-26."
     ) in reports.follow_up
     assert "recoverable opportunities" not in reports.follow_up

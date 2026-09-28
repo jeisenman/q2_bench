@@ -20,8 +20,7 @@ BENCH_BUILDER_NAME = "BenchBuilderAgent"
 BENCH_BUILDER_MAX_PARALLEL = 5
 BENCH_BUILDER_DELEGATES = (
     "ClusterAgent",
-    "AirflowAgent",
-    "TriageAgent",
+    "TriageManager",
     "FollowUpAgent",
     "Reporter",
 )
@@ -53,8 +52,8 @@ def bench_builder_agent_prompt() -> str:
     performing production support. Observe the completed operational handoffs
     and preserve the normal production-support report returned to the user.
 
-    Delegate bounded review tasks to ClusterAgent, AirflowAgent, TriageAgent,
-    FollowUpAgent, and Reporter when their observed behavior is required. Use
+    Delegate bounded review tasks to ClusterAgent, TriageManager, FollowUpAgent,
+    and Reporter when their observed behavior is required. Use
     no more than five delegated workers concurrently. Do not retry production
     work, change omissions, or perform any other production mutation.
 

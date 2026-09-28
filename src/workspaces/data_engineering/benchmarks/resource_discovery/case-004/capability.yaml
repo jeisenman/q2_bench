@@ -1,0 +1,9 @@
+schema_version: 1
+capability: alias_memory
+description: Require repeated human evidence before trusting a client alias.
+cases:
+  - id: case-004
+    asset_uri: case-004/asset.json
+    initial_memory_count: 0
+    confirmation_threshold: 3
+    conversation_count: 2

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic",
+  "initial_memory": [],
+  "alias_confirmation_threshold": 3,
+  "records": [
+    {
+      "record_id": "syn-bank-of-america-001",
+      "resource_type": "client",
+      "client_guid": "00000000-0000-4000-8000-000000000401",
+      "client_name": "Bank of America",
+      "environment": "production",
+      "zone": "us-east",
+      "service": "application",
+      "resource_set": "core"
+    }
+  ]
+}

@@ -91,8 +91,8 @@ def test_formats_channel_reports_and_suggestion_only_follow_up() -> None:
         ":bangbang: PROD SUPPORT 2026-09-24 :bangbang:"
     )
     assert "." not in reports.data_internal
-    assert reports.follow_up.startswith("- Would you like to:")
-    assert "Do you approve re-running the following jobs:" in reports.follow_up
+    assert reports.follow_up.startswith("- Would you like to re-run:")
+    assert "l3-main-client relationship_signals job" in reports.follow_up
     assert "Follow Ups:" in reports.combined
     assert "Message for Data Internal Channel" not in reports.combined
 
@@ -167,9 +167,13 @@ def test_reports_group_named_clients_that_fail_the_same_job() -> None:
     assert reports.developer.count(grouped) == 1
     assert reports.data_internal.count(grouped) == 1
     assert (
-        "    - Client A (111) and Client B (222): "
-        "opportunity_save_history for 2026-09-24"
-    ) in (reports.follow_up)
+        "  - Client A (111) l3-main-11111111-1111-4111-8111-111111111111 "
+        "opportunity_save_history job"
+    ) in reports.follow_up
+    assert (
+        "  - Client B (222) l3-main-22222222-2222-4222-8222-222222222222 "
+        "opportunity_save_history job"
+    ) in reports.follow_up
 
 
 def test_reports_task_embedded_client_name_and_unresolved_identity() -> None:
@@ -238,7 +242,7 @@ def test_empty_omission_override_includes_every_job() -> None:
     )
 
     assert "US\n- Ongoing\n  - l3-main-client failed on D2P" in reports.data_internal
-    assert "l3-main-client: D2P for 2026-09-24" in reports.follow_up
+    assert "l3-main-client delivery_to_promise_data job" in reports.follow_up
 
 
 def test_large_resend_uses_raw_log_count_and_pd_rix_follow_up() -> None:
@@ -314,7 +318,7 @@ def test_resend_follow_up_uses_resource_discovery_link() -> None:
     )
 
     assert (
-        "Resend 3 opportunities for Bank of Hope (111) on "
+        "Send events for Bank of Hope (111) on "
         "[Resend Opportunity Snapshots](https://ca02-app.precisionlender.com/"
         "Admin/Troubleshooting/ResendOpportunitySnapshots) for date 09-22-26."
     ) in reports.follow_up

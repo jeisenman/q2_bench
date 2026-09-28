@@ -10,8 +10,8 @@ flowchart TB
     MCP[MCP execution boundary]
 
     MCP --> AL[anti-leak<br/>11 cases]
-    MCP --> PS[production-support<br/>8 cases]
-    MCP --> RD[resource-discovery<br/>3 cases]
+    MCP --> PS[production-support<br/>7 cases]
+    MCP --> RD[resource-discovery<br/>4 cases]
     MCP --> BB[benchmark-builder<br/>0 cases]
     MCP --> DC[data-creator<br/>0 cases]
     MCP --> DF[data-finder<br/>0 cases]

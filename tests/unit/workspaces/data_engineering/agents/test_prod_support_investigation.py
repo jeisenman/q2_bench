@@ -102,22 +102,6 @@ class RecordingOms:
         return self.log
 
 
-class WaitingOms:
-    def __init__(self) -> None:
-        self.started = False
-        self.cancelled = False
-
-    async def query_job(self, parameters: OmsJobQueryParameters) -> str:
-        del parameters
-        self.started = True
-        try:
-            await asyncio.Event().wait()
-        except asyncio.CancelledError:
-            self.cancelled = True
-            raise
-        return ""
-
-
 def test_unavailable_exact_log_uses_prior_same_task_evidence() -> None:
     failure = _failure()
     prior = PriorLogs(
@@ -145,8 +129,9 @@ def test_unavailable_exact_log_uses_prior_same_task_evidence() -> None:
 def test_spark_uses_exact_oms_identity_to_strengthen_unknown_airflow_cause() -> None:
     failure = _failure()
     oms = RecordingOms("java.lang.OutOfMemoryError: Java heap space")
+    source = LogSource((failure,), "Bash command returned exit code -9")
     investigator = FailureInvestigator(
-        LogSource((failure,), "Bash command returned exit code -9"),
+        source,
         task_metadata=SparkMetadata(),
         oms=oms,
     )
@@ -161,22 +146,47 @@ def test_spark_uses_exact_oms_identity_to_strengthen_unknown_airflow_cause() -> 
     assert parameters.run_id_s == failure.run_id
     assert parameters.task_id_s == failure.task_id
     assert parameters.try_number_d == EXPECTED_TRY_NUMBER
+    assert source.fetched == []
 
 
-def test_airflow_timeout_cancels_pending_oms_query() -> None:
+def test_unresolved_oms_result_falls_back_to_airflow_log() -> None:
     failure = _failure()
-    oms = WaitingOms()
+    source = LogSource((failure,), "airflow.exceptions.AirflowTaskTimeout: Timeout")
     investigator = FailureInvestigator(
-        LogSource((failure,), "airflow.exceptions.AirflowTaskTimeout: Timeout"),
+        source,
         task_metadata=SparkMetadata(),
-        oms=oms,
+        oms=RecordingOms("job started"),
     )
 
     _, diagnosis = asyncio.run(investigator.investigate(failure))
 
     assert diagnosis.kind.value == "airflow_confirmed_timeout"
-    assert oms.started
-    assert oms.cancelled
+    assert source.fetched == [failure.failure_id]
+
+
+def test_failure_message_short_circuits_all_detailed_log_requests() -> None:
+    failure = _failure()
+    source = LogSource((failure,), "unused")
+    investigator = FailureInvestigator(source)
+
+    _, diagnosis = asyncio.run(
+        investigator.investigate(
+            AirflowFailure(
+                region=failure.region,
+                dag_id=failure.dag_id,
+                run_id=failure.run_id,
+                task_id=failure.task_id,
+                start_at=failure.start_at,
+                end_at=failure.end_at,
+                try_number=failure.try_number,
+                log="Exception: invalid source row",
+            )
+        )
+    )
+
+    assert diagnosis.kind.value == "application_error"
+    assert diagnosis.source is EvidenceSource.AIRFLOW_FAILURE_MESSAGE
+    assert source.fetched == []
 
 
 def test_agent_excludes_the_operational_window_end_boundary() -> None:
@@ -210,7 +220,7 @@ class IgnoredResourceDiscovery:
 
 
 def test_agent_filters_only_explicitly_reviewed_support_ignores() -> None:
-    failure = _failure()
+    failure = _failure(task_id="active_deposit_accounts.active_deposit_accounts")
     source = LogSource((failure,), "Exception: should not be fetched")
     agent = ProductionSupportWorkflow(
         source,

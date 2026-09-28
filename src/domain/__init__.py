@@ -5,6 +5,7 @@ from domain.models import (
     AgentRequest,
     AgentResult,
     BenchmarkIdentity,
+    Scalar,
     ToolDefinition,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "AgentRequest",
     "AgentResult",
     "BenchmarkIdentity",
+    "Scalar",
     "ToolDefinition",
 ]

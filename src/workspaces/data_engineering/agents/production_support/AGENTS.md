@@ -5,13 +5,11 @@
 This package keeps the explicit prdbench agent design as the public
 production-support system while retaining the operational tools from the
 earlier implementation. The public graph consists of Orchestrator,
-ClusterAgent, AirflowAgent, TriageAgent, FollowUpAgent, Reporter, and
-BenchBuilderAgent.
+ClusterAgent, TriageManager, FollowUpAgent, Reporter, and BenchBuilderAgent.
 
 The default production-support scope is US and CA for the previous operational
-day beginning at 05:00 UTC. Normal investigation is read-only. FollowUpAgent
-may execute exact Airflow retries only after a validated dry run and explicit
-approval.
+day beginning at 05:00 UTC. Normal investigation is read-only. A developer
+follow-up authorizes immediate execution of the exact eligible Airflow retries.
 
 ## Architecture
 
@@ -26,13 +24,13 @@ five.
 Tool ownership is explicit:
 
 - ClusterAgent receives the read-only cluster-health tool.
-- AirflowAgent receives failure discovery, exact-log, workload, OMS,
-  classification, and Resource Discovery tools.
-- FollowUpAgent receives retry planning and approved retry execution tools.
+- TriageManager receives the complete failure inventory once and owns failure
+  discovery, exact-log, workload, OMS, classification, and Resource Discovery
+  tools. It stops when cheap evidence resolves a cause and fetches detailed
+  logs only for unresolved failures.
+- FollowUpAgent receives the exact retry execution tool.
 - Reporter receives evidence-qualified findings and calls no investigation
   tools.
-- TriageAgent is a placeholder that returns
-  `Triage agent hasn't been setup.`
 - BenchBuilderAgent receives completed handoffs and builds a redacted,
   review-required current-day benchmark draft.
 
@@ -48,16 +46,16 @@ It is an internal workflow, not a second public agent.
 OpenTelemetry spans mirror execution: MCP is the root, Orchestrator
 investigation is its child, delegated Resource Discovery and reporting are
 children of investigation, and provider runtime calls are children of
-reporting. Follow-up planning and execution have separate agent spans.
+reporting. TriageManager has one batch span; follow-up execution has its own
+agent span.
 
 ```mermaid
 flowchart LR
     Request --> Orchestrator
     Orchestrator --> ClusterAgent
-    Orchestrator --> AirflowAgent
+    Orchestrator --> TriageManager
     ClusterAgent --> Reporter
-    AirflowAgent --> Reporter
-    Orchestrator --> TriageAgent
+    TriageManager --> Reporter
     Orchestrator --> FollowUpAgent
     Reporter --> FinalOutput
     Reporter --> BenchBuilderAgent
@@ -79,11 +77,13 @@ flowchart LR
 - Persistent configuration: omission settings under
   `~/.prod_support/omissions.json`. New local configurations register D2P,
   MI3, Subscriber, Maintenance, Backfill, and CMM by default. Maintenance
-  includes `log_cleanup` tasks such as `expire-logs-3`. MI3 and D2P may appear
-  in Data Internal only as an indented shorthand detail under `- Ongoing`.
-  Other configured
-  omissions stay hidden there, and all configured omissions are excluded from
-  Follow Up and retry candidates.
+  includes `log_cleanup` tasks such as `expire-logs-3`. All configured
+  omissions stay hidden from Data Internal, Follow Up, and retry candidates.
+- Optional durable memory: when the shared agent-memory PostgreSQL settings
+  are configured, the workflow stores one confirmed, bounded diagnosis summary
+  per exact failed task instance. Summaries contain task identity,
+  classification, confidence, and evidence state only; raw logs, prompts,
+  reports, and resource payloads are never stored.
 - Side effects: investigations and benchmark construction are read-only.
   Approved FollowUp execution may clear only the exact validated task
   instances in its unchanged retry plan.
@@ -96,37 +96,43 @@ flowchart LR
 1. `Do prod support` and `Do prod support for yesterday` route through the
    `run_prod_support` MCP tool. Orchestrator resolves US and CA plus the prior
    operational day beginning at 05:00 UTC.
-2. It invokes ClusterAgent and AirflowAgent concurrently when both are needed.
+2. It invokes ClusterAgent and TriageManager concurrently when both are needed.
 3. ClusterAgent reports health per requested region with observation time and
    evidence.
-4. AirflowAgent runs the baseline script, keeps one bullet per failed task
-   instance, uses baseline results for omitted jobs, and performs root-cause
-   analysis for non-omitted jobs. Client resolution passes the complete UUID
-   from the DAG or task identifier and rejects report-only three-character
-   prefixes. It uses unique API evidence or the authoritative local index;
+4. TriageManager receives every failure in one batch. It first classifies
+   captured failure messages, then queries exact Airflow metadata and OMS where
+   applicable. It fetches detailed task logs only for unresolved failures.
+   Omitted jobs do not trigger Resource Discovery. Other client resolution
+   passes the complete UUID from the DAG or task identifier and rejects
+   report-only three-character prefixes. It uses unique API evidence or the
+   authoritative local index;
    reporting shortens
    `Scotiabank - Data Validation` to `Scotiabank DV`.
-5. TriageAgent returns its placeholder response when explicitly invoked.
-6. Reporter receives completed findings, preserves region and client
-   boundaries, surfaces contradictions, preserves underscores in job
-   identifiers such as `validate_event_bus_opportunities`, keeps region labels
-   fully left-aligned with one blank line between US and CA, renders only
-   MI3/D2P omission shorthand, excludes all omissions from Follow Up, and
-   returns the authoritative report. The links section contains exactly the US
-   and CA task-instance list URLs, bounded by greater-than-start and
+5. Reporter receives completed findings and may refine only the Developer
+   message. Data Internal and Follow Up remain the verbatim deterministic
+   drafts, preserving region and client boundaries, underscores in job
+   identifiers such as `active_deposit_accounts` without converting them to
+   spaces or hyphens, concise multi-job rows without causes or periods,
+   mandatory Follow Up actions, and omission filtering.
+   The links section contains exactly the
+   US and CA task-instance list URLs, bounded by greater-than-start and
    less-than-end `end_date` filters.
-7. Orchestrator serves the Reporter output without rewriting it. The MCP
+6. Orchestrator serves the Reporter output without rewriting it. The MCP
    response exposes `links`, `developer_message`, `data_internal_message`, and
-   an approval-only `follow_up_message`. The user-facing response presents
-   those fields as Slack-friendly mrkdwn without code fences or GitHub-style
+   a direct-action `follow_up_message`. The user-facing response presents only
+   `data_internal_message` as Slack-friendly mrkdwn; links, Developer, and
+   Follow Up remain plain text. It uses no code fences or GitHub-style
    headings.
-8. FollowUpAgent creates an exact dry-run retry plan and executes it only with
-   explicit approval for the unchanged plan.
-9. If the request also asks to build a benchmark case, Orchestrator invokes
+7. A developer follow-up executes exact eligible retries in one step and
+   returns the original US and CA validation links for verification.
+8. If the request also asks to build a benchmark case, Orchestrator invokes
    BenchBuilderAgent after normal support. The MCP response keeps every normal
    production-support field and adds benchmark artifact metadata.
-10. The MCP response includes the active trace and span IDs. Spans end after
+9. The MCP response includes the active trace and span IDs. Spans end after
     bounded result metadata is recorded.
+10. When durable memory is enabled, the workflow records bounded summaries
+    after reporting succeeds. Memory failure fails the run rather than silently
+    returning an incomplete durable record.
 
 Invalid dates, empty scopes, malformed handoffs, unsupported parallelism,
 report-contract violations, and changed retry plans fail immediately.

@@ -69,9 +69,9 @@ def test_default_omissions_hide_jobs_from_data_internal_and_follow_up() -> None:
     assert "MI3" in reports.developer
     assert "subscriber" in reports.developer
     assert "log_cleanup" in reports.developer
-    assert "US\n- Ongoing\n  - MI3, D2P\n\nCA\n- Good" in reports.data_internal
-    assert reports.data_internal.count("MI3") == 1
-    assert reports.data_internal.count("D2P") == 1
+    assert "US\n- Good\n\nCA\n- Good" in reports.data_internal
+    assert "MI3" not in reports.data_internal
+    assert "D2P" not in reports.data_internal
     for omitted in (
         "check_for_subscriber_client_errors",
         "check-for-subscriber-client-errors",

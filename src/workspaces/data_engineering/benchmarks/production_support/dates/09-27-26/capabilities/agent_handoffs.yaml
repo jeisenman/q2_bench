@@ -9,9 +9,9 @@ cases:
     required_inputs: [regions, operational_start, operational_end]
     required_outputs: [region, status, observed_at, evidence]
     production_mutation: prohibited
-  - agent: AirflowAgent
+  - agent: TriageManager
     parent: Orchestrator
-    responsibility: Run failure discovery and return every failure as a complete bullet.
+    responsibility: Triage the complete failure inventory with short-circuiting evidence.
     tools:
       - discover_airflow_failures
       - fetch_airflow_task_log
@@ -19,24 +19,16 @@ cases:
       - query_oms_job
       - classify_failure
       - trigger_resource_discovery_agent
-    required_inputs: [regions, operational_start, operational_end, omitted_jobs]
-    required_outputs: [developer_message, failures, classifications]
-    production_mutation: prohibited
-  - agent: TriageAgent
-    parent: Orchestrator
-    responsibility: Return the deterministic not-setup placeholder.
-    tools: []
-    required_inputs: [failure]
-    required_outputs: [message]
-    exact_output: "Triage agent hasn't been setup."
+    required_inputs: [failures, omitted_jobs]
+    required_outputs: [failures, classifications]
     production_mutation: prohibited
   - agent: FollowUpAgent
     parent: Orchestrator
-    responsibility: Plan exact Airflow retries and execute only after approval.
-    tools: [plan_airflow_retries, execute_airflow_retries]
-    required_inputs: [direction, retry_candidates]
-    required_outputs: [plan_id, task_instances, approval_required]
-    production_mutation: approval_gated
+    responsibility: Execute exact Airflow retries authorized by developer follow-up.
+    tools: [execute_airflow_retries]
+    required_inputs: [direction, retry_candidates, validation_urls]
+    required_outputs: [task_instances, validation_urls]
+    production_mutation: developer_follow_up_authorized
   - agent: Reporter
     parent: Orchestrator
     responsibility: Render the complete authoritative production-support report.
@@ -50,8 +42,7 @@ cases:
     responsibility: Build a redacted review-required case for the current day.
     tools:
       - DelegateToClusterAgent
-      - DelegateToAirflowAgent
-      - DelegateToTriageAgent
+      - DelegateToTriageManager
       - DelegateToFollowUpAgent
       - DelegateToReporter
       - WriteDailyBenchmarkCase

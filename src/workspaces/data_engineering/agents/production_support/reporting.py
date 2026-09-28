@@ -214,8 +214,7 @@ def _display_utc(value: datetime) -> str:
 
 
 def _airflow_ui_datetime(value: datetime) -> str:
-    hour = value.strftime("%I").lstrip("0") or "0"
-    return f"{value:%m/%d/%Y} {hour}:{value:%M} {value:%p}"
+    return value.astimezone(UTC).isoformat(timespec="seconds")
 
 
 def _capture_summary(failures: tuple[AirflowFailure, ...]) -> str:

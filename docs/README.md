@@ -18,6 +18,7 @@ This directory is the agent-readable entry point for the project.
 - [Benchmark scaffold](scaffold-layout.md)
 - [OpenAI Agents SDK](openai-agents-sdk.md)
 - [OpenTelemetry agent tracing](opentelemetry.md)
+- [Agent memory](agent-memory.md)
 - [Vector search](vector-search.md)
 - [Data-engineering outbound targets](data-engineering-outbound.md)
 

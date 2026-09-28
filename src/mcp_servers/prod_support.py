@@ -23,7 +23,6 @@ from mcp_servers.prod_support_benchmark import (
 from mcp_servers.prod_support_follow_up import (
     candidate_output,
     execute_prod_support_follow_up,
-    plan_prod_support_follow_up,
 )
 from mcp_servers.prod_support_output import (
     format_mcp_output,
@@ -35,6 +34,9 @@ from mcp_servers.prod_support_sources import (
 )
 from mcp_servers.prod_support_sources import (
     cluster_health as _cluster_health,
+)
+from mcp_servers.prod_support_sources import (
+    memory as _memory,
 )
 from mcp_servers.prod_support_sources import (
     report_runtime as _report_runtime,
@@ -68,23 +70,23 @@ server = MCPServer(
     description="Production-support tools for data-engineering incidents.",
 )
 
+_agent_memory = _memory()
 
 agent = ProductionSupportWorkflow(
     _source(),
     resource_discovery=_resource_discovery(),
     cluster_health=_cluster_health(),
-    investigation=InvestigationServices(report_runtime=_report_runtime()),
+    investigation=InvestigationServices(
+        report_runtime=_report_runtime(),
+        memory=_agent_memory,
+    ),
 )
 server.tool(
-    name="plan_prod_support_follow_up",
-    description=(
-        "Map follow-up direction to exact failed Airflow tasks. Dry-run them "
-        "if not specified. Run them if explicit directions."
-    ),
-)(plan_prod_support_follow_up)
-server.tool(
     name="execute_prod_support_follow_up",
-    description="Execute an unchanged dry-run retry plan after explicit approval.",
+    description=(
+        "Execute exact eligible Airflow retries authorized by a developer follow-up "
+        "and return the original US and CA validation links."
+    ),
 )(execute_prod_support_follow_up)
 
 
@@ -183,6 +185,8 @@ async def _run_prod_support(
             "operational_date": outcome.operational_date.isoformat(),
             "failed_since": outcome.failed_since.isoformat(),
             "failure_count": len(outcome.failures),
+            "memory_summary_count": len(outcome.memory_summaries),
+            "memory_enabled": _agent_memory is not None,
             "regions": [region.value for region in outcome.regions],
             "data_internal_omissions": [
                 item.value for item in report_config.data_internal_omissions

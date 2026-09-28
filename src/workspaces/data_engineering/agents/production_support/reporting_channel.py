@@ -37,9 +37,16 @@ def _render_line(
     diagnoses: dict[str, FailureDiagnosis],
     identities: dict[str, ClientIdentity],
 ) -> str:
+    if any(
+        diagnoses[failure.failure_id].kind is FailureKind.DISTINCTNESS
+        for failure in group.failures
+    ):
+        return f"  - {_join_terms(group.subject_labels)} failed DV"
     line = (
         f"  - {_join_terms(group.subject_labels)} failed on {_join_terms(group.jobs)}"
     )
+    if len(group.jobs) > 1:
+        return line
     salient = tuple(
         dict.fromkeys(
             label

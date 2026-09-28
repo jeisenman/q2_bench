@@ -7,21 +7,15 @@ cases:
     output_authority: ClusterAgent
     max_parallel: 1
     mutation_allowed: false
-  handoff-airflow-agent-2026-09-26:
-    required_agents: [AirflowAgent]
-    output_authority: AirflowAgent
-    max_parallel: 1
-    mutation_allowed: false
-  handoff-triage-agent-2026-09-26:
-    required_agents: [TriageAgent]
-    output_authority: TriageAgent
-    exact_output: "Triage agent hasn't been setup."
+  handoff-triage-manager-2026-09-26:
+    required_agents: [TriageManager]
+    output_authority: TriageManager
     max_parallel: 1
     mutation_allowed: false
   handoff-follow-up-agent-2026-09-26:
     required_agents: [FollowUpAgent]
     output_authority: FollowUpAgent
-    expected_mode: plan_only
+    expected_mode: execute
     max_parallel: 1
     mutation_allowed: false
   handoff-reporter-2026-09-26:
@@ -33,13 +27,13 @@ cases:
   handoff-bench-builder-agent-2026-09-26:
     required_agents:
       - ClusterAgent
-      - AirflowAgent
+      - TriageManager
       - Reporter
       - BenchBuilderAgent
     output_authority: Reporter
     ordering:
       - [ClusterAgent, Reporter]
-      - [AirflowAgent, Reporter]
+      - [TriageManager, Reporter]
       - [Reporter, BenchBuilderAgent]
     max_parallel: 2
     preserve_mcp_fields: true

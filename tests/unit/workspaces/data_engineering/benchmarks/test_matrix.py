@@ -90,7 +90,7 @@ def test_matrix_prompts_include_handoff_contract_and_local_evidence() -> None:
     )
     assert "Use no more than 2 concurrent handoffs." in candidate
     assert "Orchestrator -> ClusterAgent" in candidate
-    assert "Orchestrator -> AirflowAgent" in candidate
+    assert "Orchestrator -> TriageManager" in candidate
     assert "Orchestrator -> Reporter" in candidate
     assert "Orchestrator -> BenchBuilderAgent" in candidate
     assert "Reporter is the authoritative final-output handoff." in candidate
@@ -217,7 +217,7 @@ def test_loads_today_bench_builder_handoff_contract() -> None:
     assert manifest.handoff_contract.output_authority == "Reporter"
     assert [agent.name for agent in manifest.handoff_contract.agents] == [
         "ClusterAgent",
-        "AirflowAgent",
+        "TriageManager",
         "Reporter",
         "BenchBuilderAgent",
     ]
@@ -265,7 +265,7 @@ def test_full_system_case_declares_unordered_handoffs_and_complete_inputs() -> N
     assert manifest.handoff_contract is not None
     assert [agent.name for agent in manifest.handoff_contract.agents] == [
         "ClusterAgent",
-        "AirflowAgent",
+        "TriageManager",
         "Reporter",
     ]
     assert all(not agent.starts_after for agent in manifest.handoff_contract.agents)

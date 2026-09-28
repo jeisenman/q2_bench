@@ -1,4 +1,4 @@
-"""Tests for MCP follow-up retry serialization and approval checks."""
+"""Tests for direct MCP follow-up retry execution."""
 
 from __future__ import annotations
 
@@ -10,10 +10,8 @@ from mcp_servers import prod_support_follow_up
 from workspaces.data_engineering.agents.production_support import (
     Region,
     RetryCandidate,
-    RetryPlan,
 )
 from workspaces.data_engineering.agents.production_support.retry_models import (
-    RetryBatch,
     RetryTaskReference,
 )
 
@@ -29,33 +27,23 @@ def _candidate() -> dict[str, object]:
     }
 
 
-class FakeFollowUpAgent:
-    """Return a fixed dry run and state read-back."""
+US_URL = "https://airflow-us01.example/failed"
+CA_URL = "https://airflow-ca02.example/failed"
 
-    async def plan(
-        self,
-        direction: str,
-        candidates: tuple[RetryCandidate, ...],
-    ) -> RetryPlan:
-        batch = RetryBatch(Region.CA_02, "dag", "run", ("task",))
-        return RetryPlan(
-            "plan-1",
-            direction,
-            candidates,
-            (batch,),
-            (RetryTaskReference(Region.CA_02, "dag", "run", "task", "failed"),),
-        )
+
+class FakeFollowUpAgent:
+    """Return a fixed retry state read-back."""
 
     async def execute(
         self,
-        plan: RetryPlan,
-        approval_id: str,
+        direction: str,
+        candidates: tuple[RetryCandidate, ...],
     ) -> tuple[RetryTaskReference, ...]:
-        del plan, approval_id
+        del direction, candidates
         return (RetryTaskReference(Region.CA_02, "dag", "run", "task", "queued"),)
 
 
-def test_follow_up_tools_plan_and_execute(
+def test_follow_up_tool_executes_and_returns_validation_links(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
@@ -64,27 +52,20 @@ def test_follow_up_tools_plan_and_execute(
         FakeFollowUpAgent,
     )
 
-    planned = asyncio.run(
-        prod_support_follow_up.plan_prod_support_follow_up(
-            "retry CA",
-            [_candidate()],
-        )
-    )
     executed = asyncio.run(
         prod_support_follow_up.execute_prod_support_follow_up(
             "retry CA",
             [_candidate()],
-            "plan-1",
-            "approval-1",
+            [US_URL, CA_URL],
         )
     )
 
-    assert planned["approval_required"] is True
-    assert planned["task_instances"][0]["region"] == "CA-02"
     assert executed["task_instances"][0]["state"] == "queued"
+    assert executed["links"] == (US_URL, CA_URL)
+    assert executed["validation_urls"] == (US_URL, CA_URL)
 
 
-def test_follow_up_tool_rejects_changed_plan(
+def test_follow_up_tool_requires_both_validation_links(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
@@ -93,13 +74,12 @@ def test_follow_up_tool_rejects_changed_plan(
         FakeFollowUpAgent,
     )
 
-    with pytest.raises(ValueError, match="does not match"):
+    with pytest.raises(ValueError, match="US and CA"):
         asyncio.run(
             prod_support_follow_up.execute_prod_support_follow_up(
                 "retry CA",
                 [_candidate()],
-                "old-plan",
-                "approval-1",
+                [CA_URL],
             )
         )
 

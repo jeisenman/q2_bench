@@ -13,10 +13,15 @@ COMPLIANT_EVENTBUS_LINE = (
     "  - Scotiabank (1f0), Scotiabank DV (b49), CIBC Canada Validation (cef), "
     "and CIBC Canada (fbf) failed on validate_event_bus_opportunities"
 )
-COMPLIANT_ACCOUNT_LINE = (
-    "  - Scotiabank (1f0) failed on "
-    "account_level_opportunity_draw_schedule_history with timeout"
+COMPLIANT_MULTI_JOB_LINE = (
+    "  - Scotiabank (1f0) failed on monthly_relationships and similar_loans_portfolio"
 )
+COMPLIANT_SINGLE_JOB_LINE = "  - Renasant Bank (49f) failed on active_deposit_accounts"
+NONCOMPLIANT_MULTI_JOB_LINE = (
+    "  - Scotiabank (1f0) failed monthly relationships because an RA run date "
+    "was missing and failed similar-loans portfolio with an unknown terminal cause."
+)
+NONCOMPLIANT_SINGLE_JOB_LINE = "  - Renasant Bank (49f) failed active-deposit accounts"
 NONCOMPLIANT_EVENTBUS_LINE = (
     "  - Scotiabank (1f0), Scotiabank - Data Validation (b49), "
     "CIBC Canada Validation (cef), and CIBC Canada (fbf) failed on "
@@ -28,18 +33,18 @@ Compliant Data Internal example:
 ```markdown
 :bangbang: PROD SUPPORT 2026-09-26 :bangbang:
 US
-- Ongoing
-  - MI3, D2P
+- Good
 
 CA
 - Ongoing
-{COMPLIANT_ACCOUNT_LINE}
+{COMPLIANT_MULTI_JOB_LINE}
+{COMPLIANT_SINGLE_JOB_LINE}
 {COMPLIANT_EVENTBUS_LINE}
 ```
 
 The banner above is literal text. Do not render `:bangbang:` as an emoji or
-replace it with Unicode punctuation. MI3 and D2P may appear only as the compact
-shorthand line. Do not include their client details or any other omitted jobs.
+replace it with Unicode punctuation. Do not include configured omitted jobs.
+Multi-job client rows contain exact job identifiers and no failure reasons.
 
 Non-compliant Data Internal example:
 ```markdown
@@ -57,6 +62,8 @@ US
 - Ongoing
   - CA cluster unhealthy; unready Airflow DAG processor and KEDA query failure
   - Scotiabank failed with an account-level timeout
+{NONCOMPLIANT_MULTI_JOB_LINE}
+{NONCOMPLIANT_SINGLE_JOB_LINE}
 {NONCOMPLIANT_EVENTBUS_LINE}
   - log_cleanup: expire-logs-3 for 2026-09-26
 ```
@@ -68,9 +75,10 @@ uses shorthand as a summary, puts D2P before MI3, indents the CA region label,
 and changes underscores in
 `validate_event_bus_opportunities` to hyphens. It also replaces the required
 literal `:bangbang:` tokens with Unicode punctuation. In production-support
-messages, shorten
-`Scotiabank - Data Validation` to `Scotiabank DV` and preserve underscores in
-job identifiers.
+messages, it also adds reasons and a period to a multi-job client row. Shorten
+`Scotiabank - Data Validation` to `Scotiabank DV`. Preserve every job
+identifier exactly: use `active_deposit_accounts`, never `active-deposit
+accounts` or `active deposit accounts`.
 """
 
 PROD_SUPPORT_REPORTER_DEFINITION = AgentDefinition(
@@ -85,21 +93,21 @@ PROD_SUPPORT_REPORTER_DEFINITION = AgentDefinition(
         "replace them with emoji or Unicode punctuation. Use selected US then CA "
         "sections with region labels fully left-aligned and exactly one blank line "
         "between the US and CA sections. Use '- Ongoing' for "
-        "reportable details and '- Good' for no findings. When only shorthand "
-        "omissions exist, use '- Ongoing' with an indented '  - MI3, D2P' detail. "
+        "reportable details and '- Good' for no findings. "
         "Never put cluster health, "
         "pod readiness, restart counts, or KEDA "
         "evidence in Data Internal; keep it in Developer. Indent every Ongoing detail "
         "with two spaces. Resolve client identities before reporting and include each "
         "resolved client's three-character UUID prefix in parentheses. "
         "Shorten the client name 'Scotiabank - Data Validation' to "
-        "'Scotiabank DV'. Preserve underscores in job identifiers, including "
-        "'validate_event_bus_opportunities'; never rewrite them as hyphens. Group "
-        "clients sharing a job and mention each client-job pair once. MI3 and D2P "
-        "may appear only as shorthand; hide all omitted client details and all other "
-        "omission groups from Data Internal and Follow Up. Follow Up must be "
-        "either exactly '- No action "
-        "is required.' or a '- Would you like to:' action list. It is suggestion-only "
+        "'Scotiabank DV'. Preserve every job identifier exactly, including "
+        "underscores: use 'active_deposit_accounts', never 'active-deposit accounts' "
+        "or 'active deposit accounts'. For one "
+        "client with multiple jobs, list only exact job identifiers and no causes. "
+        "Render confirmed distinctness compactly as 'failed DV'. Hide every configured "
+        "omission group from Data Internal and Follow Up. Follow Up must be "
+        "exactly '- No action is required.' or concise 'Send events for ...' and "
+        "'- Would you like to re-run:' actions. It is suggestion-only "
         "and never claims a production mutation. Copy the supplied deterministic "
         "follow_up string exactly; it is immutable and must not be paraphrased. The "
         f"canonical resend action is '{RESEND_ACTION_TEMPLATE}' Never summarize it as "
@@ -109,7 +117,7 @@ PROD_SUPPORT_REPORTER_DEFINITION = AgentDefinition(
         f"'{HUMAN_IDENTITY_ACTION_TEMPLATE}' Do not delegate.\n\n"
         f"{DATA_INTERNAL_EXAMPLES}"
     ),
-    version="5",
+    version="6",
     model=LUNA_MODEL,
     output_template=REPORTER_OUTPUT_TEMPLATE,
 )

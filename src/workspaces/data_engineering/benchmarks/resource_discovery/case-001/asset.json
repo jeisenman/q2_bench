@@ -6,24 +6,24 @@
       "record_id": "syn-record-001",
       "resource_type": "client",
       "client_guid": "00000000-0000-4000-8000-000000000101",
-      "client_name": "Lattice Harbor Cooperative",
-      "provisioned_client_id": "lhc-101",
-      "subdomain": "lattice-harbor",
+      "client_name": "Renasant Bank (Tupelo, MS)",
+      "provisioned_client_id": "benchmark-client-101",
+      "subdomain": "benchmark-101",
       "environment": "production",
       "zone": "us-east",
       "service": "application",
       "resource_set": "core",
       "database": {
         "server": "syn-db-east-01",
-        "name": "lattice_harbor_core"
+        "name": "benchmark_client_101"
       },
       "storage": {
-        "account": "synstlatticeharbor01",
+        "account": "synstbenchmark101",
         "container": "client-data"
       },
       "datalake": {
         "account": "syn-dl-east-01",
-        "filesystem": "lattice-harbor"
+        "filesystem": "benchmark-101"
       }
     }
   ]

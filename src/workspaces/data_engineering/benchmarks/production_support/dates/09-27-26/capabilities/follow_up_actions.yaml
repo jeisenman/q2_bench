@@ -1,6 +1,6 @@
 schema_version: 1
 capability: follow_up_actions
-description: Offer only explicit, approval-gated remediation choices.
+description: Offer explicit remediation choices and execute retries on follow-up.
 cases:
   - id: actionable-remediation
     required_heading: "Follow Ups:"
@@ -16,7 +16,7 @@ cases:
     large_resend_owner: pd-rix
     kpo_sizing_agent_uri: agent://kpo-sizer/definition
     requirements:
-      - expose the MCP approval prompt as "Do you approve these re-runs?"
+      - expose the MCP prompt as "Reply with follow up to execute these re-runs:"
       - list only evidence-supported non-omitted retry candidates after that prompt
       - resolve and include a reviewed application link through Resource Discovery with every offered event resend
       - when routing is unresolved, ask to resolve the production link first and do not offer an unlinked resend
@@ -27,7 +27,8 @@ cases:
       - suggest pd-rix follow-up when an event resend exceeds 100
       - suggest KPO sizing in addition to rerun approval when any grouped job exceeds five attempts
       - expose KPO sizing as an agent URI only and do not invoke it
-      - require approval before reruns or resends
+      - treat a developer follow-up as authorization to execute exact reruns
+      - return the original US and CA validation links after reruns
       - include the operational date on every resend and rerun choice
       - return no action is required when no evidence-supported action exists
       - exclude diagnoses, evidence gaps, status summaries, and other non-actions

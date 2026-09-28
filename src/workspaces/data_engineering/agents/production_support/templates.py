@@ -4,7 +4,7 @@ DEVELOPER_HEADING = "Message for developer:"
 DATA_INTERNAL_ALERT_TEMPLATE = ":bangbang: PROD SUPPORT {operational_date} :bangbang:"
 FOLLOW_UP_HEADING = "Follow Ups:"
 RESEND_ACTION_TEMPLATE = (
-    "Resend <number> opportunities for <client names> on "
+    "Send events for <client names> on "
     "[Resend Opportunity Snapshots](<approved link>) for date <MM-DD-YY>."
 )
 HUMAN_IDENTITY_ACTION_TEMPLATE = (
@@ -16,10 +16,10 @@ REPORTER_OUTPUT_TEMPLATE = (
     '  "developer": "Message for developer:\\n'
     '  - <evidence-qualified finding>",\n'
     '  "data_internal": ":bangbang: PROD SUPPORT <date> :bangbang:\\n'
-    "US\\n- Ongoing\\n  - MI3, D2P\\n\\nCA\\n- Ongoing\\n"
+    "US\\n- Ongoing\\n  - <client failure>\\n\\nCA\\n- Ongoing\\n"
     "  - <grouped clients with three-character prefixes> "
     'failed on <job>",\n'
-    '  "follow_up": "- Would you like to:\\n'
+    '  "follow_up": "- Would you like to re-run:\\n'
     f'  - {RESEND_ACTION_TEMPLATE}"\n'
     "}\n"
 )
@@ -43,16 +43,17 @@ Message for developer:
 :bangbang: PROD SUPPORT <operational-date> :bangbang:
 US
 - <Good or Ongoing>
-  - <grouped failure or MI3/D2P shorthand>
+  - <grouped failure>
 
 CA
 - <Good or Ongoing>
   - <grouped clients with three-character prefixes> failed on <job>
 
 Follow Ups:
-- Would you like to:
-  - Resend <number> opportunities for <client names> on \
+- Send events for <client names> on \
 [Resend Opportunity Snapshots](<approved link>) for date <MM-DD-YY>.
+- Would you like to re-run:
+  - <client name> (<code>) <full l3-main DAG ID> <job identifiers> job
   - Ask a human to identify the production resend application environment \
 for <client names> for date <MM-DD-YY>.
   - Ask a human to resolve the client identity for \
