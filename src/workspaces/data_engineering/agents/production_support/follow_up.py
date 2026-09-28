@@ -124,7 +124,11 @@ def _format_follow_up(
             regional = tuple(
                 failure for failure in rerun_failures if failure.region is region
             )
-            for group in _group_reruns_by_subject(regional, identities):
+            for group in _group_reruns_by_subject(
+                regional,
+                identities,
+                diagnoses,
+            ):
                 kpo = (
                     f"; also move to [KPO sizing agent]({KPO_SIZER_AGENT_URI})"
                     if any(
@@ -156,6 +160,7 @@ def _format_follow_up(
 def _group_reruns_by_subject(
     failures: tuple[AirflowFailure, ...],
     identities: dict[str, ClientIdentity],
+    diagnoses: dict[str, FailureDiagnosis],
 ) -> tuple[FailureGroup, ...]:
     """Group rerun choices by one client so bullets never combine clients."""
     grouped = group_failures_for_reporting(failures, identities)
@@ -169,7 +174,12 @@ def _group_reruns_by_subject(
             (subject,),
             tuple(
                 dict.fromkeys(
-                    job for failure in subject_failures for job in _rerun_jobs(failure)
+                    job
+                    for failure in subject_failures
+                    for job in _rerun_jobs(
+                        failure,
+                        diagnoses[failure.failure_id],
+                    )
                 )
             ),
             tuple(subject_failures),
@@ -178,8 +188,13 @@ def _group_reruns_by_subject(
     )
 
 
-def _rerun_jobs(failure: AirflowFailure) -> tuple[str, ...]:
+def _rerun_jobs(
+    failure: AirflowFailure,
+    diagnosis: FailureDiagnosis,
+) -> tuple[str, ...]:
     """Return concise task names while preserving validated task identity."""
+    if diagnosis.rerun_targets:
+        return diagnosis.rerun_targets
     return (failure.task_id.rsplit(".", maxsplit=1)[-1],)
 
 

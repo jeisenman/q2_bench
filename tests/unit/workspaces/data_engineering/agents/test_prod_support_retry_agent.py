@@ -170,3 +170,30 @@ def test_configured_omissions_never_become_retry_candidates() -> None:
     )
 
     assert retry_candidates(ReportFindings(failures, diagnoses)) == ()
+
+
+def test_distinctness_candidate_targets_upstream_task_with_all_state_filter() -> None:
+    failure = AirflowFailure(
+        Region.US_01,
+        "daily-dag",
+        "run",
+        "high_quality_deposits.high_quality_deposits",
+        datetime(2026, 9, 26, 5, tzinfo=UTC),
+        datetime(2026, 9, 26, 6, tzinfo=UTC),
+    )
+    diagnosis = FailureDiagnosis(
+        failure.failure_id,
+        FailureKind.DISTINCTNESS,
+        "confirmed",
+        ("distinctness mismatch",),
+        rerun_targets=("ra_group.get_deposit_financial_statement_breakdown",),
+    )
+
+    candidates = retry_candidates(ReportFindings((failure,), (diagnosis,)))
+    batches = retry_batches(candidates)
+
+    assert candidates[0].task_id == (
+        "ra_group.get_deposit_financial_statement_breakdown"
+    )
+    assert candidates[0].only_failed is False
+    assert batches[0].only_failed is False

@@ -2,10 +2,14 @@
 
 ## Purpose
 
-This package keeps the explicit prdbench agent design as the public
-production-support system while retaining the operational tools from the
-earlier implementation. The public graph consists of Orchestrator,
-ClusterAgent, TriageManager, FollowUpAgent, Reporter, and BenchBuilderAgent.
+This package exposes a single MCP-facing `ProductionSupportAgent` that
+coordinates focused agents and deterministic tools. The runtime path is
+Resource Discovery, bounded failure discovery, exact-log retrieval,
+classification with conclusive-evidence short-circuiting, DV mapping,
+reporting, and approval-gated retry.
+
+The prdbench Orchestrator, ClusterAgent, TriageManager, FollowUpAgent, Reporter,
+and BenchBuilderAgent definitions remain available for benchmark compatibility.
 
 The default production-support scope is US and CA for the previous operational
 day beginning at 05:00 UTC. Normal investigation is read-only. A developer
@@ -13,24 +17,29 @@ follow-up authorizes immediate execution of the exact eligible Airflow retries.
 
 ## Architecture
 
-[`prompts.py`](prompts.py) defines every agent prompt in a function docstring.
-[`definition.py`](definition.py) converts named prompts and tool assignments
-into typed `AgentDefinition` values. [`suite.py`](suite.py) constructs the
-public graph and is the only module that grants delegation to Orchestrator.
-All operational specialists are leaf agents. BenchBuilderAgent may perform
-bounded benchmark-review delegation, but total parallelism must not exceed
-five.
+[`agent.py`](agent.py) defines the MCP-facing `ProductionSupportAgent`.
+Versioned Markdown instructions live under [`instructions/`](instructions/).
+[`failure_tools.py`](failure_tools.py) owns bounded failure discovery and
+exact-task log retrieval. [`classification_agent.py`](classification_agent.py)
+owns evidence classification, and [`dv_mapping.py`](dv_mapping.py) maps only
+proven distinctness failures to exact upstream `ra_group` tasks.
 
 Tool ownership is explicit:
 
-- ClusterAgent receives the read-only cluster-health tool.
-- TriageManager receives the complete failure inventory once and owns failure
-  discovery, exact-log, workload, OMS, classification, and Resource Discovery
-  tools. It stops when cheap evidence resolves a cause and fetches detailed
-  logs only for unresolved failures.
-- FollowUpAgent receives the exact retry execution tool.
+- ProductionSupportAgent coordinates the workflow and performs no direct
+  production mutation.
+- Resource Discovery resolves complete client UUIDs before client-scoped reads.
+- FailureDiscoveryTool queries bounded failures, including an exact client DAG.
+- ExactLogTool retrieves one exact task-attempt log.
+- ClassificationAgent classifies the exact log and short-circuits deeper
+  investigation when it is conclusive. It uses OMS only after Airflow evidence
+  remains unresolved.
+- DV Mapping parses every distinctness check but maps only mismatched or
+  explicitly failed DatasetForms.
 - Reporter receives evidence-qualified findings and calls no investigation
   tools.
+- ApprovalGatedRetryAgent receives exact retry candidates. A mapped upstream
+  task uses `only_failed=false`; ordinary failed tasks use `only_failed=true`.
 - BenchBuilderAgent receives completed handoffs and builds a redacted,
   review-required current-day benchmark draft.
 
@@ -39,27 +48,32 @@ Tool ownership is explicit:
 but executes the existing injected adapters and domain logic. The reusable
 implementation remains split across date, scope, cluster, Airflow,
 investigation, classification, reporting, retry, dataset, and port modules.
+[`client_investigation.py`](client_investigation.py) provides the narrower
+read-only workflow behind the `investigate_client_failures` MCP tool. It
+validates and resolves one complete client UUID before querying only that
+client's exact `l3-main-<UUID>` DAG.
 Shared OMS routing, query construction, and evidence protocols are owned by
 [`../oms_agent/`](../oms_agent/); this package retains compatibility exports.
 It is an internal workflow, not a second public agent.
 
-OpenTelemetry spans mirror execution: MCP is the root, Orchestrator
+OpenTelemetry spans mirror execution: MCP is the root, production-support
 investigation is its child, delegated Resource Discovery and reporting are
 children of investigation, and provider runtime calls are children of
-reporting. TriageManager has one batch span; follow-up execution has its own
-agent span.
+reporting. Triage has one batch span; follow-up execution has its own agent
+span.
 
 ```mermaid
 flowchart LR
-    Request --> Orchestrator
-    Orchestrator --> ClusterAgent
-    Orchestrator --> TriageManager
-    ClusterAgent --> Reporter
-    TriageManager --> Reporter
-    Orchestrator --> FollowUpAgent
-    Reporter --> FinalOutput
-    Reporter --> BenchBuilderAgent
-    BenchBuilderAgent --> BenchmarkDraft
+    MCP --> ProductionSupportAgent
+    ProductionSupportAgent --> ResourceDiscoveryAgent
+    ResourceDiscoveryAgent --> FailureDiscoveryTool
+    FailureDiscoveryTool --> ExactLogTool
+    ExactLogTool --> ClassificationAgent
+    ClassificationAgent -->|inconclusive eligible workload| OMS
+    ClassificationAgent -->|confirmed DV| DVMappingTool
+    ClassificationAgent --> ReporterAgent
+    DVMappingTool --> ReporterAgent
+    ReporterAgent --> ApprovalGatedRetryAgent
 ```
 
 ## Dependencies
@@ -94,12 +108,19 @@ flowchart LR
 ## Workflow
 
 1. `Do prod support` and `Do prod support for yesterday` route through the
-   `run_prod_support` MCP tool. Orchestrator resolves US and CA plus the prior
+   `run_prod_support` MCP tool. ProductionSupportAgent resolves US and CA plus the prior
    operational day beginning at 05:00 UTC.
-2. It invokes ClusterAgent and TriageManager concurrently when both are needed.
+   `Why is <client UUID> failing?` routes through
+   `investigate_client_failures`, which defaults to the prior 05:00 UTC anchor
+   through the current time and accepts an explicit ISO-8601 `since` cutoff.
+   It resolves the complete UUID first, sends an exact DAG filter to Airflow,
+   inspects every matching failed task attempt, and returns structured
+   developer evidence plus a suggestion-only follow-up.
+2. It invokes cluster checks and failure discovery concurrently when both are
+   needed.
 3. ClusterAgent reports health per requested region with observation time and
    evidence.
-4. TriageManager receives every failure in one batch. It first classifies
+4. ClassificationAgent receives every failure in one bounded batch. It first classifies
    captured failure messages, then queries exact Airflow metadata and OMS where
    applicable. It fetches detailed task logs only for unresolved failures.
    Omitted jobs do not trigger Resource Discovery. Other client resolution
@@ -108,7 +129,7 @@ flowchart LR
    authoritative local index;
    reporting shortens
    `Scotiabank - Data Validation` to `Scotiabank DV`.
-5. Reporter receives completed findings and may refine only the Developer
+5. ReporterAgent receives completed findings and may refine only the Developer
    message. Data Internal and Follow Up remain the verbatim deterministic
    drafts, preserving region and client boundaries, underscores in job
    identifiers such as `active_deposit_accounts` without converting them to
@@ -117,13 +138,14 @@ flowchart LR
    The links section contains exactly the
    US and CA task-instance list URLs, bounded by greater-than-start and
    less-than-end `end_date` filters.
-6. Orchestrator serves the Reporter output without rewriting it. The MCP
+6. ProductionSupportAgent serves the Reporter output without rewriting it. The MCP
    response exposes `links`, `developer_message`, `data_internal_message`, and
    a direct-action `follow_up_message`. The user-facing response presents only
    `data_internal_message` as Slack-friendly mrkdwn; links, Developer, and
    Follow Up remain plain text. It uses no code fences or GitHub-style
    headings.
-7. A developer follow-up executes exact eligible retries in one step and
+7. A developer follow-up selects exact eligible retries. The Airflow adapter
+   dry-runs and revalidates the unchanged selection before clearing it, then
    returns the original US and CA validation links for verification.
 8. If the request also asks to build a benchmark case, Orchestrator invokes
    BenchBuilderAgent after normal support. The MCP response keeps every normal
@@ -135,7 +157,8 @@ flowchart LR
     returning an incomplete durable record.
 
 Invalid dates, empty scopes, malformed handoffs, unsupported parallelism,
-report-contract violations, and changed retry plans fail immediately.
+malformed or non-canonical client UUIDs, report-contract violations, and
+changed retry plans fail immediately.
 
 ## Benchmark behavior
 

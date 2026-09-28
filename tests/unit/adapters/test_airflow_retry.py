@@ -14,8 +14,9 @@ from workspaces.data_engineering.agents.production_support.retry_models import (
 class FakeTransport:
     """Return the exact selected task and retain payloads."""
 
-    def __init__(self) -> None:
+    def __init__(self, task_id: str = "task") -> None:
         self.payloads: list[dict[str, object]] = []
+        self.task_id = task_id
 
     def request(
         self,
@@ -31,7 +32,7 @@ class FakeTransport:
                 {
                     "dag_id": "dag",
                     "dag_run_id": "run",
-                    "task_id": "task",
+                    "task_id": self.task_id,
                     "state": "failed",
                 }
             ]
@@ -57,6 +58,23 @@ def test_plan_uses_safe_exact_clear_flags() -> None:
         "reset_dag_runs": True,
         "task_ids": ["task"],
     }
+
+
+def test_plan_can_select_successful_mapped_upstream_task() -> None:
+    task_id = "ra_group.get_deposit_financial_statement_breakdown"
+    transport = FakeTransport(task_id)
+    batch = RetryBatch(
+        Region.US_01,
+        "dag",
+        "run",
+        (task_id,),
+        only_failed=False,
+    )
+
+    plan_retry(batch, object(), transport)
+
+    assert transport.payloads[0]["only_failed"] is False
+    assert transport.payloads[0]["task_ids"] == [task_id]
 
 
 def test_execute_revalidates_and_reads_state() -> None:

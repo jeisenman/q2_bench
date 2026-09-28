@@ -17,6 +17,7 @@ from mcp_servers.prod_support import (
     _requests_benchmark_case,
     _resource_discovery,
     _source,
+    client_failure_workflow,
     get_prod_support_omissions,
     list_prod_support_updates,
     prod_support_bench_builder_definition,
@@ -24,6 +25,7 @@ from mcp_servers.prod_support import (
     prod_support_prompt,
     prod_support_updates,
     run_prod_support,
+    server,
     set_prod_support_omissions,
     setup_prod_support,
 )
@@ -110,16 +112,21 @@ def test_mcp_tool_runs_prod_support_agent(
         "cmm",
     ]
     assert result["related_agents"] == {
-        "follow_up": "agent://prod-support/follow-up/definition",
+        "resource_discovery": "agent://resource-discovery/definition",
+        "classification": "agent://prod-support/classification/definition",
+        "reporter": "agent://prod-support/reporter/definition",
+        "approval_gated_retry": "agent://prod-support/follow-up/definition",
         "kpo_sizer": "agent://kpo-sizer/definition",
     }
     assert result["tool_calls"] == (
         "run_prod_support",
-        "DelegateToClusterAgent",
-        "DelegateToTriageManager",
-        "DelegateToFollowUpAgent",
-        "DelegateToReporter",
-        "DelegateToBenchBuilderAgent",
+        "inspect_cluster_health",
+        "discover_airflow_failures",
+        "fetch_airflow_task_log",
+        "DelegateToResourceDiscoveryAgent",
+        "DelegateToClassificationAgent",
+        "DelegateToReporterAgent",
+        "DelegateToApprovalGatedRetryAgent",
     )
     assert "benchmark_case" not in result
 
@@ -239,6 +246,26 @@ def test_mcp_resource_and_prompt_describe_agent() -> None:
     assert "production" in definition.lower()
     assert "benchmark" in bench_builder.lower()
     assert "Request: Pipeline failed." in prompt
+
+
+def test_mcp_exposes_client_scoped_failure_investigation() -> None:
+    tools = asyncio.run(server.list_tools())
+    tool = next(item for item in tools if item.name == "investigate_client_failures")
+
+    assert tool.input_schema["required"] == ["client_guuid"]
+    assert "exact client UUID" in (tool.description or "")
+
+
+def test_mcp_client_investigation_safe_default_is_read_only() -> None:
+    result = asyncio.run(
+        client_failure_workflow.investigate_client_failures(
+            "8b2e8a38-b778-402a-819a-4904f42f5a2a",
+            since="2026-09-28T05:00:00Z",
+        )
+    )
+
+    assert result["failure_count"] == 0
+    assert result["mutation_performed"] is False
 
 
 def test_mcp_exposes_configured_support_updates(

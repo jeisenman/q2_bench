@@ -150,7 +150,7 @@ def _payload(batch: RetryBatch, *, dry_run: bool) -> dict[str, object]:
         "include_future": False,
         "include_past": False,
         "include_upstream": False,
-        "only_failed": True,
+        "only_failed": batch.only_failed,
         "only_running": False,
         "reset_dag_runs": True,
         "task_ids": list(batch.task_ids),

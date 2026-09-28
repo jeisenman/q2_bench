@@ -165,6 +165,16 @@ def _diagnosis_payload(failure_id: str, findings: ReportFindings) -> dict[str, o
         "evidence": list(diagnosis.evidence[:3]),
         "source": diagnosis.source.value,
         "status": diagnosis.status.value,
+        "distinctness_checks": [
+            {
+                "dataset": check.dataset,
+                "total": check.total,
+                "unique": check.unique,
+                "status": check.status,
+            }
+            for check in diagnosis.distinctness_checks
+        ],
+        "rerun_targets": list(diagnosis.rerun_targets),
     }
 
 

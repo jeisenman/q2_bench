@@ -193,6 +193,18 @@ class ReplayAirflowFailureSource:
         """Return the captured log embedded in a replay record."""
         return failure.log
 
+    async def discover_dag_failures(
+        self,
+        dag_id: str,
+        since: datetime,
+    ) -> tuple[AirflowFailure, ...]:
+        """Return captured failures for one exact DAG and cutoff."""
+        return tuple(
+            failure
+            for failure in self._failures
+            if failure.dag_id == dag_id and failure.end_at >= since
+        )
+
     async def has_success_within(
         self,
         failure: AirflowFailure,

@@ -1,6 +1,9 @@
 """Reporting Agent definition and Data Internal examples."""
 
 from domain import AgentDefinition
+from workspaces.data_engineering.agents.production_support.instruction_loader import (
+    load_instruction,
+)
 from workspaces.data_engineering.agents.production_support.templates import (
     HUMAN_IDENTITY_ACTION_TEMPLATE,
     REPORTER_OUTPUT_TEMPLATE,
@@ -85,6 +88,7 @@ PROD_SUPPORT_REPORTER_DEFINITION = AgentDefinition(
     name="prod-support.reporting",
     description="Format validated production-support findings for three audiences.",
     instructions=(
+        f"{load_instruction('reporter_agent')}\n\n"
         "Return one JSON object with developer, data_internal, and follow_up strings. "
         "Preserve the supplied facts, dates, regions, links, uncertainty, and actions. "
         "Developer is evidence-rich. Data Internal is concise, has no periods, starts "
@@ -117,7 +121,7 @@ PROD_SUPPORT_REPORTER_DEFINITION = AgentDefinition(
         f"'{HUMAN_IDENTITY_ACTION_TEMPLATE}' Do not delegate.\n\n"
         f"{DATA_INTERNAL_EXAMPLES}"
     ),
-    version="6",
+    version="7",
     model=LUNA_MODEL,
     output_template=REPORTER_OUTPUT_TEMPLATE,
 )

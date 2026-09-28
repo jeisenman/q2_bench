@@ -11,11 +11,14 @@ from workspaces.data_engineering.agents.oms_agent import (
     OmsJobEvidenceSource,
     OmsJobQueryParameters,
 )
-from workspaces.data_engineering.agents.production_support.classification import (
-    classify_log,
+from workspaces.data_engineering.agents.production_support.classification_agent import (
+    ClassificationAgent,
 )
 from workspaces.data_engineering.agents.production_support.evidence import (
     summarize_task_log,
+)
+from workspaces.data_engineering.agents.production_support.failure_tools import (
+    ExactLogTool,
 )
 from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
@@ -80,26 +83,33 @@ class FailureInvestigator:
         prior_logs: PriorTaskLogSource | None = None,
         task_metadata: AirflowTaskMetadataSource | None = None,
         oms: OmsJobEvidenceSource | None = None,
+        classifier: ClassificationAgent | None = None,
     ) -> None:
         """Initialize read-only evidence dependencies."""
         self._source = source
+        self._exact_log = ExactLogTool(source)
         self._prior_logs = prior_logs
         self._task_metadata = task_metadata
         self._oms = oms
+        self._classifier = classifier or ClassificationAgent()
 
     async def investigate(
         self,
         failure: AirflowFailure,
     ) -> tuple[AirflowFailure, FailureDiagnosis]:
-        """Use the cheapest conclusive evidence before fetching detailed logs."""
-        message_result = _failure_message_result(failure)
-        if message_result is not None and not _needs_prior(message_result[1]):
-            return message_result
+        """Fetch the exact log, then stop when its evidence is conclusive."""
+        airflow_result = await self._investigate_airflow(failure)
+        if not _needs_prior(airflow_result[1]):
+            return airflow_result
         if await self._is_spark(failure) and self._oms is not None:
             identifier = client_id(failure)
             if identifier is not None:
-                return await self._investigate_spark(failure, identifier)
-        return await self._investigate_airflow(failure)
+                return await self._investigate_spark(
+                    failure,
+                    identifier,
+                    airflow_result,
+                )
+        return airflow_result
 
     async def _is_spark(self, failure: AirflowFailure) -> bool:
         """Return whether exact Airflow metadata proves a Spark workload."""
@@ -112,15 +122,13 @@ class FailureInvestigator:
         self,
         failure: AirflowFailure,
         identifier: str,
+        airflow_result: tuple[AirflowFailure, FailureDiagnosis],
     ) -> tuple[AirflowFailure, FailureDiagnosis]:
-        """Use exact OMS evidence first and fetch Airflow logs only if unresolved."""
+        """Use exact OMS evidence only after Airflow remains unresolved."""
         try:
             oms_result = await self._query_oms(failure, identifier)
         except OmsEvidenceUnavailableError:
-            return await self._investigate_airflow(failure)
-        if not _needs_prior(oms_result[1]):
-            return oms_result
-        airflow_result = await self._investigate_airflow(failure)
+            return airflow_result
         return _prefer_stronger_evidence(airflow_result, oms_result)
 
     async def _query_oms(
@@ -140,7 +148,12 @@ class FailureInvestigator:
             start_at=failure.start_at,
         )
         log = await self._oms.query_job(parameters)
-        return _classified_result(failure, log, EvidenceSource.OMS_EXACT_JOB)
+        return _classified_result(
+            failure,
+            log,
+            EvidenceSource.OMS_EXACT_JOB,
+            self._classifier,
+        )
 
     async def _investigate_airflow(
         self,
@@ -148,7 +161,7 @@ class FailureInvestigator:
     ) -> tuple[AirflowFailure, FailureDiagnosis]:
         """Fetch the exact attempt, then use bounded same-task history."""
         try:
-            log = await self._source.fetch_log(failure)
+            log = await self._exact_log.fetch(failure)
         except TaskLogUnavailableError as error:
             if error.status_code != TASK_LOG_NOT_FOUND:
                 raise
@@ -158,6 +171,7 @@ class FailureInvestigator:
             failure,
             log,
             EvidenceSource.AIRFLOW_EXACT_TASK_ATTEMPT,
+            self._classifier,
         )
         if _needs_prior(result[1]):
             prior = await self._first_diagnostic_prior(failure)
@@ -174,7 +188,7 @@ class FailureInvestigator:
             return None
         attempts = await self._prior_logs.fetch_prior_logs(failure, PRIOR_LOG_LIMIT)
         for attempt in attempts:
-            result = _prior_result(failure, attempt)
+            result = _prior_result(failure, attempt, self._classifier)
             if not _needs_prior(result[1]):
                 return result
         return None
@@ -184,36 +198,26 @@ def _classified_result(
     failure: AirflowFailure,
     log: str,
     source: EvidenceSource,
+    classifier: ClassificationAgent,
 ) -> tuple[AirflowFailure, FailureDiagnosis]:
     """Classify a full log and retain only bounded diagnostic evidence."""
     summary = summarize_task_log(log)
-    diagnosis = classify_log(failure, log, source=source)
+    diagnosis = classifier.classify(failure, log, source)
     hydrated = replace(failure, log=summary.excerpt)
     return hydrated, replace(diagnosis, status=summary.status)
-
-
-def _failure_message_result(
-    failure: AirflowFailure,
-) -> tuple[AirflowFailure, FailureDiagnosis] | None:
-    """Classify a discovery-provided failure message without another API call."""
-    if not failure.log.strip():
-        return None
-    return _classified_result(
-        failure,
-        failure.log,
-        EvidenceSource.AIRFLOW_FAILURE_MESSAGE,
-    )
 
 
 def _prior_result(
     failure: AirflowFailure,
     attempt: PriorTaskLog,
+    classifier: ClassificationAgent,
 ) -> tuple[AirflowFailure, FailureDiagnosis]:
     """Classify one prior same-task attempt and attach its provenance."""
     hydrated, diagnosis = _classified_result(
         failure,
         attempt.log,
         EvidenceSource.AIRFLOW_PRIOR_SAME_TASK,
+        classifier,
     )
     provenance = f"prior run {attempt.run_id} attempt {attempt.try_number}"
     return hydrated, replace(
@@ -239,7 +243,11 @@ def _unavailable_result(
 
 def _needs_prior(diagnosis: FailureDiagnosis) -> bool:
     """Return whether current evidence lacks a supported terminal cause."""
-    return diagnosis.kind is FailureKind.UNKNOWN or diagnosis.status in {
+    return diagnosis.kind in {
+        FailureKind.UNKNOWN,
+        FailureKind.UNKNOWN_RESOURCE_TERMINATION,
+        FailureKind.PROBABLE_OOM,
+    } or diagnosis.status in {
         EvidenceStatus.NON_DIAGNOSTIC,
         EvidenceStatus.TRUNCATED,
         EvidenceStatus.UNAVAILABLE,

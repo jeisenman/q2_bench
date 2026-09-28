@@ -49,13 +49,15 @@ def candidate_output(candidate: RetryCandidate) -> dict[str, object]:
         "run_id": candidate.run_id,
         "task_id": candidate.task_id,
         "label": candidate.label,
+        "only_failed": candidate.only_failed,
     }
 
 
 def candidate_input(value: dict[str, object]) -> RetryCandidate:
     """Validate one retry candidate returned by run_prod_support."""
     number = value.get("number")
-    if not isinstance(number, int):
+    only_failed = value.get("only_failed", True)
+    if not isinstance(number, int) or not isinstance(only_failed, bool):
         raise FollowUpToolError.invalid_candidate()
     try:
         return RetryCandidate(
@@ -65,6 +67,7 @@ def candidate_input(value: dict[str, object]) -> RetryCandidate:
             run_id=str(value["run_id"]),
             task_id=str(value["task_id"]),
             label=str(value["label"]),
+            only_failed=only_failed,
         )
     except (KeyError, TypeError, ValueError) as error:
         raise FollowUpToolError.invalid_candidate() from error

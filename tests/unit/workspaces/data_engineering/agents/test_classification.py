@@ -50,3 +50,34 @@ def test_exit_minus_nine_is_not_inferred_as_oom(
     )
 
     assert diagnosis.confidence == "unknown"
+
+
+def test_passing_distinctness_count_does_not_mask_application_error(
+    failure: AirflowFailure,
+) -> None:
+    diagnosis = classify_log(
+        failure,
+        "Validate distinctness - counts: Accounts - total: 12; unique: 12\n"
+        "Traceback: ValueError",
+    )
+
+    assert diagnosis.kind.value == "application_error"
+
+
+def test_distinctness_mismatch_is_prioritized_over_passing_counts(
+    failure: AirflowFailure,
+) -> None:
+    diagnosis = classify_log(
+        failure,
+        "Validate distinctness - counts: Accounts - total: 12; unique: 12\n"
+        "Validate distinctness - counts: Deposits - total: 15; unique: 9\n"
+        "Distinctness validation failed for Deposits",
+    )
+
+    assert diagnosis.kind.value == "distinctness"
+    assert "Deposits - total: 15; unique: 9" in diagnosis.evidence[0]
+    assert [check.status for check in diagnosis.distinctness_checks] == [
+        "pass",
+        "mismatch",
+    ]
+    assert diagnosis.rerun_targets == ("ra_group.get_deposits",)

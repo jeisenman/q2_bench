@@ -18,6 +18,7 @@ class RetryBatch:
     dag_id: str
     run_id: str
     task_ids: tuple[str, ...]
+    only_failed: bool = True
 
 
 @dataclass(frozen=True, slots=True)

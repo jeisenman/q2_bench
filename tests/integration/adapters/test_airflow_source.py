@@ -70,6 +70,27 @@ def test_airflow_source_discovers_by_end_date_and_fetches_log() -> None:
     assert log == "OOMKilled"
 
 
+def test_airflow_source_scopes_client_discovery_to_exact_dag() -> None:
+    transport = FakeTransport()
+    source = AirflowApiSource(
+        (
+            AirflowRegionConfig(
+                Region.US_01,
+                "https://airflow.example.test",
+                "user",
+                "password",
+            ),
+        ),
+        transport,
+    )
+    cutoff = datetime(2026, 9, 25, 5, tzinfo=UTC)
+
+    asyncio.run(source.discover_dag_failures("l3-main-client", cutoff))
+
+    assert transport.payload["dag_ids"] == ["l3-main-client"]
+    assert transport.payload["end_date_gte"] == "2026-09-25T05:00:00Z"
+
+
 def test_airflow_source_reads_structured_log_content() -> None:
     class StructuredLogTransport(FakeTransport):
         def request(

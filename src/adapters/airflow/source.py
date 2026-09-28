@@ -145,6 +145,28 @@ class AirflowApiSource(AirflowRetryMixin):
         )
         return tuple(item for batch in batches for item in batch)
 
+    async def discover_dag_failures(
+        self,
+        dag_id: str,
+        since: datetime,
+    ) -> tuple[AirflowFailure, ...]:
+        """Query failures for one exact DAG across configured regions."""
+        if not dag_id.strip():
+            message = "Airflow DAG ID must not be empty"
+            raise ValueError(message)
+        batches = await asyncio.gather(
+            *(
+                asyncio.to_thread(
+                    self._discover_region,
+                    config,
+                    since,
+                    (dag_id,),
+                )
+                for config in self._regions
+            )
+        )
+        return tuple(item for batch in batches for item in batch)
+
     async def discover_region_failures(
         self,
         region: Region,
@@ -255,6 +277,7 @@ class AirflowApiSource(AirflowRetryMixin):
         self,
         config: AirflowRegionConfig,
         since: datetime,
+        dag_ids: tuple[str, ...] = (),
     ) -> tuple[AirflowFailure, ...]:
         if since.tzinfo is None:
             message = "Airflow discovery cutoff must be timezone-aware"
@@ -265,6 +288,8 @@ class AirflowApiSource(AirflowRetryMixin):
             "page_limit": 1000,
             "page_offset": 0,
         }
+        if dag_ids:
+            payload["dag_ids"] = list(dag_ids)
         failures: list[AirflowFailure] = []
         while True:
             response = self._transport.request(

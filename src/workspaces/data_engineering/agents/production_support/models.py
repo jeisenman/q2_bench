@@ -31,6 +31,20 @@ class FailureKind(StrEnum):
     UNKNOWN = "unknown"
 
 
+@dataclass(frozen=True, slots=True)
+class DistinctnessCheck:
+    """One DatasetForm distinctness result parsed from exact evidence."""
+
+    dataset: str
+    total: int
+    unique: int
+
+    @property
+    def status(self) -> str:
+        """Return the evidence-derived distinctness status."""
+        return "pass" if self.total == self.unique else "mismatch"
+
+
 class EvidenceSource(StrEnum):
     """Read-only source used for one diagnosis."""
 
@@ -114,6 +128,7 @@ class RetryCandidate:
     run_id: str
     task_id: str
     label: str
+    only_failed: bool = True
 
     @property
     def identity(self) -> str:
@@ -148,6 +163,8 @@ class FailureDiagnosis:
     source: EvidenceSource = EvidenceSource.UNKNOWN
     status: EvidenceStatus = EvidenceStatus.UNKNOWN
     original_char_count: int = 0
+    distinctness_checks: tuple[DistinctnessCheck, ...] = ()
+    rerun_targets: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

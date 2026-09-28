@@ -15,6 +15,10 @@ from adapters.local import (
 )
 from adapters.telemetry import configure_telemetry
 from domain import AgentRequest
+from mcp_servers import prod_support_sources
+from mcp_servers.prod_support_agent_resources import (
+    register_prod_support_agent_resources,
+)
 from mcp_servers.prod_support_benchmark import (
     bench_builder_description,
     capture_benchmark_case,
@@ -29,30 +33,17 @@ from mcp_servers.prod_support_output import (
     retry_approval_message,
     validation_urls,
 )
-from mcp_servers.prod_support_sources import (
-    airflow_source as _source,
-)
-from mcp_servers.prod_support_sources import (
-    cluster_health as _cluster_health,
-)
-from mcp_servers.prod_support_sources import (
-    memory as _memory,
-)
-from mcp_servers.prod_support_sources import (
-    report_runtime as _report_runtime,
-)
-from mcp_servers.prod_support_sources import (
-    resource_discovery as _resource_discovery,
-)
 from observability import (
     current_trace_metadata,
     extracted_trace_context,
     traced_operation,
 )
 from workspaces.data_engineering.agents.production_support import (
+    ClientFailureWorkflow,
     FollowUpAgent,
     InvestigationServices,
     ProdSupportReportConfig,
+    ProductionSupportAgent,
     ProductionSupportWorkflow,
 )
 from workspaces.data_engineering.agents.production_support.reporting_config import (
@@ -65,22 +56,42 @@ from workspaces.data_engineering.benchmarks import (
 )
 
 SERVER_NAME = "prod-support"
-server = MCPServer(
-    SERVER_NAME,
-    description="Production-support tools for data-engineering incidents.",
-)
+server = MCPServer(SERVER_NAME, description="Production-support tools for incidents.")
 
+_source = prod_support_sources.airflow_source
+_cluster_health = prod_support_sources.cluster_health
+_memory = prod_support_sources.memory
+_report_runtime = prod_support_sources.report_runtime
+_resource_discovery = prod_support_sources.resource_discovery
+_airflow_source = _source()
+_resource_discovery_agent = _resource_discovery()
 _agent_memory = _memory()
-
-agent = ProductionSupportWorkflow(
-    _source(),
-    resource_discovery=_resource_discovery(),
-    cluster_health=_cluster_health(),
-    investigation=InvestigationServices(
-        report_runtime=_report_runtime(),
-        memory=_agent_memory,
-    ),
+_investigation_services = InvestigationServices(
+    report_runtime=_report_runtime(),
+    memory=_agent_memory,
 )
+
+daily_workflow = ProductionSupportWorkflow(
+    _airflow_source,
+    resource_discovery=_resource_discovery_agent,
+    cluster_health=_cluster_health(),
+    investigation=_investigation_services,
+)
+client_failure_workflow = ClientFailureWorkflow(
+    _airflow_source,
+    resource_discovery=_resource_discovery_agent,
+    investigation=_investigation_services,
+)
+agent = ProductionSupportAgent(daily_workflow, client_failure_workflow)
+register_prod_support_agent_resources(server)
+server.tool(
+    name="investigate_client_failures",
+    description=(
+        "Answer why one exact client UUID is failing by resolving the client, "
+        "querying only its l3-main DAG, inspecting exact task logs, and returning "
+        "developer evidence plus a suggested follow-up."
+    ),
+)(agent.investigate_client_failures)
 server.tool(
     name="execute_prod_support_follow_up",
     description=(
@@ -88,10 +99,6 @@ server.tool(
         "and return the original US and CA validation links."
     ),
 )(execute_prod_support_follow_up)
-
-
-_validation_urls = validation_urls
-_format_mcp_output = format_mcp_output
 
 
 _requests_benchmark_case = requests_benchmark_case
@@ -157,8 +164,8 @@ async def _run_prod_support(
         correlation_id=request.correlation_id,
     )
     warning = insufficient_benchmark_warning(SERVER_NAME)
-    full_report = prepend_benchmark_warning(_format_mcp_output(outcome), warning)
-    links = _validation_urls(full_report)
+    full_report = prepend_benchmark_warning(format_mcp_output(outcome), warning)
+    links = validation_urls(full_report)
     approval_message = retry_approval_message(outcome.retry_candidates)
     result: dict[str, Any] = {
         "output": full_report,
@@ -193,7 +200,10 @@ async def _run_prod_support(
             ],
         },
         "related_agents": {
-            "follow_up": "agent://prod-support/follow-up/definition",
+            "resource_discovery": "agent://resource-discovery/definition",
+            "classification": "agent://prod-support/classification/definition",
+            "reporter": "agent://prod-support/reporter/definition",
+            "approval_gated_retry": "agent://prod-support/follow-up/definition",
             "kpo_sizer": "agent://kpo-sizer/definition",
         },
     }

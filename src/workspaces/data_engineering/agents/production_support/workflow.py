@@ -11,14 +11,14 @@ from typing import TypeVar
 from agent_memory import MemoryRecord
 from domain import AgentDefinition, AgentRequest, AgentResult
 from observability import traced_agent_run, traced_operation
-from workspaces.data_engineering.agents.production_support.airflow_checker import (
-    AirflowChecker,
-)
 from workspaces.data_engineering.agents.production_support.cluster_checker import (
     ClusterChecker,
 )
 from workspaces.data_engineering.agents.production_support.dates import (
     resolve_query_window,
+)
+from workspaces.data_engineering.agents.production_support.failure_tools import (
+    FailureDiscoveryTool,
 )
 from workspaces.data_engineering.agents.production_support.investigation import (
     FailureInvestigator,
@@ -84,7 +84,7 @@ class ProductionSupportWorkflow:
         self._source = source
         self._clock = clock or (lambda: datetime.now(UTC))
         self._resource_discovery = resource_discovery
-        self._airflow_checker = AirflowChecker(source)
+        self._failure_discovery = FailureDiscoveryTool(source)
         self._cluster_checker = ClusterChecker(cluster_health)
         self._report_runtime = services.report_runtime
         self._memory = services.memory
@@ -171,10 +171,10 @@ class ProductionSupportWorkflow:
         config = report_config or ProdSupportReportConfig()
         failed_before = window.failed_since + timedelta(days=1)
         failures, cluster_health = await asyncio.gather(
-            self._airflow_checker.check(
+            self._failure_discovery.discover(
                 window.failed_since,
                 failed_before,
-                regions=scope.regions,
+                scope.regions,
             ),
             self._cluster_checker.check(
                 scope.regions,

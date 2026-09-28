@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from workspaces.data_engineering.agents.production_support.dv_mapping import (
+    DvMappingResult,
+    map_distinctness_targets,
+)
 from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
     EvidenceSource,
@@ -9,10 +13,7 @@ from workspaces.data_engineering.agents.production_support.models import (
     FailureKind,
 )
 
-DISTINCTNESS_MARKERS = (
-    "Distinctness validation failed",
-    "Validate distinctness - counts",
-)
+DISTINCTNESS_MARKERS = ("Distinctness validation failed",)
 OOM_MARKERS = ("OOMKilled", "OutOfMemoryError")
 TIMEOUT_MARKERS = (
     "**TimeoutError",
@@ -29,6 +30,7 @@ EXIT_MINUS_NINE_MARKERS = (
 )
 EVIDENCE_MARKERS = (
     *DISTINCTNESS_MARKERS,
+    "Validate distinctness - counts",
     *OOM_MARKERS,
     *TIMEOUT_MARKERS,
     *EXIT_MINUS_NINE_MARKERS,
@@ -47,7 +49,8 @@ def classify_log(
 ) -> FailureDiagnosis:
     """Classify a log without inferring unsupported causes."""
     normalized_log = log.lower()
-    if any(marker in log for marker in DISTINCTNESS_MARKERS):
+    distinctness = map_distinctness_targets(log)
+    if distinctness.has_failure:
         kind, confidence = FailureKind.DISTINCTNESS, "confirmed"
     elif any(marker in log for marker in OOM_MARKERS):
         kind, confidence = FailureKind.CONFIRMED_OOM, "confirmed"
@@ -82,22 +85,30 @@ def classify_log(
             source=source,
             original_char_count=len(log),
         )
-    return _diagnosis(failure, kind, confidence, log, source)
+    return _diagnosis(
+        failure,
+        (kind, confidence),
+        log,
+        source,
+        distinctness=distinctness,
+    )
 
 
 def _diagnosis(
     failure: AirflowFailure,
-    kind: FailureKind,
-    confidence: str,
+    classification: tuple[FailureKind, str],
     log: str,
     source: EvidenceSource,
+    *,
+    distinctness: DvMappingResult,
 ) -> FailureDiagnosis:
     normalized = log.replace("\\n", "\n")
+    kind, confidence = classification
     lines = tuple(line.strip() for line in normalized.splitlines() if line.strip())
     matching = tuple(
         line for line in lines if any(marker in line for marker in EVIDENCE_MARKERS)
     )
-    evidence = (matching or lines[-3:])[:3]
+    evidence = (distinctness.evidence or matching or lines[-3:])[:3]
     return FailureDiagnosis(
         failure.failure_id,
         kind,
@@ -105,4 +116,6 @@ def _diagnosis(
         evidence,
         source=source,
         original_char_count=len(log),
+        distinctness_checks=distinctness.checks,
+        rerun_targets=distinctness.rerun_targets,
     )

@@ -8,6 +8,9 @@ from collections.abc import Mapping
 
 from domain import AgentDefinition
 from observability import traced_operation
+from workspaces.data_engineering.agents.production_support.instruction_loader import (
+    load_instruction,
+)
 from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
     Region,
@@ -41,16 +44,9 @@ EXCLUSION_PATTERN = re.compile(
     re.IGNORECASE,
 )
 PROD_SUPPORT_FOLLOW_UP_DEFINITION = AgentDefinition(
-    name="prod-support.follow-up",
-    description="Map operator follow-up directions to exact Airflow retries.",
-    instructions=(
-        "Receive follow-up direction after a production-support run. Keep every "
-        "candidate's source Airflow region. Interpret 'follow up', 'retry CA', "
-        "'retry all jobs', or numbered include/exclude requests as authorization "
-        "to execute the exact selected tasks immediately. Return the original US "
-        "and CA validation links after execution. Never retry verified omissions, "
-        "resend tasks, unresolved clients, upstream, downstream, past, or future tasks."
-    ),
+    name="ApprovalGatedRetryAgent",
+    description="Plan and execute only exact developer-approved Airflow retries.",
+    instructions=load_instruction("retry_agent"),
     tools=(EXECUTE_AIRFLOW_RETRIES,),
     version="1",
 )
@@ -116,6 +112,7 @@ class FollowUpAgent:
 def retry_candidates(findings: ReportFindings) -> tuple[RetryCandidate, ...]:
     """Return numbered retry candidates after safety and identity filtering."""
     identities = client_identities(findings.resource_discovery_results)
+    diagnoses = {item.failure_id: item for item in findings.diagnoses}
     eligible = tuple(
         failure
         for failure in findings.failures
@@ -123,19 +120,25 @@ def retry_candidates(findings: ReportFindings) -> tuple[RetryCandidate, ...]:
         and findings.config.configured_omission_group(failure) is None
         and _identity_resolved(failure, identities)
     )
-    return tuple(
-        RetryCandidate(
-            number=index,
-            region=failure.region,
-            dag_id=failure.dag_id,
-            run_id=failure.run_id,
-            task_id=failure.task_id,
-            label=(
-                f"{failure_subject(failure, identities)}: {job_label(failure.task_id)}"
-            ),
-        )
-        for index, failure in enumerate(eligible, start=1)
-    )
+    candidates: list[RetryCandidate] = []
+    for failure in eligible:
+        diagnosis = diagnoses[failure.failure_id]
+        task_ids = diagnosis.rerun_targets or (failure.task_id,)
+        for task_id in task_ids:
+            candidates.append(
+                RetryCandidate(
+                    number=len(candidates) + 1,
+                    region=failure.region,
+                    dag_id=failure.dag_id,
+                    run_id=failure.run_id,
+                    task_id=task_id,
+                    label=(
+                        f"{failure_subject(failure, identities)}: {job_label(task_id)}"
+                    ),
+                    only_failed=task_id == failure.task_id,
+                )
+            )
+    return tuple(candidates)
 
 
 def select_retry_candidates(
@@ -183,14 +186,24 @@ def retry_batches(
     candidates: tuple[RetryCandidate, ...],
 ) -> tuple[RetryBatch, ...]:
     """Group selected tasks into exact regional DAG-run clear requests."""
-    grouped: defaultdict[tuple[Region, str, str], list[str]] = defaultdict(list)
+    grouped: defaultdict[tuple[Region, str, str, bool], list[str]] = defaultdict(list)
     for candidate in candidates:
-        grouped[(candidate.region, candidate.dag_id, candidate.run_id)].append(
-            candidate.task_id
+        key = (
+            candidate.region,
+            candidate.dag_id,
+            candidate.run_id,
+            candidate.only_failed,
         )
+        grouped[key].append(candidate.task_id)
     return tuple(
-        RetryBatch(region, dag_id, run_id, tuple(dict.fromkeys(task_ids)))
-        for (region, dag_id, run_id), task_ids in sorted(
+        RetryBatch(
+            region,
+            dag_id,
+            run_id,
+            tuple(dict.fromkeys(task_ids)),
+            only_failed,
+        )
+        for (region, dag_id, run_id, only_failed), task_ids in sorted(
             grouped.items(),
             key=lambda item: tuple(str(value) for value in item[0]),
         )

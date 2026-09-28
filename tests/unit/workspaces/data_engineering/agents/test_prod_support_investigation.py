@@ -146,27 +146,29 @@ def test_spark_uses_exact_oms_identity_to_strengthen_unknown_airflow_cause() -> 
     assert parameters.run_id_s == failure.run_id
     assert parameters.task_id_s == failure.task_id
     assert parameters.try_number_d == EXPECTED_TRY_NUMBER
-    assert source.fetched == []
+    assert source.fetched == [failure.failure_id]
 
 
-def test_unresolved_oms_result_falls_back_to_airflow_log() -> None:
+def test_conclusive_airflow_log_short_circuits_oms() -> None:
     failure = _failure()
     source = LogSource((failure,), "airflow.exceptions.AirflowTaskTimeout: Timeout")
+    oms = RecordingOms("job started")
     investigator = FailureInvestigator(
         source,
         task_metadata=SparkMetadata(),
-        oms=RecordingOms("job started"),
+        oms=oms,
     )
 
     _, diagnosis = asyncio.run(investigator.investigate(failure))
 
     assert diagnosis.kind.value == "airflow_confirmed_timeout"
     assert source.fetched == [failure.failure_id]
+    assert oms.parameters == []
 
 
-def test_failure_message_short_circuits_all_detailed_log_requests() -> None:
+def test_exact_log_precedes_classification_even_with_discovery_text() -> None:
     failure = _failure()
-    source = LogSource((failure,), "unused")
+    source = LogSource((failure,), "Exception: exact invalid source row")
     investigator = FailureInvestigator(source)
 
     _, diagnosis = asyncio.run(
@@ -185,8 +187,8 @@ def test_failure_message_short_circuits_all_detailed_log_requests() -> None:
     )
 
     assert diagnosis.kind.value == "application_error"
-    assert diagnosis.source is EvidenceSource.AIRFLOW_FAILURE_MESSAGE
-    assert source.fetched == []
+    assert diagnosis.source is EvidenceSource.AIRFLOW_EXACT_TASK_ATTEMPT
+    assert source.fetched == [failure.failure_id]
 
 
 def test_agent_excludes_the_operational_window_end_boundary() -> None:

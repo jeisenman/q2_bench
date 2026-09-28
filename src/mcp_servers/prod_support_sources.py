@@ -45,6 +45,15 @@ class EmptyAirflowFailureSource:
         """Return the embedded log when present."""
         return failure.log
 
+    async def discover_dag_failures(
+        self,
+        dag_id: str,
+        since: datetime,
+    ) -> tuple[AirflowFailure, ...]:
+        """Return no failures for one exact DAG."""
+        del dag_id, since
+        return ()
+
 
 def airflow_source() -> AirflowFailureSource:
     """Select the configured production, replay, or safe empty source."""

@@ -38,6 +38,7 @@ __all__ = [
     "AirflowSuccessSource",
     "AirflowTaskMetadataSource",
     "ClusterHealthSource",
+    "DagAirflowFailureSource",
     "OmissionStore",
     "OmsEvidenceUnavailableError",
     "OmsJobEvidenceSource",
@@ -69,6 +70,19 @@ class AirflowFailureSource(Protocol):
 
     async def fetch_log(self, failure: AirflowFailure) -> str:
         """Return the exact task-instance log for a failure."""
+        ...
+
+
+@runtime_checkable
+class DagAirflowFailureSource(Protocol):
+    """Read failures for one exact Airflow DAG."""
+
+    async def discover_dag_failures(
+        self,
+        dag_id: str,
+        since: datetime,
+    ) -> tuple[AirflowFailure, ...]:
+        """Return failures for the exact DAG ending at or after the cutoff."""
         ...
 
 

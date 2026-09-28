@@ -1,5 +1,9 @@
 """Production-support runtime and configurable agent-suite exports."""
 
+from workspaces.data_engineering.agents.production_support.agent import (
+    PRODUCTION_SUPPORT_AGENT_DEFINITION,
+    ProductionSupportAgent,
+)
 from workspaces.data_engineering.agents.production_support.airflow_checker import (
     AirflowCheckConfigurationError,
     AirflowChecker,
@@ -15,6 +19,14 @@ from workspaces.data_engineering.agents.production_support.bench_builder import 
 )
 from workspaces.data_engineering.agents.production_support.classification import (
     classify_log,
+)
+from workspaces.data_engineering.agents.production_support.classification_agent import (
+    CLASSIFICATION_AGENT_DEFINITION,
+    ClassificationAgent,
+)
+from workspaces.data_engineering.agents.production_support.client_investigation import (
+    ClientFailureWorkflow,
+    ClientInvestigationError,
 )
 from workspaces.data_engineering.agents.production_support.cluster_checker import (
     ClusterChecker,
@@ -44,6 +56,10 @@ from workspaces.data_engineering.agents.production_support.definition import (
 from workspaces.data_engineering.agents.production_support.developer_reporter import (
     DeveloperReporter,
 )
+from workspaces.data_engineering.agents.production_support.dv_mapping import (
+    DvMappingResult,
+    map_distinctness_targets,
+)
 from workspaces.data_engineering.agents.production_support.evaluation import (
     ProdSupportExpectation,
     ProdSupportScores,
@@ -53,6 +69,10 @@ from workspaces.data_engineering.agents.production_support.evidence import (
     TaskLogSummary,
     summarize_task_log,
 )
+from workspaces.data_engineering.agents.production_support.failure_tools import (
+    ExactLogTool,
+    FailureDiscoveryTool,
+)
 from workspaces.data_engineering.agents.production_support.follow_up import FollowUp
 from workspaces.data_engineering.agents.production_support.investigation import (
     InvestigationConfigurationError,
@@ -60,6 +80,7 @@ from workspaces.data_engineering.agents.production_support.investigation import 
 )
 from workspaces.data_engineering.agents.production_support.models import (
     AirflowFailure,
+    DistinctnessCheck,
     EvidenceSource,
     EvidenceStatus,
     FailureDiagnosis,
@@ -79,6 +100,7 @@ from workspaces.data_engineering.agents.production_support.ports import (
     AirflowSuccessSource,
     AirflowTaskMetadataSource,
     ClusterHealthSource,
+    DagAirflowFailureSource,
     OmissionStore,
     OmsEvidenceUnavailableError,
     OmsJobEvidenceSource,
@@ -161,10 +183,12 @@ __all__ = [
     "BENCH_BUILDER_DELEGATES",
     "BENCH_BUILDER_MAX_PARALLEL",
     "BENCH_BUILDER_NAME",
+    "CLASSIFICATION_AGENT_DEFINITION",
     "CLUSTER_AGENT_NAME",
     "FOLLOW_UP_AGENT_NAME",
     "LUNA_MODEL",
     "ORCHESTRATOR_NAME",
+    "PRODUCTION_SUPPORT_AGENT_DEFINITION",
     "PRODUCTION_SUPPORT_AGENT_DEFINITIONS",
     "PRODUCTION_SUPPORT_DEFINITION",
     "PRODUCTION_SUPPORT_SUITE",
@@ -185,18 +209,26 @@ __all__ = [
     "AirflowTaskMetadataSource",
     "BenchmarkCaseArtifacts",
     "BenchmarkCaseBuildError",
+    "ClassificationAgent",
+    "ClientFailureWorkflow",
+    "ClientInvestigationError",
     "ClusterChecker",
     "ClusterHealthSource",
     "ClusterHealthState",
     "ClusterHealthValueError",
+    "DagAirflowFailureSource",
     "DataInternalOmissionGroup",
     "DataInternalReporter",
     "DebugArtifacts",
     "DefaultLogRedactor",
     "DeveloperReporter",
+    "DistinctnessCheck",
+    "DvMappingResult",
     "EvidenceSource",
     "EvidenceStatus",
+    "ExactLogTool",
     "FailureDiagnosis",
+    "FailureDiscoveryTool",
     "FollowUp",
     "FollowUpAgent",
     "InvestigationConfigurationError",
@@ -216,6 +248,7 @@ __all__ = [
     "ProdSupportReportContext",
     "ProdSupportScope",
     "ProdSupportScores",
+    "ProductionSupportAgent",
     "ProductionSupportAgentConfiguration",
     "ProductionSupportSuite",
     "ProductionSupportWorkflow",
@@ -250,6 +283,7 @@ __all__ = [
     "classify_workload",
     "default_prompt_registry",
     "evaluate_outcome",
+    "map_distinctness_targets",
     "prompt_from_docstring",
     "resolve_query_window",
     "resolve_scope",

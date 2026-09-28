@@ -41,6 +41,14 @@ CLASSIFY_FAILURE = ToolDefinition(
     description="Classify explicit failure evidence from a captured task log.",
     input_schema=(("failure_id", "string"), ("log", "string")),
 )
+MAP_DV_TARGETS = ToolDefinition(
+    name="map_dv_upstream_tasks",
+    description=(
+        "Parse exact distinctness evidence and map only failed DatasetForms to "
+        "their exact upstream ra_group task IDs."
+    ),
+    input_schema=(("log", "string"),),
+)
 QUERY_OMS_JOB = ToolDefinition(
     name="query_oms_job",
     description=(

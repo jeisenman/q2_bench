@@ -98,6 +98,13 @@ def _developer_line(
     ]
     if gaps:
         details.append(f"identity: {_join_terms(gaps)}")
+    rerun_targets = _unique_terms(
+        target
+        for failure in group.failures
+        for target in diagnoses[failure.failure_id].rerun_targets
+    )
+    if rerun_targets:
+        details.append(f"upstream rerun: {_join_terms(rerun_targets)}")
     return (
         f"  - {_join_terms(group.subject_labels)} failed on "
         f"{_join_terms(group.jobs)}: "
