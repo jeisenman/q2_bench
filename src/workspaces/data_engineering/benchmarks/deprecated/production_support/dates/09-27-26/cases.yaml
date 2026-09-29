@@ -1,0 +1,293 @@
+schema_version: 1
+applicability_profiles:
+  system: &system_applicability
+    named_agent_invocation: true
+    parent_child_attribution: true
+    handoff_input_contract: true
+    handoff_output_contract: true
+    handoff_cardinality: true
+    handoff_ordering: false
+    delegation_boundary: true
+    output_authority: true
+    production_mutation_boundary: true
+    benchmark_case_quality: false
+    mcp_output_continuity: true
+    token_efficiency: true
+  mcp: &mcp_applicability
+    named_agent_invocation: false
+    parent_child_attribution: false
+    handoff_input_contract: false
+    handoff_output_contract: false
+    handoff_cardinality: false
+    handoff_ordering: false
+    delegation_boundary: false
+    output_authority: true
+    production_mutation_boundary: true
+    benchmark_case_quality: false
+    mcp_output_continuity: true
+    token_efficiency: true
+  handoff: &handoff_applicability
+    named_agent_invocation: true
+    parent_child_attribution: true
+    handoff_input_contract: true
+    handoff_output_contract: true
+    handoff_cardinality: true
+    handoff_ordering: false
+    delegation_boundary: true
+    output_authority: true
+    production_mutation_boundary: true
+    benchmark_case_quality: false
+    mcp_output_continuity: false
+    token_efficiency: true
+  benchmark: &benchmark_applicability
+    named_agent_invocation: true
+    parent_child_attribution: true
+    handoff_input_contract: true
+    handoff_output_contract: true
+    handoff_cardinality: true
+    handoff_ordering: false
+    delegation_boundary: true
+    output_authority: true
+    production_mutation_boundary: true
+    benchmark_case_quality: true
+    mcp_output_continuity: true
+    token_efficiency: true
+cases:
+  - id: prod-support-us-ca-operational-2026-09-26
+    reference_time: "2026-09-27T16:00:00Z"
+    prompt: Do prod support
+    scope: [US-01, CA-02]
+    dataset_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
+    operational_window:
+      start: "2026-09-26T05:00:00Z"
+      end: "2026-09-27T05:00:00Z"
+    airflow_base_urls:
+      US-01: "https://airflow-us01.precisionlender.com"
+      CA-02: "https://airflow-ca02.precisionlender.com"
+    candidate_inputs:
+      - src/workspaces/data_engineering/benchmarks/production_support/compact_brief.py
+      - src/workspaces/data_engineering/benchmarks/production_support/compact_evidence.py
+      - src/workspaces/data_engineering/benchmarks/production_support/regional_handoff.py
+      - src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/assets/cluster_health_snapshot.json
+      - src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/assets/resource_discovery_snapshot.json
+    evidence_uris:
+      - evidence/capture_manifest.json
+      - evidence/dag_parsing.json
+      - evidence/current-us-findings.json
+      - evidence/current-ca-findings.json
+    evaluation_applicability: *system_applicability
+    handoff_contract:
+      max_parallel: 2
+      output_authority: Reporter
+      agents:
+        - name: ClusterAgent
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [regions, operational_start, operational_end]
+          required_output_fields: [region, status, observed_at, evidence]
+        - name: TriageManager
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [failures, omitted_jobs]
+          required_output_fields: [failures, classifications]
+        - name: Reporter
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [cluster_findings, airflow_findings, follow_up]
+          required_output_fields: [full_report, developer, data_internal, follow_up]
+    reporting_contract_version: "4.0"
+    expected_mcp_tool: run_prod_support
+    required_response_fields:
+      [links, developer_message, data_internal_message, follow_up_message]
+    response_format: data_internal_slack_mrkdwn
+    instructions:
+      - Invoke run_prod_support exactly once for "Do prod support"
+      - Present the MCP fields as Slack-friendly mrkdwn without code fences
+      - Resolve the default scope to US and CA and the date to the previous operational day
+      - Start exactly one Cluster handoff and one TriageManager handoff concurrently
+      - Give TriageManager the complete failure inventory in one call
+      - Query direct Airflow or OMS evidence before fetching unresolved task logs
+      - Run one Reporting pass only after Cluster and TriageManager return
+      - Return the complete Reporting output verbatim without orchestrator rewriting
+      - Keep every finding under its source region and never mix US and CA
+      - Do not issue contradictory cluster-health verdicts from the same evidence
+      - Group clients sharing one job first, then list only their other jobs separately
+      - Read each omission candidate log and require a same-DAG/task success inside the window
+      - Use Ongoing with an indented MI3 then D2P shorthand detail when those are the only regional findings
+      - Keep US and CA labels fully left-aligned
+      - Separate the US and CA sections with exactly one blank line
+      - Return exactly two validation links using the US and CA task-instance list base URLs
+      - Filter end_date greater than the operational start and less than the operational end
+      - Hide all configured omissions from retry suggestions
+      - Use only canonical dated Follow Up actions and request human help for unresolved identities
+    prohibit_agent_changes: true
+  - id: mcp-prod-support-yesterday-2026-09-26
+    reference_time: "2026-09-27T16:00:00Z"
+    prompt: Do prod support for yesterday
+    scope: [US-01, CA-02]
+    dataset_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
+    operational_window:
+      start: "2026-09-26T05:00:00Z"
+      end: "2026-09-27T05:00:00Z"
+    evaluation_applicability: *mcp_applicability
+    expected_mcp_tool: run_prod_support
+    required_response_fields:
+      [links, developer_message, data_internal_message, follow_up_message]
+    response_format: slack_mrkdwn
+    instructions:
+      - Invoke run_prod_support exactly once
+      - Resolve yesterday to the prior 05:00 UTC operational day
+      - Return every required MCP field without rewriting it
+      - Present only data_internal_message as Slack-friendly mrkdwn
+      - Begin follow_up_message with "Reply with follow up to execute these re-runs:" when reruns exist
+  - id: handoff-cluster-agent-2026-09-26
+    reference_time: "2026-09-27T16:00:00Z"
+    prompt: Check US and CA production cluster health for the operational day.
+    dataset_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
+    candidate_inputs:
+      - src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/assets/cluster_health_snapshot.json
+    operational_window:
+      start: "2026-09-26T05:00:00Z"
+      end: "2026-09-27T05:00:00Z"
+    evaluation_applicability: *handoff_applicability
+    handoff_contract:
+      max_parallel: 1
+      output_authority: ClusterAgent
+      agents:
+        - name: ClusterAgent
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [regions, operational_start, operational_end]
+          required_output_fields: [region, status, observed_at, evidence]
+    instructions:
+      - Invoke ClusterAgent exactly once with both requested regions and the exact window
+      - Return its complete regional health findings without inventing missing evidence
+  - id: handoff-triage-manager-2026-09-26
+    reference_time: "2026-09-27T16:00:00Z"
+    prompt: Triage all US and CA Airflow failures for the operational day.
+    dataset_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
+    candidate_inputs:
+      - src/workspaces/data_engineering/benchmarks/production_support/compact_brief.py
+      - src/workspaces/data_engineering/benchmarks/production_support/compact_evidence.py
+      - src/workspaces/data_engineering/benchmarks/production_support/regional_handoff.py
+      - src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/assets/resource_discovery_snapshot.json
+    operational_window:
+      start: "2026-09-26T05:00:00Z"
+      end: "2026-09-27T05:00:00Z"
+    evaluation_applicability: *handoff_applicability
+    handoff_contract:
+      max_parallel: 1
+      output_authority: TriageManager
+      agents:
+        - name: TriageManager
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [failures, omitted_jobs]
+          required_output_fields: [failures, classifications]
+    instructions:
+      - Invoke TriageManager exactly once with the complete failure inventory
+      - Stop on resolved failure messages or OMS evidence
+      - Fetch exact task logs only for unresolved failures
+  - id: handoff-follow-up-agent-2026-09-26
+    reference_time: "2026-09-27T16:00:00Z"
+    prompt: Plan follow-up retries for the eligible failed Airflow tasks.
+    dataset_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
+    operational_window:
+      start: "2026-09-26T05:00:00Z"
+      end: "2026-09-27T05:00:00Z"
+    evaluation_applicability: *handoff_applicability
+    handoff_contract:
+      max_parallel: 1
+      output_authority: FollowUpAgent
+      agents:
+        - name: FollowUpAgent
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [direction, retry_candidates, validation_urls]
+          required_output_fields: [task_instances, validation_urls]
+          expected_mode: execute
+    instructions:
+      - Treat the developer follow-up as authorization and execute exact retries
+      - Preserve region, DAG ID, run ID, and task ID for each candidate
+      - Return the original US and CA validation links
+  - id: handoff-reporter-2026-09-26
+    reference_time: "2026-09-27T16:00:00Z"
+    prompt: Render the completed production-support handoffs into the final report.
+    dataset_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
+    candidate_inputs:
+      - src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/assets/cluster_health_snapshot.json
+      - src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/assets/resource_discovery_snapshot.json
+    operational_window:
+      start: "2026-09-26T05:00:00Z"
+      end: "2026-09-27T05:00:00Z"
+    evaluation_applicability: *handoff_applicability
+    handoff_contract:
+      max_parallel: 1
+      output_authority: Reporter
+      agents:
+        - name: Reporter
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [cluster_findings, airflow_findings, follow_up]
+          required_output_fields: [full_report, developer, data_internal, follow_up]
+    instructions:
+      - Invoke Reporter once and return its complete output verbatim
+      - Preserve every existing MCP-facing report section
+  - id: handoff-bench-builder-agent-2026-09-26
+    reference_time: "2026-09-27T16:00:00Z"
+    prompt: Do prod support and build a benchmark case.
+    scope: [US-01, CA-02]
+    dataset_uri: var/benchmark_data/production_support/2026-09-26/airflow_failures.json
+    candidate_inputs:
+      - src/workspaces/data_engineering/benchmarks/production_support/compact_brief.py
+      - src/workspaces/data_engineering/benchmarks/production_support/compact_evidence.py
+      - src/workspaces/data_engineering/benchmarks/production_support/regional_handoff.py
+      - src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/assets/cluster_health_snapshot.json
+      - src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/assets/resource_discovery_snapshot.json
+    operational_window:
+      start: "2026-09-26T05:00:00Z"
+      end: "2026-09-27T05:00:00Z"
+    evaluation_applicability: *benchmark_applicability
+    handoff_contract:
+      max_parallel: 2
+      output_authority: Reporter
+      agents:
+        - name: ClusterAgent
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [regions, operational_start, operational_end]
+          required_output_fields: [region, status, observed_at, evidence]
+        - name: TriageManager
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [failures, omitted_jobs]
+          required_output_fields: [failures, classifications]
+        - name: Reporter
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [cluster_findings, triage_findings, follow_up]
+          required_output_fields: [full_report, developer, data_internal, follow_up]
+        - name: BenchBuilderAgent
+          parent: Orchestrator
+          min_calls: 1
+          max_calls: 1
+          required_input_fields: [prompt, operational_outcome, correlation_id]
+          required_output_fields: [case, expected_behavior, manifest, review_required]
+          expected_mode: build_draft
+          can_delegate: true
+    instructions:
+      - Run normal production support before invoking BenchBuilderAgent
+      - Give BenchBuilderAgent the completed handoffs and authoritative Reporter output
+      - Build only a new review-required case for the current operational day
+      - Retain all normal MCP report fields and add benchmark artifact metadata
+      - Never expose raw logs or hidden expectations to the candidate

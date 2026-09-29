@@ -24,7 +24,6 @@ def test_benchmarks_lists_visible_benchmarks() -> None:
         "etl\tpipeline_engineering\n"
         "kpo-sizer\tplanning\n"
         "prod-bench\tproduction_operations\n"
-        "production-support\tproduction_operations\n"
         "resource-discovery\tresource_operations\n"
     )
 
@@ -127,7 +126,6 @@ def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
         "etl\trun-1\n"
         "kpo-sizer\trun-1\n"
         "prod-bench\trun-1\n"
-        "production-support\trun-1\n"
         "resource-discovery\trun-1\n"
     )
     assert seeded == [
@@ -139,7 +137,6 @@ def test_init_seeds_benchmark(monkeypatch, tmp_path: Path) -> None:
         "etl",
         "kpo-sizer",
         "prod-bench",
-        "production-support",
         "resource-discovery",
     ]
 

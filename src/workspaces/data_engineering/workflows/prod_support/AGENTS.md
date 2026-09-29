@@ -1,0 +1,101 @@
+# Production-support workflow
+
+## Purpose
+
+One deterministic composition of tools for production support. The control
+flow here is fixed: no model chooses the next step. The agent loop belongs to
+the harness, which follows
+[`skills/prod-support`](../../skills/prod-support/SKILL.md) and
+reaches these tools through the `prod-support` MCP server.
+
+The default scope is US and CA for the previous operational day beginning at
+05:00 UTC. Investigation is read-only. A developer follow-up authorizes
+immediate execution of the exact eligible Airflow retries, and that is the
+only production mutation in this package.
+
+## Architecture
+
+[`definition.py`](definition.py) declares the single public
+`PRODUCTION_SUPPORT_DEFINITION`: a name, a description, a flat tool list, and
+a pointer to the skill. It grants no delegation and names no subagents.
+
+[`workflow.py`](workflow.py) is the composition root.
+`ProductionSupportWorkflow.investigate` resolves the query window and scope,
+runs the Airflow failure check and the cluster-health check concurrently,
+hands the complete failure inventory to [`triage_manager.py`](triage_manager.py)
+once, and formats reports from the result. It returns a `ProdSupportOutcome`
+carrying structured findings plus the deterministic report text.
+
+Evidence retrieval is layered cheapest-first.
+[`investigation.py`](investigation.py) queries exact Airflow task metadata and
+OMS before fetching a task log, and stops as soon as a cause is supported.
+`max_parallel` bounds outbound API concurrency only; it must be at least 1 and
+has no ceiling, because agent-loop parallelism is the harness's concern.
+
+Reporting is deterministic. [`reporting.py`](reporting.py) and its
+`reporting_*` modules render the combined, developer, and Data Internal
+messages from findings. [`report_examples.py`](report_examples.py) holds the
+compliant and non-compliant Data Internal lines that both the renderer and the
+skill are written against. The narrative framing a reader sees is produced by
+the harness from the skill, not by a model inside this package.
+
+[`retry_agent.py`](retry_agent.py) selects retry candidates deterministically
+and `FollowUpExecutor` performs authorized retries against one exact task
+identity. [`bench_builder.py`](bench_builder.py) writes a review-required
+daily benchmark draft; it no longer defines a delegating agent, and new cases
+are normally built from captured traces by the `benchmark-builder` skill.
+
+## Dependencies
+
+Domain values come from `domain`; typed contracts from `ports.py` in this
+package and the top-level `ports` package. Concrete sources are injected at
+the composition root in `mcp_servers/prod_support_sources.py`:
+
+- `AirflowFailureSource` — the Airflow API in production, a replay dataset for
+  captured evidence, or an empty source.
+- `ClusterHealthSource` — the read-only cluster script.
+- `ResourceDiscoveryInvoker` — the Resource Discovery agent, for resolving a
+  complete client UUID.
+- `OmsJobEvidenceSource` — DI_Scheduling_CL for Spark job evidence.
+- `AgentMemory` — durable scoped summaries.
+
+This package depends on no agent framework and holds no model runtime. It must
+not import from `workspaces.data_engineering.agents`, except for the
+`oms_agent` query values it shares.
+
+## Workflow
+
+1. Resolve the operational window and the requested regions from the prompt.
+2. Check Airflow failures and cluster health concurrently.
+3. Hand the full failure inventory to `TriageManager` in one call.
+4. Resolve each failure from the cheapest sufficient evidence, escalating to an
+   exact task log only when needed.
+5. Resolve client identity through Resource Discovery using the complete UUID.
+6. Render the combined, developer, and Data Internal reports.
+7. Compute retry candidates. Execution happens only on explicit developer
+   authorization through `execute_prod_support_follow_up`.
+
+## Benchmark behavior
+
+`benchmark_case_count("production-support")` is currently zero: the handoff
+cases that scored the previous in-process orchestrator moved to
+`benchmarks/deprecated/production_support/` when that orchestrator was
+removed. The MCP warning reporting thin coverage is therefore accurate.
+Rebuild coverage from captured traces with the `benchmark-builder` skill
+rather than by restoring the retired cases.
+
+## Verification
+
+```bash
+uv run python scripts/check.py
+```
+
+Tests mirror this package under
+`tests/unit/workspaces/data_engineering/workflows/`.
+
+## Change policy
+
+Keep the control flow deterministic. If a change requires a model to decide
+what happens next, it belongs in the skill, not here. Keep production mutation
+confined to the authorized retry path, and never let a report claim a mutation
+the returned evidence does not confirm.

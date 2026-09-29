@@ -8,10 +8,10 @@ from pathlib import Path
 
 from domain import AgentRequest, AgentResult
 from domain.models import Attributes
-from workspaces.data_engineering.agents.production_support.cluster_health import (
+from workspaces.data_engineering.workflows.prod_support.cluster_health import (
     RegionalClusterHealth,
 )
-from workspaces.data_engineering.agents.production_support.models import Region
+from workspaces.data_engineering.workflows.prod_support.models import Region
 
 
 class CaptureReplayError(ValueError):

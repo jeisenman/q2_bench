@@ -4,6 +4,7 @@ This directory is the agent-readable entry point for the project.
 
 ## Start here
 
+- [Setup and harness integration](../SETUP.md)
 - [Project architecture](architecture.md)
 - [Agent documentation standard](agent-documentation-standard.md)
 - [Proposed source architecture](source-architecture-proposal.md)
@@ -15,10 +16,15 @@ This directory is the agent-readable entry point for the project.
 - [Anti-leak agent](../src/workspaces/data_engineering/agents/anti_leak/README.md)
 - Resource Discovery benchmark:
   `src/workspaces/data_engineering/benchmarks/resource_discovery/`
+- Workspace skills:
+  `src/workspaces/data_engineering/skills/`
+- Retired benchmarks kept as source data:
+  `src/workspaces/data_engineering/benchmarks/deprecated/`
 - [Benchmark scaffold](scaffold-layout.md)
 - [OpenAI Agents SDK](openai-agents-sdk.md)
 - [OpenTelemetry agent tracing](opentelemetry.md)
 - [Agent memory](agent-memory.md)
+- [Warehouse environments and fixtures](warehouse-environments.md)
 - [Vector search](vector-search.md)
 - [Data-engineering outbound targets](data-engineering-outbound.md)
 

@@ -85,7 +85,8 @@ def test_suite_declares_protocol_subcapabilities() -> None:
 def test_prod_support_public_metadata_contains_no_expected_answers() -> None:
     root = (
         Path(__file__).parents[5]
-        / "src/workspaces/data_engineering/benchmarks/production_support/dates"
+        / "src/workspaces/data_engineering/benchmarks/deprecated"
+        / "production_support/dates"
     )
     for date_root in (root / "09-27-26",):
         public_paths = (
@@ -107,7 +108,8 @@ def test_prod_support_public_metadata_contains_no_expected_answers() -> None:
 def test_candidate_inputs_exclude_hidden_and_prior_report_outputs() -> None:
     root = (
         Path(__file__).parents[5]
-        / "src/workspaces/data_engineering/benchmarks/production_support/dates"
+        / "src/workspaces/data_engineering/benchmarks/deprecated"
+        / "production_support/dates"
     )
     prohibited_names = {
         "mcp_debug_result.json",
@@ -127,7 +129,8 @@ def test_candidate_inputs_exclude_hidden_and_prior_report_outputs() -> None:
 def test_candidate_health_evidence_contains_observations_not_outcomes() -> None:
     root = (
         Path(__file__).parents[5]
-        / "src/workspaces/data_engineering/benchmarks/production_support/dates"
+        / "src/workspaces/data_engineering/benchmarks/deprecated"
+        / "production_support/dates"
     )
     paths = (root / "09-27-26/assets/cluster_health_snapshot.json",)
 

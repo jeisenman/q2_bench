@@ -15,14 +15,14 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 from adapters.airflow.retry import AirflowRetryMixin
-from workspaces.data_engineering.agents.production_support.models import (
+from workspaces.data_engineering.workflows.prod_support.models import (
     AirflowFailure,
     Region,
 )
-from workspaces.data_engineering.agents.production_support.ports import (
+from workspaces.data_engineering.workflows.prod_support.ports import (
     TaskLogUnavailableError,
 )
-from workspaces.data_engineering.agents.production_support.workloads import (
+from workspaces.data_engineering.workflows.prod_support.workloads import (
     AirflowTaskMetadata,
 )
 

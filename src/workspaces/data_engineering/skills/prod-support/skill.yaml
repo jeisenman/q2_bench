@@ -1,0 +1,25 @@
+schema_version: 1
+id: prod-support
+workspace: data_engineering
+display_name: Prod Support
+summary: Discover, triage, and remediate production Airflow failures across US and CA.
+harnesses:
+  - claude
+  - codex
+mcp:
+  server: prod-support
+  tools:
+    - run_prod_support
+    - execute_prod_support_follow_up
+    - setup_prod_support
+    - get_prod_support_omissions
+    - set_prod_support_omissions
+    - update_prod_support_omissions
+    - list_prod_support_updates
+requires_env:
+  - PROD_SUPPORT_SOURCE
+  - DATA_ENGINEERING_AZURE_CLIENT_ID
+  - DATA_ENGINEERING_AZURE_CLIENT_SECRET
+  - DATA_ENGINEERING_AZURE_TENANT_ID
+  - CAAIRFLORUSER
+  - CAAIRFLOWPASSWORD

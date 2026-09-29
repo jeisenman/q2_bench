@@ -11,11 +11,16 @@ from typing import Any
 
 import yaml
 
-from workspaces.data_engineering.benchmarks.models import Benchmark
+from workspaces.data_engineering.benchmarks.models import (
+    BENCHMARK_STATUSES,
+    DEPRECATED,
+    Benchmark,
+)
 
 SNAKE_CASE = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
 IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
+DEPRECATION_FIELDS = frozenset({"since", "reason", "retained_for"})
 REQUIRED_FIELDS = frozenset(
     {
         "schema_version",
@@ -56,10 +61,22 @@ class BenchmarkCatalog:
         manifests = sorted(root.rglob("manifest.yaml"))
         return cls(_load_manifest(path) for path in manifests)
 
-    def list(self) -> tuple[Benchmark, ...]:
-        """Return benchmarks sorted by visible display name."""
+    def list(self, *, include_deprecated: bool = False) -> tuple[Benchmark, ...]:
+        """Return active benchmarks, or every benchmark, by display name."""
+        selected = (
+            self._benchmarks.values()
+            if include_deprecated
+            else [item for item in self._benchmarks.values() if item.is_active]
+        )
+        return tuple(sorted(selected, key=lambda item: item.display_name))
+
+    def list_deprecated(self) -> tuple[Benchmark, ...]:
+        """Return retired benchmarks retained as source data for new cases."""
         return tuple(
-            sorted(self._benchmarks.values(), key=lambda item: item.display_name)
+            sorted(
+                (item for item in self._benchmarks.values() if not item.is_active),
+                key=lambda item: item.display_name,
+            )
         )
 
     def get(self, benchmark_id: str) -> Benchmark:
@@ -93,7 +110,38 @@ def _load_manifest(path: Path) -> Benchmark:
     display_name = str(manifest["display_name"])
     if not display_name.strip():
         raise BenchmarkManifestError.invalid(path, "display_name must not be empty")
+    _validate_status(path, manifest)
     return Benchmark.from_manifest(manifest)
+
+
+def _validate_status(path: Path, manifest: dict[str, Any]) -> None:
+    """Reject unknown statuses and deprecations without a documented reason."""
+    status = str(manifest.get("status", "active"))
+    if status not in BENCHMARK_STATUSES:
+        allowed = ", ".join(sorted(BENCHMARK_STATUSES))
+        raise BenchmarkManifestError.invalid(path, f"status must be one of: {allowed}")
+    deprecation = manifest.get("deprecated")
+    if status != DEPRECATED:
+        if deprecation is not None:
+            raise BenchmarkManifestError.invalid(
+                path, "deprecated block requires status: deprecated"
+            )
+        return
+    if not isinstance(deprecation, dict):
+        raise BenchmarkManifestError.invalid(
+            path, "status: deprecated requires a deprecated mapping"
+        )
+    missing = DEPRECATION_FIELDS.difference(deprecation)
+    if missing:
+        fields = ", ".join(sorted(missing))
+        raise BenchmarkManifestError.invalid(
+            path, f"deprecated is missing required fields: {fields}"
+        )
+    for field in sorted(DEPRECATION_FIELDS):
+        if not str(deprecation[field]).strip():
+            raise BenchmarkManifestError.invalid(
+                path, f"deprecated.{field} must not be empty"
+            )
 
 
 def default_catalog() -> BenchmarkCatalog:

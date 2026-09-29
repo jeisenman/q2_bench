@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import Protocol
 from urllib.parse import urlencode
 
-from workspaces.data_engineering.agents.production_support.templates import (
-    HUMAN_IDENTITY_ACTION_TEMPLATE,
-    RESEND_ACTION_TEMPLATE,
-)
 from workspaces.data_engineering.benchmarks.handoff_contracts import HandoffContract
 from workspaces.data_engineering.benchmarks.matrix_evidence import (
     compact_brief_shell_command,
+)
+from workspaces.data_engineering.workflows.prod_support.templates import (
+    HUMAN_IDENTITY_ACTION_TEMPLATE,
+    RESEND_ACTION_TEMPLATE,
 )
 
 

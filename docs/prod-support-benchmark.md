@@ -3,7 +3,7 @@
 The public production-support package is:
 
 ```text
-src/workspaces/data_engineering/agents/production_support/
+src/workspaces/data_engineering/workflows/prod_support/
 ```
 
 It keeps the explicit prdbench agent graph and the reusable operational tools
@@ -44,7 +44,7 @@ separate throughout the handoffs.
 The stable manifest is:
 
 ```text
-src/workspaces/data_engineering/benchmarks/production_support/manifest.yaml
+src/workspaces/data_engineering/benchmarks/deprecated/production_support/manifest.yaml
 ```
 
 It contains one active run:
@@ -111,8 +111,8 @@ Useful commands:
 uv run agentbench debug-prod-support --date 2026-09-26
 
 uv run agentbench run-matrix \
-  --benchmark src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/evaluation.yaml \
-  --cases src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26/cases.yaml \
+  --benchmark src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/evaluation.yaml \
+  --cases src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/09-27-26/cases.yaml \
   --case handoff-bench-builder-agent-2026-09-26 \
   --execute
 

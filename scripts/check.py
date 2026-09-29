@@ -33,6 +33,7 @@ def main() -> int:
     run(["pytest", "-n", "auto", "--dist", "loadscope"])
     run(["python", "scripts/check_file_lengths.py"])
     run(["python", "scripts/check_agent_docs.py"])
+    run(["python", "scripts/check_skills.py"])
     return 0
 
 

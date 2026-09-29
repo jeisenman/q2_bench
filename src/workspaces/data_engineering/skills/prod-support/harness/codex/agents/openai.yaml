@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prod Support"
+  short_description: "Parallel Airflow failure triage and reruns"
+  default_prompt: "Use $prod-support to identify production Airflow issues, investigate each failure in parallel, and rerun eligible EventBus or OOM tasks."

@@ -1,0 +1,22 @@
+schema_version: 1
+id: resource-discovery
+workspace: data_engineering
+display_name: Resource Discovery
+summary: Query PrecisionLender Resource Discovery for client and resource metadata.
+harnesses:
+  - claude
+  - codex
+mcp:
+  server: resource-discovery
+  tools:
+    - lookup_resources
+state:
+  # Seeded on first sync, then owned by the harness at runtime. Excluded
+  # from drift checks so using the skill does not fail the quality gate.
+  - references/client-guuid-lookup.json
+requires_env:
+  - RESOURCE_DISCOVERY_CLIENT_ID
+  - RESOURCE_DISCOVERY_CLIENT_SECRET
+  - RESOURCE_DISCOVERY_TENANT_ID
+  - RESOURCE_DISCOVERY_SCOPE
+  - RESOURCE_DISCOVERY_BASE_URL

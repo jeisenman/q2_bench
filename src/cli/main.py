@@ -30,19 +30,20 @@ from cli.prod_support_replay import (
     run_replay_case,
     write_recorded_outcome,
 )
-from workspaces.data_engineering.agents.production_support import (
-    PROD_SUPPORT_MLFLOW_NAMESPACE,
-    PRODUCTION_SUPPORT_AGENT_DEFINITIONS,
-)
+from cli.skills import sync_skills
 from workspaces.data_engineering.benchmarks import (
     default_catalog,
     load_matrix_run,
+)
+from workspaces.data_engineering.workflows.prod_support import (
+    PROD_SUPPORT_MLFLOW_NAMESPACE,
+    PRODUCTION_SUPPORT_WORKFLOW_DEFINITIONS,
 )
 
 DEFAULT_TRACKING_URI = "sqlite:///var/mlflow/backend.db"
 DEFAULT_ARTIFACT_ROOT = Path("var/mlflow/artifacts")
 PROD_SUPPORT_CASES = Path(
-    "src/workspaces/data_engineering/benchmarks/"
+    "src/workspaces/data_engineering/benchmarks/deprecated/"
     "production_support/dates/09-27-26/cases.yaml"
 )
 DEFAULT_ASSISTANT_CONFIG = Path.home() / ".mlflow/assistant/config.json"
@@ -50,11 +51,11 @@ DEFAULT_AGENT_CONFIGURATIONS = Path(
     "src/workspaces/data_engineering/benchmarks/agent-manifest.yaml"
 )
 DEFAULT_MATRIX_BENCHMARK = Path(
-    "src/workspaces/data_engineering/benchmarks/production_support/"
+    "src/workspaces/data_engineering/benchmarks/deprecated/production_support/"
     "dates/09-27-26/evaluation.yaml"
 )
 DEFAULT_MATRIX_CASES = Path(
-    "src/workspaces/data_engineering/benchmarks/production_support/"
+    "src/workspaces/data_engineering/benchmarks/deprecated/production_support/"
     "dates/09-27-26/cases.yaml"
 )
 DEFAULT_MATRIX_CASE = "prod-support-us-ca-operational-2026-09-26"
@@ -65,6 +66,7 @@ def cli() -> None:
     """Manage data-engineering agents and benchmarks."""
 
 
+cli.add_command(sync_skills)
 cli.add_command(capture_prod_support)
 cli.add_command(debug_prod_support)
 
@@ -108,7 +110,7 @@ def register_agent(agent: str, tracking_uri: str) -> None:
     """Register an agent family in its MLflow namespace."""
     del agent
     registrations = register_agent_definitions(
-        PRODUCTION_SUPPORT_AGENT_DEFINITIONS,
+        PRODUCTION_SUPPORT_WORKFLOW_DEFINITIONS,
         tracking_uri=tracking_uri,
         experiment_name="production_operations",
         namespace=PROD_SUPPORT_MLFLOW_NAMESPACE,

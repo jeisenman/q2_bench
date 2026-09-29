@@ -10,11 +10,11 @@ import pytest
 
 from adapters.airflow import AirflowApiSource, AirflowRegionConfig
 from adapters.resource_discovery import ResourceDiscoveryApiSource
-from workspaces.data_engineering.agents.production_support.models import Region
 from workspaces.data_engineering.agents.resource_discovery import (
     IdentifierKind,
     ResourceIdentifier,
 )
+from workspaces.data_engineering.workflows.prod_support.models import Region
 
 ENABLE_ENV = "RUN_PROD_SUPPORT_PRODUCTION_TESTS"
 REGION_SETTINGS = (

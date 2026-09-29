@@ -10,7 +10,7 @@ from adapters.airflow.source import (
     AirflowRegionConfig,
     UrllibAirflowTransport,
 )
-from workspaces.data_engineering.agents.production_support.models import (
+from workspaces.data_engineering.workflows.prod_support.models import (
     AirflowFailure,
     Region,
 )

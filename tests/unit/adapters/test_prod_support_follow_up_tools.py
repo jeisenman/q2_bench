@@ -7,11 +7,11 @@ import asyncio
 import pytest
 
 from mcp_servers import prod_support_follow_up
-from workspaces.data_engineering.agents.production_support import (
+from workspaces.data_engineering.workflows.prod_support import (
     Region,
     RetryCandidate,
 )
-from workspaces.data_engineering.agents.production_support.retry_models import (
+from workspaces.data_engineering.workflows.prod_support.retry_models import (
     RetryTaskReference,
 )
 

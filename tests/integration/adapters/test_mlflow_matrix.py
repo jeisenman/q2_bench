@@ -9,7 +9,7 @@ ROOT = Path(__file__).parents[3]
 AGENTS_PATH = ROOT / "src/workspaces/data_engineering/benchmarks/agent-manifest.yaml"
 BENCHMARK_PATH = (
     ROOT
-    / "src/workspaces/data_engineering/benchmarks/production_support"
+    / "src/workspaces/data_engineering/benchmarks/deprecated/production_support"
     / "dates/09-27-26/evaluation.yaml"
 )
 CASES_PATH = BENCHMARK_PATH.with_name("cases.yaml")

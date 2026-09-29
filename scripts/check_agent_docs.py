@@ -1,4 +1,4 @@
-"""Run the agent architecture documentation policy check."""
+"""Run the architecture documentation policy check for agents and workflows."""
 
 from __future__ import annotations
 
@@ -9,16 +9,19 @@ from repository_checks.agent_docs import find_errors
 
 
 def main() -> int:
-    """Validate agent documentation and return a shell-compatible status."""
+    """Validate package documentation and return a shell-compatible status."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "agents_root",
-        nargs="?",
+        "roots",
+        nargs="*",
         type=Path,
-        default=Path("src/workspaces/data_engineering/agents"),
+        default=[
+            Path("src/workspaces/data_engineering/agents"),
+            Path("src/workspaces/data_engineering/workflows"),
+        ],
     )
     args = parser.parse_args()
-    errors = find_errors(args.agents_root)
+    errors = tuple(error for root in args.roots for error in find_errors(root))
     if errors:
         parser.exit(1, "\n".join(errors) + "\n")
     return 0

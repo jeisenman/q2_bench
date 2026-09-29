@@ -1,0 +1,14 @@
+schema_version: 1
+id: benchmark-builder
+workspace: data_engineering
+display_name: Benchmark Builder
+summary: Turn a captured MLflow trace into a benchmark case with distractors.
+harnesses:
+  - claude
+  - codex
+mcp:
+  server: prod-support
+  tools:
+    - run_prod_support
+requires_env:
+  - MLFLOW_TRACKING_URI

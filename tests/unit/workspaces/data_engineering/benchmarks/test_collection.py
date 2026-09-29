@@ -6,11 +6,6 @@ from pathlib import Path
 import pytest
 
 from domain import AgentRequest, AgentResult
-from workspaces.data_engineering.agents.production_support import (
-    AirflowFailure,
-    Region,
-    RegionalClusterHealth,
-)
 from workspaces.data_engineering.benchmarks.production_support import (
     collection_replay,
 )
@@ -18,6 +13,11 @@ from workspaces.data_engineering.benchmarks.production_support.collection import
     ProdSupportCollectionError,
     ProdSupportCollectionSources,
     collect_prod_support_data,
+)
+from workspaces.data_engineering.workflows.prod_support import (
+    AirflowFailure,
+    Region,
+    RegionalClusterHealth,
 )
 
 CLIENT_ID = "1f06da19-2f61-401c-a1b7-38902e4f3543"

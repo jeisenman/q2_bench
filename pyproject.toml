@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.1",
+    "duckdb>=1.5.6",
     "inspect-ai>=0.3",
     "mcp>=1.0",
     "mlflow==3.16.1",
@@ -13,12 +14,20 @@ dependencies = [
     "opentelemetry-api>=1.44",
     "opentelemetry-sdk>=1.44",
     "psycopg[binary]>=3.2",
+    "pytz>=2026.4",
     "pyyaml>=6.0",
+    "types-pytz>=2026.4.0.20260926",
 ]
+
+[project.optional-dependencies]
+# Heavy provider SDKs stay optional: the sandbox environment needs none
+# of them, so tests and benchmarks run without provider credentials.
+snowflake = ["snowflake-connector-python>=3.12"]
 
 [project.scripts]
 agentbench = "cli.main:main"
 prod-support-mcp = "mcp_servers.prod_support:main"
+warehouse-mcp = "mcp_servers.warehouse:main"
 
 [dependency-groups]
 dev = [
@@ -79,13 +88,81 @@ select = [
 ignore = ["D203", "D213"]
 
 [tool.ruff.lint.per-file-ignores]
-".codex/skills/**/scripts/*.py" = ["ANN401", "D103", "T201", "TRY003"]
+# Skill scripts are standalone CLI helpers the harness executes directly,
+# not library code this package imports. They keep the correctness and
+# security rules and are excluded only from library-shaped style rules:
+# full annotations, docstrings, import placement, and argument counts.
+"src/workspaces/*/skills/**/scripts/*.py" = [
+    "ANN001",
+    "ANN401",
+    "D101",
+    "D103",
+    "E501",
+    "PLC0415",
+    "PLR0911",
+    "PLR0913",
+    "PLR0917",
+    "PLR2004",
+    "PLW2901",
+    "RUF059",
+    "SIM102",
+    "T201",
+    "TRY003",
+    "TRY004",
+    "TRY301",
+]
+".claude/skills/**/scripts/*.py" = [
+    "ANN001",
+    "ANN401",
+    "D101",
+    "D103",
+    "E501",
+    "PLC0415",
+    "PLR0911",
+    "PLR0913",
+    "PLR0917",
+    "PLR2004",
+    "PLW2901",
+    "RUF059",
+    "SIM102",
+    "T201",
+    "TRY003",
+    "TRY004",
+    "TRY301",
+]
+".codex/skills/**/scripts/*.py" = [
+    "ANN001",
+    "ANN401",
+    "D101",
+    "D103",
+    "E501",
+    "PLC0415",
+    "PLR0911",
+    "PLR0913",
+    "PLR0917",
+    "PLR2004",
+    "PLW2901",
+    "RUF059",
+    "SIM102",
+    "T201",
+    "TRY003",
+    "TRY004",
+    "TRY301",
+]
 "tests/**" = ["ANN", "D"]
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
 files = ["src"]
+# Skill scripts are executed by the harness, not imported by this package.
+exclude = "^src/workspaces/[^/]+/skills/"
+
+# The Snowflake connector is an optional extra and ships no type stubs.
+# This silences only the missing third-party stubs, never our own types.
+[[tool.mypy.overrides]]
+module = ["snowflake.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers --cov=src --cov-report=term-missing"

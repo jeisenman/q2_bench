@@ -6,6 +6,7 @@ from workspaces.data_engineering.benchmarks import (
     INSUFFICIENT_BENCHMARK_WARNING,
     BenchmarkCoverageError,
     benchmark_case_count,
+    deprecated_case_count,
     insufficient_benchmark_warning,
     prepend_benchmark_warning,
 )
@@ -74,3 +75,13 @@ def test_agent_architecture_diagram_tracks_current_case_counts() -> None:
         agent_id = directory.name.replace("_", "-")
         count = benchmark_case_count(agent_id)
         assert f"{agent_id}<br/>{count} cases" in diagram
+
+
+def test_deprecated_cases_are_excluded_from_active_coverage() -> None:
+    retained = 7
+    assert benchmark_case_count("production-support") == 0
+    assert deprecated_case_count("production-support") == retained
+
+
+def test_deprecated_case_count_is_zero_for_unknown_agents() -> None:
+    assert deprecated_case_count("no-such-agent") == 0

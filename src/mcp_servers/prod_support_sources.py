@@ -7,7 +7,6 @@ from datetime import datetime
 from pathlib import Path
 
 from adapters.airflow import AirflowApiSource
-from adapters.codex_cli import CodexCliRuntime
 from adapters.kubernetes import ClusterHealthScriptSource
 from adapters.postgres import agent_memory_from_environment
 from adapters.resource_discovery import (
@@ -17,13 +16,13 @@ from adapters.resource_discovery import (
     configured_client_lookup_path,
 )
 from agent_memory import AgentMemory
-from workspaces.data_engineering.agents.production_support import (
+from workspaces.data_engineering.agents.resource_discovery import (
+    ResourceDiscoveryAgent,
+)
+from workspaces.data_engineering.workflows.prod_support import (
     AirflowFailure,
     AirflowFailureSource,
     ReplayAirflowFailureSource,
-)
-from workspaces.data_engineering.agents.resource_discovery import (
-    ResourceDiscoveryAgent,
 )
 
 SOURCE_ENV = "PROD_SUPPORT_SOURCE"
@@ -97,13 +96,6 @@ def memory() -> AgentMemory | None:
     if os.environ.get(SOURCE_ENV) != "production":
         return None
     return agent_memory_from_environment("production-support")
-
-
-def report_runtime() -> CodexCliRuntime | None:
-    """Use the configured Bedrock-backed Codex runtime in production."""
-    if os.environ.get(SOURCE_ENV) != "production":
-        return None
-    return CodexCliRuntime()
 
 
 def cluster_health() -> ClusterHealthScriptSource | None:

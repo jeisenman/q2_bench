@@ -9,7 +9,7 @@ from workspaces.data_engineering.benchmarks import load_matrix_run
 ROOT = Path(__file__).parents[4]
 BENCHMARK = (
     ROOT
-    / "src/workspaces/data_engineering/benchmarks/production_support"
+    / "src/workspaces/data_engineering/benchmarks/deprecated/production_support"
     / "dates/09-27-26/evaluation.yaml"
 )
 AGENTS = ROOT / "src/workspaces/data_engineering/benchmarks/agent-manifest.yaml"

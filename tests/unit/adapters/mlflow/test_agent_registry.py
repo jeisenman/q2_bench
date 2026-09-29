@@ -4,7 +4,7 @@ from typing import ClassVar
 import pytest
 
 from adapters.mlflow import agent_registry
-from workspaces.data_engineering.agents.production_support import (
+from workspaces.data_engineering.workflows.prod_support import (
     PRODUCTION_SUPPORT_DEFINITION,
 )
 
@@ -72,12 +72,12 @@ def test_registers_agent_definition_and_current_alias(monkeypatch) -> None:
     )
 
     assert (run_id, version) == ("run-2", "2")
-    assert FakeClient.created[0] == "Orchestrator"
-    assert FakeClient.created[-1] == "Orchestrator:agent-v1:2"
+    assert FakeClient.created[0] == "production-support"
+    assert FakeClient.created[-1] == "production-support:agent-v1:2"
     logged_definition, path = FakeMlflow.logged["definition"]
     assert path == "agent/definition.json"
-    assert "ClusterAgent" in logged_definition["instructions"]
-    assert logged_definition["can_delegate"] is True
+    assert "skills/prod-support" in logged_definition["instructions"]
+    assert logged_definition["can_delegate"] is False
 
 
 def test_reuses_existing_registered_agent(monkeypatch) -> None:
@@ -95,7 +95,7 @@ def test_reuses_existing_registered_agent(monkeypatch) -> None:
         experiment_name="production_operations",
     )
 
-    assert "Orchestrator" not in FakeClient.created
+    assert "production-support" not in FakeClient.created
 
 
 def test_registers_agent_in_namespace(monkeypatch) -> None:
@@ -114,7 +114,7 @@ def test_registers_agent_in_namespace(monkeypatch) -> None:
         namespace="data_engineering.production_operations",
     )
 
-    registered_name = "data_engineering.production_operations.Orchestrator"
+    registered_name = "data_engineering.production_operations.production-support"
     assert FakeClient.created[0] == registered_name
     assert FakeClient.created[-1] == f"{registered_name}:agent-v1:2"
     assert FakeMlflow.logged["run"]["tags"]["agent.namespace"] == (

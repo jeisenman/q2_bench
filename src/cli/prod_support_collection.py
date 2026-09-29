@@ -16,13 +16,16 @@ from adapters.resource_discovery import (
     ResourceDiscoveryApiSource,
     configured_client_lookup_path,
 )
-from workspaces.data_engineering.agents.production_support import Region, run_debug_day
 from workspaces.data_engineering.agents.resource_discovery import (
     ResourceDiscoveryAgent,
 )
 from workspaces.data_engineering.benchmarks.production_support.collection import (
     ProdSupportCollectionSources,
     collect_prod_support_data,
+)
+from workspaces.data_engineering.workflows.prod_support import (
+    Region,
+    run_debug_day,
 )
 
 

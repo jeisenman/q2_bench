@@ -9,28 +9,28 @@ from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 
 from domain import AgentRequest, AgentResult
-from workspaces.data_engineering.agents.production_support.datasets import (
-    ReplayAirflowFailureSource,
-    capture_day,
-)
-from workspaces.data_engineering.agents.production_support.models import (
-    AirflowFailure,
-    Region,
-)
-from workspaces.data_engineering.agents.production_support.ports import (
-    AirflowFailureSource,
-    ClusterHealthSource,
-    ResourceDiscoveryInvoker,
-)
-from workspaces.data_engineering.agents.production_support.reporting_details import (
-    client_id,
-)
 from workspaces.data_engineering.benchmarks.production_support.compact_brief import (
     build_report_brief,
 )
 from workspaces.data_engineering.benchmarks.production_support.compact_evidence import (
     build_compact_evidence,
     write_compact_evidence,
+)
+from workspaces.data_engineering.workflows.prod_support.datasets import (
+    ReplayAirflowFailureSource,
+    capture_day,
+)
+from workspaces.data_engineering.workflows.prod_support.models import (
+    AirflowFailure,
+    Region,
+)
+from workspaces.data_engineering.workflows.prod_support.ports import (
+    AirflowFailureSource,
+    ClusterHealthSource,
+    ResourceDiscoveryInvoker,
+)
+from workspaces.data_engineering.workflows.prod_support.reporting_details import (
+    client_id,
 )
 
 MAX_PARALLEL = 5

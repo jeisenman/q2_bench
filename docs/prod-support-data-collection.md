@@ -39,7 +39,7 @@ var/benchmark_data/production_support/          ignored, sensitive working data
     ├── reporting_input.json              grouped input for one Reporting pass
     └── collection_manifest.json          scope and orchestration contract
 
-src/workspaces/data_engineering/benchmarks/production_support/
+src/workspaces/data_engineering/benchmarks/deprecated/production_support/
 ├── manifest.yaml                         stable benchmark identity
 ├── dataset/
 │   └── README.md
@@ -86,7 +86,7 @@ Start from the debug draft when available. Otherwise, create the new suite from
 the current handoff schema without copying conclusions from a prior run:
 
 ```bash
-next=src/workspaces/data_engineering/benchmarks/production_support/dates/MM-DD-YY
+next=src/workspaces/data_engineering/benchmarks/deprecated/production_support/dates/MM-DD-YY
 mkdir -p "$next/capabilities" "$next/evidence" "$next/hidden"
 ```
 

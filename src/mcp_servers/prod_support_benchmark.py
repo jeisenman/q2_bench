@@ -5,12 +5,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from workspaces.data_engineering.agents.production_support import (
+from workspaces.data_engineering.workflows.prod_support import (
     BenchmarkCaseArtifacts,
-    build_bench_builder_definition,
     build_daily_benchmark_case,
 )
-from workspaces.data_engineering.agents.production_support.models import (
+from workspaces.data_engineering.workflows.prod_support.models import (
     ProdSupportOutcome,
 )
 
@@ -43,8 +42,3 @@ def capture_benchmark_case(
         )
     )
     return build_daily_benchmark_case(outcome, prompt, correlation_id, root)
-
-
-def bench_builder_description() -> str:
-    """Return the framework-neutral BenchBuilder description."""
-    return build_bench_builder_definition().description

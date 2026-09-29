@@ -16,7 +16,6 @@ from adapters.local import (
 from adapters.telemetry import configure_telemetry
 from domain import AgentRequest
 from mcp_servers.prod_support_benchmark import (
-    bench_builder_description,
     capture_benchmark_case,
     requests_benchmark_case,
 )
@@ -39,9 +38,6 @@ from mcp_servers.prod_support_sources import (
     memory as _memory,
 )
 from mcp_servers.prod_support_sources import (
-    report_runtime as _report_runtime,
-)
-from mcp_servers.prod_support_sources import (
     resource_discovery as _resource_discovery,
 )
 from observability import (
@@ -49,19 +45,19 @@ from observability import (
     extracted_trace_context,
     traced_operation,
 )
-from workspaces.data_engineering.agents.production_support import (
-    FollowUpAgent,
-    InvestigationServices,
-    ProdSupportReportConfig,
-    ProductionSupportWorkflow,
-)
-from workspaces.data_engineering.agents.production_support.reporting_config import (
-    update_omission_values,
-)
 from workspaces.data_engineering.benchmarks import (
     benchmark_case_count,
     insufficient_benchmark_warning,
     prepend_benchmark_warning,
+)
+from workspaces.data_engineering.workflows.prod_support import (
+    FollowUpExecutor,
+    InvestigationServices,
+    ProdSupportReportConfig,
+    ProductionSupportWorkflow,
+)
+from workspaces.data_engineering.workflows.prod_support.reporting_config import (
+    update_omission_values,
 )
 
 SERVER_NAME = "prod-support"
@@ -76,10 +72,7 @@ agent = ProductionSupportWorkflow(
     _source(),
     resource_discovery=_resource_discovery(),
     cluster_health=_cluster_health(),
-    investigation=InvestigationServices(
-        report_runtime=_report_runtime(),
-        memory=_agent_memory,
-    ),
+    investigation=InvestigationServices(memory=_agent_memory),
 )
 server.tool(
     name="execute_prod_support_follow_up",
@@ -296,17 +289,7 @@ async def prod_support_definition() -> str:
 )
 async def prod_support_follow_up_definition() -> str:
     """Return the follow-up subagent definition."""
-    return FollowUpAgent.definition.description
-
-
-@server.resource(
-    "agent://prod-support/bench-builder/definition",
-    name="prod-support benchmark builder definition",
-    description="Review-required daily production-support benchmark builder.",
-)
-async def prod_support_bench_builder_definition() -> str:
-    """Return the BenchBuilder subagent definition."""
-    return bench_builder_description()
+    return FollowUpExecutor.description
 
 
 @server.resource(

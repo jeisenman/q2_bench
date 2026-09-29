@@ -4,7 +4,8 @@ import yaml
 
 ROOT = (
     Path(__file__).parents[5]
-    / "src/workspaces/data_engineering/benchmarks/production_support/dates/09-27-26"
+    / "src/workspaces/data_engineering/benchmarks/deprecated"
+    / "production_support/dates/09-27-26"
 )
 SYSTEM_CASES = [
     "prod-support-us-ca-operational-2026-09-26",

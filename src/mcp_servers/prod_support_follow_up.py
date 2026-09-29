@@ -5,8 +5,8 @@ from __future__ import annotations
 import os
 
 from adapters.airflow import AirflowApiSource
-from workspaces.data_engineering.agents.production_support import (
-    FollowUpAgent,
+from workspaces.data_engineering.workflows.prod_support import (
+    FollowUpExecutor,
     Region,
     RetryCandidate,
 )
@@ -95,10 +95,10 @@ async def execute_prod_support_follow_up(
     }
 
 
-def _follow_up_agent() -> FollowUpAgent:
+def _follow_up_agent() -> FollowUpExecutor:
     if os.environ.get(SOURCE_ENV) != "production":
         raise FollowUpConfigurationError.production_required()
-    return FollowUpAgent(AirflowApiSource.from_environment())
+    return FollowUpExecutor(AirflowApiSource.from_environment())
 
 
 def _validation_urls(values: list[str]) -> tuple[str, str]:

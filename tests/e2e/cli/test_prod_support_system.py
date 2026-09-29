@@ -1,11 +1,11 @@
 import asyncio
 from datetime import UTC, datetime
 
-from workspaces.data_engineering.agents.production_support import (
+from workspaces.data_engineering.workflows.prod_support import (
     AirflowFailure,
     ProductionSupportWorkflow,
 )
-from workspaces.data_engineering.agents.production_support.models import Region
+from workspaces.data_engineering.workflows.prod_support.models import Region
 
 
 class ReplayDay:

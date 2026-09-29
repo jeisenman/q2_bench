@@ -4,6 +4,15 @@ from workspaces.data_engineering.benchmarks.agent_configurations import (
     AgentConfigurationManifest,
     load_agent_configurations,
 )
+from workspaces.data_engineering.benchmarks.anonymization import (
+    AnonymizationError,
+    AnonymizationPolicy,
+    ColumnPolicy,
+    Strategy,
+    anonymize_rows,
+    anonymize_value,
+    load_policy,
+)
 from workspaces.data_engineering.benchmarks.catalog import (
     BenchmarkCatalog,
     BenchmarkManifestError,
@@ -14,6 +23,7 @@ from workspaces.data_engineering.benchmarks.coverage import (
     MINIMUM_BENCHMARK_CASES,
     BenchmarkCoverageError,
     benchmark_case_count,
+    deprecated_case_count,
     insufficient_benchmark_warning,
     prepend_benchmark_warning,
 )
@@ -33,6 +43,7 @@ from workspaces.data_engineering.benchmarks.matrix import (
 )
 from workspaces.data_engineering.benchmarks.models import (
     Benchmark,
+    Deprecation,
     MlflowMapping,
 )
 from workspaces.data_engineering.benchmarks.quality import (
@@ -48,33 +59,59 @@ from workspaces.data_engineering.benchmarks.quality import (
     filter_failures,
     regional_count_accuracy,
 )
+from workspaces.data_engineering.benchmarks.trace_cases import (
+    Distractor,
+    RecordedToolCall,
+    RecordedTrace,
+    TraceCase,
+    TraceCaseError,
+    TraceSource,
+    build_distractors,
+    build_trace_case,
+)
 
 __all__ = [
     "INSUFFICIENT_BENCHMARK_WARNING",
     "MINIMUM_BENCHMARK_CASES",
     "AgentConfigurationManifest",
+    "AnonymizationError",
+    "AnonymizationPolicy",
     "Benchmark",
     "BenchmarkCatalog",
     "BenchmarkCoverageError",
     "BenchmarkManifestError",
+    "ColumnPolicy",
     "ComputeKind",
     "DagProcessorAssessment",
     "DagProcessorObservation",
+    "Deprecation",
+    "Distractor",
     "MatrixManifest",
     "MatrixManifestError",
     "MlflowMapping",
     "ModelProfile",
+    "RecordedToolCall",
+    "RecordedTrace",
     "RubricCriterion",
+    "Strategy",
     "TaskObservation",
     "ToolStep",
+    "TraceCase",
+    "TraceCaseError",
+    "TraceSource",
     "TrajectoryScore",
+    "anonymize_rows",
+    "anonymize_value",
     "assess_dag_processor",
     "benchmark_case_count",
     "build_candidate_prompt",
+    "build_distractors",
     "build_efficiency_judge_prompt",
     "build_matrix_judge_prompt",
+    "build_trace_case",
     "dag_existence_rate",
     "default_catalog",
+    "deprecated_case_count",
     "detect_compute_kind",
     "evaluate_trajectory",
     "failure_recall",
@@ -82,6 +119,7 @@ __all__ = [
     "insufficient_benchmark_warning",
     "load_agent_configurations",
     "load_matrix_run",
+    "load_policy",
     "prepend_benchmark_warning",
     "regional_count_accuracy",
 ]

@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 from adapters.airflow import AirflowApiSource
-from adapters.codex_cli import CodexCliRuntime
 from adapters.resource_discovery import (
     IndexedResourceDiscoverySource,
     JsonClientLookupSource,
@@ -13,13 +12,11 @@ from adapters.resource_discovery import (
 )
 from mcp_servers.prod_support import (
     _cluster_health,
-    _report_runtime,
     _requests_benchmark_case,
     _resource_discovery,
     _source,
     get_prod_support_omissions,
     list_prod_support_updates,
-    prod_support_bench_builder_definition,
     prod_support_definition,
     prod_support_prompt,
     prod_support_updates,
@@ -29,19 +26,24 @@ from mcp_servers.prod_support import (
 )
 from mcp_servers.prod_support_output import retry_approval_message
 from mcp_servers.prod_support_sources import EmptyAirflowFailureSource, memory
-from workspaces.data_engineering.agents.production_support import (
-    ReplayAirflowFailureSource,
-)
-from workspaces.data_engineering.agents.production_support.models import (
-    Region,
-    RetryCandidate,
-)
 from workspaces.data_engineering.agents.resource_discovery import (
     ResourceDiscoveryAgent,
 )
+from workspaces.data_engineering.benchmarks import (
+    INSUFFICIENT_BENCHMARK_WARNING,
+    deprecated_case_count,
+)
+from workspaces.data_engineering.workflows.prod_support import (
+    ReplayAirflowFailureSource,
+)
+from workspaces.data_engineering.workflows.prod_support.models import (
+    Region,
+    RetryCandidate,
+)
 
 EXPECTED_REGION_COUNT = 2
-EXPECTED_BENCHMARK_CASE_COUNT = 7
+EXPECTED_BENCHMARK_CASE_COUNT = 0
+RETAINED_DEPRECATED_CASE_COUNT = 7
 PRIVATE_DIRECTORY_MODE = 0o700
 PRIVATE_FILE_MODE = 0o600
 
@@ -77,10 +79,18 @@ def test_mcp_tool_runs_prod_support_agent(
 
     assert result["correlation_id"] == "incident-1"
     assert result["benchmark_case_count"] == EXPECTED_BENCHMARK_CASE_COUNT
-    assert result["warnings"] == ()
+    # The handoff cases were deprecated with the in-process agent suite, so
+    # production support genuinely has no active coverage until cases are
+    # rebuilt from traces. The warning reports that truthfully.
+    assert result["warnings"] == (INSUFFICIENT_BENCHMARK_WARNING,)
+    assert deprecated_case_count("production-support") == (
+        RETAINED_DEPRECATED_CASE_COUNT
+    )
     assert "PROD SUPPORT" in result["output"]
     assert result["full_report"] == result["output"]
-    assert result["output"].startswith("# Prod Support Report — ")
+    assert result["output"].startswith(
+        f"{INSUFFICIENT_BENCHMARK_WARNING}\n\n# Prod Support Report — "
+    )
     assert " operational day\n\nWindow: `" in result["output"]
     assert "URLs to validate\nhttps://airflow-us01" in result["output"]
     assert "Message for developer:" in result["output"]
@@ -114,12 +124,14 @@ def test_mcp_tool_runs_prod_support_agent(
         "kpo_sizer": "agent://kpo-sizer/definition",
     }
     assert result["tool_calls"] == (
-        "run_prod_support",
-        "DelegateToClusterAgent",
-        "DelegateToTriageManager",
-        "DelegateToFollowUpAgent",
-        "DelegateToReporter",
-        "DelegateToBenchBuilderAgent",
+        "inspect_cluster_health",
+        "discover_airflow_failures",
+        "inspect_airflow_workload",
+        "query_oms_job",
+        "fetch_airflow_task_log",
+        "classify_failure",
+        "trigger_resource_discovery_agent",
+        "execute_airflow_retries",
     )
     assert "benchmark_case" not in result
 
@@ -233,11 +245,9 @@ def test_mcp_tool_rejects_invalid_data_internal_omissions(
 
 def test_mcp_resource_and_prompt_describe_agent() -> None:
     definition = asyncio.run(prod_support_definition())
-    bench_builder = asyncio.run(prod_support_bench_builder_definition())
     prompt = prod_support_prompt("Pipeline failed.")
 
     assert "production" in definition.lower()
-    assert "benchmark" in bench_builder.lower()
     assert "Request: Pipeline failed." in prompt
 
 
@@ -295,7 +305,6 @@ def test_mcp_source_uses_production_airflow(
     assert isinstance(resource_discovery._source, IndexedResourceDiscoverySource)
     assert isinstance(resource_discovery._source.primary, ResourceDiscoveryApiSource)
     assert isinstance(resource_discovery._source.fallback, JsonClientLookupSource)
-    assert isinstance(_report_runtime(), CodexCliRuntime)
 
 
 def test_mcp_source_uses_explicit_replay_dataset(
@@ -318,7 +327,6 @@ def test_mcp_source_defaults_to_safe_empty(
 
     assert isinstance(_source(), EmptyAirflowFailureSource)
     assert _resource_discovery() is None
-    assert _report_runtime() is None
     assert memory() is None
 
 

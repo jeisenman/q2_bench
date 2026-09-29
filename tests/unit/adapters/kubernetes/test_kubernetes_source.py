@@ -11,7 +11,7 @@ from adapters.kubernetes.source import (
     ClusterHealthScriptError,
     ClusterHealthScriptSource,
 )
-from workspaces.data_engineering.agents.production_support import Region
+from workspaces.data_engineering.workflows.prod_support import Region
 
 EXPECTED_RESTART_COUNT = 12
 WINDOW_START = datetime(2026, 9, 26, 5, tzinfo=UTC)

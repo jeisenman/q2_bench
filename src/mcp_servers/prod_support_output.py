@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from workspaces.data_engineering.agents.production_support.models import (
+from workspaces.data_engineering.workflows.prod_support.models import (
     ProdSupportOutcome,
     RetryCandidate,
 )

@@ -1,7 +1,5 @@
 from datetime import date
 
-from workspaces.data_engineering.agents.production_support import airflow_failure_url
-from workspaces.data_engineering.agents.production_support.models import Region
 from workspaces.data_engineering.benchmarks import (
     ComputeKind,
     TaskObservation,
@@ -11,6 +9,8 @@ from workspaces.data_engineering.benchmarks import (
     filter_failures,
     regional_count_accuracy,
 )
+from workspaces.data_engineering.workflows.prod_support import airflow_failure_url
+from workspaces.data_engineering.workflows.prod_support.models import Region
 
 
 def test_airflow_links_filter_each_region_at_operational_cutoff() -> None:
