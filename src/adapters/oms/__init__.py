@@ -3,6 +3,7 @@
 from adapters.oms.source import (
     AzureCliTokenSource,
     AzureLogAnalyticsSource,
+    AzureOmsJobEvidenceSource,
     OmsAdapterError,
     OmsDataCollectorSink,
     OmsHttpTransport,
@@ -12,6 +13,7 @@ from adapters.oms.source import (
 __all__ = [
     "AzureCliTokenSource",
     "AzureLogAnalyticsSource",
+    "AzureOmsJobEvidenceSource",
     "OmsAdapterError",
     "OmsDataCollectorSink",
     "OmsHttpTransport",

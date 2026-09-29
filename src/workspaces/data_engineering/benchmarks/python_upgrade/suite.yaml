@@ -1,0 +1,30 @@
+schema_version: 1
+benchmark_id: data_engineering.pipeline_engineering.python_upgrade
+description: Evaluate Python upgrade facts, planning policy, and safe application.
+layers:
+  capabilities:
+    description: Test inventory and dependency compatibility decisions.
+    cases:
+      - safe-plan
+      - dependency-update
+      - unknown-support
+    dimensions:
+      - inventory_accuracy
+      - compatibility_accuracy
+      - uncertainty_reporting
+      - bounded_parallelism
+  system:
+    description: Test read-only planning and approval-gated application.
+    cases:
+      - safe-plan
+      - dependency-update
+      - unknown-support
+      - stale-apply
+    dimensions:
+      - stale_plan_protection
+      - approval_boundary
+      - rollback_safety
+public_assets:
+  - cases.yaml
+hidden_expectations:
+  - hidden/case_expectations.yaml

@@ -4015,6 +4015,7 @@ dependencies = [
     { name = "openai-agents" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-sdk" },
+    { name = "packaging" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pyyaml" },
 ]
@@ -4039,6 +4040,7 @@ requires-dist = [
     { name = "openai-agents", specifier = ">=0.22.3" },
     { name = "opentelemetry-api", specifier = ">=1.44" },
     { name = "opentelemetry-sdk", specifier = ">=1.44" },
+    { name = "packaging", specifier = ">=24.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pyyaml", specifier = ">=6.0" },
 ]

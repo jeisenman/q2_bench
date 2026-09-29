@@ -1,0 +1,41 @@
+schema_version: 1
+cases:
+  - id: safe-plan
+    prompt: Plan an upgrade from Python 3.11 to 3.12 without changing files.
+    fixture:
+      requires_python: ">=3.11"
+      dependencies:
+        - package: compatible-package
+          requirement: compatible-package>=1
+          locked_version: 1.0.0
+          requires_python: ">=3.10"
+
+  - id: dependency-update
+    prompt: Identify dependency work needed before upgrading to Python 3.12.
+    fixture:
+      requires_python: ">=3.11"
+      dependencies:
+        - package: replacement-package
+          requirement: replacement-package>=1
+          locked_version: 1.0.0
+          requires_python: "<3.12"
+          available_release:
+            version: 2.0.0
+            requires_python: ">=3.12"
+
+  - id: unknown-support
+    prompt: Plan conservatively when package Python support is not declared.
+    fixture:
+      requires_python: ">=3.11"
+      dependencies:
+        - package: unknown-package
+          requirement: unknown-package>=1
+          locked_version: 1.0.0
+          requires_python:
+
+  - id: stale-apply
+    prompt: Refuse to apply a plan after project files change.
+    fixture:
+      requires_python: ">=3.11"
+      planned_fingerprint: original
+      current_fingerprint: changed

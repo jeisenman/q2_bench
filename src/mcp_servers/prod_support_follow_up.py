@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import os
+from collections import Counter
+from uuid import uuid4
 
 from adapters.airflow import AirflowApiSource
+from mcp_servers.debug import McpDebugTrace
+from observability import current_trace_metadata, traced_operation
 from workspaces.data_engineering.agents.production_support import (
     FollowUpAgent,
     Region,
@@ -74,25 +78,70 @@ async def execute_prod_support_follow_up(
     direction: str,
     retry_candidates: list[dict[str, object]],
     validation_urls: list[str],
+    correlation_id: str | None = None,
 ) -> dict[str, object]:
     """Execute developer-authorized retries and return regional validation links."""
-    candidates = tuple(candidate_input(item) for item in retry_candidates)
-    links = _validation_urls(validation_urls)
-    states = await _follow_up_agent().execute(direction, candidates)
-    return {
-        "task_instances": [
-            {
-                "region": item.region.value,
-                "dag_id": item.dag_id,
-                "run_id": item.run_id,
-                "task_id": item.task_id,
-                "state": item.state,
+    resolved_correlation_id = correlation_id or uuid4().hex
+    debug = McpDebugTrace(
+        "execute_prod_support_follow_up",
+        resolved_correlation_id,
+    )
+    debug.event(
+        "tool.start",
+        direction=direction,
+        candidate_count=len(retry_candidates),
+    )
+    try:
+        async with traced_operation(
+            "mcp.execute_prod_support_follow_up",
+            attributes={
+                "q2.mcp.tool.name": "execute_prod_support_follow_up",
+                "q2.agent.correlation_id": resolved_correlation_id,
+                "q2.mcp.candidate_count": len(retry_candidates),
+            },
+        ):
+            candidates = tuple(candidate_input(item) for item in retry_candidates)
+            links = _validation_urls(validation_urls)
+            debug.event(
+                "candidates.validated",
+                candidate_count=len(candidates),
+                candidate_numbers=",".join(
+                    str(candidate.number) for candidate in candidates
+                ),
+            )
+            debug.event("airflow.retry.start")
+            states = await _follow_up_agent().execute(direction, candidates)
+            state_counts = Counter(item.state for item in states)
+            debug.event(
+                "airflow.retry.complete",
+                task_instance_count=len(states),
+                state_counts=",".join(
+                    f"{state}:{count}" for state, count in sorted(state_counts.items())
+                ),
+            )
+            result: dict[str, object] = {
+                "task_instances": [
+                    {
+                        "region": item.region.value,
+                        "dag_id": item.dag_id,
+                        "run_id": item.run_id,
+                        "task_id": item.task_id,
+                        "state": item.state,
+                    }
+                    for item in states
+                ],
+                "links": links,
+                "validation_urls": links,
+                "correlation_id": resolved_correlation_id,
+                "trace": current_trace_metadata(),
             }
-            for item in states
-        ],
-        "links": links,
-        "validation_urls": links,
-    }
+            debug.event("tool.complete", task_instance_count=len(states))
+            if debug.enabled:
+                result["debug_trace"] = debug.result()
+            return result
+    except Exception as error:
+        debug.event("tool.error", error_type=type(error).__name__)
+        raise
 
 
 def _follow_up_agent() -> FollowUpAgent:

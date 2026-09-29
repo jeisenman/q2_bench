@@ -54,6 +54,10 @@ from workspaces.data_engineering.agents.production_support.evidence import (
     summarize_task_log,
 )
 from workspaces.data_engineering.agents.production_support.follow_up import FollowUp
+from workspaces.data_engineering.agents.production_support.harness import (
+    ProdSupportWorkflowInput,
+    ProductionSupportHarnessWorkflow,
+)
 from workspaces.data_engineering.agents.production_support.investigation import (
     InvestigationConfigurationError,
     InvestigationServices,
@@ -216,7 +220,9 @@ __all__ = [
     "ProdSupportReportContext",
     "ProdSupportScope",
     "ProdSupportScores",
+    "ProdSupportWorkflowInput",
     "ProductionSupportAgentConfiguration",
+    "ProductionSupportHarnessWorkflow",
     "ProductionSupportSuite",
     "ProductionSupportWorkflow",
     "PromptFunction",

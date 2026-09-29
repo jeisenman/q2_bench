@@ -5,6 +5,9 @@ This directory is the agent-readable entry point for the project.
 ## Start here
 
 - [Project architecture](architecture.md)
+- [Data-engineering workflow harness](workflow-harness.md)
+- Python-upgrade benchmark:
+  `src/workspaces/data_engineering/benchmarks/python_upgrade/`
 - [Agent documentation standard](agent-documentation-standard.md)
 - [Proposed source architecture](source-architecture-proposal.md)
 - [MLflow 3.16.1 local guide](mlflow/README.md)

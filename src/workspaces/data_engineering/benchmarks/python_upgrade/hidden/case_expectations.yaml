@@ -1,0 +1,27 @@
+schema_version: 1
+cases:
+  - id: safe-plan
+    blockers: []
+    unknowns: []
+    dependency_updates: []
+    apply_ready: true
+
+  - id: dependency-update
+    blockers: []
+    unknowns: []
+    dependency_updates:
+      - package: replacement-package
+        from_version: 1.0.0
+        to_version: 2.0.0
+    apply_ready: false
+
+  - id: unknown-support
+    blockers: []
+    unknowns:
+      - unknown-package
+    dependency_updates: []
+    apply_ready: false
+
+  - id: stale-apply
+    error: project files changed after planning
+    applied: false

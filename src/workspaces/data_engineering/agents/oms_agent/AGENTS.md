@@ -17,6 +17,9 @@ owned by production support. [`ports.py`](ports.py) separates general queries,
 exact-job evidence, and log writes.
 [`__init__.py`](__init__.py) exports the public API. Azure-specific HTTP and
 authentication behavior lives in `src/adapters/oms/`.
+The dedicated read-only OMS MCP server exposes general bounded queries and
+exact-job evidence. `adapters.mcp.OmsMcpSource` implements the same read ports
+for workflows that select MCP composition.
 `observability` emits the root `agent.oms-agent.run` span around structured
 execution.
 
@@ -27,6 +30,8 @@ Injected protocols: `OmsQuerySource` for general reads, `OmsJobEvidenceSource`
 for exact workload evidence, and `OmsLogSink` for writes.
 External services or SDKs: Azure Log Analytics Query API and the OMS Data
 Collector API, accessed only by adapters.
+MCP composition: read operations may use `OmsMcpSource`; write operations are
+not exposed by the read-only OMS capability server.
 Runtime configuration: an authenticated Azure CLI session for queries and an
 injected workspace shared key for writes.
 Telemetry: the shared OpenTelemetry API records bounded agent and tool

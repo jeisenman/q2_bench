@@ -39,6 +39,14 @@ Tool ownership is explicit:
 but executes the existing injected adapters and domain logic. The reusable
 implementation remains split across date, scope, cluster, Airflow,
 investigation, classification, reporting, retry, dataset, and port modules.
+[`harness.py`](harness.py) adapts that investigator to the shared
+`workflow_harness` contracts. The `run_prod_support` MCP façade executes the
+adapter through `WorkflowRunner` and records the completed read-only stage
+without changing the authoritative report or retry-candidate contract.
+The MCP composition root selects `direct`, `mcp`, `replay`, or `empty`
+capability sources. In MCP mode, Airflow, OMS, and Resource Discovery remain
+behind the same typed ports and execute through dedicated read-only servers.
+Direct and MCP integration tests require identical authoritative output.
 Shared OMS routing, query construction, and evidence protocols are owned by
 [`../oms_agent/`](../oms_agent/); this package retains compatibility exports.
 It is an internal workflow, not a second public agent.
@@ -71,6 +79,10 @@ flowchart LR
   runtime.
 - External services: Airflow, Kubernetes/KEDA, Resource Discovery, and OMS
   through adapters outside this package.
+- Composition: `PROD_SUPPORT_SOURCE=direct` uses provider adapters, `mcp` uses
+  capability clients, `replay` uses captured benchmark evidence, and `empty`
+  is the safe no-failure local mode. Replay and empty modes do not create OMS
+  or Resource Discovery clients.
 - Resource Discovery production composition prefers a unique API response and
   uses the maintained non-secret local client index when the API is empty or
   ambiguous.
@@ -94,8 +106,10 @@ flowchart LR
 ## Workflow
 
 1. `Do prod support` and `Do prod support for yesterday` route through the
-   `run_prod_support` MCP tool. Orchestrator resolves US and CA plus the prior
-   operational day beginning at 05:00 UTC.
+   `run_prod_support` MCP tool and shared workflow harness. Orchestrator
+   resolves US and CA plus the prior operational day beginning at 05:00 UTC.
+   The selected composition mode changes only capability transport; workflow
+   policy and report rendering remain unchanged.
 2. It invokes ClusterAgent and TriageManager concurrently when both are needed.
 3. ClusterAgent reports health per requested region with observation time and
    evidence.
@@ -125,6 +139,8 @@ flowchart LR
    headings.
 7. A developer follow-up executes exact eligible retries in one step and
    returns the original US and CA validation links for verification.
+   Airflow capability MCP tools remain read-only and never expose retry
+   execution.
 8. If the request also asks to build a benchmark case, Orchestrator invokes
    BenchBuilderAgent after normal support. The MCP response keeps every normal
    production-support field and adds benchmark artifact metadata.
@@ -155,6 +171,9 @@ Tests under `tests/unit/workspaces/data_engineering/agents/` cover prompt
 docstrings, tool ownership, suite structure, workflow behavior, reporting,
 retry safety, and benchmark construction. Integration and end-to-end tests
 cover MCP output continuity, adapters, registration, and matrix execution.
+The capability parity integration test exercises Airflow metadata, OMS
+evidence, and Resource Discovery through direct and MCP adapters and requires
+identical production-support outcomes.
 Observability tests assert parent-child context, exception status, safe
 attributes, and redaction.
 

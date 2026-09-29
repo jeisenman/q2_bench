@@ -33,6 +33,11 @@ MCP agent responses include the active `trace_id` and `span_id`. Generic MCP
 agent tools accept optional `traceparent` and `tracestate` arguments.
 `run_prod_support` accepts the same values in a `trace_context` object.
 
+For local MCP development, set `Q2_MCP_DEBUG=1`. The server then emits bounded
+tool lifecycle events to stderr and adds the same events to a `debug_trace`
+response field. Prompts, logs, credentials, and arbitrary production payloads
+are not recorded.
+
 ## Data policy
 
 Spans contain agent name and version, correlation ID, request attribute count,

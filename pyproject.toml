@@ -12,13 +12,19 @@ dependencies = [
     "openai-agents>=0.22.3",
     "opentelemetry-api>=1.44",
     "opentelemetry-sdk>=1.44",
+    "packaging>=24.0",
     "psycopg[binary]>=3.2",
     "pyyaml>=6.0",
 ]
 
 [project.scripts]
 agentbench = "cli.main:main"
+airflow-mcp = "mcp_servers.airflow:main"
+dependency-intelligence-mcp = "mcp_servers.dependency_intelligence:main"
+oms-mcp = "mcp_servers.oms:main"
 prod-support-mcp = "mcp_servers.prod_support:main"
+python-upgrade-mcp = "mcp_servers.python_upgrade:main"
+resource-discovery-mcp = "mcp_servers.resource_discovery:main"
 
 [dependency-groups]
 dev = [
@@ -40,10 +46,12 @@ packages = [
     "src/adapters",
     "src/agent_memory",
     "src/cli",
+    "src/dependency_intelligence",
     "src/domain",
     "src/mcp_servers",
     "src/observability",
     "src/ports",
+    "src/workflow_harness",
     "src/workspaces",
 ]
 
