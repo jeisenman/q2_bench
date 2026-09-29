@@ -23,6 +23,7 @@ from workspaces.data_engineering.workflows.prod_support.reporting_details import
     client_id,
     client_identities,
     failure_subject,
+    is_hidden_from_report,
     is_resend_failure,
     job_label,
 )
@@ -104,9 +105,11 @@ def retry_candidates(findings: ReportFindings) -> tuple[RetryCandidate, ...]:
     eligible = tuple(
         failure
         for failure in findings.failures
-        if not is_resend_failure(failure)
-        and findings.config.configured_omission_group(failure) is None
-        and _identity_resolved(failure, identities)
+        if (
+            not is_hidden_from_report(failure)
+            and not is_resend_failure(failure)
+            and _identity_resolved(failure, identities)
+        )
     )
     return tuple(
         RetryCandidate(

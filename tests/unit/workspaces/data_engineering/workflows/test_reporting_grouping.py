@@ -13,6 +13,8 @@ from workspaces.data_engineering.workflows.prod_support.reporting import (
     format_reports_with_context,
 )
 
+EXPECTED_EVENTBUS_ROWS = 4
+
 
 def _failure(
     client_id: str,
@@ -130,6 +132,84 @@ def test_groups_shared_job_even_when_one_client_has_another_failure() -> None:
     )
     assert "Client A (111) failed on opportunities_report" in report.data_internal
     assert report.data_internal.count("opportunity_save_history") == 1
+
+
+def test_eventbus_failures_group_jobs_per_client() -> None:
+    scotiabank = "11111111-1111-4111-8111-111111111111"
+    cibc = "22222222-2222-4222-8222-222222222222"
+    scotiabank_dv = "33333333-3333-4333-8333-333333333333"
+    unresolved = "44444444-4444-4444-8444-444444444444"
+    failures = (
+        _failure(scotiabank, "validate_event_bus_opportunities"),
+        _failure(scotiabank, "monthly_relationships.monthly_relationships"),
+        _failure(cibc, "validate_event_bus_opportunities"),
+        _failure(scotiabank_dv, "validate_event_bus_opportunities"),
+        _failure(unresolved, "validate_event_bus_opportunities"),
+    )
+
+    report = format_reports_with_context(
+        date(2026, 9, 29),
+        failures,
+        tuple(_diagnosis(item) for item in failures),
+        context=ProdSupportReportContext(
+            resource_discovery_results=(
+                _resource(scotiabank, "Scotiabank"),
+                _resource(cibc, "CIBC Canada"),
+                _resource(scotiabank_dv, "Scotiabank - Data Validation"),
+            ),
+        ),
+    )
+
+    assert (
+        "Scotiabank (111) failed on "
+        "validate_event_bus_opportunities and monthly_relationships"
+        in report.data_internal
+    )
+    assert "CIBC CA (222) failed on validate_event_bus_opportunities" in (
+        report.data_internal
+    )
+    assert "Scotiabank DV (333) failed on validate_event_bus_opportunities" in (
+        report.data_internal
+    )
+    assert "Unresolved client (444) failed on validate_event_bus_opportunities" in (
+        report.data_internal
+    )
+    assert "Scotiabank (111), CIBC CA (222)" not in report.data_internal
+    assert (
+        report.data_internal.count("validate_event_bus_opportunities")
+        == EXPECTED_EVENTBUS_ROWS
+    )
+
+
+def test_event_bus_history_groups_clients_for_resend_message() -> None:
+    client_a = "11111111-1111-4111-8111-111111111111"
+    client_b = "22222222-2222-4222-8222-222222222222"
+    failure = AirflowFailure(
+        region=Region.CA_02,
+        dag_id="event_bus_to_payloads_historical",
+        run_id="scheduled__2026-09-28T15:00:00+00:00",
+        task_id="get_opp_history_params",
+        start_at=datetime(2026, 9, 29, 3, tzinfo=UTC),
+        end_at=datetime(2026, 9, 29, 4, tzinfo=UTC),
+        log=f"ClientId: {client_a}\nClientId: {client_b}",
+    )
+
+    report = format_reports_with_context(
+        date(2026, 9, 29),
+        (failure,),
+        (_diagnosis(failure),),
+        context=ProdSupportReportContext(
+            resource_discovery_results=(
+                _resource(client_a, "Client A"),
+                _resource(client_b, "Client B"),
+            ),
+        ),
+    )
+
+    assert (
+        "Client A (111) and Client B (222) failed on "
+        "event_bus_to_payloads_historical -- resending events" in report.data_internal
+    )
 
 
 def test_data_internal_retains_high_value_causes() -> None:

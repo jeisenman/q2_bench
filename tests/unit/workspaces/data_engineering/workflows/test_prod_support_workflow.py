@@ -5,6 +5,7 @@ import pytest
 
 from domain import AgentRequest
 from workspaces.data_engineering.agents.resource_discovery import (
+    IdentifierKind,
     ResourceDiscoveryAgent,
     ResourceIdentifier,
 )
@@ -255,7 +256,7 @@ def test_agent_resolves_valid_client_dags_and_skips_invalid_candidates() -> None
     assert len(outcome.resource_discovery_results) == 1
 
 
-def test_agent_keeps_mi3_when_recovery_cannot_be_verified() -> None:
+def test_agent_keeps_mi3_in_all_non_data_internal_outputs() -> None:
     client_id = "621d1ad2-3d0f-4fc4-8245-e3878a6bff7c"
     mi_failure = AirflowFailure(
         region=Region.US_01,
@@ -275,17 +276,17 @@ def test_agent_keeps_mi3_when_recovery_cannot_be_verified() -> None:
 
     outcome = asyncio.run(agent.investigate("do today's prod support"))
 
-    assert source.identifiers == []
-    assert outcome.resource_discovery_results == ()
+    assert source.identifiers == [
+        ResourceIdentifier(IdentifierKind.CLIENT_ID, client_id),
+    ]
+    assert len(outcome.resource_discovery_results) == 1
     assert outcome.diagnoses[0].kind.value != "omitted"
     assert outcome.failures[0].log
-    assert (
-        "US\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
-        in outcome.data_internal_report
-    )
+    assert "Example Bank" in outcome.developer_report
+    assert "Example Bank (621) failed on MI3" in outcome.data_internal_report
 
 
-def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
+def test_agent_keeps_recovered_d2p_in_non_data_internal_outputs() -> None:
     omitted = AirflowFailure(
         region=Region.US_01,
         dag_id="client-dag",
@@ -308,16 +309,13 @@ def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
     outcome = asyncio.run(agent.investigate("Do prod support"))
 
     assert source.fetched == [omitted.failure_id]
-    assert outcome.diagnoses[0].kind.value == "omitted"
-    assert outcome.diagnoses[0].confidence == "verified_recovery"
-    assert any(
-        "same DAG and task succeeded" in item for item in outcome.diagnoses[0].evidence
-    )
+    assert outcome.diagnoses[0].kind.value != "omitted"
     assert (
         "US\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
         in outcome.data_internal_report
     )
-    assert outcome.follow_up == "- No action is required."
+    assert "Would you like to re-run:" in outcome.follow_up
+    assert "client-dag D2P job" in outcome.follow_up
 
 
 def test_agent_does_not_omit_without_same_task_success() -> None:
@@ -338,10 +336,7 @@ def test_agent_does_not_omit_without_same_task_success() -> None:
     outcome = asyncio.run(agent.investigate("Do prod support"))
 
     assert outcome.diagnoses[0].kind.value != "omitted"
-    assert (
-        "US\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
-        in outcome.data_internal_report
-    )
+    assert "delivery_to_promise failed on D2P" in outcome.data_internal_report
 
 
 def test_agent_fetches_exact_log_when_discovery_contains_an_excerpt() -> None:

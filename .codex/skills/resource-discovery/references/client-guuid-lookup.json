@@ -12,7 +12,7 @@
   },
   "076939cf-4a4a-4fa4-a5e6-44a4c8d33bb2": {
     "api_status": "unique-match",
-    "last_checked": "2026-08-29",
+    "last_checked": "2026-09-29",
     "name": "Wells Fargo Bank, National Association",
     "source": "resource-discovery-api"
   },
@@ -67,7 +67,7 @@
   },
   "1f06da19-2f61-401c-a1b7-38902e4f3543": {
     "api_status": "unique-match",
-    "last_checked": "2026-09-26",
+    "last_checked": "2026-09-29",
     "name": "Scotiabank",
     "source": "resource-discovery-api"
   },
@@ -233,7 +233,7 @@
   },
   "792f7424-402e-4a7e-b4de-69f811435d9c": {
     "api_status": "no-unique-match",
-    "last_checked": "2026-09-26",
+    "last_checked": "2026-09-29",
     "name": "BoFA",
     "source": "user-confirmed"
   },
@@ -347,6 +347,18 @@
     "name": "Auburn State Bank",
     "source": "resource-discovery-api"
   },
+  "aea3ba3a-405b-469f-bad2-ecad0e62cb8f": {
+    "api_status": "unique-match",
+    "last_checked": "2026-09-01",
+    "name": "U.S. Bank - Data Validation",
+    "source": "resource-discovery-api"
+  },
+  "aff872b2-05b6-4b18-b940-679b172782e0": {
+    "api_status": "unique-match",
+    "last_checked": "2026-08-22",
+    "name": "Peoples National Bank (Mount Vernon, IL)",
+    "source": "resource-discovery-api"
+  },
   "b0302b2c-6dd3-4675-bfe1-cef65acc37d5": {
     "api_status": "no-unique-match",
     "client_id": "3424-01",
@@ -372,18 +384,6 @@
         "service": "PIQS"
       }
     }
-  },
-  "aea3ba3a-405b-469f-bad2-ecad0e62cb8f": {
-    "api_status": "unique-match",
-    "last_checked": "2026-09-01",
-    "name": "U.S. Bank - Data Validation",
-    "source": "resource-discovery-api"
-  },
-  "aff872b2-05b6-4b18-b940-679b172782e0": {
-    "api_status": "unique-match",
-    "last_checked": "2026-08-22",
-    "name": "Peoples National Bank (Mount Vernon, IL)",
-    "source": "resource-discovery-api"
   },
   "b3d2f662-1ebd-4c1b-a64d-6b0d22c7c3af": {
     "api_status": "unique-match",
@@ -521,7 +521,7 @@
   },
   "fbfcd207-8a85-4f28-a787-3ed1e2736f28": {
     "api_status": "unique-match",
-    "last_checked": "2026-09-26",
+    "last_checked": "2026-09-29",
     "name": "CIBC Canada",
     "source": "resource-discovery-api"
   },

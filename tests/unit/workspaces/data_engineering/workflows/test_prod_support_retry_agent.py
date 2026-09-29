@@ -142,7 +142,7 @@ def test_retry_candidate_identity_is_region_bound() -> None:
     assert candidate.identity == "CA-02|dag|run|task"
 
 
-def test_configured_omissions_never_become_retry_candidates() -> None:
+def test_configured_omissions_remain_retry_candidates() -> None:
     failures = tuple(
         AirflowFailure(
             Region.US_01,
@@ -169,4 +169,8 @@ def test_configured_omissions_never_become_retry_candidates() -> None:
         for failure in failures
     )
 
-    assert retry_candidates(ReportFindings(failures, diagnoses)) == ()
+    candidates = retry_candidates(ReportFindings(failures, diagnoses))
+    assert tuple(candidate.task_id for candidate in candidates) == (
+        "check_for_subscriber_client_errors",
+        "mi_3_raw_output_validation",
+    )

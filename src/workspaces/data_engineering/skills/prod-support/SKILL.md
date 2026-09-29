@@ -38,12 +38,11 @@ and use the Airflow API for discovery and operations.
 Use the Airflow API and exact-task Airflow log collector as the default
 read-only sources. Parse the Airflow log locally before starting OMS work.
 
-- Before Log Analytics work, fail fast with `az account show`. Require an
-  active Azure CLI session on the `PrecisionLender Production` subscription.
-  If it is absent or points elsewhere, stop and ask the user to run `az login`
-  and select the production subscription. Do not continue to OMS queries until
-  that preflight succeeds. A complete `DATA_ENGINEERING_AZURE_*`
-  service-principal configuration remains supported and takes precedence.
+- Before Log Analytics work, run `az account show` and require subscription ID
+  `71aa0ec0-8411-43a2-9908-ddd2add764eb`. If it is not active, run `az account
+  set --subscription 71aa0ec0-8411-43a2-9908-ddd2add764eb`; if unavailable, ask
+  the user to run `az login` and obtain access. Do not continue to OMS queries
+  until verified by ID. A complete service-principal configuration remains supported and takes precedence.
   When neither authentication path is available, collect the failed Airflow
   task log and pass it to the applicable parser with `--log-file`.
 - Do not use Azure Storage Browser as a required diagnostic step. Inspect ADLS
@@ -120,7 +119,7 @@ exact failed task log for every omission candidate, then query Airflow for a
 success of the same DAG and task inside the operational window. Collapse the
 candidate to its omission code only when that bounded success exists. Otherwise
 report and diagnose it as an ordinary failure. Do not query OMS solely to
-verify an omission.
+verify an omission. These settings apply only to Data Internal; retain every failure in developer reporting, follow-up actions, retry planning, Resource Discovery, and triage.
 
 ## Direct ADLS file inspection
 
@@ -143,19 +142,17 @@ python3 {{SKILL_DIR}}/scripts/parse_content_lengths.py <log-file>
 
 Immediately after discovery and before investigating or writing any production-support update, extract every unique client UUID from discovered `l3-main-<client-uuid>` DAG IDs. Also include client UUIDs returned by EventBus validation when applicable.
 
-Build one client-ID-to-request mapping for all discovered UUIDs and resolve it
-through the Resource Discovery batch capability before composing the report.
-Then call the `resource-discovery` skill's maintained formatter for each UUID:
+Resolve one complete client-ID-to-request mapping through the Resource Discovery
+batch capability exactly once before reporting. Use the structured batch results
+directly for developer and channel labels, environment, and resend routing. Do
+not call `format_client.py` or `lookup_client.py` once per UUID, and do not
+refresh individual UUIDs after a batch result. Preserve unresolved or ambiguous
+batch items as unresolved and report the missing unique match. Add or update a
+name only after a unique API result or explicit user confirmation. Do not infer
+a name or environment from the Airflow region, DAG name, application subdomain,
+or a partial UUID.
 
-```bash
-python3 {{SKILLS_ROOT}}/resource-discovery/scripts/format_client.py <client-uuid> --style developer
-python3 {{SKILLS_ROOT}}/resource-discovery/scripts/format_client.py <client-uuid> --style channel
-```
-
-Use the formatter output in both messages. If it exits `2`, call `lookup_client.py <client-uuid>` to refresh from Resource Discovery, then format again. Add or update a name only after a unique API result or explicit user confirmation. Do not infer a name or environment from the Airflow region, DAG name, application subdomain, or a partial UUID.
-
-Fail closed for a client identity: if Resource Discovery returns no record, multiple client names, or an otherwise ambiguous result, use the formatter's unresolved label and include `Resource Discovery: no unique match` in the developer message. This applies to every client-scoped failure, including Delivery-to-Promise.
-
+Fail closed for a client identity: if Resource Discovery returns no record, multiple client names, or an otherwise ambiguous result, use the batch result's unresolved label and include `Resource Discovery: no unique match` in the developer message. This applies to every client-scoped failure, including Delivery-to-Promise.
 In Follow Ups, use this exact dated action and do not continue with client
 remediation:
 
@@ -226,7 +223,8 @@ than 1,000 IDs exist, print additional `Opportunity IDs` blocks of at most
 
 Unattended Log Analytics queries may authenticate explicitly as the
 `data-engineering` service principal. Interactive runs may use the already
-validated `PrecisionLender Production` Azure CLI session described under
+validated Azure CLI session on subscription ID
+`71aa0ec0-8411-43a2-9908-ddd2add764eb` described under
 Access boundaries. Do not reuse Resource Discovery credentials: that identity
 does not necessarily have Log Analytics read access. Configure the unattended
 role in the local, ignored `.env` file:
@@ -301,8 +299,8 @@ The investigation subagent must:
    `execution_timeout`, and other explicit timeout text.
 3. Report every distinctness count and explicit distinctness failure. Map
    rerun targets only from proven results.
-4. If OMS fallback is required, run `az account show`, require
-   `PrecisionLender Production`, and query by task ID, run ID, and
+4. If OMS fallback is required, run `az account show`, require subscription ID
+   `71aa0ec0-8411-43a2-9908-ddd2add764eb`, and query by task ID, run ID, and
    `client_id_g`.
 5. Make no production changes.
 
@@ -354,7 +352,6 @@ anchor's UTC date in the heading.
 For every Delivery-to-Promise or subscriber-client failure, apply the 30-day
 history and reporting rules in `references/classifications.md`.
 
-
 Apply these rules:
 
 - If EventBus validation finds recoverable events, list the client ID and every Opportunity ID to enter in the resend UI. Keep unrecoverable IDs separate and report their count. Say `Resending events for ...` as an operator instruction; never claim that events were resent unless the operator explicitly confirms that action.
@@ -365,10 +362,9 @@ Apply these rules:
 - If a Derived RA `high_quality_*` task has a distinctness validation failure, list the client ID and suggest rerunning only the exact `ra_group.get_<job_name>` targets whose DatasetForms mismatched or were explicitly named by the exception.
 - Map a high-quality distinctness target to its underlying RA job by omitting `high_quality_` and retaining the `ra_group.` prefix: for example, use `ra_group.get_core_deposit_accounts`, not `get_high_quality_core_deposit_accounts`.
 - Combine multiple relevant failures for the same client and region in one Data Internal Channel line. List each failed task or safe rerun target in that line. Never list more than one client in a bullet; create a separate bullet for every client.
-- When configured omitted jobs have failures, add the exact region-level line
-  `- check_for_subscriber_client_errors, D2P, MI3` for the affected region.
-  Include only the labels represented by that region's failures, in that order,
-  and do not expand those omitted jobs into client bullets.
+- When configured subscriber, D2P, or MI3 jobs fail, add the exact region-level
+  line `- check_for_subscriber_client_errors, D2P, MI3`; do not expand them into
+  client bullets.
 - Data Internal bullets never end with periods. Preserve exact job identifiers,
   including underscores: `active_deposit_accounts`, never `active-deposit
   accounts`. For multiple jobs, omit causes and join identifiers with `and`:

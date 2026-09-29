@@ -1,10 +1,15 @@
 """Shared Data Internal formatting examples for production-support reports."""
 
 PROD_SUPPORT_MLFLOW_NAMESPACE = "data_engineering.production_operations"
-COMPLIANT_EVENTBUS_LINE = (
-    "  - Scotiabank (1f0), Scotiabank DV (b49), CIBC Canada Validation (cef), "
-    "and CIBC Canada (fbf) failed on validate_event_bus_opportunities"
+COMPLIANT_EVENTBUS_LINES = (
+    "  - Scotiabank (1f0) failed on "
+    "validate_event_bus_opportunities and monthly_relationships\n"
+    "  - CIBC CA (fbf) failed on validate_event_bus_opportunities\n"
+    "  - Scotiabank DV (b49) failed on validate_event_bus_opportunities\n"
+    "  - Unresolved client (37d) failed on validate_event_bus_opportunities"
 )
+# Keep the former public name for callers that import the example constant.
+COMPLIANT_EVENTBUS_LINE = COMPLIANT_EVENTBUS_LINES
 COMPLIANT_MULTI_JOB_LINE = (
     "  - Scotiabank (1f0) failed on monthly_relationships and similar_loans_portfolio"
 )
@@ -32,7 +37,7 @@ CA
 - check_for_subscriber_client_errors, D2P, MI3
 {COMPLIANT_MULTI_JOB_LINE}
 {COMPLIANT_SINGLE_JOB_LINE}
-{COMPLIANT_EVENTBUS_LINE}
+{COMPLIANT_EVENTBUS_LINES}
 ```
 
 The banner above is literal text. Do not render `:bangbang:` as an emoji or

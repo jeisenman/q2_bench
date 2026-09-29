@@ -216,7 +216,10 @@ def test_reports_task_embedded_client_name_and_unresolved_identity() -> None:
     assert "Resource Discovery: no reviewed unique match (not_found)" in (
         reports.developer
     )
-    assert reports.follow_up == "- No action is required."
+    assert "Ask a human to resolve the client identity for Unresolved client (333)" in (
+        reports.follow_up
+    )
+    assert "Andi Application Owner (621)" in reports.follow_up
     assert "Unresolved client (333):" not in reports.follow_up
 
 

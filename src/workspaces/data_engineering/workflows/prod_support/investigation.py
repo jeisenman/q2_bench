@@ -32,6 +32,7 @@ from workspaces.data_engineering.workflows.prod_support.ports import (
 )
 from workspaces.data_engineering.workflows.prod_support.reporting_details import (
     client_id,
+    client_ids_from_text,
 )
 from workspaces.data_engineering.workflows.prod_support.workloads import (
     WorkloadKind,
@@ -186,7 +187,15 @@ def _classified_result(
     """Classify a full log and retain only bounded diagnostic evidence."""
     summary = summarize_task_log(log)
     diagnosis = classify_log(failure, log, source=source)
-    hydrated = replace(failure, log=summary.excerpt)
+    excerpt = summary.excerpt
+    if (
+        failure.dag_id == "event_bus_to_payloads_historical"
+        and failure.task_id == "get_opp_history_params"
+    ):
+        identifiers = client_ids_from_text(log)
+        if identifiers:
+            excerpt = f"{excerpt}\nClient IDs: {', '.join(identifiers)}"[:1200]
+    hydrated = replace(failure, log=excerpt)
     return hydrated, replace(diagnosis, status=summary.status)
 
 

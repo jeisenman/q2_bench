@@ -110,3 +110,58 @@ def test_single_job_row_preserves_underscored_identifier() -> None:
     assert "active-deposit" not in reports.data_internal
     assert "active deposit" not in reports.data_internal
     assert "." not in reports.data_internal
+
+
+def test_data_internal_uses_approved_client_abbreviations_only() -> None:
+    clients = (
+        ("11111111-1111-4111-8111-111111111111", "Scotiabank - Data Validation"),
+        ("22222222-2222-4222-8222-222222222222", "Wells Fargo Bank, N.A."),
+        ("33333333-3333-4333-8333-333333333333", "City National Bank"),
+        ("44444444-4444-4444-8444-444444444444", "Bank of America"),
+        ("55555555-5555-4555-8555-555555555555", "CIBC Canada"),
+    )
+    failures = tuple(
+        replace(
+            failure("job"),
+            dag_id=f"l3-main-{client_id}",
+            run_id=client_id,
+        )
+        for client_id, _ in clients
+    )
+    diagnoses = tuple(
+        FailureDiagnosis(
+            item.failure_id,
+            FailureKind.APPLICATION_ERROR,
+            "confirmed",
+            ("terminal error",),
+        )
+        for item in failures
+    )
+    identities = tuple(
+        AgentResult(
+            output=name,
+            correlation_id=client_id,
+            attributes=(
+                ("identifier_value", client_id),
+                ("client_name", name),
+                ("status", "unique"),
+            ),
+        )
+        for client_id, name in clients
+    )
+
+    reports = format_reports_with_context(
+        date(2026, 9, 27),
+        failures,
+        diagnoses,
+        context=ProdSupportReportContext(resource_discovery_results=identities),
+    )
+
+    for abbreviation in ("Scotiabank DV", "WF", "CNB", "BoFA", "CIBC CA"):
+        assert abbreviation in reports.data_internal
+    assert "Scotiabank - Data Validation" not in reports.data_internal
+    assert "Wells Fargo Bank, N.A." not in reports.data_internal
+    assert "City National Bank" not in reports.data_internal
+    assert "Bank of America" not in reports.data_internal
+    assert "CIBC Canada" not in reports.data_internal
+    assert "Wells Fargo Bank, N.A." in reports.developer

@@ -7,6 +7,7 @@ import pytest
 
 from adapters.airflow.source import (
     AIRFLOW_503_MAX_ATTEMPTS,
+    HTTP_STATUS_BAD_GATEWAY,
     HTTP_STATUS_SERVICE_UNAVAILABLE,
     AirflowApiError,
     AirflowApiSource,
@@ -73,7 +74,16 @@ def test_airflow_source_discovers_by_end_date_and_fetches_log() -> None:
     assert log == "OOMKilled"
 
 
-def test_airflow_source_retries_discovery_503_three_total_attempts(
+@pytest.mark.parametrize(
+    ("status_code", "status_text"),
+    [
+        (HTTP_STATUS_BAD_GATEWAY, "Bad Gateway"),
+        (HTTP_STATUS_SERVICE_UNAVAILABLE, "Service Unavailable"),
+    ],
+)
+def test_airflow_source_retries_transient_gateway_errors_three_total_attempts(
+    status_code: int,
+    status_text: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     attempts = 0
@@ -93,14 +103,14 @@ def test_airflow_source_retries_discovery_503_three_total_attempts(
                 if attempts < AIRFLOW_503_MAX_ATTEMPTS:
                     raise HTTPError(
                         "https://airflow.example.test",
-                        HTTP_STATUS_SERVICE_UNAVAILABLE,
-                        "Service Unavailable",
+                        status_code,
+                        status_text,
                         {},
                         None,
                     )
             return super().request(config, method, path, payload)
 
-    monkeypatch.setattr("adapters.airflow.source.time.sleep", sleeps.append)
+    monkeypatch.setattr("adapters.airflow.transport.time.sleep", sleeps.append)
     source = AirflowApiSource(
         (
             AirflowRegionConfig(
@@ -362,7 +372,7 @@ def test_urllib_transport_decodes_json(monkeypatch: pytest.MonkeyPatch) -> None:
         return FakeResponse()
 
     monkeypatch.setattr(
-        "adapters.airflow.source.urlopen",
+        "adapters.airflow.transport.urlopen",
         fake_urlopen,
     )
     config = AirflowRegionConfig(

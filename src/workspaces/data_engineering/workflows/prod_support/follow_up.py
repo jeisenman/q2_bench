@@ -12,17 +12,17 @@ from workspaces.data_engineering.workflows.prod_support.models import (
 from workspaces.data_engineering.workflows.prod_support.report_findings import (
     ReportFindings,
 )
-from workspaces.data_engineering.workflows.prod_support.reporting_config import (
-    ProdSupportReportConfig,
-)
 from workspaces.data_engineering.workflows.prod_support.reporting_details import (
     ClientIdentity,
     FailureGroup,
-    client_id,
     client_identities,
+    client_ids,
     event_count,
     failure_subject,
+    failure_subject_for_identifier,
+    failure_subjects,
     group_failures_for_reporting,
+    is_hidden_from_report,
     is_resend_failure,
 )
 
@@ -76,7 +76,6 @@ class FollowUp:
             findings.failures,
             {item.failure_id: item for item in findings.diagnoses},
             client_identities(findings.resource_discovery_results),
-            findings.config,
         )
 
 
@@ -85,15 +84,12 @@ def _format_follow_up(
     failures: tuple[AirflowFailure, ...],
     diagnoses: dict[str, FailureDiagnosis],
     identities: dict[str, ClientIdentity],
-    config: ProdSupportReportConfig,
 ) -> str:
     """Render explicit remediation choices with human help for evidence gaps."""
     if not failures:
         return "- No action is required."
     actionable_failures = tuple(
-        failure
-        for failure in failures
-        if config.configured_omission_group(failure) is None
+        failure for failure in failures if not is_hidden_from_report(failure)
     )
     if not actionable_failures:
         return "- No action is required."
@@ -191,9 +187,10 @@ def _unresolved_client_labels(
     return tuple(
         sorted(
             {
-                failure_subject(failure, identities)
+                subject
                 for failure in failures
                 if _has_unresolved_client(failure, identities)
+                for subject in failure_subjects(failure, identities)
             }
         )
     )
@@ -204,11 +201,13 @@ def _has_unresolved_client(
     identities: dict[str, ClientIdentity],
 ) -> bool:
     """Return whether a client-scoped failure lacks a reviewed identity."""
-    identifier = client_id(failure)
-    if identifier is None:
+    identifiers = client_ids(failure)
+    if not identifiers:
         return False
-    identity = identities.get(identifier)
-    return identity is None or identity.name is None
+    return any(
+        (identity := identities.get(identifier)) is None or identity.name is None
+        for identifier in identifiers
+    )
 
 
 def _resend_actions(
@@ -284,20 +283,23 @@ def _resend_candidates(
             identities,
         ):
             continue
-        label = failure_subject(failure, identities)
         resend_date = _logical_date(failure).strftime("%m-%d-%y")
-        identity = identities.get(client_id(failure) or "")
-        reviewed_url = identity.reviewed_resend_url if identity is not None else None
-        candidate = ResendCandidate(
-            label=label,
-            resend_date=resend_date,
-            count=event_count(diagnoses[failure.failure_id], failure.log),
-            url=reviewed_url if reviewed_url in RESEND_URLS else None,
-        )
-        key = label, resend_date
-        previous = selected.get(key)
-        if previous is None or (candidate.count or 0) > (previous.count or 0):
-            selected[key] = candidate
+        for identifier in client_ids(failure):
+            identity = identities.get(identifier)
+            label = failure_subject_for_identifier(identifier, identities)
+            reviewed_url = (
+                identity.reviewed_resend_url if identity is not None else None
+            )
+            candidate = ResendCandidate(
+                label=label,
+                resend_date=resend_date,
+                count=event_count(diagnoses[failure.failure_id], failure.log),
+                url=reviewed_url if reviewed_url in RESEND_URLS else None,
+            )
+            key = label, resend_date
+            previous = selected.get(key)
+            if previous is None or (candidate.count or 0) > (previous.count or 0):
+                selected[key] = candidate
     return tuple(selected[key] for key in sorted(selected))
 
 

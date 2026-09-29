@@ -17,9 +17,29 @@ from workspaces.data_engineering.workflows.prod_support.reporting_config import 
 
 CLIENT_DAG_PREFIX = "l3-main-"
 RESEND_TASK = "validate_event_bus_opportunities"
+EVENT_BUS_HISTORY_TASK = "get_opp_history_params"
+EVENT_BUS_DAG = "event_bus_to_payloads_historical"
+HIDDEN_REPORT_TASKS = frozenset({"log_cleanup", "expire_logs_3"})
+JOB_LABEL_RULES = (
+    (EVENT_BUS_HISTORY_TASK, EVENT_BUS_DAG),
+    ("delivery_to_promise_other_products", "D2P—Other Products"),
+    ("delivery_to_promise", "D2P"),
+    ("market_insights_3", "MI3"),
+    ("market_insights", "MI3"),
+    (RESEND_TASK, RESEND_TASK),
+    ("credit_migration_matrix", "CMM"),
+)
 MIN_GROUPED_SUBJECTS = 2
 PAIR_SIZE = 2
 TRUSTED_IDENTITY_STATUSES = frozenset({"unique", "user_confirmed", "reviewed"})
+DATA_INTERNAL_CLIENT_ABBREVIATIONS = (
+    ("scotiabank - data validation", "Scotiabank DV"),
+    ("wells fargo", "WF"),
+    ("city national bank", "CNB"),
+    ("bank of america", "BoFA"),
+    ("bofa", "BoFA"),
+    ("cibc canada", "CIBC CA"),
+)
 UUID_PATTERN = re.compile(
     r"(?i)(?<![0-9a-f])"
     r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
@@ -89,18 +109,78 @@ def client_identities(
     return identities
 
 
+def data_internal_client_identities(
+    results: tuple[AgentResult, ...],
+) -> dict[str, ClientIdentity]:
+    """Return identities with the channel-only client abbreviations applied."""
+    identities = client_identities(results)
+    return {
+        identifier: identity._replace(name=_data_internal_name(identity.name))
+        for identifier, identity in identities.items()
+    }
+
+
+def _data_internal_name(name: str | None) -> str | None:
+    """Return the approved compact Data Internal client name."""
+    if name is None:
+        return None
+    normalized = name.casefold().strip()
+    return next(
+        (
+            abbreviation
+            for prefix, abbreviation in DATA_INTERNAL_CLIENT_ABBREVIATIONS
+            if normalized.startswith(prefix)
+        ),
+        name,
+    )
+
+
 def client_id(failure: AirflowFailure) -> str | None:
     """Extract a validated client UUID from a DAG or task identifier."""
+    identifiers = client_ids(failure)
+    return identifiers[0] if identifiers else None
+
+
+def client_ids(failure: AirflowFailure) -> tuple[str, ...]:
+    """Extract all validated client UUIDs associated with one failure."""
     candidates: list[str] = []
     if failure.dag_id.startswith(CLIENT_DAG_PREFIX):
         candidates.append(failure.dag_id.removeprefix(CLIENT_DAG_PREFIX))
     candidates.extend(UUID_PATTERN.findall(failure.task_id))
+    if failure.dag_id == EVENT_BUS_DAG and failure.task_id == EVENT_BUS_HISTORY_TASK:
+        candidates.extend(client_ids_from_text(failure.log))
+    identifiers: list[str] = []
     for candidate in candidates:
         try:
-            return str(UUID(candidate))
+            identifier = str(UUID(candidate))
         except ValueError:
             continue
-    return None
+        if identifier not in identifiers:
+            identifiers.append(identifier)
+    return tuple(identifiers)
+
+
+def client_ids_from_text(text: str) -> tuple[str, ...]:
+    """Extract normalized client UUIDs from evidence text."""
+    identifiers: list[str] = []
+    for candidate in UUID_PATTERN.findall(text):
+        try:
+            identifier = str(UUID(candidate))
+        except ValueError:
+            continue
+        if identifier not in identifiers:
+            identifiers.append(identifier)
+    return tuple(identifiers)
+
+
+def failure_subject_for_identifier(
+    identifier: str,
+    identities: dict[str, ClientIdentity],
+) -> str:
+    """Return the reviewed subject label for one client UUID."""
+    identity = identities.get(identifier)
+    name = identity.name if identity is not None else None
+    return f"{name or 'Unresolved client'} ({identifier[:3]})"
 
 
 def failure_subject(
@@ -115,9 +195,21 @@ def failure_subject(
         if "subscriber" in failure.task_id:
             return "Subscriber validation"
         return failure.dag_id
-    identity = identities.get(identifier)
-    name = identity.name if identity is not None else None
-    return f"{name or 'Unresolved client'} ({identifier[:3]})"
+    return failure_subject_for_identifier(identifier, identities)
+
+
+def failure_subjects(
+    failure: AirflowFailure,
+    identities: dict[str, ClientIdentity],
+) -> tuple[str, ...]:
+    """Return every client subject represented by one failure."""
+    identifiers = client_ids(failure)
+    if identifiers:
+        return tuple(
+            failure_subject_for_identifier(identifier, identities)
+            for identifier in identifiers
+        )
+    return (failure_subject(failure, identities),)
 
 
 def subjects(
@@ -167,13 +259,18 @@ def group_failures_for_reporting(
     identities: dict[str, ClientIdentity],
 ) -> tuple[FailureGroup, ...]:
     """Group shared jobs or otherwise combine all jobs for one client."""
+    failures = tuple(item for item in failures if not is_hidden_from_report(item))
     grouped_ids: set[str] = set()
     groups: list[FailureGroup] = []
     for job, job_failures in group_failures_by_job(failures):
         job_subjects = tuple(
-            dict.fromkeys(failure_subject(item, identities) for item in job_failures)
+            dict.fromkeys(
+                subject
+                for item in job_failures
+                for subject in failure_subjects(item, identities)
+            )
         )
-        if len(job_subjects) < MIN_GROUPED_SUBJECTS:
+        if job == RESEND_TASK or len(job_subjects) < MIN_GROUPED_SUBJECTS:
             continue
         groups.append(FailureGroup(job_subjects, (job,), job_failures))
         grouped_ids.update(item.failure_id for item in job_failures)
@@ -181,10 +278,8 @@ def group_failures_for_reporting(
     remaining_by_subject: dict[str, list[AirflowFailure]] = {}
     for failure in failures:
         if failure.failure_id not in grouped_ids:
-            remaining_by_subject.setdefault(
-                failure_subject(failure, identities),
-                [],
-            ).append(failure)
+            for subject in failure_subjects(failure, identities):
+                remaining_by_subject.setdefault(subject, []).append(failure)
     for subject, subject_failures in remaining_by_subject.items():
         groups.append(
             FailureGroup(
@@ -209,16 +304,11 @@ def group_failures_for_reporting(
 def job_label(task_id: str) -> str:
     """Normalize aliases while preserving underscores in task identifiers."""
     lowered = task_id.lower()
-    if "delivery_to_promise_other_products" in lowered:
-        return "D2P—Other Products"
-    if "delivery_to_promise" in lowered:
-        return "D2P"
-    if "market_insights" in lowered or "mi_3" in lowered:
+    for marker, label in JOB_LABEL_RULES:
+        if marker in lowered:
+            return label
+    if "mi_3" in lowered:
         return "MI3"
-    if RESEND_TASK in lowered:
-        return RESEND_TASK
-    if "credit_migration_matrix" in lowered:
-        return "CMM"
     return task_id.split(".", maxsplit=1)[0]
 
 
@@ -227,7 +317,14 @@ def include_in_data_internal(
     config: ProdSupportReportConfig,
 ) -> bool:
     """Return whether a failure belongs in the concise channel message."""
-    return config.configured_omission_group(failure) is None
+    return not is_hidden_from_report(failure) and config.omission_group(failure) is None
+
+
+def is_hidden_from_report(failure: AirflowFailure) -> bool:
+    """Return whether a non-actionable maintenance task is report-suppressed."""
+    return job_label(failure.task_id) in HIDDEN_REPORT_TASKS or (
+        failure.dag_id.casefold() in HIDDEN_REPORT_TASKS
+    )
 
 
 def event_count(diagnosis: FailureDiagnosis, log: str = "") -> int | None:
@@ -247,8 +344,11 @@ def event_count(diagnosis: FailureDiagnosis, log: str = "") -> int | None:
 
 
 def is_resend_failure(failure: AirflowFailure) -> bool:
-    """Return whether a nested or direct task is event-bus validation."""
-    return RESEND_TASK in failure.task_id.lower()
+    """Return whether a task requires event-resend handling."""
+    lowered = failure.task_id.lower()
+    return RESEND_TASK in lowered or (
+        failure.dag_id == EVENT_BUS_DAG and EVENT_BUS_HISTORY_TASK in lowered
+    )
 
 
 def _failure_sort_key(failure: AirflowFailure) -> tuple[object, ...]:

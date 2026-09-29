@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
-from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import TypeVar
 
@@ -30,7 +29,6 @@ from workspaces.data_engineering.workflows.prod_support.investigation import (
 from workspaces.data_engineering.workflows.prod_support.models import (
     AirflowFailure,
     FailureDiagnosis,
-    FailureKind,
     ProdSupportOutcome,
 )
 from workspaces.data_engineering.workflows.prod_support.ports import (
@@ -174,19 +172,31 @@ class ProductionSupportWorkflow:
                 restart_window_end=failed_before,
             ),
         )
-        identity_failures = tuple(
-            failure
-            for failure in failures
-            if config.configured_omission_group(failure) is None
+        log_first_failures = tuple(
+            failure for failure in failures if extract_client_id(failure) is None
         )
-        resource_results = await self._trigger_resource_discovery(identity_failures)
+        log_first_investigated = await self._triage_manager.triage(log_first_failures)
+        log_first_by_id = {item[0].failure_id: item for item in log_first_investigated}
+        resource_input = tuple(
+            log_first_by_id.get(failure.failure_id, (failure,))[0]
+            for failure in failures
+        )
+        resource_results = await self._trigger_resource_discovery(resource_input)
         reportable = tuple(
             failure
-            for failure in failures
+            for failure in resource_input
             if not _ignored_by_resource_discovery(failure, resource_results)
         )
-        investigated = await self._triage_manager.triage(reportable)
-        investigated_by_id = {item[0].failure_id: item for item in investigated}
+        remaining_failures = tuple(
+            failure
+            for failure in reportable
+            if failure.failure_id not in log_first_by_id
+        )
+        remaining_investigated = await self._triage_manager.triage(remaining_failures)
+        investigated_by_id = {
+            item[0].failure_id: item
+            for item in (*log_first_investigated, *remaining_investigated)
+        }
         recovered_omissions = await self._verified_omission_ids(
             reportable,
             config,
@@ -198,16 +208,7 @@ class ProductionSupportWorkflow:
             investigated_by_id[failure.failure_id][0] for failure in reportable
         )
         diagnoses = tuple(
-            (
-                _omitted_diagnosis(
-                    failure,
-                    verified_config,
-                    investigated_by_id[failure.failure_id][1],
-                )
-                if verified_config.omits(failure)
-                else investigated_by_id[failure.failure_id][1]
-            )
-            for failure in reportable
+            investigated_by_id[failure.failure_id][1] for failure in reportable
         )
         report_context = ProdSupportReportContext(
             resource_discovery_results=resource_results,
@@ -366,24 +367,4 @@ def _ignored_by_resource_discovery(
         dict(result.attributes).get("identifier_value") == identifier
         and dict(result.attributes).get("prod_support_ignore") is True
         for result in results
-    )
-
-
-def _omitted_diagnosis(
-    failure: AirflowFailure,
-    config: ProdSupportReportConfig,
-    diagnosis: FailureDiagnosis,
-) -> FailureDiagnosis:
-    """Return a recovered omission while retaining exact-log provenance."""
-    group = config.omission_group(failure)
-    label = group.value.upper() if group is not None else "configured"
-    return replace(
-        diagnosis,
-        kind=FailureKind.OMITTED,
-        confidence="verified_recovery",
-        evidence=(
-            f"{label} exact failure log reviewed",
-            "same DAG and task succeeded inside the operational window",
-            *diagnosis.evidence,
-        )[:3],
     )

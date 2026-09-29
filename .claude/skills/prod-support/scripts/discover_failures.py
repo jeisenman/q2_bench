@@ -16,9 +16,18 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
 
+from regional_queries import run_region_queries
+
+HTTP_STATUS_BAD_GATEWAY = 502
 HTTP_STATUS_SERVICE_UNAVAILABLE = 503
-AIRFLOW_503_MAX_ATTEMPTS = 3
-AIRFLOW_503_BACKOFF_SECONDS = 30.0
+AIRFLOW_TRANSIENT_STATUS_CODES = frozenset(
+    {HTTP_STATUS_BAD_GATEWAY, HTTP_STATUS_SERVICE_UNAVAILABLE}
+)
+AIRFLOW_TRANSIENT_MAX_ATTEMPTS = 3
+AIRFLOW_TRANSIENT_BACKOFF_SECONDS = 30.0
+AIRFLOW_503_MAX_ATTEMPTS = AIRFLOW_TRANSIENT_MAX_ATTEMPTS
+AIRFLOW_503_BACKOFF_SECONDS = AIRFLOW_TRANSIENT_BACKOFF_SECONDS
+REGION_WORKERS = 2
 
 
 @dataclass(frozen=True)
@@ -121,20 +130,20 @@ def failed_task_instances(
             },
             method="POST",
         )
-        for attempt in range(AIRFLOW_503_MAX_ATTEMPTS):
+        for attempt in range(AIRFLOW_TRANSIENT_MAX_ATTEMPTS):
             try:
                 with urlopen(request, timeout=30) as response:
                     result = json.load(response)
                 break
             except HTTPError as error:
                 if (
-                    error.code != HTTP_STATUS_SERVICE_UNAVAILABLE
-                    or attempt == AIRFLOW_503_MAX_ATTEMPTS - 1
+                    error.code not in AIRFLOW_TRANSIENT_STATUS_CODES
+                    or attempt == AIRFLOW_TRANSIENT_MAX_ATTEMPTS - 1
                 ):
                     raise RuntimeError(
                         f"Airflow API returned HTTP {error.code}"
                     ) from error
-                time_module.sleep(AIRFLOW_503_BACKOFF_SECONDS)
+                time_module.sleep(AIRFLOW_TRANSIENT_BACKOFF_SECONDS)
             except URLError as error:
                 raise RuntimeError(
                     f"unable to reach Airflow API: {error.reason}"
@@ -147,6 +156,18 @@ def failed_task_instances(
         if len(failures) >= result.get("total_entries", 0) or not page:
             return failures
         payload["page_offset"] += len(page)
+
+
+def discover_failures_by_region(
+    failed_since: datetime,
+) -> tuple[tuple[Region, list[dict[str, object]] | None, RuntimeError | None], ...]:
+    """Query US-01 and CA-02 concurrently while preserving report order."""
+    return run_region_queries(
+        REGIONS,
+        failed_task_instances,
+        failed_since,
+        max_workers=REGION_WORKERS,
+    )
 
 
 def print_failures(region: Region, failures: list[dict[str, object]]) -> None:
@@ -206,12 +227,13 @@ def main() -> int:
     load_dotenv(args.env_file)
     print("Failed task instances")
     exit_code = 0
-    for region in REGIONS:
-        try:
-            print_failures(region, failed_task_instances(region, failed_since))
-        except RuntimeError as error:
+    for region, failures, error in discover_failures_by_region(failed_since):
+        if error is not None:
             print(f"{region.name}: {error}", file=sys.stderr)
             exit_code = 1
+        else:
+            assert failures is not None
+            print_failures(region, failures)
     return exit_code
 
 

@@ -7,10 +7,13 @@ from workspaces.data_engineering.workflows.prod_support.models import (
     FailureKind,
 )
 from workspaces.data_engineering.workflows.prod_support.reporting_details import (
+    EVENT_BUS_DAG,
+    EVENT_BUS_HISTORY_TASK,
     ClientIdentity,
     FailureGroup,
     event_count,
     failure_subject,
+    failure_subjects,
     is_resend_failure,
     job_label,
 )
@@ -37,6 +40,14 @@ def _render_line(
     diagnoses: dict[str, FailureDiagnosis],
     identities: dict[str, ClientIdentity],
 ) -> str:
+    if all(
+        failure.dag_id == EVENT_BUS_DAG and failure.task_id == EVENT_BUS_HISTORY_TASK
+        for failure in group.failures
+    ):
+        return (
+            f"  - {_join_terms(group.subject_labels)} failed on "
+            f"{EVENT_BUS_DAG} -- resending events"
+        )
     if any(
         diagnoses[failure.failure_id].kind is FailureKind.DISTINCTNESS
         for failure in group.failures
@@ -73,7 +84,7 @@ def _split_group(
                 tuple(
                     failure
                     for failure in group.failures
-                    if failure_subject(failure, identities) == subject
+                    if subject in failure_subjects(failure, identities)
                 ),
             )
             for subject in group.subject_labels

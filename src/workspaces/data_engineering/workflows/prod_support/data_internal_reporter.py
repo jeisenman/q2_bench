@@ -14,7 +14,7 @@ from workspaces.data_engineering.workflows.prod_support.reporting_channel import
     data_internal_lines,
 )
 from workspaces.data_engineering.workflows.prod_support.reporting_details import (
-    client_identities,
+    data_internal_client_identities,
     group_failures_for_reporting,
     include_in_data_internal,
 )
@@ -30,7 +30,9 @@ class DataInternalReporter:
     ) -> str:
         """Return the compact Data Internal report without periods."""
         diagnosis_by_id = {item.failure_id: item for item in findings.diagnoses}
-        identities = client_identities(findings.resource_discovery_results)
+        identities = data_internal_client_identities(
+            findings.resource_discovery_results
+        )
         lines = [f":bangbang: PROD SUPPORT {operational_date.isoformat()} :bangbang:"]
         for index, region in enumerate(findings.regions):
             if index:
@@ -49,8 +51,6 @@ class DataInternalReporter:
             )
             lines.append(label)
             lines.append("- Ongoing" if regional or omitted_summary else "- Good")
-            if omitted_summary:
-                lines.append(f"- {', '.join(omitted_summary)}")
             lines.extend(
                 line
                 for group in group_failures_for_reporting(regional, identities)
@@ -60,4 +60,6 @@ class DataInternalReporter:
                     identities,
                 )
             )
+            if omitted_summary:
+                lines.append(f"- {', '.join(omitted_summary)}")
         return "\n".join(lines).replace(".", "")

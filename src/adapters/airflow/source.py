@@ -3,18 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import base64
-import json
 import os
-import time
 from collections.abc import Mapping
-from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Protocol
+from typing import Any
 from urllib.error import HTTPError
 from urllib.parse import quote
-from urllib.request import Request, urlopen
 
+from adapters.airflow import transport as _transport
 from adapters.airflow.retry import AirflowRetryMixin
 from workspaces.data_engineering.workflows.prod_support.models import (
     AirflowFailure,
@@ -27,9 +23,14 @@ from workspaces.data_engineering.workflows.prod_support.workloads import (
     AirflowTaskMetadata,
 )
 
-HTTP_STATUS_SERVICE_UNAVAILABLE = 503
-AIRFLOW_503_MAX_ATTEMPTS = 3
-AIRFLOW_503_BACKOFF_SECONDS = 30.0
+AIRFLOW_503_BACKOFF_SECONDS = _transport.AIRFLOW_503_BACKOFF_SECONDS
+AIRFLOW_503_MAX_ATTEMPTS = _transport.AIRFLOW_503_MAX_ATTEMPTS
+HTTP_STATUS_BAD_GATEWAY = _transport.HTTP_STATUS_BAD_GATEWAY
+HTTP_STATUS_SERVICE_UNAVAILABLE = _transport.HTTP_STATUS_SERVICE_UNAVAILABLE
+AirflowRegionConfig = _transport.AirflowRegionConfig
+AirflowTransport = _transport.AirflowTransport
+UrllibAirflowTransport = _transport.UrllibAirflowTransport
+request_with_transient_retry = _transport.request_with_transient_retry
 
 
 class AirflowApiError(RuntimeError):
@@ -44,59 +45,6 @@ class AirflowApiError(RuntimeError):
     def missing_operator_name(cls) -> AirflowApiError:
         """Return an error for task metadata without an operator."""
         return cls("Airflow task metadata response is missing operator_name")
-
-
-@dataclass(frozen=True, slots=True)
-class AirflowRegionConfig:
-    """Connection settings for one Airflow production region."""
-
-    region: Region
-    host: str
-    username: str
-    password: str
-
-
-class AirflowTransport(Protocol):
-    """Small HTTP boundary used by the Airflow source."""
-
-    def request(
-        self,
-        config: AirflowRegionConfig,
-        method: str,
-        path: str,
-        payload: Mapping[str, object] | None = None,
-    ) -> object:
-        """Return a decoded JSON object or text response."""
-
-
-class UrllibAirflowTransport:
-    """Airflow transport implemented with the Python standard library."""
-
-    def request(
-        self,
-        config: AirflowRegionConfig,
-        method: str,
-        path: str,
-        payload: Mapping[str, object] | None = None,
-    ) -> object:
-        """Execute one authenticated Airflow request."""
-        authorization = base64.b64encode(
-            f"{config.username}:{config.password}".encode()
-        ).decode()
-        data = json.dumps(payload).encode() if payload is not None else None
-        request = Request(
-            f"{config.host}{path}",
-            data=data,
-            headers={
-                "Authorization": f"Basic {authorization}",
-                "Content-Type": "application/json",
-            },
-            method=method,
-        )
-        with urlopen(request, timeout=30) as response:
-            content = response.read().decode()
-            content_type = response.headers.get_content_type()
-        return json.loads(content) if content_type == "application/json" else content
 
 
 class AirflowApiSource(AirflowRetryMixin):
@@ -186,7 +134,8 @@ class AirflowApiSource(AirflowRetryMixin):
         )
         try:
             response = await asyncio.to_thread(
-                self._transport.request,
+                request_with_transient_retry,
+                self._transport,
                 config,
                 "GET",
                 path,
@@ -237,7 +186,8 @@ class AirflowApiSource(AirflowRetryMixin):
             for part in ("dags", failure.dag_id, "tasks", failure.task_id)
         )
         response = await asyncio.to_thread(
-            self._transport.request,
+            request_with_transient_retry,
+            self._transport,
             config,
             "GET",
             path,
@@ -284,23 +234,14 @@ class AirflowApiSource(AirflowRetryMixin):
         config: AirflowRegionConfig,
         payload: Mapping[str, object],
     ) -> object:
-        """Retry transient Airflow 503 responses with bounded backoff."""
-        for attempt in range(AIRFLOW_503_MAX_ATTEMPTS):
-            try:
-                return self._transport.request(
-                    config,
-                    "POST",
-                    "/api/v1/dags/~/dagRuns/~/taskInstances/list",
-                    payload,
-                )
-            except HTTPError as error:
-                if (
-                    error.code != HTTP_STATUS_SERVICE_UNAVAILABLE
-                    or attempt == AIRFLOW_503_MAX_ATTEMPTS - 1
-                ):
-                    raise
-                time.sleep(AIRFLOW_503_BACKOFF_SECONDS)
-        raise AssertionError
+        """Retry transient Airflow gateway and availability errors."""
+        return request_with_transient_retry(
+            self._transport,
+            config,
+            "POST",
+            "/api/v1/dags/~/dagRuns/~/taskInstances/list",
+            payload,
+        )
 
     def _has_success_within(
         self,
@@ -331,7 +272,8 @@ class AirflowApiSource(AirflowRetryMixin):
         }
         page_offset = 0
         while True:
-            response = self._transport.request(
+            response = request_with_transient_retry(
+                self._transport,
                 config,
                 "POST",
                 "/api/v1/dags/~/dagRuns/~/taskInstances/list",

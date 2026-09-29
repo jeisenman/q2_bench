@@ -131,12 +131,15 @@ class ProdSupportReportConfig:
         failure: AirflowFailure,
     ) -> DataInternalOmissionGroup | None:
         """Return the configured compact-code group for a failure."""
+        configured = self.configured_omission_group(failure)
+        if configured is DataInternalOmissionGroup.SUBSCRIBER:
+            return configured
         if (
             self.verified_omission_failure_ids is not None
             and failure.failure_id not in self.verified_omission_failure_ids
         ):
             return None
-        return self.configured_omission_group(failure)
+        return configured
 
     def configured_omission_group(
         self,
@@ -191,8 +194,7 @@ class ProdSupportReportConfig:
     ) -> tuple[str, ...]:
         """Return the requested omitted-job summary when any omission failed."""
         if not any(
-            self.configured_omission_group(failure)
-            in _DATA_INTERNAL_OMISSION_SUMMARY_GROUPS
+            self.omission_group(failure) in _DATA_INTERNAL_OMISSION_SUMMARY_GROUPS
             for failure in failures
         ):
             return ()

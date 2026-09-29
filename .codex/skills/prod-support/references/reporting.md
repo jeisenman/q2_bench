@@ -28,10 +28,17 @@ Follow Up:
 Rules:
 
 - Put US-01 before CA-02.
+- Data Internal omission settings apply only to the Data Internal message.
+  Developer reporting, follow-up actions, retry planning, Resource Discovery,
+  and triage retain every discovered failure.
 - Developer messages retain full UUIDs when needed for action.
 - Channel messages use only the first three UUID characters.
 - Use exactly one client per bullet.
 - Combine multiple findings for the same client on one channel line.
+- Use these Data Internal-only client abbreviations: `Scotiabank - Data
+  Validation` → `Scotiabank DV`, Wells Fargo → `WF`, City National Bank → `CNB`,
+  Bank of America → `BoFA`, and CIBC Canada → `CIBC CA`. Keep full names in
+  developer and follow-up messages.
 - End no Data Internal bullet with a period.
 - Preserve every job identifier exactly, including underscores. Never replace
   underscores with spaces or hyphens.

@@ -31,6 +31,11 @@ Use this skill to query the internal Resource Discovery API. The maintained quic
 5. Summarize only non-secret fields returned by the API. Never print access tokens, client secrets, or raw credential values.
 6. If the API returns multiple records, report each one and call out the ambiguity rather than choosing silently.
 
+When resolving multiple client UUIDs for one production-support run, use the
+Resource Discovery batch capability once for the complete mapping. Do not loop
+single-client lookups or run `format_client.py` per UUID; the caller should use
+the structured batch results for all report labels.
+
 Never write client secrets to tracked repository files, command history snippets, logs, or final answers. Keep local values in ignored `.env` under `# resource discovery`, or supply them through the current shell session.
 
 ## Internal API

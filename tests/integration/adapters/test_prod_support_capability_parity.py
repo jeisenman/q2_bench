@@ -112,9 +112,27 @@ class DirectResources:
 
 class ResourceCapabilityCaller:
     async def call_tool(self, name, arguments):
-        assert name == "lookup_resources"
-        assert arguments["identifier_value"] == CLIENT_ID
-        return {"records": [RESOURCE_RECORD]}
+        if name == "lookup_resources":
+            assert arguments["identifier_value"] == CLIENT_ID
+            return {"records": [RESOURCE_RECORD]}
+        assert name == "lookup_resources_batch"
+        identifiers = arguments["identifiers"]
+        assert identifiers == [
+            {
+                "identifier_kind": "client_id",
+                "identifier_value": CLIENT_ID,
+            }
+        ]
+        return {
+            "results": [
+                {
+                    "identifier_kind": "client_id",
+                    "identifier_value": CLIENT_ID,
+                    "count": 1,
+                    "records": [RESOURCE_RECORD],
+                }
+            ]
+        }
 
 
 def test_direct_and_mcp_modes_produce_identical_prod_support_output() -> None:
