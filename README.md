@@ -247,9 +247,10 @@ The server exposes `support://prod-support/updates` and the
 local path with `PROD_SUPPORT_UPDATES_PATH`; reads are validated and never
 modify the source file.
 
-The `run_prod_support` tool uses a safe empty source by default. The Compose
-service loads established regional Airflow credentials from the ignored
-repository `.env` and explicitly selects the read-only production source:
+The `run_prod_support` tool uses the live production source when launched by
+the host-side entry point above. The Compose service loads established regional
+Airflow credentials from the ignored repository `.env` and explicitly selects
+the read-only production source:
 
 ```bash
 docker compose run --rm --no-deps prod-support-mcp
@@ -278,12 +279,15 @@ Discovery additionally requires `RESOURCE_DISCOVERY_BASE_URL`,
 `RESOURCE_DISCOVERY_CLIENT_SECRET`, and `RESOURCE_DISCOVERY_SCOPE`. Credential
 values are injected at runtime and are not copied into the image.
 
-For a host-side stdio server, load the same `.env` into the process environment
-and run:
+For a host-side stdio server, run:
 
 ```bash
-PROD_SUPPORT_SOURCE=production uv run prod-support-mcp
+uv run prod-support-mcp
 ```
+
+The launcher loads the ignored `.env` file and defaults to the live production
+Airflow/OMS/Resource Discovery adapters. Set `PROD_SUPPORT_SOURCE=replay` or
+`PROD_SUPPORT_SOURCE=empty` explicitly when a network-free run is intended.
 
 Run the opt-in, read-only production connectivity checks with:
 

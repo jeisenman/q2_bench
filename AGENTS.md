@@ -20,6 +20,48 @@ writes bounded lifecycle events to stderr and includes them as `debug_trace` in
 MCP tool responses. Prompts, logs, credentials, and arbitrary production
 payloads are not recorded.
 
+## Runtime restart requirement
+
+- After changing an MCP server's Python code, configuration, environment
+  variables, prompts, or dependencies, stop and restart that MCP server before
+  validating behavior. An existing stdio process retains imported modules and
+  environment state.
+- After changing MLflow server configuration, registered agents, model
+  settings, tracking configuration, or MLflow-backed workflow code, restart
+  the MLflow server and any dependent assistant or evaluation process before
+  validating behavior.
+- A UI reload or client reconnect is not sufficient unless it also recreates
+  the server process. For Docker Compose, restart the affected services, for
+  example:
+
+  ```bash
+  docker compose restart prod-support-mcp mlflow
+  ```
+
+- For host-side processes, terminate and relaunch the commands. The
+  production-support MCP launcher loads `.env` and defaults to the live
+  production source:
+
+  ```bash
+  uv run prod-support-mcp
+  uv run mlflow server --host 127.0.0.1 --port 5000 \
+    --backend-store-uri sqlite:///var/mlflow/backend.db \
+    --default-artifact-root ./var/mlflow/artifacts
+  ```
+
+- After restarting, verify the process-specific configuration in the trace or
+  startup output. For production support, confirm
+  `PROD_SUPPORT_SOURCE=production`; never treat an empty-source report as
+  production evidence.
+- Use the repository restart utility for the full local app/runtime restart:
+
+  ```bash
+  uv run python scripts/restart_codex_runtime.py
+  ```
+
+  Add `--with-mlflow` when the MLflow server also needs to be restarted. Use
+  `--dry-run` first when validating the matched process set.
+
 ## Architecture
 
 - Production code belongs in top-level packages under `src/`.
