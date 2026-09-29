@@ -13,6 +13,7 @@ it.
 | `resource-discovery` | Query PrecisionLender Resource Discovery for client and resource metadata. | claude, codex |
 | `benchmark-builder` | Turn a captured trace into a reviewable benchmark case with distractors. | claude, codex |
 | `prod-support` | Discover, triage, and remediate production Airflow failures across US and CA. | claude, codex |
+| `upgrade-dependencies` | Research, implement, and verify Python and container dependency upgrades. | claude, codex |
 
 `prod-support` was absorbed from `pl-data-plugins` and is now owned here.
 Its `scripts/` run directly; `references/mcp-tools.md` describes the

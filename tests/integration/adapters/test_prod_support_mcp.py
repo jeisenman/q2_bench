@@ -97,10 +97,10 @@ def test_mcp_tool_runs_prod_support_agent(
     assert "URLs to validate\nhttps://airflow-us01" in result["output"]
     assert "Message for developer:" in result["output"]
     assert "\n\n:bangbang: PROD SUPPORT " in result["output"]
-    assert "\nUS\n- Good\n\nCA\n- Good\n\nFollow Ups:" in result["output"]
+    assert "\nUS\n\n- Good\n\nCA\n\n- Good\n\nFollow Up:" in result["output"]
     assert "Message for Data Internal Channel" not in result["output"]
     assert "```markdown" not in result["output"]
-    assert "Follow Ups:\n\n- No action is required." in result["output"]
+    assert "Follow Up:\n\n- No action is required." in result["output"]
     assert "- Good" in result["output"]
     assert result["developer_report"].startswith("Message for developer:")
     assert result["message_for_developer"] == result["developer_report"]

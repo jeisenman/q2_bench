@@ -136,7 +136,7 @@ class PriorTaskLogSource(Protocol):
 
 
 class ClusterHealthSource(Protocol):
-    """Read current regional Airflow and KEDA health evidence."""
+    """Read current regional Airflow cluster health evidence."""
 
     async def inspect_health(
         self,

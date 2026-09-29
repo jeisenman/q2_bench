@@ -32,6 +32,7 @@ dependency-intelligence-mcp = "mcp_servers.dependency_intelligence:main"
 oms-mcp = "mcp_servers.oms:main"
 prod-support-mcp = "cli.prod_support_mcp:main"
 python-upgrade-mcp = "mcp_servers.python_upgrade:main"
+remote-data-mcp = "mcp_servers.remote_data:main"
 resource-discovery-mcp = "mcp_servers.resource_discovery:main"
 warehouse-mcp = "mcp_servers.warehouse:main"
 

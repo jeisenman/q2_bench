@@ -93,7 +93,7 @@ def test_formats_channel_reports_and_suggestion_only_follow_up() -> None:
     assert "." not in reports.data_internal
     assert reports.follow_up.startswith("- Would you like to re-run:")
     assert "l3-main-client relationship_signals job" in reports.follow_up
-    assert "Follow Ups:" in reports.combined
+    assert "Follow Up:" in reports.combined
     assert "Message for Data Internal Channel" not in reports.combined
 
 
@@ -124,8 +124,8 @@ def test_developer_report_lists_every_failure() -> None:
     assert "l3-main-client failed on relationship_signals" in reports.developer
     assert "ca-dag failed on ca-task" in reports.developer
     assert "\n\n  -" not in reports.developer
-    assert "US\n- Ongoing\n  - l3-main-client failed on" in reports.data_internal
-    assert "\n\nCA\n- Ongoing\n  - ca-dag failed on" in reports.data_internal
+    assert "US\n\n- Ongoing\n  - l3-main-client failed on" in reports.data_internal
+    assert "\n\nCA\n\n- Ongoing\n  - ca-dag failed on" in reports.data_internal
     assert reports.capture_summary == (
         "Local capture contains 2 failures: 1 from US-01 and 1 from CA-02."
     )
@@ -244,7 +244,7 @@ def test_empty_omission_override_includes_every_job() -> None:
         ),
     )
 
-    assert "US\n- Ongoing\n  - l3-main-client failed on D2P" in reports.data_internal
+    assert "US\n\n- Ongoing\n  - l3-main-client failed on D2P" in reports.data_internal
     assert "l3-main-client delivery_to_promise_data job" in reports.follow_up
 
 
@@ -321,9 +321,10 @@ def test_resend_follow_up_uses_resource_discovery_link() -> None:
     )
 
     assert (
-        "Send events for Bank of Hope (111) on "
-        "[Resend Opportunity Snapshots](https://cac01-app.precisionlender.com/"
-        "Admin/Troubleshooting/ResendSnapshotsForClient) for date 09-22-26."
+        "- For CA, resend with [Resend Opportunity Snapshots](https://"
+        "cac01-app.precisionlender.com/Admin/Troubleshooting/"
+        "ResendSnapshotsForClient):\n"
+        "  - Bank of Hope (111) for 09-22-26 to 09-22-26"
     ) in reports.follow_up
 
 

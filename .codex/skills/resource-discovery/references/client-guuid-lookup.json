@@ -103,8 +103,53 @@
   },
   "37de14dd-118d-4d12-bfa3-89db98071a1b": {
     "api_status": "no-unique-match",
+    "environment": "CAC01",
     "last_checked": "2026-09-29",
-    "source": "unresolved"
+    "name": "Andi Application Owner CAC01",
+    "prod_support_ignore": true,
+    "prod_support_ignore_reason": "User-confirmed ignored CAC01 client",
+    "q2_client_id": null,
+    "resource_sets": [
+      {
+        "service": "Radar",
+        "environment": "CAC01",
+        "storage": "plstcarelsrvarchprod",
+        "datalake": "pladls2cacprod"
+      },
+      {
+        "service": "Data Studio",
+        "environment": "Data Studio CA",
+        "datalake": "pladls2cacdatamartprod"
+      },
+      {
+        "service": "PLApp",
+        "environment": "CAC01",
+        "database_server": "pl-sqlfailover-cac-app-01.database.windows.net",
+        "database": "pl_sqldb_cac_app_01",
+        "storage": "plstoragecacapp01",
+        "datalake": "pladls2cacprod"
+      }
+    ],
+    "source": "user-confirmed",
+    "subdomain": "cac01",
+    "user_confirmed_production_resources": {
+      "data_studio": {
+        "data_lake": "pladls2cacdatamartprod",
+        "service_environment": "Data Studio CA"
+      },
+      "plapp": {
+        "data_lake": "pladls2cacprod",
+        "database": "pl_sqldb_cac_app_01",
+        "database_server": "pl-sqlfailover-cac-app-01.database.windows.net",
+        "service_environment": "CAC01",
+        "storage": "plstoragecacapp01"
+      },
+      "radar": {
+        "data_lake": "pladls2cacprod",
+        "service_environment": "CAC01",
+        "storage": "plstcarelsrvarchprod"
+      }
+    }
   },
   "385c35bf-29c4-48a7-9527-a91963b7af69": {
     "api_status": "unique-match",

@@ -21,6 +21,22 @@ class SnowflakeAccessMode(StrEnum):
     CORTEX = "cortex"
 
 
+class AdlsEnvironment(StrEnum):
+    """Supported ADLS deployment locations."""
+
+    DEV = "dev"
+    STAGING = "staging"
+    PROD_US = "prod_us"
+    PROD_CA = "prod_ca"
+
+
+class OmsRegion(StrEnum):
+    """Supported production OMS regions."""
+
+    US = "us"
+    CA = "ca"
+
+
 @dataclass(frozen=True, slots=True)
 class DatabricksTarget:
     """A named Databricks workspace with an optional SQL warehouse."""
@@ -42,7 +58,16 @@ class SnowflakeTarget:
 class AdlsTarget:
     """A named ADLS Gen2 storage account."""
 
+    environment: AdlsEnvironment
     account_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class OmsTarget:
+    """A named production Azure Log Analytics workspace."""
+
+    region: OmsRegion
+    workspace_name: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +90,10 @@ DATABRICKS_PROD = DatabricksTarget(
     workspace_id="3510128597187204",
     sql_warehouse_id="434de6917eea68b6",
 )
+DATABRICKS_TARGETS = {
+    "data_engineering": DATABRICKS_PROD,
+    "ra": DATABRICKS_RAPREPROD,
+}
 
 SNOWFLAKE_TARGETS = tuple(
     SnowflakeTarget(
@@ -79,7 +108,40 @@ SNOWFLAKE_TARGETS = tuple(
     for environment in SnowflakeEnvironment
 )
 
-ADLS_PREPROD = AdlsTarget(account_name="pladls2usdatamartpreprod")
+ADLS_DEV = AdlsTarget(
+    environment=AdlsEnvironment.DEV,
+    account_name="pladls2usdatamartdev",
+)
+ADLS_STAGING = AdlsTarget(
+    environment=AdlsEnvironment.STAGING,
+    account_name="pladls2usdatamartpreprod",
+)
+ADLS_PROD_US = AdlsTarget(
+    environment=AdlsEnvironment.PROD_US,
+    account_name="pladls2usdatamartprod",
+)
+ADLS_PROD_CA = AdlsTarget(
+    environment=AdlsEnvironment.PROD_CA,
+    account_name="pladls2cacdatamartprod",
+)
+ADLS_TARGETS = {
+    target.environment: target
+    for target in (
+        ADLS_DEV,
+        ADLS_STAGING,
+        ADLS_PROD_US,
+        ADLS_PROD_CA,
+    )
+}
+ADLS_PREPROD = ADLS_STAGING
+
+OMS_TARGETS = {
+    target.region: target
+    for target in (
+        OmsTarget(OmsRegion.US, "pl-oms-us-primary"),
+        OmsTarget(OmsRegion.CA, "pl-oms-ca-primary"),
+    )
+}
 
 INITIATIVE_SMOKE_TESTS = (
     InitiativeSmokeTest(

@@ -56,7 +56,7 @@ class ClusterHealthScriptSource:
         restart_window_start: datetime,
         restart_window_end: datetime,
     ) -> RegionalClusterHealth:
-        """Return script-formatted pod, restart, and KEDA health."""
+        """Return script-formatted pod, restart, and conditional DAG health."""
         result = await asyncio.to_thread(
             subprocess.run,
             (
@@ -95,6 +95,16 @@ class ClusterHealthScriptSource:
             ),
             restart_window_end=datetime.fromisoformat(
                 str(payload["restart_window_end"])
+            ),
+            active_dag_count=(
+                int(payload["active_dag_count"])
+                if payload.get("active_dag_count") is not None
+                else None
+            ),
+            dags_parsing_healthy=(
+                bool(payload["dags_parsing_healthy"])
+                if payload.get("dags_parsing_healthy") is not None
+                else None
             ),
             keda_status=str(payload["keda_status"]),
             symptoms=tuple(str(item) for item in payload.get("symptoms", ())),

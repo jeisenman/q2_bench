@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, time
+from datetime import UTC as DATETIME_UTC
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from workspaces.data_engineering.agents.oms_agent.models import (
@@ -88,18 +89,15 @@ class OmsJobQuery:
 
 
 def build_oms_job_query(parameters: OmsJobQueryParameters) -> OmsJobQuery:
-    """Build one exact OMS query bounded to the workload's UTC calendar day."""
+    """Build one exact OMS query for the workload's UTC target window."""
     task_day = parameters.start_at.astimezone(UTC).date()
-    window_start = datetime.combine(task_day, time.min, tzinfo=UTC)
-    window_end = datetime.combine(task_day, time.max, tzinfo=UTC)
+    window_start = datetime.combine(task_day, time(hour=5), tzinfo=UTC)
+    window_end = window_start + timedelta(days=1)
     kql = "\n".join(
         (
             parameters.table,
-            (
-                "| where TimeGenerated between "
-                f"(datetime({window_start.isoformat()}) .. "
-                f"datetime({window_end.isoformat()}))"
-            ),
+            "// target date",
+            f"| where window_start_t == datetime('{_kusto_datetime(window_start)}')",
             f"| where client_id_g == {_quote(parameters.client_id_g)}",
             f"| where run_id_s == {_quote(parameters.run_id_s)}",
             f"| where task_id_s == {_quote(parameters.task_id_s)}",
@@ -119,6 +117,11 @@ def build_oms_job_query(parameters: OmsJobQueryParameters) -> OmsJobQuery:
         window_end=window_end,
         kql=kql,
     )
+
+
+def _kusto_datetime(value: datetime) -> str:
+    """Format a UTC datetime as a Kusto datetime literal value."""
+    return value.astimezone(DATETIME_UTC).strftime("%Y-%m-%dT%H:%MZ")
 
 
 def _normalize_region(region: object) -> OmsRegion:

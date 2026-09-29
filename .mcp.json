@@ -26,14 +26,14 @@
         "Q2_MCP_DEBUG": "1"
       }
     },
-    "oms": {
+    "remote-data": {
       "type": "stdio",
       "command": "uv",
       "args": [
         "run",
         "--directory",
         "/Users/jeisenman/projects/agentsdk",
-        "oms-mcp"
+        "remote-data-mcp"
       ],
       "env": {
         "Q2_MCP_DEBUG": "1"

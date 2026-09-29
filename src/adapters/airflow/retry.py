@@ -146,7 +146,7 @@ def _payload(batch: RetryBatch, *, dry_run: bool) -> dict[str, object]:
     return {
         "dag_run_id": batch.run_id,
         "dry_run": dry_run,
-        "include_downstream": False,
+        "include_downstream": True,
         "include_future": False,
         "include_past": False,
         "include_upstream": False,

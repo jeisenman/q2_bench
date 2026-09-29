@@ -50,6 +50,10 @@ RESEND_URLS = frozenset(
         ),
     }
 )
+CA_RESEND_URL = (
+    "https://cac01-app.precisionlender.com/"
+    "Admin/Troubleshooting/ResendSnapshotsForClient"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +64,7 @@ class ResendCandidate:
     resend_date: str
     count: int | None
     url: str | None
+    is_ca: bool
 
 
 class FollowUp:
@@ -220,6 +225,7 @@ def _resend_actions(
     missing_routes: dict[str, list[str]] = {}
     missing_counts: dict[tuple[str, str], list[str]] = {}
     actionable: dict[tuple[str, str], list[ResendCandidate]] = {}
+    ca_actionable: dict[str, list[ResendCandidate]] = {}
     large_unrouted: list[ResendCandidate] = []
     for candidate in candidates:
         if candidate.url is None:
@@ -231,6 +237,8 @@ def _resend_actions(
                 (candidate.resend_date, candidate.url),
                 [],
             ).append(candidate.label)
+        elif candidate.is_ca:
+            ca_actionable.setdefault(candidate.url, []).append(candidate)
         else:
             actionable.setdefault(
                 (candidate.resend_date, candidate.url),
@@ -267,7 +275,28 @@ def _resend_actions(
             f"- Send events for {_join_terms(labels)} on "
             f"[Resend Opportunity Snapshots]({url}) for date {resend_date}."
         )
+    for url, grouped in sorted(ca_actionable.items()):
+        actions.append(f"- For CA, resend with [Resend Opportunity Snapshots]({url}):")
+        for label, candidates_for_client in _group_candidates_by_client(grouped):
+            start_date = min(
+                candidate.resend_date for candidate in candidates_for_client
+            )
+            end_date = max(candidate.resend_date for candidate in candidates_for_client)
+            actions.append(f"  - {label} for {start_date} to {end_date}")
     return tuple(actions)
+
+
+def _group_candidates_by_client(
+    candidates: list[ResendCandidate],
+) -> tuple[tuple[str, tuple[ResendCandidate, ...]], ...]:
+    """Group CA resend candidates by client for nested date-range bullets."""
+    grouped: dict[str, list[ResendCandidate]] = {}
+    for candidate in candidates:
+        grouped.setdefault(candidate.label, []).append(candidate)
+    return tuple(
+        (label, tuple(sorted(client_candidates, key=lambda item: item.resend_date)))
+        for label, client_candidates in sorted(grouped.items())
+    )
 
 
 def _resend_candidates(
@@ -290,17 +319,29 @@ def _resend_candidates(
             reviewed_url = (
                 identity.reviewed_resend_url if identity is not None else None
             )
+            is_ca = identity is not None and identity.environment == "ca02"
             candidate = ResendCandidate(
                 label=label,
                 resend_date=resend_date,
                 count=event_count(diagnoses[failure.failure_id], failure.log),
-                url=reviewed_url if reviewed_url in RESEND_URLS else None,
+                url=_resend_url(is_ca, reviewed_url),
+                is_ca=is_ca,
             )
             key = label, resend_date
             previous = selected.get(key)
             if previous is None or (candidate.count or 0) > (previous.count or 0):
                 selected[key] = candidate
     return tuple(selected[key] for key in sorted(selected))
+
+
+def _resend_url(
+    is_ca: bool,
+    reviewed_url: str | None,
+) -> str | None:
+    """Return a reviewed route, with CA clients using the fixed CAC01 page."""
+    if is_ca:
+        return CA_RESEND_URL
+    return reviewed_url if reviewed_url in RESEND_URLS else None
 
 
 def _logical_date(failure: AirflowFailure) -> date:

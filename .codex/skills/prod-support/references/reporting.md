@@ -13,14 +13,18 @@ Message for developer:
 Message for Data Internal Channel
 :bangbang: PROD SUPPORT YYYY-MM-DD :bangbang:
 US
+
 - Good|Ongoing
   - <client name> (<first three UUID characters>) failed on <job identifiers>
+
 CA
+
 - Good|Ongoing
 - check_for_subscriber_client_errors, D2P, MI3
 
 Follow Up:
-- Send events for <clients> on <approved resend link> for date <MM-DD-YY>
+- For CA, resend with <CA resend URL>:
+  - <client name> for <start-date> to <end-date>
 - Would you like to re-run:
   - <client name> (<first three UUID characters>) <full DAG ID> <job identifiers> job
 ```
@@ -55,9 +59,17 @@ Rules:
   failed. Do not expand that summary into client bullets.
 - Always include a `Follow Up:` section after Data Internal.
 - Keep Follow Up action-oriented and concise. Use `Send events for ...` for
-  resend candidates and `Would you like to re-run:` for retry candidates.
+  non-CA resend candidates and `Would you like to re-run:` for retry
+  candidates. For CA resend candidates, use one top-level bullet containing
+  the fixed CAC01 resend URL, then indent one bullet per client with its
+  inclusive start and end dates.
 - Under `Would you like to re-run:`, use one client per bullet and include the
   client label, full `l3-main-*` DAG ID, and comma-separated job identifiers.
+- Preserve this Markdown hierarchy exactly: region labels are plain text;
+  insert a blank line after each region label; regional status and omission
+  summaries are top-level bullets; client findings are two-space nested
+  bullets. Follow Up actions are top-level bullets, with rerun candidates
+  indented by two spaces beneath `Would you like to re-run:`.
 
 Compliant multi-job row:
 

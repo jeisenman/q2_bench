@@ -14,6 +14,7 @@ from adapters.kubernetes.source import (
 from workspaces.data_engineering.workflows.prod_support import Region
 
 EXPECTED_RESTART_COUNT = 12
+EXPECTED_ACTIVE_DAGS = 34
 WINDOW_START = datetime(2026, 9, 26, 5, tzinfo=UTC)
 WINDOW_END = datetime(2026, 9, 27, 5, tzinfo=UTC)
 
@@ -28,6 +29,8 @@ def _payload(region: str = "US-01") -> str:
             "cumulative_restart_count": 40,
             "restart_window_start": WINDOW_START.isoformat(),
             "restart_window_end": WINDOW_END.isoformat(),
+            "active_dag_count": EXPECTED_ACTIVE_DAGS,
+            "dags_parsing_healthy": True,
             "keda_status": "healthy",
             "symptoms": ["8 active pods are running and ready"],
             "warnings": [],
@@ -63,6 +66,8 @@ def test_script_source_parses_cluster_health(monkeypatch, tmp_path: Path) -> Non
     ]
     assert health.state.value == "healthy"
     assert health.restart_count == EXPECTED_RESTART_COUNT
+    assert health.active_dag_count == EXPECTED_ACTIVE_DAGS
+    assert health.dags_parsing_healthy is True
     assert health.keda_status == "healthy"
 
 

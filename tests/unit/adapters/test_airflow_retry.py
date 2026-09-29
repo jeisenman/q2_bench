@@ -48,7 +48,7 @@ def test_plan_uses_safe_exact_clear_flags() -> None:
     assert transport.payloads[0] == {
         "dag_run_id": "run",
         "dry_run": True,
-        "include_downstream": False,
+        "include_downstream": True,
         "include_future": False,
         "include_past": False,
         "include_upstream": False,

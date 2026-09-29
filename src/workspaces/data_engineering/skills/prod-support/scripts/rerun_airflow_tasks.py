@@ -155,7 +155,7 @@ def build_payload(
     return {
         "dag_run_id": run_id,
         "dry_run": dry_run,
-        "include_downstream": False,
+        "include_downstream": True,
         "include_future": False,
         "include_past": False,
         "include_upstream": False,

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import Mapping
 from functools import lru_cache
+from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
 
@@ -22,6 +24,7 @@ from workspaces.data_engineering.agents.resource_discovery import (
 )
 
 SERVER_NAME = "resource-discovery-capabilities"
+MIN_QUOTED_VALUE_LENGTH = 2
 server = MCPServer(
     SERVER_NAME,
     description="Read-only non-secret Resource Discovery capabilities.",
@@ -108,8 +111,31 @@ def _record(record: ResourceRecord) -> dict[str, object]:
 
 def main() -> None:
     """Run the read-only Resource Discovery MCP server over stdio."""
+    configure_environment()
     configure_telemetry(default_service_name=SERVER_NAME)
     server.run(transport="stdio")
+
+
+def configure_environment(env_file: Path = Path(".env")) -> None:
+    """Load local credentials without replacing exported environment values."""
+    if not env_file.is_file():
+        return
+    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+        value = value.strip()
+        if (
+            len(value) >= MIN_QUOTED_VALUE_LENGTH
+            and value[0] == value[-1]
+            and value[0] in {"'", '"'}
+        ):
+            value = value[1:-1]
+        os.environ[key] = value
 
 
 if __name__ == "__main__":

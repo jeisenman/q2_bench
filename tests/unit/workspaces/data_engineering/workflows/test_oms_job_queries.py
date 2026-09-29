@@ -23,8 +23,10 @@ def test_builds_parameterized_full_day_query() -> None:
     query = build_oms_job_query(parameters)
 
     assert query.workspace_name == "pl-oms-us-primary"
-    assert query.window_start == datetime(2026, 9, 24, tzinfo=UTC)
-    assert query.window_end == datetime(2026, 9, 24, 23, 59, 59, 999999, tzinfo=UTC)
+    assert query.window_start == datetime(2026, 9, 24, 5, tzinfo=UTC)
+    assert query.window_end == datetime(2026, 9, 25, 5, tzinfo=UTC)
+    assert "| where window_start_t == datetime('2026-09-24T05:00Z')" in query.kql
+    assert "TimeGenerated between" not in query.kql
     assert 'client_id_g == "8b2e8a38-b778-402a-819a-4904f42f5a2a"' in query.kql
     assert 'run_id_s == "manual__2026-09-23T05:00:00+00:00"' in query.kql
     assert "try_number_d == 4" in query.kql

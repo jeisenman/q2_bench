@@ -14,7 +14,7 @@ INSPECT_CLUSTER_HEALTH = ToolDefinition(
     name="inspect_cluster_health",
     description=(
         "Run the read-only cluster health check for selected regions and return "
-        "pod state, restart counts, and KEDA status."
+        "pod state and restart counts."
     ),
     input_schema=(("regions", "array"),),
 )

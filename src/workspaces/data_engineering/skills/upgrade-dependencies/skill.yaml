@@ -1,0 +1,8 @@
+schema_version: 1
+id: upgrade-dependencies
+workspace: data_engineering
+display_name: Upgrade Dependencies
+summary: Research, implement, and verify Python and container dependency upgrades.
+harnesses:
+  - claude
+  - codex

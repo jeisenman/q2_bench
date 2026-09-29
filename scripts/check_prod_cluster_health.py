@@ -1,20 +1,38 @@
 #!/usr/bin/env python3
-"""Read production pod, restart, and KEDA health with kubectl."""
+"""Read production pod and restart health with kubectl."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
 from typing import Any
+from urllib.error import HTTPError, URLError
+
+from adapters.airflow.transport import (
+    AirflowRegionConfig,
+    UrllibAirflowTransport,
+    request_with_transient_retry,
+)
+from workspaces.data_engineering.workflows.prod_support.models import Region
 
 REGION_CONTEXTS = {
     "US-01": "l3-us01",
     "CA-02": "l3-ca02",
 }
+AIRFLOW_HOSTS = {
+    "US-01": "https://airflow-us01.precisionlender.com",
+    "CA-02": "https://airflow-ca02.precisionlender.com",
+}
+AIRFLOW_CREDENTIAL_ENV = {
+    "US-01": ("USAIRFLORUSER", "USAIRFLOWPASSWORD"),
+    "CA-02": ("CAAIRFLORUSER", "CAAIRFLOWPASSWORD"),
+}
 NAMESPACE = "scheduler"
+MIN_HEALTHY_DAG_COUNT = 10
 
 
 class ClusterHealthCommandError(TypeError):
@@ -24,6 +42,24 @@ class ClusterHealthCommandError(TypeError):
     def object_required(cls, resource: str) -> ClusterHealthCommandError:
         """Return an error for a non-object kubectl payload."""
         return cls(f"kubectl {resource} response must be an object")
+
+
+class ClusterHealthConfigurationError(RuntimeError):
+    """Raised when conditional Airflow DAG evidence cannot be collected."""
+
+    @classmethod
+    def missing_dag_credentials(
+        cls,
+        username_env: str,
+        password_env: str,
+    ) -> ClusterHealthConfigurationError:
+        """Return an error for missing Airflow credentials."""
+        return cls(f"missing {username_env} or {password_env} for DAG count")
+
+    @classmethod
+    def invalid_dag_response(cls) -> ClusterHealthConfigurationError:
+        """Return an error for an invalid Airflow DAG response."""
+        return cls("Airflow DAG response is missing total_entries")
 
 
 def _kubectl(context: str, resource: str) -> dict[str, Any]:
@@ -105,21 +141,32 @@ def _pod_health(
     return not unready, restart_count, cumulative_restart_count, symptoms
 
 
-def _keda_health(payload: dict[str, Any]) -> str:
-    items = tuple(item for item in payload.get("items", ()) if isinstance(item, dict))
-    if not items:
-        return "not_configured"
-    ready_values = [
-        condition.get("status")
-        for item in items
-        for condition in item.get("status", {}).get("conditions", ())
-        if condition.get("type") == "Ready"
-    ]
-    if ready_values and all(value == "True" for value in ready_values):
-        return "healthy"
-    if any(value == "False" for value in ready_values):
-        return "unhealthy"
-    return "unknown"
+def _active_dag_count(region: str) -> int:
+    username_env, password_env = AIRFLOW_CREDENTIAL_ENV[region]
+    username = os.environ.get(username_env)
+    password = os.environ.get(password_env)
+    if not username or not password:
+        raise ClusterHealthConfigurationError.missing_dag_credentials(
+            username_env,
+            password_env,
+        )
+    config = AirflowRegionConfig(
+        Region(region),
+        AIRFLOW_HOSTS[region],
+        username,
+        password,
+    )
+    response = request_with_transient_retry(
+        UrllibAirflowTransport(),
+        config,
+        "GET",
+        "/api/v1/dags?limit=1&only_active=true",
+    )
+    if not isinstance(response, dict) or not isinstance(
+        response.get("total_entries"), int
+    ):
+        raise ClusterHealthConfigurationError.invalid_dag_response()
+    return response["total_entries"]
 
 
 def inspect_region(
@@ -139,12 +186,15 @@ def inspect_region(
         restart_window_start,
         restart_window_end,
     )
-    warnings: tuple[str, ...] = ()
-    try:
-        keda_status = _keda_health(_kubectl(context, "scaledobjects.keda.sh"))
-    except subprocess.CalledProcessError as error:
-        keda_status = "unavailable"
-        warnings = (f"KEDA query failed with exit code {error.returncode}",)
+    active_dag_count: int | None = None
+    warnings: list[str] = []
+    if not pods_healthy and any("dag-processor" in symptom for symptom in symptoms):
+        try:
+            active_dag_count = _active_dag_count(region)
+            if active_dag_count >= MIN_HEALTHY_DAG_COUNT:
+                pods_healthy = True
+        except (ClusterHealthConfigurationError, HTTPError, URLError) as error:
+            warnings.append(f"DAG count query failed: {error}")
     return {
         "region": region,
         "observed_at": datetime.now(UTC).isoformat(),
@@ -153,9 +203,15 @@ def inspect_region(
         "cumulative_restart_count": cumulative_restart_count,
         "restart_window_start": restart_window_start.isoformat(),
         "restart_window_end": restart_window_end.isoformat(),
-        "keda_status": keda_status,
+        "active_dag_count": active_dag_count,
+        "dags_parsing_healthy": (
+            active_dag_count >= MIN_HEALTHY_DAG_COUNT
+            if active_dag_count is not None
+            else None
+        ),
+        "keda_status": "unknown",
         "symptoms": symptoms,
-        "warnings": warnings,
+        "warnings": tuple(warnings),
     }
 
 

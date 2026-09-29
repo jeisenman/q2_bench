@@ -1,8 +1,15 @@
 from adapters.outbound.data_engineering import (
+    ADLS_DEV,
     ADLS_PREPROD,
+    ADLS_PROD_CA,
+    ADLS_PROD_US,
+    ADLS_STAGING,
+    ADLS_TARGETS,
     DATABRICKS_PROD,
     DATABRICKS_RAPREPROD,
+    DATABRICKS_TARGETS,
     INITIATIVE_SMOKE_TESTS,
+    OMS_TARGETS,
     SNOWFLAKE_TARGETS,
     SnowflakeAccessMode,
     SnowflakeEnvironment,
@@ -18,6 +25,10 @@ def test_databricks_targets_use_requested_workspaces() -> None:
     assert DATABRICKS_PROD.name == "pl-databricks-us-prod-01"
     assert DATABRICKS_PROD.workspace_id == "3510128597187204"
     assert DATABRICKS_PROD.sql_warehouse_id == "434de6917eea68b6"
+    assert DATABRICKS_TARGETS == {
+        "data_engineering": DATABRICKS_PROD,
+        "ra": DATABRICKS_RAPREPROD,
+    }
 
 
 def test_snowflake_supports_python_and_cortex_in_each_environment() -> None:
@@ -34,8 +45,25 @@ def test_snowflake_supports_python_and_cortex_in_each_environment() -> None:
     )
 
 
-def test_adls_target_uses_preprod_data_mart_account() -> None:
-    assert ADLS_PREPROD.account_name == "pladls2usdatamartpreprod"
+def test_adls_targets_cover_every_requested_location() -> None:
+    assert ADLS_DEV.account_name == "pladls2usdatamartdev"
+    assert ADLS_STAGING.account_name == "pladls2usdatamartpreprod"
+    assert ADLS_PREPROD is ADLS_STAGING
+    assert ADLS_PROD_US.account_name == "pladls2usdatamartprod"
+    assert ADLS_PROD_CA.account_name == "pladls2cacdatamartprod"
+    assert set(ADLS_TARGETS.values()) == {
+        ADLS_DEV,
+        ADLS_STAGING,
+        ADLS_PROD_US,
+        ADLS_PROD_CA,
+    }
+
+
+def test_oms_targets_are_the_two_primary_production_workspaces() -> None:
+    assert {target.workspace_name for target in OMS_TARGETS.values()} == {
+        "pl-oms-us-primary",
+        "pl-oms-ca-primary",
+    }
 
 
 def test_every_dataeng_initiative_has_a_smoke_test_target() -> None:

@@ -311,7 +311,7 @@ def test_agent_keeps_recovered_d2p_in_non_data_internal_outputs() -> None:
     assert source.fetched == [omitted.failure_id]
     assert outcome.diagnoses[0].kind.value != "omitted"
     assert (
-        "US\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
+        "US\n\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
         in outcome.data_internal_report
     )
     assert "Would you like to re-run:" in outcome.follow_up

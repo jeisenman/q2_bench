@@ -125,7 +125,7 @@ def oms_evidence() -> OmsJobEvidenceSource | None:
     if source_mode == DIRECT_MODE:
         return AzureOmsJobEvidenceSource.create()
     if source_mode == MCP_MODE:
-        return OmsMcpSource(project_stdio_caller("oms-mcp"))
+        return OmsMcpSource(project_stdio_caller("remote-data-mcp"))
     return None
 
 

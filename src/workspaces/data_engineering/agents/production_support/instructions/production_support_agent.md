@@ -56,7 +56,10 @@ not including, `05:00:00Z` the following day.
 
 Call the read-only `inspect_cluster_health` tool for every selected region,
 using the same operational window as Airflow discovery. Check pod readiness,
-restarts inside the window, cumulative restarts, and KEDA status. Run US and CA
+restarts inside the window, and cumulative restarts. If an Airflow DAG processor
+pod is unready, the check also reads the active DAG count from the read-only
+Airflow API; an active count of 10 or more is sufficient supplemental evidence,
+while fewer than 10 DAGs remains unhealthy. KEDA is not queried. Run US and CA
 checks concurrently and keep their evidence separate.
 
 The repository-backed command used by that tool is:

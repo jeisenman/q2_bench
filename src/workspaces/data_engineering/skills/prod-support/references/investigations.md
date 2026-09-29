@@ -40,7 +40,7 @@ orchestrator's notes.
 ## Fast Airflow-log mode
 
 Use this as the default for individual task parsing. Fetch the exact task
-instance and attempt log through Airflow's authenticated UI session:
+instance and attempt log through the authenticated Airflow REST API:
 
 ```bash
 python3 {{SKILL_DIR}}/scripts/get_airflow_task_logs.py \
@@ -49,10 +49,11 @@ python3 {{SKILL_DIR}}/scripts/get_airflow_task_logs.py \
 ```
 
 When both run and task are supplied, the collector requests that exact task
-instance instead of listing every task in the DAG run. Pass the captured text
-to `investigate_oms_job.py --log-file` and then to the applicable domain
-parser. The Luna agent receives only the captured log or its path and performs
-local parsing without Azure authentication.
+instance instead of listing every task in the DAG run. When multiple failed
+instances are selected, it batches their log requests concurrently. Pass the
+captured text to `investigate_oms_job.py --log-file` and then to the applicable
+domain parser. The Luna agent receives only the captured log or its path and
+performs local parsing without Azure authentication.
 
 Use OMS fallback only when the Airflow log is unavailable or incomplete, the
 required records exist only in OMS, EventBus payload volume makes the Airflow

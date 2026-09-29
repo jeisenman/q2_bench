@@ -50,6 +50,7 @@ class DataInternalReporter:
                 all_regional
             )
             lines.append(label)
+            lines.append("")
             lines.append("- Ongoing" if regional or omitted_summary else "- Good")
             lines.extend(
                 line

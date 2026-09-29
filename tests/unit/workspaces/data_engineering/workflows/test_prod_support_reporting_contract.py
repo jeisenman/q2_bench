@@ -115,7 +115,7 @@ def test_cluster_warnings_do_not_contradict_primary_healthy_status() -> None:
         reports.developer
     )
     assert "cluster is unhealthy" not in reports.data_internal
-    assert "US\n- Good\n\nCA\n- Good" in reports.data_internal
+    assert "US\n\n- Good\n\nCA\n\n- Good" in reports.data_internal
 
 
 def test_unhealthy_cluster_is_reported_only_in_its_region() -> None:
@@ -137,7 +137,7 @@ def test_unhealthy_cluster_is_reported_only_in_its_region() -> None:
     )
 
     us_block, ca_block = reports.data_internal.split("\nCA\n", maxsplit=1)
-    assert "US\n- Good" in us_block
+    assert "US\n\n- Good" in us_block
     assert "cluster is unhealthy" not in us_block
     assert "CA cluster is unhealthy" not in ca_block
     assert "scheduler pods are unready" not in ca_block
@@ -261,10 +261,14 @@ def test_environment_without_reviewed_mapping_does_not_offer_resend() -> None:
     )
 
     assert (
-        "Ask a human to identify the production resend application environment "
-        "for Client A (111) for date 09-25-26."
+        "- For CA, resend with [Resend Opportunity Snapshots](https://"
+        "cac01-app.precisionlender.com/Admin/Troubleshooting/"
+        "ResendSnapshotsForClient):\n"
+        "  - Client A (111) for 09-25-26 to 09-25-26"
     ) in reports.follow_up
-    assert "Resend 208 opportunities" not in reports.follow_up
+    assert "Ask a human to identify the production resend application" not in (
+        reports.follow_up
+    )
 
 
 def test_report_rejects_missing_or_duplicate_structured_evidence() -> None:

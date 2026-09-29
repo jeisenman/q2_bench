@@ -272,6 +272,8 @@ def _render_skill(
         if not path.is_file():
             continue
         relative = path.relative_to(skill.source)
+        if "__pycache__" in relative.parts or path.suffix == ".pyc":
+            continue
         if relative.parts[0] == HARNESS_DIRECTORY:
             if len(relative.parts) < HARNESS_PATH_DEPTH or relative.parts[1] != harness:
                 continue

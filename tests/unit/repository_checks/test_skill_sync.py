@@ -70,6 +70,17 @@ def test_manifest_is_not_copied_into_harness_directories(tmp_path: Path) -> None
     assert not (tmp_path / ".claude/skills/demo/skill.yaml").exists()
 
 
+def test_python_bytecode_cache_is_not_copied(tmp_path: Path) -> None:
+    directory = write_skill(tmp_path)
+    cache = directory / "scripts/__pycache__"
+    cache.mkdir()
+    (cache / "go.cpython-311.pyc").write_bytes(b"\xa7")
+
+    sync(tmp_path)
+
+    assert not (tmp_path / ".claude/skills/demo/scripts/__pycache__").exists()
+
+
 def test_check_reports_stale_and_unmanaged_files(tmp_path: Path) -> None:
     write_skill(tmp_path)
     plan = sync(tmp_path)

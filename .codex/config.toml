@@ -17,9 +17,9 @@ startup_timeout_sec = 20
 tool_timeout_sec = 120
 default_tools_approval_mode = "approve"
 
-[mcp_servers.oms]
+[mcp_servers.remote_data]
 command = "uv"
-args = ["run", "--directory", "/Users/jeisenman/projects/agentsdk", "oms-mcp"]
+args = ["run", "--directory", "/Users/jeisenman/projects/agentsdk", "remote-data-mcp"]
 env = { Q2_MCP_DEBUG = "1", Q2_OTEL_EXPORTER = "none" }
 startup_timeout_sec = 20
 tool_timeout_sec = 120

@@ -29,9 +29,9 @@ first: it runs this whole workflow as one typed, authenticated call.
 
 ## Discovery
 
-Do not manually browse or scrape Airflow. Use the supplied Playwright
-collector to retrieve exact logs through the authenticated Airflow UI session,
-and use the Airflow API for discovery and operations.
+Do not manually browse or scrape Airflow. Use the authenticated Airflow API for
+discovery, exact task logs, and operations. The exact-log collector batches
+REST requests concurrently and applies the standard 502/503 backoff.
 
 ## Access boundaries
 

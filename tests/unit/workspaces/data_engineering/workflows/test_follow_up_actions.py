@@ -43,13 +43,47 @@ def test_groups_clients_by_date_and_link_with_deduplicated_opportunity_count() -
     )
 
     assert (
-        "Send events for Client One (111) and Client Two (222) on "
-        f"[Resend Opportunity Snapshots]({RESEND_URL}) for date 09-18-26."
+        f"- For CA, resend with [Resend Opportunity Snapshots]({RESEND_URL}):\n"
+        "  - Client One (111) for 09-18-26 to 09-18-26\n"
+        "  - Client Two (222) for 09-18-26 to 09-18-26"
     ) in reports.follow_up
     assert "recoverable opportunities" not in reports.follow_up
 
 
-def _failure(client_id: str, opportunity_id: str) -> AirflowFailure:
+def test_ca_resend_lists_each_client_with_its_date_range() -> None:
+    client_id = "11111111-1111-4111-8111-111111111111"
+    first = _failure(
+        client_id,
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        run_id="manual__2026-09-18T05:00:00+00:00",
+    )
+    second = _failure(
+        client_id,
+        "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        run_id="manual__2026-09-20T05:00:00+00:00",
+    )
+
+    reports = format_reports_with_context(
+        date(2026, 9, 26),
+        (first, second),
+        (_diagnosis(first), _diagnosis(second)),
+        context=ProdSupportReportContext(
+            resource_discovery_results=(_resource(first, "Client One"),)
+        ),
+    )
+
+    assert (
+        f"- For CA, resend with [Resend Opportunity Snapshots]({RESEND_URL}):\n"
+        "  - Client One (111) for 09-18-26 to 09-20-26"
+    ) in reports.follow_up
+
+
+def _failure(
+    client_id: str,
+    opportunity_id: str,
+    *,
+    run_id: str = "manual__2026-09-18T05:00:00+00:00",
+) -> AirflowFailure:
     repeated_payload = (
         f"OpportunityId: {opportunity_id}\n"
         f"OpportunityId: {opportunity_id}\n"
@@ -58,7 +92,7 @@ def _failure(client_id: str, opportunity_id: str) -> AirflowFailure:
     return AirflowFailure(
         region=Region.CA_02,
         dag_id=f"l3-main-{client_id}",
-        run_id="manual__2026-09-18T05:00:00+00:00",
+        run_id=run_id,
         task_id="validate_event_bus_opportunities",
         start_at=datetime(2026, 9, 26, 19, tzinfo=UTC),
         end_at=datetime(2026, 9, 26, 20, tzinfo=UTC),

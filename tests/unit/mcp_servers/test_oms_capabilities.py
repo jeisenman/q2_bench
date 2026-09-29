@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from mcp_servers import oms
+from mcp_servers import oms, remote_data_oms
 from workspaces.data_engineering.agents.oms_agent import OmsQueryResult
 
 
@@ -20,8 +20,8 @@ class FakeJobSource:
 
 
 def test_oms_server_exposes_read_only_queries(monkeypatch) -> None:
-    monkeypatch.setattr(oms, "_query_source", FakeQuerySource)
-    monkeypatch.setattr(oms, "_job_source", FakeJobSource)
+    monkeypatch.setattr(remote_data_oms, "query_source", FakeQuerySource)
+    monkeypatch.setattr(remote_data_oms, "job_source", FakeJobSource)
 
     query = asyncio.run(oms.query_oms("production", "us", "Table | take 1", "PT5M"))
     evidence = asyncio.run(
