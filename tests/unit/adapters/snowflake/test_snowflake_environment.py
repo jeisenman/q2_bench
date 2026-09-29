@@ -1,6 +1,9 @@
 import pytest
 
 from adapters.snowflake.environment import (
+    AUTHENTICATOR_SUFFIX,
+    DEFAULT_AUTHENTICATOR,
+    EXTERNAL_BROWSER,
     SETTING_SUFFIXES,
     SnowflakeConfigurationError,
     load_settings,
@@ -119,3 +122,71 @@ def test_only_sandbox_is_deterministic() -> None:
         for item in Environment
         if item is not Environment.SANDBOX
     )
+
+
+def test_default_authenticator_is_snowflake_password(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure(monkeypatch, Environment.DEV)
+    monkeypatch.delenv(
+        variable_name(Environment.DEV, AUTHENTICATOR_SUFFIX), raising=False
+    )
+
+    settings = load_settings(Environment.DEV)
+
+    assert settings.authenticator == DEFAULT_AUTHENTICATOR
+    assert settings.requires_secret is True
+    assert "authenticator" not in settings.connection_arguments("secret-value")
+
+
+def test_external_browser_needs_no_password(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure(monkeypatch, Environment.DEV)
+    monkeypatch.setenv(
+        variable_name(Environment.DEV, AUTHENTICATOR_SUFFIX), EXTERNAL_BROWSER
+    )
+
+    settings = load_settings(Environment.DEV)
+
+    assert settings.requires_secret is False
+    arguments = settings.connection_arguments(None)
+    assert arguments["authenticator"] == EXTERNAL_BROWSER
+    assert "password" not in arguments
+
+
+def test_okta_account_url_is_accepted_and_still_needs_a_password(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure(monkeypatch, Environment.DEV)
+    monkeypatch.setenv(
+        variable_name(Environment.DEV, AUTHENTICATOR_SUFFIX),
+        "https://example.okta.com",
+    )
+
+    settings = load_settings(Environment.DEV)
+
+    assert settings.requires_secret is True
+    arguments = settings.connection_arguments("secret-value")
+    assert arguments["authenticator"] == "https://example.okta.com"
+    assert arguments["password"] == "secret-value"
+
+
+def test_unknown_authenticator_is_rejected_with_the_allowed_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure(monkeypatch, Environment.DEV)
+    monkeypatch.setenv(variable_name(Environment.DEV, AUTHENTICATOR_SUFFIX), "okta-sso")
+
+    with pytest.raises(SnowflakeConfigurationError, match="externalbrowser"):
+        load_settings(Environment.DEV)
+
+
+def test_password_mode_without_a_secret_fails_loudly(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configure(monkeypatch, Environment.DEV)
+    settings = load_settings(Environment.DEV)
+
+    with pytest.raises(SnowflakeConfigurationError, match="needs a password"):
+        settings.connection_arguments(None)

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Sequence
+from typing import cast
 
 from adapters.dbapi import DbApiConnection
 from adapters.snowflake.environment import SnowflakeSettings, load_settings
@@ -161,7 +162,11 @@ class SnowflakeWarehouse:
     async def _connect(self) -> DbApiConnection:
         async with self._lock:
             if self._connection is None:
-                password = await self._secrets.get_secret(self._settings.secret_ref)
+                password = (
+                    await self._secrets.get_secret(self._settings.secret_ref)
+                    if self._settings.requires_secret
+                    else None
+                )
                 self._connection = await asyncio.to_thread(
                     _open_connection,
                     self._settings,
@@ -177,13 +182,21 @@ class SnowflakeWarehouse:
                 self._connection = None
 
 
-def _open_connection(settings: SnowflakeSettings, password: str) -> DbApiConnection:
+def _open_connection(
+    settings: SnowflakeSettings,
+    password: str | None,
+) -> DbApiConnection:
     # Deferred so the package imports without the optional provider SDK.
     try:
         import snowflake.connector  # noqa: PLC0415
     except ModuleNotFoundError as error:
         raise SnowflakeUnavailableError.missing_package() from error
-    connection: DbApiConnection = snowflake.connector.connect(
-        **settings.connection_arguments(password)
+    # SnowflakeConnection satisfies the operations DbApiConnection declares, but
+    # its cursor() is generic over a cursor_class parameter, so mypy cannot match
+    # it to the narrow Protocol. Cast the claim explicitly instead of letting the
+    # adapter fall back to Any.
+    connection = cast(
+        "DbApiConnection",
+        snowflake.connector.connect(**settings.connection_arguments(password)),
     )
     return connection

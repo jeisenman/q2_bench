@@ -2,6 +2,8 @@
 
 from adapters.snowflake.cortex import SnowflakeCortex
 from adapters.snowflake.environment import (
+    DEFAULT_AUTHENTICATOR,
+    EXTERNAL_BROWSER,
     SnowflakeConfigurationError,
     SnowflakeSettings,
     load_settings,
@@ -15,6 +17,8 @@ from adapters.snowflake.warehouse import (
 )
 
 __all__ = [
+    "DEFAULT_AUTHENTICATOR",
+    "EXTERNAL_BROWSER",
     "ReadOnlyViolationError",
     "SnowflakeConfigurationError",
     "SnowflakeCortex",

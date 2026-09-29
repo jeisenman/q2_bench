@@ -23,7 +23,14 @@ SETTING_SUFFIXES: Final = (
     "SCHEMA",
 )
 SECRET_SUFFIX: Final = "SECRET_REF"
+AUTHENTICATOR_SUFFIX: Final = "AUTHENTICATOR"
 DEFAULT_SECRET_REF: Final = "snowflake/{environment}/password"
+DEFAULT_AUTHENTICATOR: Final = "snowflake"
+EXTERNAL_BROWSER: Final = "externalbrowser"
+PASSWORDLESS_AUTHENTICATORS: Final = frozenset({EXTERNAL_BROWSER})
+NAMED_AUTHENTICATORS: Final = frozenset(
+    {DEFAULT_AUTHENTICATOR, EXTERNAL_BROWSER, "oauth", "snowflake_jwt"}
+)
 
 
 class SnowflakeConfigurationError(ValueError):
@@ -39,6 +46,23 @@ class SnowflakeConfigurationError(ValueError):
         joined = ", ".join(names)
         return cls(
             f"Snowflake {environment.value} configuration is incomplete; set: {joined}"
+        )
+
+    @classmethod
+    def unknown_authenticator(cls, value: str) -> SnowflakeConfigurationError:
+        """Return an error for an authenticator the connector will not accept."""
+        named = ", ".join(sorted(NAMED_AUTHENTICATORS))
+        return cls(
+            f"unknown Snowflake authenticator {value!r}; use one of {named}, or "
+            "an Okta account URL such as https://example.okta.com"
+        )
+
+    @classmethod
+    def password_required(cls, authenticator: str) -> SnowflakeConfigurationError:
+        """Return an error for a password-based mode reached without a secret."""
+        return cls(
+            f"the {authenticator!r} authenticator needs a password; resolve it "
+            "through a SecretProvider before opening a connection"
         )
 
     @classmethod
@@ -62,18 +86,36 @@ class SnowflakeSettings:
     database: str
     schema: str
     secret_ref: str
+    authenticator: str = DEFAULT_AUTHENTICATOR
 
-    def connection_arguments(self, password: str) -> dict[str, str]:
-        """Return driver arguments, with the secret supplied at call time."""
-        return {
+    @property
+    def requires_secret(self) -> bool:
+        """Return whether this mode needs a password resolved at call time.
+
+        Browser-based SSO delegates the credential to the identity provider,
+        so there is no Snowflake password to look up. Asking a SecretProvider
+        for one would fail on a secret that is not supposed to exist.
+        """
+        return self.authenticator.casefold() not in PASSWORDLESS_AUTHENTICATORS
+
+    def connection_arguments(self, password: str | None) -> dict[str, str]:
+        """Return driver arguments, with any secret supplied at call time."""
+        arguments = {
             "account": self.account,
             "user": self.user,
-            "password": password,
             "role": self.role,
             "warehouse": self.warehouse,
             "database": self.database,
             "schema": self.schema,
         }
+        if self.authenticator.casefold() != DEFAULT_AUTHENTICATOR:
+            arguments["authenticator"] = self.authenticator
+        if not self.requires_secret:
+            return arguments
+        if password is None:
+            raise SnowflakeConfigurationError.password_required(self.authenticator)
+        arguments["password"] = password
+        return arguments
 
 
 def variable_name(environment: Environment, suffix: str) -> str:
@@ -98,6 +140,11 @@ def load_settings(environment: Environment) -> SnowflakeSettings:
     secret_ref = os.environ.get(
         variable_name(environment, SECRET_SUFFIX), ""
     ).strip() or DEFAULT_SECRET_REF.format(environment=environment.value)
+    authenticator = (
+        os.environ.get(variable_name(environment, AUTHENTICATOR_SUFFIX), "").strip()
+        or DEFAULT_AUTHENTICATOR
+    )
+    _require_known_authenticator(authenticator)
     return SnowflakeSettings(
         environment=environment,
         account=values["account"],
@@ -107,4 +154,14 @@ def load_settings(environment: Environment) -> SnowflakeSettings:
         database=values["database"],
         schema=values["schema"],
         secret_ref=secret_ref,
+        authenticator=authenticator,
     )
+
+
+def _require_known_authenticator(value: str) -> None:
+    """Reject an authenticator the connector would not understand."""
+    if value.casefold() in NAMED_AUTHENTICATORS:
+        return
+    if value.casefold().startswith("https://"):
+        return
+    raise SnowflakeConfigurationError.unknown_authenticator(value)

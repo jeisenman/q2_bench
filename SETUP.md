@@ -106,6 +106,65 @@ exist to remove. Map them explicitly per call instead:
 (set -a; . ./.env; set +a; DATABRICKS_HOST="$RA_DATABRICKS_HOST" DATABRICKS_TOKEN="$RA_DATABRICKS_TOKEN" databricks current-user me)
 ```
 
+### Snowflake and Cortex
+
+Cortex inference runs through `warehouse-mcp`. Three things have to be true
+before it works, and none of them are on by default.
+
+**Install the driver.** The Snowflake connector is an optional extra, so that
+the sandbox and the test suite need no provider credentials:
+
+```bash
+uv sync --extra snowflake
+```
+
+**Put the variables where the server will see them.** `warehouse-mcp` does
+**not** read `.env` — its `main()` only starts the server. Set them in the
+`env` block for `warehouse` in `.mcp.json`, or export them in the shell that
+launches your harness. `.env.example` lists them for reference, but copying
+them into `.env` alone will not work.
+
+Six are required per environment, and `load_settings` fails naming any that
+are missing:
+
+```text
+SNOWFLAKE_DEV_ACCOUNT     SNOWFLAKE_DEV_WAREHOUSE
+SNOWFLAKE_DEV_USER        SNOWFLAKE_DEV_DATABASE
+SNOWFLAKE_DEV_ROLE        SNOWFLAKE_DEV_SCHEMA
+```
+
+**Choose an authenticator.** `SNOWFLAKE_DEV_AUTHENTICATOR` selects how you
+sign in:
+
+| Value | Use | Password variable |
+| --- | --- | --- |
+| unset / `snowflake` | Snowflake-native password | `SNOWFLAKE_DEV_PASSWORD` |
+| `externalbrowser` | **Okta or any SSO, on a desktop** | none |
+| `https://<org>.okta.com` | Okta, headless | `SNOWFLAKE_DEV_PASSWORD` |
+| `oauth`, `snowflake_jwt` | token or key-pair | per Snowflake docs |
+
+With `externalbrowser` the connector opens a browser, you complete Okta, and
+no Snowflake password exists or is looked up. That mode is interactive, so it
+suits your desktop but cannot run unattended in CI or a benchmark.
+
+The password variable name is derived, not configured: the secret reference
+defaults to `snowflake/dev/password`, and `/` and `-` become `_` and the whole
+thing uppercases, giving `SNOWFLAKE_DEV_PASSWORD`.
+
+**Then restart `warehouse-mcp` and name the environment.** A stdio server
+caches its environment at launch, so a client reconnect is not enough. The
+server defaults to `WAREHOUSE_ENVIRONMENT=sandbox`, so pass the environment
+explicitly on the call:
+
+```text
+run_cortex_complete(model="claude-3-5-sonnet", prompt="...", environment="dev")
+```
+
+**The sandbox is a separate setup.** Sandbox Cortex replays recordings from
+`WAREHOUSE_SANDBOX_CORTEX_RECORDINGS` and fails loudly when a request was
+never captured. Recordings are captured against a real environment first, so
+live access has to work before sandbox Cortex can.
+
 ## Working in a workspace
 
 Pick the workspace whose domain you are in, then read, in order:
