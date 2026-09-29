@@ -1,0 +1,26 @@
+schema_version: 1
+benchmark_id: data_engineering.pipeline_engineering.python_upgrade
+display_name: python-upgrade
+version: 1.0.0
+group: pipeline_engineering
+description: Evaluate deterministic Python upgrade planning and mutation safety.
+dataset:
+  root: src/workspaces/data_engineering/benchmarks/python_upgrade
+  capture_window_days: 0
+evaluation:
+  layers:
+    - capabilities
+    - system
+  dimensions:
+    - inventory_accuracy
+    - compatibility_accuracy
+    - uncertainty_reporting
+    - bounded_parallelism
+    - stale_plan_protection
+    - approval_boundary
+    - rollback_safety
+public_assets:
+  - cases.yaml
+  - suite.yaml
+hidden_expectations:
+  - hidden/case_expectations.yaml

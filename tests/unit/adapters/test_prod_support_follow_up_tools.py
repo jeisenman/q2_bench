@@ -65,6 +65,30 @@ def test_follow_up_tool_executes_and_returns_validation_links(
     assert executed["validation_urls"] == (US_URL, CA_URL)
 
 
+def test_follow_up_tool_returns_debug_trace_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("Q2_MCP_DEBUG", "1")
+    monkeypatch.setattr(
+        prod_support_follow_up,
+        "_follow_up_agent",
+        FakeFollowUpAgent,
+    )
+
+    executed = asyncio.run(
+        prod_support_follow_up.execute_prod_support_follow_up(
+            "retry CA",
+            [_candidate()],
+            [US_URL, CA_URL],
+            correlation_id="follow-up-debug-1",
+        )
+    )
+
+    debug_trace = executed["debug_trace"]
+    assert debug_trace["correlation_id"] == "follow-up-debug-1"
+    assert debug_trace["events"][-1]["event"] == "tool.complete"
+
+
 def test_follow_up_tool_requires_both_validation_links(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -13,6 +13,13 @@ explicit contracts, vectorized batch operations, and deterministic behavior.
   an equivalent array operation is clearer.
 - Run `uv run python scripts/check.py` before declaring work complete.
 
+## Local MCP visibility
+
+Run MCP servers with `Q2_MCP_DEBUG=1` during local development. The server
+writes bounded lifecycle events to stderr and includes them as `debug_trace` in
+MCP tool responses. Prompts, logs, credentials, and arbitrary production
+payloads are not recorded.
+
 ## Architecture
 
 - Production code belongs in top-level packages under `src/`.

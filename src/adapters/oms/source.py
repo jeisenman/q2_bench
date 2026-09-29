@@ -15,10 +15,15 @@ from typing import Protocol
 from urllib.request import Request, urlopen
 
 from workspaces.data_engineering.agents.oms_agent import (
+    OmsEnvironment,
+    OmsJobQueryParameters,
     OmsLogRecord,
     OmsQuery,
     OmsQueryResult,
+    OmsRegion,
     OmsWorkspace,
+    build_oms_job_query,
+    resolve_workspace,
 )
 
 LOG_ANALYTICS_SCOPE = "https://api.loganalytics.io"
@@ -147,6 +152,38 @@ class AzureLogAnalyticsSource:
 
 
 @dataclass(frozen=True, slots=True)
+class AzureOmsJobEvidenceSource:
+    """Render exact production job evidence from bounded OMS query results."""
+
+    source: AzureLogAnalyticsSource
+
+    @classmethod
+    def create(cls) -> AzureOmsJobEvidenceSource:
+        """Create the production job-evidence adapter."""
+        return cls(AzureLogAnalyticsSource.create())
+
+    async def query_job(self, parameters: OmsJobQueryParameters) -> str:
+        """Return deterministic JSON lines for one exact workload attempt."""
+        job_query = build_oms_job_query(parameters)
+        region = parameters.region
+        if not isinstance(region, OmsRegion):
+            message = f"unsupported normalized OMS region: {region!r}"
+            raise OmsAdapterError(message)
+        workspace = resolve_workspace(OmsEnvironment.PRODUCTION, region)
+        result = await self.source.query(
+            workspace,
+            OmsQuery(
+                kql=job_query.kql,
+                timespan=(
+                    f"{job_query.window_start.isoformat()}/"
+                    f"{job_query.window_end.isoformat()}"
+                ),
+            ),
+        )
+        return _render_rows(result)
+
+
+@dataclass(frozen=True, slots=True)
 class OmsDataCollectorSink:
     """Append custom logs using an explicitly injected workspace shared key."""
 
@@ -199,3 +236,15 @@ def _signature(
     digest = hmac.new(key, content_hash.encode(), hashlib.sha256).digest()
     encoded = base64.b64encode(digest).decode()
     return f"SharedKey {workspace_id}:{encoded}"
+
+
+def _render_rows(result: OmsQueryResult) -> str:
+    """Render tabular OMS evidence without dropping diagnostic columns."""
+    return "\n".join(
+        json.dumps(
+            dict(zip(result.columns, row, strict=True)),
+            sort_keys=True,
+            default=str,
+        )
+        for row in result.rows
+    )

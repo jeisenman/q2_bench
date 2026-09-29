@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Any
 from uuid import uuid4
 
@@ -14,28 +15,29 @@ from adapters.local import (
     load_prod_support_updates,
 )
 from adapters.telemetry import configure_telemetry
-from domain import AgentRequest
+from mcp_servers.debug import McpDebugTrace
 from mcp_servers.prod_support_benchmark import (
-    capture_benchmark_case,
     requests_benchmark_case,
 )
-from mcp_servers.prod_support_follow_up import (
-    candidate_output,
-    execute_prod_support_follow_up,
+from mcp_servers.prod_support_execution import (
+    ProdSupportExecutionContext,
+    execute_prod_support,
 )
-from mcp_servers.prod_support_output import (
-    format_mcp_output,
-    retry_approval_message,
-    validation_urls,
-)
+from mcp_servers.prod_support_follow_up import execute_prod_support_follow_up
 from mcp_servers.prod_support_sources import (
     airflow_source as _source,
+)
+from mcp_servers.prod_support_sources import (
+    airflow_task_metadata as _task_metadata,
 )
 from mcp_servers.prod_support_sources import (
     cluster_health as _cluster_health,
 )
 from mcp_servers.prod_support_sources import (
     memory as _memory,
+)
+from mcp_servers.prod_support_sources import (
+    oms_evidence as _oms_evidence,
 )
 from mcp_servers.prod_support_sources import (
     resource_discovery as _resource_discovery,
@@ -45,15 +47,10 @@ from observability import (
     extracted_trace_context,
     traced_operation,
 )
-from workspaces.data_engineering.benchmarks import (
-    benchmark_case_count,
-    insufficient_benchmark_warning,
-    prepend_benchmark_warning,
-)
+from workflow_harness import WorkflowRunner
 from workspaces.data_engineering.workflows.prod_support import (
     FollowUpExecutor,
     InvestigationServices,
-    ProdSupportReportConfig,
     ProductionSupportWorkflow,
 )
 from workspaces.data_engineering.workflows.prod_support.reporting_config import (
@@ -67,12 +64,18 @@ server = MCPServer(
 )
 
 _agent_memory = _memory()
+_workflow_runner = WorkflowRunner()
+_airflow_source = _source()
 
 agent = ProductionSupportWorkflow(
-    _source(),
+    _airflow_source,
     resource_discovery=_resource_discovery(),
     cluster_health=_cluster_health(),
-    investigation=InvestigationServices(memory=_agent_memory),
+    investigation=InvestigationServices(
+        task_metadata=_task_metadata(_airflow_source),
+        oms=_oms_evidence(),
+        memory=_agent_memory,
+    ),
 )
 server.tool(
     name="execute_prod_support_follow_up",
@@ -83,11 +86,9 @@ server.tool(
 )(execute_prod_support_follow_up)
 
 
-_validation_urls = validation_urls
-_format_mcp_output = format_mcp_output
-
-
-_requests_benchmark_case = requests_benchmark_case
+def _requests_benchmark_case(prompt: str) -> bool:
+    """Preserve the benchmark-request helper for existing local callers."""
+    return requests_benchmark_case(prompt)
 
 
 @server.tool(
@@ -106,97 +107,56 @@ async def run_prod_support(
 ) -> dict[str, Any]:
     """Run the production-support agent with optional service context."""
     resolved_correlation_id = correlation_id or uuid4().hex
-    async with traced_operation(
-        "mcp.run_prod_support",
-        attributes={
-            "q2.mcp.tool.name": "run_prod_support",
-            "q2.agent.name": agent.definition.name,
-            "q2.agent.correlation_id": resolved_correlation_id,
-        },
-        context=extracted_trace_context(trace_context or {}),
-    ):
-        result = await _run_prod_support(
-            prompt,
-            service=service,
-            correlation_id=resolved_correlation_id,
-            data_internal_omissions=data_internal_omissions,
-        )
-        result["trace"] = current_trace_metadata()
-        return result
-
-
-async def _run_prod_support(
-    prompt: str,
-    *,
-    service: str | None,
-    correlation_id: str,
-    data_internal_omissions: list[str] | None,
-) -> dict[str, Any]:
-    """Execute production support inside the MCP trace boundary."""
-    report_config = (
-        JsonProdSupportOmissionStore().load()
-        if data_internal_omissions is None
-        else ProdSupportReportConfig.from_omission_values(data_internal_omissions)
+    debug = McpDebugTrace("run_prod_support", resolved_correlation_id)
+    debug.event(
+        "tool.start",
+        prompt_length=len(prompt),
+        source_mode=os.environ.get("PROD_SUPPORT_SOURCE", "default"),
+        service_configured=service is not None,
     )
-    attributes = (("service", service),) if service else ()
-    request = AgentRequest(
-        prompt=prompt,
-        correlation_id=correlation_id,
-        attributes=attributes,
-    )
-    outcome = await agent.investigate(
-        request.prompt,
-        report_config=report_config,
-        correlation_id=request.correlation_id,
-    )
-    warning = insufficient_benchmark_warning(SERVER_NAME)
-    full_report = prepend_benchmark_warning(_format_mcp_output(outcome), warning)
-    links = _validation_urls(full_report)
-    approval_message = retry_approval_message(outcome.retry_candidates)
-    result: dict[str, Any] = {
-        "output": full_report,
-        "full_report": full_report,
-        "links": links,
-        "message_for_developer": outcome.developer_report,
-        "message_for_data_internal": outcome.data_internal_report,
-        "developer_message": outcome.developer_report,
-        "data_internal_message": outcome.data_internal_report,
-        "follow_up_message": approval_message,
-        "follow_up": outcome.follow_up,
-        "developer_report": outcome.developer_report,
-        "data_internal_report": outcome.data_internal_report,
-        "retry_candidates": [
-            candidate_output(candidate) for candidate in outcome.retry_candidates
-        ],
-        "validation_urls": links,
-        "correlation_id": request.correlation_id,
-        "tool_calls": tuple(tool.name for tool in agent.definition.tools),
-        "benchmark_case_count": benchmark_case_count(SERVER_NAME),
-        "warnings": (warning,) if warning is not None else (),
-        "attributes": {
-            **dict(request.attributes),
-            "operational_date": outcome.operational_date.isoformat(),
-            "failed_since": outcome.failed_since.isoformat(),
-            "failure_count": len(outcome.failures),
-            "memory_summary_count": len(outcome.memory_summaries),
-            "memory_enabled": _agent_memory is not None,
-            "regions": [region.value for region in outcome.regions],
-            "data_internal_omissions": [
-                item.value for item in report_config.data_internal_omissions
-            ],
-        },
-        "related_agents": {
-            "follow_up": "agent://prod-support/follow-up/definition",
-            "kpo_sizer": "agent://kpo-sizer/definition",
-        },
-    }
-    if _requests_benchmark_case(prompt):
-        artifacts = capture_benchmark_case(outcome, prompt, request.correlation_id)
-        result["benchmark_case"] = artifacts.as_dict()
-        result["related_agents"]["bench_builder"] = (
-            "agent://prod-support/bench-builder/definition"
-        )
-    return result
+    try:
+        async with traced_operation(
+            "mcp.run_prod_support",
+            attributes={
+                "q2.mcp.tool.name": "run_prod_support",
+                "q2.agent.name": agent.definition.name,
+                "q2.agent.correlation_id": resolved_correlation_id,
+            },
+            context=extracted_trace_context(trace_context or {}),
+        ):
+            debug.event("investigation.start")
+            result = await execute_prod_support(
+                prompt,
+                service=service,
+                correlation_id=resolved_correlation_id,
+                data_internal_omissions=data_internal_omissions,
+                context=ProdSupportExecutionContext(
+                    agent=agent,
+                    workflow_runner=_workflow_runner,
+                    memory_enabled=_agent_memory is not None,
+                    server_name=SERVER_NAME,
+                ),
+            )
+            attributes = result.get("attributes", {})
+            failure_count = (
+                attributes.get("failure_count")
+                if isinstance(attributes, dict)
+                else None
+            )
+            debug.event(
+                "investigation.complete",
+                failure_count=failure_count if isinstance(failure_count, int) else None,
+                retry_candidate_count=len(result.get("retry_candidates", ())),
+                tool_call_count=len(result.get("tool_calls", ())),
+            )
+            result["trace"] = current_trace_metadata()
+            debug.event("tool.complete", response_field_count=len(result))
+            if debug.enabled:
+                result["debug_trace"] = debug.result()
+            return result
+    except Exception as error:
+        debug.event("tool.error", error_type=type(error).__name__)
+        raise
 
 
 @server.tool(

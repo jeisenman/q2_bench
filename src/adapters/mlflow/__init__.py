@@ -34,6 +34,11 @@ from adapters.mlflow.prod_support_scorers import (
     score_log_classification,
     score_prod_support_message,
 )
+from adapters.mlflow.workflow_runs import (
+    WorkflowRunPublishConfig,
+    WorkflowRunPublishError,
+    publish_workflow_run,
+)
 
 __all__ = [
     "BedrockAssistantConfigurator",
@@ -47,10 +52,13 @@ __all__ = [
     "RecordedEvaluation",
     "RecordedEvaluationError",
     "UrlJsonTransport",
+    "WorkflowRunPublishConfig",
+    "WorkflowRunPublishError",
     "build_prod_support_scorers",
     "load_recorded_evaluation",
     "publish_matrix_results",
     "publish_recorded_evaluation",
+    "publish_workflow_run",
     "register_agent_definition",
     "register_agent_definitions",
     "score_date_resolution",

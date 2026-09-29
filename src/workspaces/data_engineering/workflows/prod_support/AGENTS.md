@@ -39,6 +39,12 @@ compliant and non-compliant Data Internal lines that both the renderer and the
 skill are written against. The narrative framing a reader sees is produced by
 the harness from the skill, not by a model inside this package.
 
+[`harness.py`](harness.py) adapts the workflow to the shared
+[`workflow_harness`](../../../../workflow_harness/) contracts, so the
+`run_prod_support` MCP tool executes it through `WorkflowRunner` and records
+the completed read-only stage. Stage side effects are declared there, which is
+where the read-only boundary and the authorized-retry boundary are expressed.
+
 [`retry_agent.py`](retry_agent.py) selects retry candidates deterministically
 and `FollowUpExecutor` performs authorized retries against one exact task
 identity. [`bench_builder.py`](bench_builder.py) writes a review-required
@@ -58,6 +64,13 @@ the composition root in `mcp_servers/prod_support_sources.py`:
   complete client UUID.
 - `OmsJobEvidenceSource` — DI_Scheduling_CL for Spark job evidence.
 - `AgentMemory` — durable scoped summaries.
+
+`PROD_SUPPORT_SOURCE` selects the capability transport: `direct` uses provider
+adapters, `mcp` routes the same typed ports through dedicated read-only MCP
+servers, `replay` uses captured benchmark evidence, and `empty` is the safe
+local default. The mode changes transport only; workflow policy and report
+rendering are identical, and integration tests require identical output from
+`direct` and `mcp`.
 
 This package depends on no agent framework and holds no model runtime. It must
 not import from `workspaces.data_engineering.agents`, except for the

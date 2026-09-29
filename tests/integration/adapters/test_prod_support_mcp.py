@@ -133,6 +133,28 @@ def test_mcp_tool_runs_prod_support_agent(
         "trigger_resource_discovery_agent",
         "execute_airflow_retries",
     )
+
+
+def test_mcp_tool_returns_debug_trace_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("Q2_MCP_DEBUG", "1")
+
+    result = asyncio.run(
+        run_prod_support(
+            prompt="Investigate the orders pipeline.",
+            correlation_id="debug-1",
+        )
+    )
+
+    debug_trace = result["debug_trace"]
+    assert debug_trace["correlation_id"] == "debug-1"
+    assert [event["event"] for event in debug_trace["events"]] == [
+        "tool.start",
+        "investigation.start",
+        "investigation.complete",
+        "tool.complete",
+    ]
     assert "benchmark_case" not in result
 
 

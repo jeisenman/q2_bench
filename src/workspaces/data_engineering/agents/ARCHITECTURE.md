@@ -19,12 +19,13 @@ flowchart TB
     MCP --> KPO[kpo-sizer<br/>0 cases]
     MCP --> OMS[oms-agent<br/>0 cases]
     MCP --> PSE[prod-support-evolution<br/>0 cases]
+    MCP --> PU[python-upgrade<br/>4 cases]
 
     classDef thorough fill:#d7f5df,stroke:#1f7a3d,color:#102a18
     classDef threshold fill:#fff2c7,stroke:#9a6b00,color:#332400
     classDef warning fill:#ffd9d9,stroke:#a12626,color:#3b0d0d
 
-    class AL thorough
+    class AL,PU thorough
     class RD threshold
     class BB,DC,DF,DIT,ETL,KPO,OMS,PSE warning
 ```

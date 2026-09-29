@@ -46,6 +46,10 @@ remain behind typed ports.
 - `adapters.resource_discovery`: production composition short-circuits unique
   local JSON identities before calling the Resource Discovery API. The lookup
   path can be overridden with `RESOURCE_DISCOVERY_CLIENT_LOOKUP`.
+- `adapters.mcp.ResourceDiscoveryMcpSource`: production-support MCP mode calls
+  the dedicated read-only Resource Discovery server through the same source
+  protocol. It preserves every matching record so ambiguity is handled by this
+  agent rather than by the transport.
 - `adapters.postgres`: optional Psycopg-backed durable memory with pgvector,
   evidence history, and tenant row-level security.
 - External service: Resource Discovery API, when a production adapter is

@@ -17,6 +17,7 @@ mcp:
     - update_prod_support_omissions
     - list_prod_support_updates
 requires_env:
+  # direct | mcp | replay | empty
   - PROD_SUPPORT_SOURCE
   - DATA_ENGINEERING_AZURE_CLIENT_ID
   - DATA_ENGINEERING_AZURE_CLIENT_SECRET
