@@ -16,6 +16,7 @@ from workspaces.data_engineering.agents.resource_discovery import (
 )
 
 CLIENT_UUID = "1f06da19-2f61-401c-a1b7-38902e4f3543"
+BATCH_SIZE = 2
 
 
 class FakeResourceDiscovery:
@@ -39,6 +40,17 @@ class FakeResourceDiscovery:
         if self.failure is not None:
             raise self.failure
         return self.records
+
+
+class BatchResourceDiscovery(FakeResourceDiscovery):
+    def __init__(self, records):
+        super().__init__(records)
+        self.batch_calls = 0
+
+    async def lookup_batch(self, identifiers):
+        self.batch_calls += 1
+        self.identifiers.extend(identifier.value for identifier in identifiers)
+        return tuple(self.records for _ in identifiers)
 
 
 def request(identifier: str) -> AgentRequest:
@@ -112,6 +124,25 @@ def test_agent_reports_a_unique_resource_match() -> None:
         ),
     ) in result.attributes
     assert result.tool_calls == ("ResourceDiscovery",)
+
+
+def test_agent_batches_explicit_requests_through_one_source_call() -> None:
+    source = BatchResourceDiscovery((unique_record(),))
+    requests = {
+        CLIENT_UUID: request(CLIENT_UUID),
+        "11111111-1111-4111-8111-111111111111": request(
+            "11111111-1111-4111-8111-111111111111"
+        ),
+    }
+
+    results = asyncio.run(ResourceDiscoveryAgent(source).run_batch(requests))
+
+    assert len(results) == BATCH_SIZE
+    assert source.batch_calls == 1
+    assert source.identifiers == [
+        CLIENT_UUID,
+        "11111111-1111-4111-8111-111111111111",
+    ]
 
 
 def test_agent_rejects_an_empty_identifier_before_provider_call() -> None:

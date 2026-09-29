@@ -190,7 +190,7 @@ def test_cmm_is_excluded_from_data_internal_and_follow_up_by_default() -> None:
     assert "Do you approve re-running" not in report.follow_up
 
 
-def test_mi3_and_d2p_omissions_are_hidden() -> None:
+def test_mi3_and_d2p_omissions_are_summarized() -> None:
     client_id = "11111111-1111-4111-8111-111111111111"
     failures = (
         _failure(client_id, "delivery_to_promise.delivery_to_promise_data"),
@@ -207,7 +207,8 @@ def test_mi3_and_d2p_omissions_are_hidden() -> None:
         ),
     )
 
-    assert "CA\n- Good" in report.data_internal
-    assert "D2P" not in report.data_internal
-    assert "MI3" not in report.data_internal
+    assert (
+        "CA\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
+        in report.data_internal
+    )
     assert "Client A (111)" not in report.data_internal

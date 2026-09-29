@@ -1,10 +1,13 @@
 import asyncio
 import json
 from datetime import UTC, datetime
+from urllib.error import HTTPError
 
 import pytest
 
 from adapters.airflow.source import (
+    AIRFLOW_503_MAX_ATTEMPTS,
+    HTTP_STATUS_SERVICE_UNAVAILABLE,
     AirflowApiError,
     AirflowApiSource,
     AirflowRegionConfig,
@@ -68,6 +71,55 @@ def test_airflow_source_discovers_by_end_date_and_fetches_log() -> None:
     assert transport.payload["end_date_gte"] == "2026-09-25T05:00:00Z"
     assert failures[0].task_id == "high_quality_accounts"
     assert log == "OOMKilled"
+
+
+def test_airflow_source_retries_discovery_503_three_total_attempts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts = 0
+    sleeps: list[float] = []
+
+    class RetryTransport(FakeTransport):
+        def request(
+            self,
+            config: AirflowRegionConfig,
+            method: str,
+            path: str,
+            payload: dict[str, object] | None = None,
+        ) -> object:
+            nonlocal attempts
+            if method == "POST":
+                attempts += 1
+                if attempts < AIRFLOW_503_MAX_ATTEMPTS:
+                    raise HTTPError(
+                        "https://airflow.example.test",
+                        HTTP_STATUS_SERVICE_UNAVAILABLE,
+                        "Service Unavailable",
+                        {},
+                        None,
+                    )
+            return super().request(config, method, path, payload)
+
+    monkeypatch.setattr("adapters.airflow.source.time.sleep", sleeps.append)
+    source = AirflowApiSource(
+        (
+            AirflowRegionConfig(
+                Region.US_01,
+                "https://airflow.example.test",
+                "user",
+                "password",
+            ),
+        ),
+        RetryTransport(),
+    )
+
+    failures = asyncio.run(
+        source.discover_failures(datetime(2026, 9, 25, 5, tzinfo=UTC))
+    )
+
+    assert len(failures) == 1
+    assert attempts == AIRFLOW_503_MAX_ATTEMPTS
+    assert sleeps == [30.0, 30.0]
 
 
 def test_airflow_source_reads_structured_log_content() -> None:

@@ -3,7 +3,7 @@
 ## Purpose
 
 The resource discovery agent searches an injected async read-only source by one
-structured identifier and reports non-secret client and resource metadata.
+or many structured identifiers and reports non-secret client and resource metadata.
 Inputs are `ResourceIdentifier` values or `AgentRequest` attributes; outputs are
 `ResourceSearch` values and deterministic `AgentResult` reports. It never
 infers a client, reads credentials, mutates a provider, or renders secret
@@ -14,8 +14,8 @@ values.
 `agent.py` exposes `ResourceDiscoveryAgent` and versioned definitions.
 `request.py` parses explicit attributes, bounded `find <client>` requests, and
 memory confirmation commands. `models.py` defines immutable identifiers, allowlisted
-metadata, and explicit cardinality statuses. `ports.py` contains the
-resource, local-lookup, and acronym-candidate protocols. Provider
+metadata, and explicit cardinality statuses. `ports.py` contains the resource,
+batch, local-lookup, and acronym-candidate protocols. Provider
 records are sanitized into the explicit metadata allowlist before reporting.
 The allowlist includes reviewed resend URLs, routing provenance, and a boolean
 production-support ignore marker; unknown keys, including secret fields, are
@@ -48,8 +48,9 @@ remain behind typed ports.
   path can be overridden with `RESOURCE_DISCOVERY_CLIENT_LOOKUP`.
 - `adapters.mcp.ResourceDiscoveryMcpSource`: production-support MCP mode calls
   the dedicated read-only Resource Discovery server through the same source
-  protocol. It preserves every matching record so ambiguity is handled by this
-  agent rather than by the transport.
+  protocol. Its batch path sends all client mappings in one MCP capability call
+  and preserves every matching record so ambiguity is handled by this agent
+  rather than by the transport.
 - `adapters.postgres`: optional Psycopg-backed durable memory with pgvector,
   evidence history, and tenant row-level security.
 - External service: Resource Discovery API, when a production adapter is
@@ -76,7 +77,8 @@ remain behind typed ports.
 5. Explicit confirmation evidence promotes an alias after the configured
    threshold; rejection deactivates it.
 6. If local identity and memory cannot resolve the request, call the live
-   Resource Discovery API.
+   Resource Discovery API. Production support uses the batch path for multiple
+   client UUIDs before reporting.
 7. Validate returned records, discard unknown fields, and order safe metadata
    by a stable key.
 8. Classify the result as `not_found`, `unique`, or `ambiguous`.

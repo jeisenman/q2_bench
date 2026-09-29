@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
@@ -43,6 +43,7 @@ __all__ = [
     "OmsJobEvidenceSource",
     "PriorTaskLogSource",
     "RegionalAirflowFailureSource",
+    "ResourceDiscoveryBatchInvoker",
     "ResourceDiscoveryInvoker",
     "TaskLogUnavailableError",
 ]
@@ -171,4 +172,16 @@ class ResourceDiscoveryInvoker(Protocol):
 
     async def run(self, request: AgentRequest) -> AgentResult:
         """Resolve non-secret resource metadata for one client identifier."""
+        ...
+
+
+@runtime_checkable
+class ResourceDiscoveryBatchInvoker(Protocol):
+    """Resolve several client identifiers before report generation."""
+
+    async def run_batch(
+        self,
+        requests: Mapping[str, AgentRequest],
+    ) -> tuple[AgentResult, ...]:
+        """Resolve an explicit client-ID-to-request mapping."""
         ...

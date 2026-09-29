@@ -44,8 +44,13 @@ class DataInternalReporter:
                 for item in all_regional
                 if include_in_data_internal(item, findings.config)
             )
+            omitted_summary = findings.config.data_internal_omission_summary(
+                all_regional
+            )
             lines.append(label)
-            lines.append("- Ongoing" if regional else "- Good")
+            lines.append("- Ongoing" if regional or omitted_summary else "- Good")
+            if omitted_summary:
+                lines.append(f"- {', '.join(omitted_summary)}")
             lines.extend(
                 line
                 for group in group_failures_for_reporting(regional, identities)

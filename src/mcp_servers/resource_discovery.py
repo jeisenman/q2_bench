@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Mapping
 from functools import lru_cache
 
 from mcp.server.mcpserver import MCPServer
@@ -57,6 +59,41 @@ async def lookup_resources(
         "identifier_value": identifier.value,
         "count": len(serialized),
         "records": serialized,
+    }
+
+
+@server.tool(
+    name="lookup_resources_batch",
+    description=(
+        "Return Resource Discovery matches for several complete identifiers in "
+        "one read-only capability call."
+    ),
+)
+async def lookup_resources_batch(
+    identifiers: list[Mapping[str, str]],
+) -> dict[str, object]:
+    """Return ordered Resource Discovery results for a batch of identifiers."""
+    parsed = tuple(
+        ResourceIdentifier(
+            IdentifierKind(item["identifier_kind"]),
+            item["identifier_value"],
+        )
+        for item in identifiers
+    )
+    records = tuple(
+        await asyncio.gather(*(_source().lookup(identifier) for identifier in parsed))
+    )
+    return {
+        "count": len(records),
+        "results": [
+            {
+                "identifier_kind": identifier.kind.value,
+                "identifier_value": identifier.value,
+                "count": len(identifier_records),
+                "records": [_record(record) for record in identifier_records],
+            }
+            for identifier, identifier_records in zip(parsed, records, strict=True)
+        ],
     }
 
 

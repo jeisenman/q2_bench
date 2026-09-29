@@ -60,8 +60,8 @@ the composition root in `mcp_servers/prod_support_sources.py`:
 - `AirflowFailureSource` — the Airflow API in production, a replay dataset for
   captured evidence, or an empty source.
 - `ClusterHealthSource` — the read-only cluster script.
-- `ResourceDiscoveryInvoker` — the Resource Discovery agent, for resolving a
-  complete client UUID.
+- `ResourceDiscoveryBatchInvoker` — the Resource Discovery agent, for resolving
+  a complete client-UUID mapping in one batch before reporting.
 - `OmsJobEvidenceSource` — DI_Scheduling_CL for Spark job evidence.
 - `AgentMemory` — durable scoped summaries.
 
@@ -83,7 +83,8 @@ not import from `workspaces.data_engineering.agents`, except for the
 3. Hand the full failure inventory to `TriageManager` in one call.
 4. Resolve each failure from the cheapest sufficient evidence, escalating to an
    exact task log only when needed.
-5. Resolve client identity through Resource Discovery using the complete UUID.
+5. Resolve client identity through Resource Discovery using the complete UUID
+   mapping, batching the lookups before reporting.
 6. Render the combined, developer, and Data Internal reports.
 7. Compute retry candidates. Execution happens only on explicit developer
    authorization through `execute_prod_support_follow_up`.

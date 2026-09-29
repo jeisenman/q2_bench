@@ -279,7 +279,10 @@ def test_agent_keeps_mi3_when_recovery_cannot_be_verified() -> None:
     assert outcome.resource_discovery_results == ()
     assert outcome.diagnoses[0].kind.value != "omitted"
     assert outcome.failures[0].log
-    assert "US\n- Good" in outcome.data_internal_report
+    assert (
+        "US\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
+        in outcome.data_internal_report
+    )
 
 
 def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
@@ -310,7 +313,10 @@ def test_agent_treats_literal_d2p_as_a_registered_omission() -> None:
     assert any(
         "same DAG and task succeeded" in item for item in outcome.diagnoses[0].evidence
     )
-    assert "US\n- Good" in outcome.data_internal_report
+    assert (
+        "US\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
+        in outcome.data_internal_report
+    )
     assert outcome.follow_up == "- No action is required."
 
 
@@ -332,7 +338,10 @@ def test_agent_does_not_omit_without_same_task_success() -> None:
     outcome = asyncio.run(agent.investigate("Do prod support"))
 
     assert outcome.diagnoses[0].kind.value != "omitted"
-    assert "US\n- Good" in outcome.data_internal_report
+    assert (
+        "US\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
+        in outcome.data_internal_report
+    )
 
 
 def test_agent_fetches_exact_log_when_discovery_contains_an_excerpt() -> None:

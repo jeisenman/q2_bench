@@ -23,6 +23,7 @@ ENVIRONMENT_URLS = {
     "US01": "https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
     "US02": "https://us02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
     "ENT01": "https://bacprod.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
+    "CA02": "https://cac01-app.precisionlender.com/Admin/Troubleshooting/ResendSnapshotsForClient",
 }
 MAX_IDS_PER_SUBMISSION = 1000
 

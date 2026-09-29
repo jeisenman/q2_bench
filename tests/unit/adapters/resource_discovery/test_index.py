@@ -74,6 +74,20 @@ def test_unique_local_result_short_circuits_primary(tmp_path: Path) -> None:
     assert primary.calls == 0
 
 
+def test_batch_uses_local_records_without_primary_calls(tmp_path: Path) -> None:
+    primary = FakeSource(({"client_name": "Live API Name"},))
+    source = IndexedResourceDiscoverySource(
+        primary,
+        write_lookup(tmp_path / "lookup.json"),
+    )
+
+    records = asyncio.run(source.lookup_batch((identifier(), identifier())))
+
+    assert records[0][0]["client_name"] == "Renasant Bank (Tupelo, MS)"
+    assert records[1][0]["client_name"] == "Renasant Bank (Tupelo, MS)"
+    assert primary.calls == 0
+
+
 @pytest.mark.parametrize(
     "primary_records",
     [

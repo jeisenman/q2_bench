@@ -45,8 +45,8 @@ RESEND_URLS = frozenset(
             "Admin/Troubleshooting/ResendOpportunitySnapshots"
         ),
         (
-            "https://ca02-app.precisionlender.com/"
-            "Admin/Troubleshooting/ResendOpportunitySnapshots"
+            "https://cac01-app.precisionlender.com/"
+            "Admin/Troubleshooting/ResendSnapshotsForClient"
         ),
     }
 )

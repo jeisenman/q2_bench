@@ -309,8 +309,8 @@ def test_resend_follow_up_uses_resource_discovery_link() -> None:
                     "Bank of Hope",
                     environment="ca02",
                     reviewed_resend_url=(
-                        "https://ca02-app.precisionlender.com/"
-                        "Admin/Troubleshooting/ResendOpportunitySnapshots"
+                        "https://cac01-app.precisionlender.com/"
+                        "Admin/Troubleshooting/ResendSnapshotsForClient"
                     ),
                 ),
             ),
@@ -319,8 +319,8 @@ def test_resend_follow_up_uses_resource_discovery_link() -> None:
 
     assert (
         "Send events for Bank of Hope (111) on "
-        "[Resend Opportunity Snapshots](https://ca02-app.precisionlender.com/"
-        "Admin/Troubleshooting/ResendOpportunitySnapshots) for date 09-22-26."
+        "[Resend Opportunity Snapshots](https://cac01-app.precisionlender.com/"
+        "Admin/Troubleshooting/ResendSnapshotsForClient) for date 09-22-26."
     ) in reports.follow_up
 
 

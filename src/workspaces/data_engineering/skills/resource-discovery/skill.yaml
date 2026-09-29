@@ -10,6 +10,7 @@ mcp:
   server: resource-discovery
   tools:
     - lookup_resources
+    - lookup_resources_batch
 state:
   # Seeded on first sync, then owned by the harness at runtime. Excluded
   # from drift checks so using the skill does not fail the quality gate.

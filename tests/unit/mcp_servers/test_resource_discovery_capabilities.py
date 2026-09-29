@@ -18,6 +18,24 @@ class FakeSource:
         )
 
 
+def test_resource_discovery_server_batches_allowlisted_records(monkeypatch) -> None:
+    monkeypatch.setattr(resource_discovery, "_source", FakeSource)
+
+    result = asyncio.run(
+        resource_discovery.lookup_resources_batch(
+            [
+                {
+                    "identifier_kind": "client_id",
+                    "identifier_value": CLIENT_ID,
+                }
+            ]
+        )
+    )
+
+    assert result["count"] == 1
+    assert result["results"][0]["records"][0]["client_name"] == "Example Bank"
+
+
 def test_resource_discovery_server_returns_allowlisted_records(monkeypatch) -> None:
     monkeypatch.setattr(resource_discovery, "_source", FakeSource)
 

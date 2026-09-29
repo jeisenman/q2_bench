@@ -23,6 +23,7 @@ from workspaces.data_engineering.agents.resource_discovery.models import (
 )
 from workspaces.data_engineering.agents.resource_discovery.ports import (
     ResourceAliasCandidateSource,
+    ResourceDiscoveryBatchSource,
     ResourceDiscoverySource,
     ResourceLocalLookupSource,
     ResourceRecord,
@@ -40,6 +41,7 @@ __all__ = [
     "IdentifierKind",
     "ResourceAliasCandidateSource",
     "ResourceDiscoveryAgent",
+    "ResourceDiscoveryBatchSource",
     "ResourceDiscoveryError",
     "ResourceDiscoverySource",
     "ResourceIdentifier",

@@ -35,6 +35,7 @@ PREVIOUSLY_UNRESOLVED_CLIENTS = (
     ("dff9e5f7-c60a-4e43-b7a9-845ab44f34d0", "Atlantic Union Bank (Richmond, VA)"),
 )
 SCOTIABANK_DV_UUID = "b4916353-ef8a-4af8-9601-74305858e905"
+BANK_OF_HOPE_CA_UUID = "b0302b2c-6dd3-4675-bfe1-cef65acc37d5"
 
 
 def client_index() -> ClientLookupIndex:
@@ -78,6 +79,26 @@ def test_index_supports_original_and_parsed_client_names() -> None:
     assert full_name[0]["client_name"] == "Scotiabank DV"
     assert full_name[0]["provisioned_client_id"] == SCOTIABANK_DV_UUID
     assert parse_client_name("  Scotiabank - Data Validation ") == "Scotiabank DV"
+
+
+def test_index_resolves_user_confirmed_bank_of_hope_ca_resources() -> None:
+    records = client_index().lookup(
+        ResourceIdentifier(IdentifierKind.CLIENT_ID, BANK_OF_HOPE_CA_UUID)
+    )
+
+    assert records == (
+        {
+            "provisioned_client_id": BANK_OF_HOPE_CA_UUID,
+            "client_name": "Bank of Hope CA",
+            "routing_source": "local-client-index:user-confirmed",
+            "client_id": "3424-01",
+            "subdomain": "bankofhopeca",
+            "environment": "US01",
+            "service": "DTS DIBS",
+            "resource_id": "6374b186-73b5-4228-9301-60c62c423235",
+            "resource_set": "DIBS - Q2 OLB - Production",
+        },
+    )
 
 
 def test_index_rejects_non_authoritative_and_invalid_lookup_values() -> None:

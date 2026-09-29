@@ -37,6 +37,7 @@ from workspaces.data_engineering.workflows.prod_support.ports import (
     AirflowFailureSource,
     AirflowSuccessSource,
     ClusterHealthSource,
+    ResourceDiscoveryBatchInvoker,
     ResourceDiscoveryInvoker,
 )
 from workspaces.data_engineering.workflows.prod_support.report_findings import (
@@ -319,8 +320,8 @@ class ProductionSupportWorkflow:
                 }
             )
         )
-        requests = tuple(
-            AgentRequest(
+        requests = {
+            client_id: AgentRequest(
                 prompt=f"Resolve production resources for client {client_id}.",
                 correlation_id=f"prod-support-resource-{client_id}",
                 attributes=(
@@ -329,8 +330,15 @@ class ProductionSupportWorkflow:
                 ),
             )
             for client_id in client_ids
+        }
+        if isinstance(self._resource_discovery, ResourceDiscoveryBatchInvoker):
+            return await self._resource_discovery.run_batch(requests)
+        return tuple(
+            await self._bounded_map(
+                tuple(requests.values()),
+                self._resource_discovery.run,
+            )
         )
-        return tuple(await self._bounded_map(requests, self._resource_discovery.run))
 
     async def _bounded_map(
         self,

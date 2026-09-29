@@ -8,12 +8,17 @@ import base64
 import json
 import os
 import sys
+import time as time_module
 from dataclasses import dataclass
 from datetime import UTC, datetime, time, timedelta
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
+
+HTTP_STATUS_SERVICE_UNAVAILABLE = 503
+AIRFLOW_503_MAX_ATTEMPTS = 3
+AIRFLOW_503_BACKOFF_SECONDS = 30.0
 
 
 @dataclass(frozen=True)
@@ -116,15 +121,26 @@ def failed_task_instances(
             },
             method="POST",
         )
-        try:
-            with urlopen(request, timeout=30) as response:
-                result = json.load(response)
-        except HTTPError as error:
-            raise RuntimeError(f"Airflow API returned HTTP {error.code}") from error
-        except URLError as error:
-            raise RuntimeError(
-                f"unable to reach Airflow API: {error.reason}"
-            ) from error
+        for attempt in range(AIRFLOW_503_MAX_ATTEMPTS):
+            try:
+                with urlopen(request, timeout=30) as response:
+                    result = json.load(response)
+                break
+            except HTTPError as error:
+                if (
+                    error.code != HTTP_STATUS_SERVICE_UNAVAILABLE
+                    or attempt == AIRFLOW_503_MAX_ATTEMPTS - 1
+                ):
+                    raise RuntimeError(
+                        f"Airflow API returned HTTP {error.code}"
+                    ) from error
+                time_module.sleep(AIRFLOW_503_BACKOFF_SECONDS)
+            except URLError as error:
+                raise RuntimeError(
+                    f"unable to reach Airflow API: {error.reason}"
+                ) from error
+        else:
+            raise AssertionError("Airflow discovery retry loop did not return")
 
         page = result.get("task_instances", [])
         failures.extend(page)

@@ -15,8 +15,8 @@ from workspaces.data_engineering.workflows.prod_support.reporting import (
 )
 
 RESEND_URL = (
-    "https://ca02-app.precisionlender.com/"
-    "Admin/Troubleshooting/ResendOpportunitySnapshots"
+    "https://cac01-app.precisionlender.com/"
+    "Admin/Troubleshooting/ResendSnapshotsForClient"
 )
 
 

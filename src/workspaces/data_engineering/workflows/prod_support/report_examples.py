@@ -29,14 +29,17 @@ US
 
 CA
 - Ongoing
+- check_for_subscriber_client_errors, D2P, MI3
 {COMPLIANT_MULTI_JOB_LINE}
 {COMPLIANT_SINGLE_JOB_LINE}
 {COMPLIANT_EVENTBUS_LINE}
 ```
 
 The banner above is literal text. Do not render `:bangbang:` as an emoji or
-replace it with Unicode punctuation. Do not include configured omitted jobs.
-Multi-job client rows contain exact job identifiers and no failure reasons.
+replace it with Unicode punctuation. Summarize configured omitted jobs with
+the exact region-level omission line instead of expanding them into client
+rows. Multi-job client rows contain exact job identifiers and no failure
+reasons.
 
 Non-compliant Data Internal example:
 ```markdown
@@ -61,7 +64,8 @@ US
 ```
 
 This is non-compliant because Data Internal includes cluster health, expands
-omitted MI3 and Subscriber failures into detailed bullets, leaves resolvable
+omitted MI3 and Subscriber failures into detailed bullets instead of using the
+omission summary line, leaves resolvable
 clients unresolved, omits three-character client codes, includes omitted jobs,
 uses shorthand as a summary, puts D2P before MI3, indents the CA region label,
 and changes underscores in

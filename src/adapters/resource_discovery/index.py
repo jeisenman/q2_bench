@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 from collections.abc import Mapping
@@ -9,6 +10,7 @@ from pathlib import Path
 
 from workspaces.data_engineering.agents.resource_discovery import (
     ClientLookupIndex,
+    ResourceDiscoveryBatchSource,
     ResourceDiscoverySource,
     ResourceIdentifier,
     ResourceRecord,
@@ -87,6 +89,44 @@ class IndexedResourceDiscoverySource:
             return indexed
         records = await self.primary.lookup(identifier)
         return records or indexed
+
+    async def lookup_batch(
+        self,
+        identifiers: tuple[ResourceIdentifier, ...],
+    ) -> tuple[tuple[ResourceRecord, ...], ...]:
+        """Resolve local matches and batch only unresolved identifiers."""
+        indexed = tuple(
+            self.fallback.index.lookup(identifier) for identifier in identifiers
+        )
+        unresolved = tuple(
+            (index, identifier)
+            for index, (identifier, records) in enumerate(
+                zip(identifiers, indexed, strict=True)
+            )
+            if len(records) != 1
+        )
+        remote: tuple[tuple[ResourceRecord, ...], ...] = ()
+        if unresolved:
+            unresolved_identifiers = tuple(item[1] for item in unresolved)
+            if isinstance(self.primary, ResourceDiscoveryBatchSource):
+                remote = await self.primary.lookup_batch(unresolved_identifiers)
+            else:
+                remote = tuple(
+                    await asyncio.gather(
+                        *(
+                            self.primary.lookup(identifier)
+                            for identifier in unresolved_identifiers
+                        )
+                    )
+                )
+        remote_by_index = {
+            index: records
+            for (index, _), records in zip(unresolved, remote, strict=True)
+        }
+        return tuple(
+            records if len(records) == 1 else remote_by_index.get(index, records)
+            for index, records in enumerate(indexed)
+        )
 
     async def alias_candidates(self, alias: str) -> tuple[ResourceRecord, ...]:
         """Return local authoritative candidates without a network request."""

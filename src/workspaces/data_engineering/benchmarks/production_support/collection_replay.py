@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
@@ -143,6 +144,15 @@ class CapturedResourceDiscoveryInvoker:
             correlation_id=request.correlation_id,
             tool_calls=("ResourceDiscovery",),
             attributes=values,
+        )
+
+    async def run_batch(
+        self,
+        requests: dict[str, AgentRequest],
+    ) -> tuple[AgentResult, ...]:
+        """Replay a captured result for each supplied client mapping."""
+        return tuple(
+            await asyncio.gather(*(self.run(request) for request in requests.values()))
         )
 
 

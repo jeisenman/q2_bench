@@ -23,6 +23,18 @@ class ResourceDiscoverySource(Protocol):
 
 
 @runtime_checkable
+class ResourceDiscoveryBatchSource(Protocol):
+    """Resolve several identifiers through one provider operation."""
+
+    async def lookup_batch(
+        self,
+        identifiers: tuple[ResourceIdentifier, ...],
+    ) -> tuple[tuple[ResourceRecord, ...], ...]:
+        """Return records in the same order as the supplied identifiers."""
+        ...
+
+
+@runtime_checkable
 class ResourceAliasCandidateSource(Protocol):
     """Find deterministic canonical candidates for an unconfirmed alias."""
 

@@ -19,7 +19,7 @@
   "applications": {
     "us01": "https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
     "us02": "https://us02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
-    "ca02": "https://ca02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots"
+    "ca02": "https://cac01-app.precisionlender.com/Admin/Troubleshooting/ResendSnapshotsForClient"
   },
   "routing_rule": "Use only reviewed_production_resend_application; null is unresolved; render reviewed routes as clickable links."
 }

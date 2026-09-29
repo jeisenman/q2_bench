@@ -86,6 +86,7 @@ from workspaces.data_engineering.workflows.prod_support.ports import (
     OmsJobEvidenceSource,
     PriorTaskLogSource,
     RegionalAirflowFailureSource,
+    ResourceDiscoveryBatchInvoker,
     ResourceDiscoveryInvoker,
     TaskLogUnavailableError,
 )
@@ -195,6 +196,7 @@ __all__ = [
     "RegionalClusterHealth",
     "ReplayAirflowFailureSource",
     "ReportFindings",
+    "ResourceDiscoveryBatchInvoker",
     "ResourceDiscoveryInvoker",
     "RetryCandidate",
     "RetryDirectionError",

@@ -347,6 +347,32 @@
     "name": "Auburn State Bank",
     "source": "resource-discovery-api"
   },
+  "b0302b2c-6dd3-4675-bfe1-cef65acc37d5": {
+    "api_status": "no-unique-match",
+    "client_id": "3424-01",
+    "environment": "US01",
+    "last_checked": "2026-09-29",
+    "name": "Bank of Hope CA",
+    "q2_client_id": "3424-01",
+    "resource_id": "6374b186-73b5-4228-9301-60c62c423235",
+    "resource_set": "DIBS - Q2 OLB - Production",
+    "service": "DTS DIBS",
+    "source": "user-confirmed",
+    "subdomain": "bankofhopeca",
+    "user_confirmed_production_resources": {
+      "dts_dibs": {
+        "environment": "US01",
+        "resource_set": "DIBS - Q2 OLB - Production",
+        "resource_set_id": "6374b186-73b5-4228-9301-60c62c423235",
+        "service": "DTS DIBS"
+      },
+      "piqs": {
+        "environment": "Ring2",
+        "resource_id": "6ee40fc5-d1c8-45ac-aadf-b3699c578e0e",
+        "service": "PIQS"
+      }
+    }
+  },
   "aea3ba3a-405b-469f-bad2-ecad0e62cb8f": {
     "api_status": "unique-match",
     "last_checked": "2026-09-01",

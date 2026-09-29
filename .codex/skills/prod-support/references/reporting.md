@@ -17,6 +17,7 @@ US
   - <client name> (<first three UUID characters>) failed on <job identifiers>
 CA
 - Good|Ongoing
+- check_for_subscriber_client_errors, D2P, MI3
 
 Follow Up:
 - Send events for <clients> on <approved resend link> for date <MM-DD-YY>
@@ -42,7 +43,9 @@ Rules:
 - Say `Resending` while authorization or execution is pending.
 - Say `Resent` only after confirmed application success.
 - Mark a region `Good` only when it has no reportable findings.
-- Keep unchanged recurring D2P/subscriber failures out of the channel message.
+- Summarize configured omitted-job errors under the affected region with the
+  exact line `- check_for_subscriber_client_errors, D2P, MI3` when those jobs
+  failed. Do not expand that summary into client bullets.
 - Always include a `Follow Up:` section after Data Internal.
 - Keep Follow Up action-oriented and concise. Use `Send events for ...` for
   resend candidates and `Would you like to re-run:` for retry candidates.

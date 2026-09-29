@@ -62,6 +62,16 @@ _DATA_INTERNAL_SHORTHAND_GROUPS = (
     DataInternalOmissionGroup.MI3,
     DataInternalOmissionGroup.D2P,
 )
+_DATA_INTERNAL_OMISSION_SUMMARY_GROUPS = (
+    DataInternalOmissionGroup.SUBSCRIBER,
+    DataInternalOmissionGroup.D2P,
+    DataInternalOmissionGroup.MI3,
+)
+_DATA_INTERNAL_OMISSION_SUMMARY_CODES = {
+    DataInternalOmissionGroup.SUBSCRIBER: "check_for_subscriber_client_errors",
+    DataInternalOmissionGroup.D2P: "D2P",
+    DataInternalOmissionGroup.MI3: "MI3",
+}
 OMISSION_SETTINGS_URI = "agent://prod-support/omissions"
 
 
@@ -173,6 +183,22 @@ class ProdSupportReportConfig:
             _OMISSION_CODES[group]
             for group in _DATA_INTERNAL_SHORTHAND_GROUPS
             if group in present
+        )
+
+    def data_internal_omission_summary(
+        self,
+        failures: tuple[AirflowFailure, ...],
+    ) -> tuple[str, ...]:
+        """Return the requested omitted-job summary when any omission failed."""
+        if not any(
+            self.configured_omission_group(failure)
+            in _DATA_INTERNAL_OMISSION_SUMMARY_GROUPS
+            for failure in failures
+        ):
+            return ()
+        return tuple(
+            _DATA_INTERNAL_OMISSION_SUMMARY_CODES[group]
+            for group in _DATA_INTERNAL_OMISSION_SUMMARY_GROUPS
         )
 
     def linked_omission_codes(self) -> tuple[str, ...]:

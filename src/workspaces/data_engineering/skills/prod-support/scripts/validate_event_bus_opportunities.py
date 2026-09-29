@@ -17,6 +17,7 @@ RESOURCE_APP_PAGES = (
     "https://bacprod.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
     "https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
     "https://us02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots",
+    "https://cac01-app.precisionlender.com/Admin/Troubleshooting/ResendSnapshotsForClient",
 )
 CLIENT_ID = re.compile(r"ClientId:\s*([0-9a-f-]{36})", re.IGNORECASE)
 OPPORTUNITY_ID = re.compile(r"OpportunityId:\s*([0-9a-f-]{36})", re.IGNORECASE)

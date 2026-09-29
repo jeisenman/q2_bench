@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Mapping
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from workspaces.data_engineering.agents.resource_discovery.models import (
 )
 from workspaces.data_engineering.agents.resource_discovery.ports import (
     ResourceAliasCandidateSource,
+    ResourceDiscoveryBatchSource,
     ResourceDiscoverySource,
     ResourceLocalLookupSource,
 )
@@ -89,6 +91,11 @@ RESOURCE_DISCOVERY_DEFINITION = RESOURCE_DISCOVERY_V2_DEFINITION
 class ResourceDiscoveryError(RuntimeError):
     """Raised when a resource discovery request cannot complete safely."""
 
+    @classmethod
+    def batch_count_mismatch(cls) -> ResourceDiscoveryError:
+        """Return an error for a provider batch with missing results."""
+        return cls("Resource Discovery batch returned an unexpected result count")
+
 
 def _metadata_sort_key(metadata: ResourceMetadata) -> tuple[str, ...]:
     """Return the stable field order used for deterministic reports."""
@@ -149,6 +156,53 @@ class ResourceDiscoveryAgent:
         """Search and deterministically order all source matches."""
         records = await _await_records(self._source, identifier)
         return _search_from_records(identifier, records)
+
+    async def search_batch(
+        self,
+        identifiers: tuple[ResourceIdentifier, ...],
+    ) -> tuple[ResourceSearch, ...]:
+        """Search several identifiers through one provider batch when available."""
+        if not identifiers:
+            return ()
+        if isinstance(self._source, ResourceDiscoveryBatchSource):
+            records = await self._source.lookup_batch(identifiers)
+        else:
+            records = tuple(
+                await asyncio.gather(
+                    *(self._source.lookup(identifier) for identifier in identifiers)
+                )
+            )
+        if len(records) != len(identifiers):
+            raise ResourceDiscoveryError.batch_count_mismatch()
+        return tuple(
+            _search_from_records(identifier, identifier_records)
+            for identifier, identifier_records in zip(
+                identifiers,
+                records,
+                strict=True,
+            )
+        )
+
+    async def run_batch(
+        self,
+        requests: Mapping[str, AgentRequest],
+    ) -> tuple[AgentResult, ...]:
+        """Resolve a mapping of client IDs before production-support reporting."""
+        if not requests:
+            return ()
+        try:
+            identifiers = tuple(
+                request_identifier(request, request_values(request))
+                for request in requests.values()
+            )
+        except (TypeError, ValueError) as error:
+            message = f"invalid batch identifier: {error}"
+            raise ResourceDiscoveryError(message) from error
+        searches = await self.search_batch(identifiers)
+        return tuple(
+            search_result(search, request.correlation_id)
+            for request, search in zip(requests.values(), searches, strict=True)
+        )
 
     async def _search_local(
         self,

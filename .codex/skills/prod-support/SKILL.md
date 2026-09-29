@@ -143,7 +143,9 @@ python3 .codex/skills/prod-support/scripts/parse_content_lengths.py <log-file>
 
 Immediately after discovery and before investigating or writing any production-support update, extract every unique client UUID from discovered `l3-main-<client-uuid>` DAG IDs. Also include client UUIDs returned by EventBus validation when applicable.
 
-For each UUID, call the `resource-discovery` skill's maintained formatter before composing the report:
+Build one client-ID-to-request mapping for all discovered UUIDs and resolve it
+through the Resource Discovery batch capability before composing the report.
+Then call the `resource-discovery` skill's maintained formatter for each UUID:
 
 ```bash
 python3 .codex/skills/resource-discovery/scripts/format_client.py <client-uuid> --style developer
@@ -266,6 +268,7 @@ Process one client UUID at a time:
    - `us01`: `https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots`
    - `us02`: `https://us02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots`
    - `ENT01`: `https://bacprod.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots`
+   - `ca02`: `https://cac01-app.precisionlender.com/Admin/Troubleshooting/ResendSnapshotsForClient`
 4. In the selected client's Resend Opportunity Snapshots page, enter only that
    client's deduplicated recoverable Opportunity IDs as one comma-separated
    value. Preserve every ID and split at 1,000 IDs per submission.
@@ -362,6 +365,10 @@ Apply these rules:
 - If a Derived RA `high_quality_*` task has a distinctness validation failure, list the client ID and suggest rerunning only the exact `ra_group.get_<job_name>` targets whose DatasetForms mismatched or were explicitly named by the exception.
 - Map a high-quality distinctness target to its underlying RA job by omitting `high_quality_` and retaining the `ra_group.` prefix: for example, use `ra_group.get_core_deposit_accounts`, not `get_high_quality_core_deposit_accounts`.
 - Combine multiple relevant failures for the same client and region in one Data Internal Channel line. List each failed task or safe rerun target in that line. Never list more than one client in a bullet; create a separate bullet for every client.
+- When configured omitted jobs have failures, add the exact region-level line
+  `- check_for_subscriber_client_errors, D2P, MI3` for the affected region.
+  Include only the labels represented by that region's failures, in that order,
+  and do not expand those omitted jobs into client bullets.
 - Data Internal bullets never end with periods. Preserve exact job identifiers,
   including underscores: `active_deposit_accounts`, never `active-deposit
   accounts`. For multiple jobs, omit causes and join identifiers with `and`:

@@ -15,6 +15,7 @@ from workspaces.data_engineering.agents.resource_discovery import (
 )
 
 CLIENT_UUID = "1f06da19-2f61-401c-a1b7-38902e4f3543"
+BATCH_SIZE = 2
 
 
 class FakeTransport:
@@ -96,6 +97,30 @@ def test_source_shortens_scotiabank_data_validation_name() -> None:
     )
 
     assert records[0]["client_name"] == "Scotiabank DV"
+
+
+def test_source_batch_reuses_one_access_token() -> None:
+    transport = FakeTransport(
+        [
+            {
+                "name": "Example Bank",
+                "provisionedClientId": CLIENT_UUID,
+            }
+        ]
+    )
+    source = ResourceDiscoveryApiSource(config(), transport)
+    identifiers = (
+        ResourceIdentifier(IdentifierKind.CLIENT_ID, CLIENT_UUID),
+        ResourceIdentifier(
+            IdentifierKind.CLIENT_ID,
+            "11111111-1111-4111-8111-111111111111",
+        ),
+    )
+
+    records = asyncio.run(source.lookup_batch(identifiers))
+
+    assert len(records) == BATCH_SIZE
+    assert [request.method for request in transport.requests].count("POST") == 1
 
 
 def test_source_queries_resource_endpoint_for_resource_fields() -> None:

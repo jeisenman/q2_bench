@@ -125,11 +125,34 @@ class ResourceDiscoveryApiSource:
         """Return all API records matching one explicit identifier."""
         return await asyncio.to_thread(self._lookup, identifier)
 
+    async def lookup_batch(
+        self,
+        identifiers: tuple[ResourceIdentifier, ...],
+    ) -> tuple[tuple[ResourceRecord, ...], ...]:
+        """Resolve identifiers with one access-token request."""
+        return await asyncio.to_thread(self._lookup_batch, identifiers)
+
     def _lookup(
         self,
         identifier: ResourceIdentifier,
     ) -> tuple[ResourceRecord, ...]:
         token = self._access_token()
+        return self._lookup_with_token(identifier, token)
+
+    def _lookup_batch(
+        self,
+        identifiers: tuple[ResourceIdentifier, ...],
+    ) -> tuple[tuple[ResourceRecord, ...], ...]:
+        token = self._access_token()
+        return tuple(
+            self._lookup_with_token(identifier, token) for identifier in identifiers
+        )
+
+    def _lookup_with_token(
+        self,
+        identifier: ResourceIdentifier,
+        token: str,
+    ) -> tuple[ResourceRecord, ...]:
         path, query_name = _query(identifier.kind)
         query = urlencode({query_name: identifier.value})
         url = urljoin(

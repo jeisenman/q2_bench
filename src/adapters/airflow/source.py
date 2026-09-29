@@ -6,6 +6,7 @@ import asyncio
 import base64
 import json
 import os
+import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -25,6 +26,10 @@ from workspaces.data_engineering.workflows.prod_support.ports import (
 from workspaces.data_engineering.workflows.prod_support.workloads import (
     AirflowTaskMetadata,
 )
+
+HTTP_STATUS_SERVICE_UNAVAILABLE = 503
+AIRFLOW_503_MAX_ATTEMPTS = 3
+AIRFLOW_503_BACKOFF_SECONDS = 30.0
 
 
 class AirflowApiError(RuntimeError):
@@ -267,17 +272,35 @@ class AirflowApiSource(AirflowRetryMixin):
         }
         failures: list[AirflowFailure] = []
         while True:
-            response = self._transport.request(
-                config,
-                "POST",
-                "/api/v1/dags/~/dagRuns/~/taskInstances/list",
-                payload,
-            )
+            response = self._discover_request(config, payload)
             page, total = _task_instances(response)
             failures.extend(_failure(config.region, item) for item in page)
             if not page or len(failures) >= total:
                 return tuple(failures)
             payload["page_offset"] = len(failures)
+
+    def _discover_request(
+        self,
+        config: AirflowRegionConfig,
+        payload: Mapping[str, object],
+    ) -> object:
+        """Retry transient Airflow 503 responses with bounded backoff."""
+        for attempt in range(AIRFLOW_503_MAX_ATTEMPTS):
+            try:
+                return self._transport.request(
+                    config,
+                    "POST",
+                    "/api/v1/dags/~/dagRuns/~/taskInstances/list",
+                    payload,
+                )
+            except HTTPError as error:
+                if (
+                    error.code != HTTP_STATUS_SERVICE_UNAVAILABLE
+                    or attempt == AIRFLOW_503_MAX_ATTEMPTS - 1
+                ):
+                    raise
+                time.sleep(AIRFLOW_503_BACKOFF_SECONDS)
+        raise AssertionError
 
     def _has_success_within(
         self,
