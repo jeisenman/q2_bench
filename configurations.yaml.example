@@ -1,0 +1,35 @@
+# Per-user configuration. Copy to configurations.yaml, which is gitignored.
+#
+#   cp configurations.yaml.example configurations.yaml
+#
+# This file names environment variables. It never holds their values: tokens
+# live in .env or your shell profile and resolve at call time.
+#
+# Every workspace is disabled by default. An absent workspace, or an absent
+# `enabled`, is false. Turn on only what you need.
+
+version: 1
+
+workspaces:
+  data_engineering:
+    enabled: false
+
+    # Keys below are keys into DATABRICKS_TARGETS in
+    # src/adapters/outbound/data_engineering/targets.py. A key with no registry
+    # entry fails at load.
+    databricks:
+      # RA preprod — pl-databricks-us-rapreprod-01. Non-production.
+      ra:
+        enabled: false
+        auth: pat
+        host_env: RA_DATABRICKS_HOST
+        token_env: RA_DATABRICKS_TOKEN
+
+      # Data Engineering PRODUCTION — pl-databricks-us-prod-01.
+      # Production data. Requires enabled: true on BOTH this environment and
+      # the workspace above. Two deliberate edits, never one.
+      de:
+        enabled: false
+        auth: pat
+        host_env: DE_DATABRICKS_HOST
+        token_env: DE_DATABRICKS_TOKEN

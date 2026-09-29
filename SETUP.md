@@ -51,6 +51,61 @@ Verify:
 uv run agentbench sync-skills --check
 ```
 
+## Credentials and configuration
+
+Two files, both gitignored, both copied from tracked templates:
+
+```bash
+cp .env.example .env
+```
+
+```bash
+cp configurations.yaml.example configurations.yaml
+```
+
+`.env` holds secret values. `configurations.yaml` holds none — it names
+environment variables and records which workspaces and environments you have
+turned on.
+
+**Every workspace is disabled by default.** An absent workspace, or an absent
+`enabled`, is false. Turn on only what you need.
+
+### Databricks tokens
+
+A Databricks personal access token is **workspace-scoped**. A token minted in
+one workspace does not authenticate against another, so you need one token per
+environment you enable.
+
+To mint one, in the workspace you want:
+
+1. Open that workspace, for example
+   `https://adb-7628572648057993.13.azuredatabricks.net`.
+2. Avatar menu (top right) -> **Settings** -> **Developer** -> **Access
+   tokens** -> **Manage**. Direct link:
+   `https://<workspace-host>/settings/user/developer/access-tokens`
+3. **Generate new token**, give it a comment and a lifetime, then copy the
+   value. It is shown once.
+4. Paste it into `.env` under the variable for that environment.
+
+Two Databricks environments are registered:
+
+| Prefix | Workspace | Data |
+| --- | --- | --- |
+| `RA_` | `pl-databricks-us-rapreprod-01` | preprod |
+| `DE_` | `pl-databricks-us-prod-01` | **production** |
+
+DE is production data. Enabling it takes `enabled: true` on both the
+`data_engineering` workspace and its `de` environment in
+`configurations.yaml` — two deliberate edits, never one.
+
+Do not export a bare `DATABRICKS_HOST` or `DATABRICKS_TOKEN`. The `databricks`
+CLI reads those as ambient credentials, which is the cross-wiring the prefixes
+exist to remove. Map them explicitly per call instead:
+
+```bash
+(set -a; . ./.env; set +a; DATABRICKS_HOST="$RA_DATABRICKS_HOST" DATABRICKS_TOKEN="$RA_DATABRICKS_TOKEN" databricks current-user me)
+```
+
 ## Working in a workspace
 
 Pick the workspace whose domain you are in, then read, in order:

@@ -13,3 +13,5 @@ reports/
 .reports/
 *.egg-info/
 var/
+configurations.yaml
+!configurations.yaml.example
