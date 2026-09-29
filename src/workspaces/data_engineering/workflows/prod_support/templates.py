@@ -27,7 +27,7 @@ REPORTER_OUTPUT_TEMPLATE = (
 PROD_SUPPORT_REPORT_TEMPLATE = """\
 # Prod Support Report — <operational-date> operational day
 
-Window: `<operational-start> UTC` through `<operational-end> UTC`
+Failure cutoff: task instances with `end_date` at or after `<operational-start> UTC`
 
 <capture-summary>
 

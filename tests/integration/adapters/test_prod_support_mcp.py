@@ -91,7 +91,9 @@ def test_mcp_tool_runs_prod_support_agent(
     assert result["output"].startswith(
         f"{INSUFFICIENT_BENCHMARK_WARNING}\n\n# Prod Support Report — "
     )
-    assert " operational day\n\nWindow: `" in result["output"]
+    assert (
+        " operational day\n\nFailure cutoff: task instances with " in result["output"]
+    )
     assert "URLs to validate\nhttps://airflow-us01" in result["output"]
     assert "Message for developer:" in result["output"]
     assert "\n\n:bangbang: PROD SUPPORT " in result["output"]

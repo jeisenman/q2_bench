@@ -143,14 +143,14 @@ def format_reports_with_context(
         operational_date,
         findings,
     )
-    operational_start, operational_end = _operational_bounds(operational_date)
+    operational_start, _ = _operational_bounds(operational_date)
     return ProdSupportReports(
         heading=(
             f"# Prod Support Report — {operational_date.isoformat()} operational day"
         ),
         window=(
-            f"Window: `{_display_utc(operational_start)}` through "
-            f"`{_display_utc(operational_end)}`"
+            "Failure cutoff: task instances with `end_date` at or after "
+            f"`{_display_utc(operational_start)}`"
         ),
         capture_summary=_capture_summary(failures),
         urls_to_validate=urls_to_validate,
@@ -165,18 +165,17 @@ def airflow_failure_url(
     operational_date: date,
     reference_date: date | None = None,
 ) -> str:
-    """Return the bounded Airflow task-instance URL for one region and day."""
+    """Return the lower-bounded Airflow task-instance URL for one region and day."""
     del reference_date
     host = {
         Region.US_01: "airflow-us01.precisionlender.com",
         Region.CA_02: "airflow-ca02.precisionlender.com",
     }[region]
-    start, end = _operational_bounds(operational_date)
+    start, _ = _operational_bounds(operational_date)
     query = urlencode(
         (
             ("_flt_3_state", "failed"),
             ("_flt_2_end_date", _airflow_ui_datetime(start)),
-            ("_flt_1_end_date", _airflow_ui_datetime(end)),
         )
     )
     return f"https://{host}/taskinstance/list/?{query}#"

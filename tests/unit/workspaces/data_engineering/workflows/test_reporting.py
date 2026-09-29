@@ -76,8 +76,8 @@ def test_formats_channel_reports_and_suggestion_only_follow_up() -> None:
 
     assert reports.combined.startswith(
         "# Prod Support Report — 2026-09-24 operational day\n\n"
-        "Window: `2026-09-24 05:00:00 UTC` through "
-        "`2026-09-25 05:00:00 UTC`"
+        "Failure cutoff: task instances with `end_date` at or after "
+        "`2026-09-24 05:00:00 UTC`"
     )
     assert reports.capture_summary == (
         "Local capture contains 1 failure, all from US-01; "

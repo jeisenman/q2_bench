@@ -189,20 +189,23 @@ def test_failure_message_short_circuits_all_detailed_log_requests() -> None:
     assert source.fetched == []
 
 
-def test_agent_excludes_the_operational_window_end_boundary() -> None:
+def test_agent_keeps_failures_after_the_next_operational_anchor() -> None:
     included = _failure()
-    excluded = _failure(
+    long_running = _failure(
         dag_id="l3-main-22222222-2222-4222-8222-222222222222",
         end_at=datetime(2026, 9, 26, 5, tzinfo=UTC),
     )
     agent = ProductionSupportWorkflow(
-        LogSource((excluded, included), "Exception: failed"),
+        LogSource((long_running, included), "Exception: failed"),
         clock=lambda: datetime(2026, 9, 26, 12, tzinfo=UTC),
     )
 
     outcome = asyncio.run(agent.investigate("Run prod support for 9/25/26"))
 
-    assert [failure.failure_id for failure in outcome.failures] == [included.failure_id]
+    assert [failure.failure_id for failure in outcome.failures] == [
+        included.failure_id,
+        long_running.failure_id,
+    ]
 
 
 class IgnoredResourceDiscovery:

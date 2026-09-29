@@ -163,7 +163,6 @@ class ProductionSupportWorkflow:
         failures, cluster_health = await asyncio.gather(
             self._airflow_checker.check(
                 window.failed_since,
-                failed_before,
                 regions=scope.regions,
             ),
             self._cluster_checker.check(

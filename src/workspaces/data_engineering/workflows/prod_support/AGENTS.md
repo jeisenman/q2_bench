@@ -78,8 +78,11 @@ not import from `workspaces.data_engineering.agents`, except for the
 
 ## Workflow
 
-1. Resolve the operational window and the requested regions from the prompt.
-2. Check Airflow failures and cluster health concurrently.
+1. Resolve the operational anchor and the requested regions from the prompt.
+2. Check Airflow failures ending at or after that anchor and check cluster
+   health concurrently. Failure discovery has no upper cutoff so long-running
+   tasks remain visible; cluster restart and recovery checks retain the bounded
+   operational-day window.
 3. Hand the full failure inventory to `TriageManager` in one call.
 4. Resolve each failure from the cheapest sufficient evidence, escalating to an
    exact task log only when needed.

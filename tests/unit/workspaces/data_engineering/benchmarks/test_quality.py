@@ -13,7 +13,7 @@ from workspaces.data_engineering.workflows.prod_support import airflow_failure_u
 from workspaces.data_engineering.workflows.prod_support.models import Region
 
 
-def test_airflow_links_filter_each_region_at_operational_cutoff() -> None:
+def test_airflow_links_filter_each_region_from_operational_cutoff() -> None:
     operational_date = date(2026, 9, 24)
 
     us_url = airflow_failure_url(Region.US_01, operational_date)
@@ -23,10 +23,10 @@ def test_airflow_links_filter_each_region_at_operational_cutoff() -> None:
     assert "airflow-ca02.precisionlender.com" in ca_url
     assert "_flt_3_state=failed" in us_url
     assert "_flt_2_end_date=2026-09-24T05%3A00%3A00%2B00%3A00" in us_url
-    assert "_flt_1_end_date=2026-09-25T05%3A00%3A00%2B00%3A00" in us_url
+    assert "_flt_1_end_date" not in us_url
 
 
-def test_airflow_links_bound_historical_dates_to_one_day() -> None:
+def test_airflow_links_keep_historical_dates_lower_bounded() -> None:
     url = airflow_failure_url(
         Region.US_01,
         date(2026, 9, 23),
@@ -34,7 +34,7 @@ def test_airflow_links_bound_historical_dates_to_one_day() -> None:
     )
 
     assert "_flt_2_end_date=2026-09-23T05%3A00%3A00%2B00%3A00" in url
-    assert "_flt_1_end_date=2026-09-24T05%3A00%3A00%2B00%3A00" in url
+    assert "_flt_1_end_date" not in url
 
 
 def test_filter_failures_excludes_successes() -> None:

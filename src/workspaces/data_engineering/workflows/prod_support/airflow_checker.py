@@ -35,7 +35,7 @@ class AirflowCheckConfigurationError(ValueError):
 
 
 class AirflowChecker:
-    """Discover failures and enforce the operational window contract."""
+    """Discover failures ending at or after the operational anchor."""
 
     def __init__(
         self,
@@ -52,14 +52,16 @@ class AirflowChecker:
     async def check(
         self,
         failed_since: datetime,
-        failed_before: datetime,
+        failed_before: datetime | None = None,
         *,
         regions: tuple[Region, ...] | None = None,
     ) -> tuple[AirflowFailure, ...]:
-        """Return unique selected-region failures in a half-open time window."""
-        if failed_since.tzinfo is None or failed_before.tzinfo is None:
+        """Return unique selected-region failures after an optional bounded cutoff."""
+        if failed_since.tzinfo is None or (
+            failed_before is not None and failed_before.tzinfo is None
+        ):
             raise AirflowCheckConfigurationError.timezone_required()
-        if failed_before <= failed_since:
+        if failed_before is not None and failed_before <= failed_since:
             raise AirflowCheckConfigurationError.invalid_window()
         selected = frozenset(regions or tuple(self._regions))
         if not selected:
@@ -79,7 +81,8 @@ class AirflowChecker:
                 failure
                 for failure in candidates
                 if failure.region in selected
-                and failed_since <= failure.end_at < failed_before
+                and failed_since <= failure.end_at
+                and (failed_before is None or failure.end_at < failed_before)
             )
         )
 
