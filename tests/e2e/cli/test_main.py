@@ -188,7 +188,7 @@ def test_debug_prod_support_reports_local_artifacts(
 
     monkeypatch.setattr(
         collection_cli.AirflowApiSource,
-        "from_environment",
+        "from_configuration",
         staticmethod(fake_source),
     )
     monkeypatch.setattr(

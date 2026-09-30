@@ -16,6 +16,12 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
 
+from airflow_config import (
+    PRODUCTION,
+    AirflowConfigError,
+    find_configuration,
+    load_entry,
+)
 from regional_queries import run_region_queries
 
 HTTP_STATUS_BAD_GATEWAY = 502
@@ -38,20 +44,14 @@ class Region:
     password_env: str
 
 
-REGIONS = (
-    Region(
-        name="US-01",
-        host="https://airflow-us01.precisionlender.com",
-        username_env="USAIRFLORUSER",
-        password_env="USAIRFLOWPASSWORD",
-    ),
-    Region(
-        name="CA-02",
-        host="https://airflow-ca02.precisionlender.com",
-        username_env="CAAIRFLORUSER",
-        password_env="CAAIRFLOWPASSWORD",
-    ),
-)
+def configured_regions(config: Path | None) -> tuple[Region, ...]:
+    """Build US-01 and CA-02 from the produs and prodca configuration entries."""
+    path = find_configuration(config)
+    regions = []
+    for name, environment in PRODUCTION.items():
+        entry = load_entry(environment, path)
+        regions.append(Region(name, entry.host(), entry.user_env, entry.password_env))
+    return tuple(regions)
 
 
 def parse_reference_time(value: str | None) -> datetime:
@@ -159,11 +159,12 @@ def failed_task_instances(
 
 
 def discover_failures_by_region(
+    regions: tuple[Region, ...],
     failed_since: datetime,
 ) -> tuple[tuple[Region, list[dict[str, object]] | None, RuntimeError | None], ...]:
     """Query US-01 and CA-02 concurrently while preserving report order."""
     return run_region_queries(
-        REGIONS,
+        regions,
         failed_task_instances,
         failed_since,
         max_workers=REGION_WORKERS,
@@ -207,15 +208,26 @@ def main() -> int:
         default=Path(".env"),
         help="Credential file to load; defaults to .env.",
     )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        help="configurations.yaml to read; defaults to the nearest one upward.",
+    )
     args = parser.parse_args()
 
     reference_time = parse_reference_time(args.at)
     failed_since = (
         parse_utc_time(args.since) if args.since else operational_anchor(reference_time)
     )
+    load_dotenv(args.env_file)
+    try:
+        regions = configured_regions(args.config)
+    except AirflowConfigError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
     print(f"Operational anchor: {failed_since.isoformat().replace('+00:00', 'Z')}")
     print("URLs to validate")
-    for region in REGIONS:
+    for region in regions:
         print(failures_link(region, failed_since))
 
     if args.dry_run:
@@ -224,10 +236,9 @@ def main() -> int:
         )
         return 0
 
-    load_dotenv(args.env_file)
     print("Failed task instances")
     exit_code = 0
-    for region, failures, error in discover_failures_by_region(failed_since):
+    for region, failures, error in discover_failures_by_region(regions, failed_since):
         if error is not None:
             print(f"{region.name}: {error}", file=sys.stderr)
             exit_code = 1

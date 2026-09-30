@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError
 from urllib.parse import quote
 
 from adapters.airflow import transport as _transport
+from adapters.airflow.configuration import (
+    PRODUCTION_ENVIRONMENTS,
+    load_airflow_connection,
+)
 from adapters.airflow.retry import AirflowRetryMixin
+from adapters.local.configuration import DEFAULT_CONFIGURATION_PATH
 from workspaces.data_engineering.workflows.prod_support.models import (
     AirflowFailure,
     Region,
@@ -62,30 +67,22 @@ class AirflowApiSource(AirflowRetryMixin):
         self._transport = transport or UrllibAirflowTransport()
 
     @classmethod
-    def from_environment(cls) -> AirflowApiSource:
-        """Load the production region settings from established variables."""
-        values = (
-            (
-                Region.US_01,
-                "https://airflow-us01.precisionlender.com",
-                "USAIRFLORUSER",
-                "USAIRFLOWPASSWORD",
-            ),
-            (
-                Region.CA_02,
-                "https://airflow-ca02.precisionlender.com",
-                "CAAIRFLORUSER",
-                "CAAIRFLOWPASSWORD",
-            ),
-        )
+    def from_configuration(
+        cls,
+        path: Path = DEFAULT_CONFIGURATION_PATH,
+    ) -> AirflowApiSource:
+        """Load produs and prodca connections named in configurations.yaml."""
         regions = []
-        for region, host, username_env, password_env in values:
-            username = os.environ.get(username_env)
-            password = os.environ.get(password_env)
-            if not username or not password:
-                message = f"missing {username_env} or {password_env}"
-                raise AirflowApiError(message)
-            regions.append(AirflowRegionConfig(region, host, username, password))
+        for region, environment in PRODUCTION_ENVIRONMENTS.items():
+            connection = load_airflow_connection(environment, path)
+            regions.append(
+                AirflowRegionConfig(
+                    region,
+                    connection.host,
+                    connection.username,
+                    connection.password,
+                )
+            )
         return cls(tuple(regions))
 
     async def discover_failures(self, since: datetime) -> tuple[AirflowFailure, ...]:

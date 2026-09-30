@@ -58,7 +58,9 @@ package and the top-level `ports` package. Concrete sources are injected at
 the composition root in `mcp_servers/prod_support_sources.py`:
 
 - `AirflowFailureSource` — the Airflow API in production, a replay dataset for
-  captured evidence, or an empty source.
+  captured evidence, or an empty source. Production connections come from the
+  `produs` and `prodca` entries in `configurations.yaml`; a missing entry or
+  value raises `AirflowConfigurationError` at startup.
 - `ClusterHealthSource` — the read-only cluster script.
 - `ResourceDiscoveryBatchInvoker` — the Resource Discovery agent, for resolving
   a complete client-UUID mapping in one batch before reporting.

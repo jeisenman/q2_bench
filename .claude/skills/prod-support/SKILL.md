@@ -94,16 +94,10 @@ python3 .claude/skills/prod-support/scripts/discover_failures.py \
   --since '2026-07-23T05:00:00Z' --dry-run
 ```
 
-The script expects these variables, matching the local `.env` naming convention:
-
-```bash
-USAIRFLORUSER='...'
-USAIRFLOWPASSWORD='...'
-CAAIRFLORUSER='...'
-CAAIRFLOWPASSWORD='...'
-```
-
-Use `--env-file <path>` to load credentials from a different local file. `--dry-run` prints the UTC query window without calling Airflow.
+Airflow scripts resolve hosts and credentials from the `produs`, `prodca`,
+`alpha`, and `staging` entries under `workspaces.data_engineering.airflow` in
+`configurations.yaml`; values come from `.env`. A missing entry or value is an
+error. Use `--config <path>` or `--env-file <path>` to override either file. `--dry-run` prints the UTC query window without calling Airflow.
 
 Report the script's `URLs to validate` block before the detailed findings. Check `US-01` before `CA-02`.
 

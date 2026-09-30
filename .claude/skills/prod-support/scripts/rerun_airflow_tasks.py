@@ -14,18 +14,9 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
-REGIONS = {
-    "us01": (
-        "https://airflow-us01.precisionlender.com",
-        "USAIRFLORUSER",
-        "USAIRFLOWPASSWORD",
-    ),
-    "ca02": (
-        "https://airflow-ca02.precisionlender.com",
-        "CAAIRFLORUSER",
-        "CAAIRFLOWPASSWORD",
-    ),
-}
+from airflow_config import AirflowConfigError, find_configuration, load_entry
+
+REGIONS = {"us01": "produs", "ca02": "prodca", "alpha": "alpha", "staging": "staging"}
 
 
 def load_dotenv(env_file: Path) -> None:
@@ -210,21 +201,24 @@ def main() -> int:
         default=Path(".env"),
         help="Credentials file to load (default: .env).",
     )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        help="configurations.yaml to read; defaults to the nearest one upward.",
+    )
     args = parser.parse_args()
     if args.execute and not args.approval_id:
         parser.error("--approval-id is required with --execute")
     if args.plan_only and args.approval_id:
         parser.error("--approval-id is valid only with --execute")
 
-    host, username_env, password_env = REGIONS[args.region]
     load_dotenv(args.env_file)
-    username = os.environ.get(username_env)
-    password = os.environ.get(password_env)
-    if not username or not password:
-        print(
-            f"Error: missing {username_env} or {password_env}",
-            file=sys.stderr,
-        )
+    try:
+        entry = load_entry(REGIONS[args.region], find_configuration(args.config))
+        host = entry.host()
+        username, password = entry.credentials()
+    except AirflowConfigError as error:
+        print(f"Error: {error}", file=sys.stderr)
         return 1
 
     task_ids = list(dict.fromkeys(args.task_id))

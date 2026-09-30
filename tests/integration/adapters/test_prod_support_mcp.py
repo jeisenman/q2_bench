@@ -1,5 +1,6 @@
 import asyncio
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -310,8 +311,14 @@ def test_mcp_exposes_configured_support_updates(
 
 def test_mcp_source_uses_production_airflow(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
+    template = Path(__file__).parents[3] / "configurations.yaml.example"
+    shutil.copy(template, tmp_path / "configurations.yaml")
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("PROD_SUPPORT_SOURCE", "production")
+    monkeypatch.setenv("USAIRFLOWHOST", "https://us.airflow.test")
+    monkeypatch.setenv("CAAIRFLOWHOST", "https://ca.airflow.test")
     monkeypatch.setenv("USAIRFLORUSER", "us-user")
     monkeypatch.setenv("USAIRFLOWPASSWORD", "us-password")
     monkeypatch.setenv("CAAIRFLORUSER", "ca-user")

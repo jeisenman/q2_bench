@@ -147,7 +147,7 @@ async def execute_prod_support_follow_up(
 def _follow_up_agent() -> FollowUpExecutor:
     if os.environ.get(SOURCE_ENV) != "production":
         raise FollowUpConfigurationError.production_required()
-    return FollowUpExecutor(AirflowApiSource.from_environment())
+    return FollowUpExecutor(AirflowApiSource.from_configuration())
 
 
 def _validation_urls(values: list[str]) -> tuple[str, str]:

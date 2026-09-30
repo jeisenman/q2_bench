@@ -5,13 +5,17 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 
+from adapters.airflow.configuration import (
+    PRODUCTION_ENVIRONMENTS,
+    load_airflow_connection,
+)
 from adapters.airflow.transport import (
     AirflowRegionConfig,
     UrllibAirflowTransport,
@@ -23,14 +27,7 @@ REGION_CONTEXTS = {
     "US-01": "l3-us01",
     "CA-02": "l3-ca02",
 }
-AIRFLOW_HOSTS = {
-    "US-01": "https://airflow-us01.precisionlender.com",
-    "CA-02": "https://airflow-ca02.precisionlender.com",
-}
-AIRFLOW_CREDENTIAL_ENV = {
-    "US-01": ("USAIRFLORUSER", "USAIRFLOWPASSWORD"),
-    "CA-02": ("CAAIRFLORUSER", "CAAIRFLOWPASSWORD"),
-}
+CONFIGURATION_PATH = Path(__file__).resolve().parents[1] / "configurations.yaml"
 NAMESPACE = "scheduler"
 MIN_HEALTHY_DAG_COUNT = 10
 
@@ -46,15 +43,6 @@ class ClusterHealthCommandError(TypeError):
 
 class ClusterHealthConfigurationError(RuntimeError):
     """Raised when conditional Airflow DAG evidence cannot be collected."""
-
-    @classmethod
-    def missing_dag_credentials(
-        cls,
-        username_env: str,
-        password_env: str,
-    ) -> ClusterHealthConfigurationError:
-        """Return an error for missing Airflow credentials."""
-        return cls(f"missing {username_env} or {password_env} for DAG count")
 
     @classmethod
     def invalid_dag_response(cls) -> ClusterHealthConfigurationError:
@@ -142,19 +130,15 @@ def _pod_health(
 
 
 def _active_dag_count(region: str) -> int:
-    username_env, password_env = AIRFLOW_CREDENTIAL_ENV[region]
-    username = os.environ.get(username_env)
-    password = os.environ.get(password_env)
-    if not username or not password:
-        raise ClusterHealthConfigurationError.missing_dag_credentials(
-            username_env,
-            password_env,
-        )
+    connection = load_airflow_connection(
+        PRODUCTION_ENVIRONMENTS[Region(region)],
+        CONFIGURATION_PATH,
+    )
     config = AirflowRegionConfig(
         Region(region),
-        AIRFLOW_HOSTS[region],
-        username,
-        password,
+        connection.host,
+        connection.username,
+        connection.password,
     )
     response = request_with_transient_retry(
         UrllibAirflowTransport(),

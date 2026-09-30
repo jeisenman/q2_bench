@@ -21,6 +21,7 @@ x-agentbench: &agentbench
     - /home/agentbench/.bedrock_codex:uid=1000,gid=1000,mode=0700
   volumes:
     - ./var:/workspace/var
+    - ./configurations.yaml:/workspace/configurations.yaml:ro
     - ${HOME}/.aws:/home/agentbench/.aws:ro
     - ${CODEX_HOME}:/mnt/codex-host:ro
     - ./var/mlflow/assistant:/home/agentbench/.mlflow/assistant

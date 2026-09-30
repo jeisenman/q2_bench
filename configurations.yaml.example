@@ -38,3 +38,29 @@ workspaces:
         auth: pat
         host_env: DE_DATABRICKS_HOST
         token_env: DE_DATABRICKS_TOKEN
+
+    # Airflow connections, one per deployment. Each entry names environment
+    # variables; values live in .env. Every key is required: a missing entry,
+    # key, or variable value raises AirflowConfigurationError. Production
+    # support reads produs (US-01) and prodca (CA-02).
+    airflow:
+      alpha:
+        host_env: ALPHAAIRFLOWHOST
+        user_env: ALPHAAIRFLOWUSER
+        password_env: ALPHAAIRFLOWPASSWORD
+
+      staging:
+        host_env: STAGINGAIRFLOWHOST
+        user_env: STAGINGAIRFLOWUSER
+        password_env: STAGINGAIRFLOWPASSWORD
+
+      # PRODUCTION. The user variables keep the legacy AIRFLOR spelling.
+      produs:
+        host_env: USAIRFLOWHOST
+        user_env: USAIRFLORUSER
+        password_env: USAIRFLOWPASSWORD
+
+      prodca:
+        host_env: CAAIRFLOWHOST
+        user_env: CAAIRFLORUSER
+        password_env: CAAIRFLOWPASSWORD

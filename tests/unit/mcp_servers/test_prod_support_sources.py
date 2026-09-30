@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+from pathlib import Path
 
 import pytest
 
@@ -22,9 +24,14 @@ from workspaces.data_engineering.workflows.prod_support import (
 )
 
 
-def _airflow_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+def _airflow_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    template = Path(__file__).parents[3] / "configurations.yaml.example"
+    shutil.copy(template, tmp_path / "configurations.yaml")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("USAIRFLOWHOST", "https://us.airflow.test")
     monkeypatch.setenv("USAIRFLORUSER", "us-user")
     monkeypatch.setenv("USAIRFLOWPASSWORD", "us-password")
+    monkeypatch.setenv("CAAIRFLOWHOST", "https://ca.airflow.test")
     monkeypatch.setenv("CAAIRFLORUSER", "ca-user")
     monkeypatch.setenv("CAAIRFLOWPASSWORD", "ca-password")
 
@@ -32,9 +39,10 @@ def _airflow_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.parametrize("mode", ["direct", "production"])
 def test_direct_mode_uses_live_adapters(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
     mode: str,
 ) -> None:
-    _airflow_environment(monkeypatch)
+    _airflow_environment(monkeypatch, tmp_path)
     monkeypatch.setenv("PROD_SUPPORT_SOURCE", mode)
     monkeypatch.delenv("PROD_SUPPORT_DATASET", raising=False)
 

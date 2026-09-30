@@ -22,7 +22,7 @@ server = MCPServer(
 
 @lru_cache(maxsize=1)
 def _source() -> AirflowApiSource:
-    return AirflowApiSource.from_environment()
+    return AirflowApiSource.from_configuration()
 
 
 @server.tool(

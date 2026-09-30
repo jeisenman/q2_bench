@@ -42,10 +42,19 @@ developer's credential files. The repository expects:
 - PrecisionLender Resource Discovery OAuth values in `.env` only for workflows
   that use that connector.
 
-Fill in `.env` locally. Airflow currently requires the established variable
-names `USAIRFLORUSER`, `USAIRFLOWPASSWORD`, `CAAIRFLORUSER`, and
-`CAAIRFLOWPASSWORD`; `AIRFLOR` is the intentional legacy spelling. Leave
-credentials for unused connectors blank.
+Fill in `.env` locally. Airflow connections are parameterized in
+`configurations.yaml` under `workspaces.data_engineering.airflow`, one entry
+each for `alpha`, `staging`, `produs`, and `prodca`. Every entry names its
+`host_env`, `user_env`, and `password_env`; a missing entry, key, or value
+raises `AirflowConfigurationError`. Production support reads `produs` and
+`prodca`. `AIRFLOR` in the production user variables is the intentional legacy
+spelling. Verify every connection with one authenticated read-only request:
+
+```bash
+uv run python scripts/check_airflow_connections.py
+```
+
+Leave credentials for unused connectors blank.
 
 Before Docker commands that use AWS, export the host configuration and verify
 SSO access:
@@ -272,8 +281,10 @@ the requested report sections directly as `links`, `message_for_developer`,
 `developer_report`, and `data_internal_report` fields remain available for
 compatibility.
 
-The required Airflow `.env` names are `USAIRFLORUSER`,
-`USAIRFLOWPASSWORD`, `CAAIRFLORUSER`, and `CAAIRFLOWPASSWORD`. Resource
+The Airflow `.env` names come from the `produs` and `prodca` entries in
+`configurations.yaml`: by default `USAIRFLOWHOST`, `USAIRFLORUSER`,
+`USAIRFLOWPASSWORD`, `CAAIRFLOWHOST`, `CAAIRFLORUSER`, and
+`CAAIRFLOWPASSWORD`. Resource
 Discovery additionally requires `RESOURCE_DISCOVERY_BASE_URL`,
 `RESOURCE_DISCOVERY_TENANT_ID`, `RESOURCE_DISCOVERY_CLIENT_ID`,
 `RESOURCE_DISCOVERY_CLIENT_SECRET`, and `RESOURCE_DISCOVERY_SCOPE`. Credential

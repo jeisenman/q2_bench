@@ -35,12 +35,28 @@ class AirflowRegionConfig:
     password: str
 
 
+class AirflowCredentials(Protocol):
+    """Host and basic-auth credentials accepted by the transport."""
+
+    @property
+    def host(self) -> str:
+        """Return the Airflow base URL."""
+
+    @property
+    def username(self) -> str:
+        """Return the basic-auth user."""
+
+    @property
+    def password(self) -> str:
+        """Return the basic-auth password."""
+
+
 class AirflowTransport(Protocol):
     """Small HTTP boundary used by the Airflow source."""
 
     def request(
         self,
-        config: AirflowRegionConfig,
+        config: AirflowCredentials,
         method: str,
         path: str,
         payload: Mapping[str, object] | None = None,
@@ -53,7 +69,7 @@ class UrllibAirflowTransport:
 
     def request(
         self,
-        config: AirflowRegionConfig,
+        config: AirflowCredentials,
         method: str,
         path: str,
         payload: Mapping[str, object] | None = None,
@@ -80,7 +96,7 @@ class UrllibAirflowTransport:
 
 def request_with_transient_retry(
     transport: AirflowTransport,
-    config: AirflowRegionConfig,
+    config: AirflowCredentials,
     method: str,
     path: str,
     payload: Mapping[str, object] | None = None,

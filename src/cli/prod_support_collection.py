@@ -129,7 +129,7 @@ def capture_regions(scope: str) -> tuple[Region, ...]:
 
 def _production_sources() -> ProdSupportCollectionSources:
     return ProdSupportCollectionSources(
-        airflow=AirflowApiSource.from_environment(),
+        airflow=AirflowApiSource.from_configuration(),
         cluster_health=ClusterHealthScriptSource.from_repository(),
         resource_discovery=ResourceDiscoveryAgent(
             IndexedResourceDiscoverySource(

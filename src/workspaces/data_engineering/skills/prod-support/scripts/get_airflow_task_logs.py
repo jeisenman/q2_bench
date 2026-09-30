@@ -16,10 +16,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlparse
 from urllib.request import Request, urlopen
 
-REGIONS = {
-    "airflow-us01.precisionlender.com": ("USAIRFLORUSER", "USAIRFLOWPASSWORD"),
-    "airflow-ca02.precisionlender.com": ("CAAIRFLORUSER", "CAAIRFLOWPASSWORD"),
-}
+from airflow_config import entry_for_host, find_configuration
+
 TRANSIENT_STATUS_CODES = frozenset({502, 503})
 MAX_ATTEMPTS = 3
 BACKOFF_SECONDS = 30.0
@@ -43,21 +41,17 @@ def load_dotenv(env_file: Path) -> None:
         os.environ[key] = value
 
 
-def parse_dag_url(value: str) -> tuple[str, str, str, str, str]:
-    """Return the Airflow host, DAG ID, and credential variable names."""
+def parse_dag_url(value: str) -> tuple[str, str]:
+    """Return the Airflow hostname and DAG ID from a DAG URL."""
     parsed = urlparse(value)
     if parsed.scheme != "https" or not parsed.hostname:
         raise ValueError("the DAG URL must be an HTTPS Airflow URL")
-    credentials = REGIONS.get(parsed.hostname)
-    if credentials is None:
-        raise ValueError(f"unsupported Airflow host: {parsed.hostname}")
     parts = [part for part in parsed.path.split("/") if part]
     try:
         dag_id = parts[parts.index("dags") + 1]
     except (ValueError, IndexError) as error:
         raise ValueError("the URL must contain /dags/<dag-id>/") from error
-    username_env, password_env = credentials
-    return parsed.scheme, parsed.hostname, dag_id, username_env, password_env
+    return parsed.hostname, dag_id
 
 
 def api_path(*parts: str) -> str:
@@ -285,6 +279,11 @@ def main() -> int:
         default=Path(".env"),
         help="Credentials file (default: .env)",
     )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        help="configurations.yaml to read; defaults to the nearest one upward.",
+    )
     args = parser.parse_args()
     if args.max_log_chars < 0:
         parser.error("--max-log-chars must be zero or greater")
@@ -294,14 +293,12 @@ def main() -> int:
         parser.error("--timeout-ms must be positive")
 
     try:
-        scheme, host, dag_id, username_env, password_env = parse_dag_url(args.dag_url)
+        hostname, dag_id = parse_dag_url(args.dag_url)
         load_dotenv(args.env_file)
-        username = os.environ.get(username_env)
-        password = os.environ.get(password_env)
-        if not username or not password:
-            raise RuntimeError(f"missing {username_env} or {password_env}")
+        entry = entry_for_host(hostname, find_configuration(args.config))
+        username, password = entry.credentials()
         client = AirflowApiClient(
-            f"{scheme}://{host}",
+            entry.host(),
             username,
             password,
             args.timeout_ms,

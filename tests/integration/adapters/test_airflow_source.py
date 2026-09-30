@@ -286,37 +286,6 @@ def test_airflow_source_preserves_failure_without_start_date() -> None:
     assert failure.start_at == failure.end_at
 
 
-def test_airflow_source_builds_regions_from_environment(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("USAIRFLORUSER", "us-user")
-    monkeypatch.setenv("USAIRFLOWPASSWORD", "us-password")
-    monkeypatch.setenv("CAAIRFLORUSER", "ca-user")
-    monkeypatch.setenv("CAAIRFLOWPASSWORD", "ca-password")
-
-    source = AirflowApiSource.from_environment()
-
-    assert tuple(config.region for config in source._regions) == (
-        Region.US_01,
-        Region.CA_02,
-    )
-
-
-def test_airflow_source_rejects_missing_credentials(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    for variable in (
-        "USAIRFLORUSER",
-        "USAIRFLOWPASSWORD",
-        "CAAIRFLORUSER",
-        "CAAIRFLOWPASSWORD",
-    ):
-        monkeypatch.delenv(variable, raising=False)
-
-    with pytest.raises(AirflowApiError, match="missing USAIRFLORUSER"):
-        AirflowApiSource.from_environment()
-
-
 def test_airflow_source_rejects_naive_cutoff() -> None:
     source = AirflowApiSource(
         (

@@ -68,7 +68,7 @@ def airflow_source() -> AirflowFailureSource:
         if dataset:
             message = f"{DATASET_ENV} cannot be set when {SOURCE_ENV}={DIRECT_MODE}"
             raise ValueError(message)
-        return AirflowApiSource.from_environment()
+        return AirflowApiSource.from_configuration()
     if source_mode == MCP_MODE:
         if dataset:
             message = f"{DATASET_ENV} cannot be set when {SOURCE_ENV}=mcp"
