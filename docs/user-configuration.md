@@ -1,7 +1,8 @@
 # Per-user `configurations.yaml`
 
-Design for per-user workspace enablement and per-environment credential
-binding. Not yet implemented.
+Per-user workspace settings and per-environment credential binding. Repository
+root setup is implemented; workspace enablement and credential enforcement are
+still design work.
 
 ## The failure this prevents
 
@@ -57,6 +58,8 @@ version: 1
 workspaces:
   data_engineering:
     enabled: true
+    repositories:
+      root: ~/ra
     databricks:
       de:
         enabled: false
@@ -72,6 +75,17 @@ workspaces:
 
 Keys under `databricks` are keys into `DATABRICKS_TARGETS`. A key with no
 registry entry fails at load, naming the valid keys.
+
+## Local repositories
+
+`workspaces.data_engineering.repositories.root` is the parent directory for
+all Data Engineering repository checkouts. It defaults to `~/ra` in the
+template but is explicitly per-user.
+
+Run `uv run agentbench setup` to choose the directory interactively, create it
+when absent, and write the value to `configurations.yaml`. Existing unrelated
+configuration keys are preserved. Automation can pass
+`--repositories-root <path>` to avoid the prompt.
 
 ## Rules
 
@@ -125,6 +139,7 @@ No id is written in both places, so the two can never disagree.
 ```
 src/domain/configuration.py           immutable dataclasses, validation, pure
 src/adapters/local/configuration.py   YAML load from disk
+src/cli/setup.py                      per-user repository-root setup
 configurations.yaml.example           tracked template
 configurations.yaml                   per-user, gitignored
 ```

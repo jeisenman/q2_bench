@@ -28,7 +28,7 @@ PREVIOUSLY_UNRESOLVED_CLIENTS = (
     ("49f3873c-deb0-4846-88bd-4628cef8abfe", "Renasant Bank (Tupelo, MS)"),
     ("5301628b-e85f-4ff9-b5b3-e8d13c5926a7", "TD Bank (Wilmington, DE)"),
     ("60009dc8-695b-4b58-b512-1fc72c3c98e7", "Popular Community Bank"),
-    ("792f7424-402e-4a7e-b4de-69f811435d9c", "BoFA"),
+    ("792f7424-402e-4a7e-b4de-69f811435d9c", "Bank of America"),
     ("951ddcc6-dc43-408e-a4f4-bf0a67015ccc", "Synovus Bank (Columbus, GA)"),
     ("9d272969-2cdd-401b-a373-6a73cf5a3042", "Glacier Bancorp"),
     ("9e344fed-d096-4827-8985-992c8a021369", "Webster Bank"),
@@ -79,6 +79,7 @@ def test_index_supports_original_and_parsed_client_names() -> None:
     assert full_name[0]["client_name"] == "Scotiabank DV"
     assert full_name[0]["provisioned_client_id"] == SCOTIABANK_DV_UUID
     assert parse_client_name("  Scotiabank - Data Validation ") == "Scotiabank DV"
+    assert parse_client_name("BoFA") == "Bank of America"
 
 
 def test_index_resolves_user_confirmed_bank_of_hope_ca_resources() -> None:

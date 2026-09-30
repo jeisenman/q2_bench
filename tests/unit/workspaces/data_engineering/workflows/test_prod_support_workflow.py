@@ -72,8 +72,9 @@ class ExactLogAirflow(FakeAirflow):
 
 
 class FakeResourceSource:
-    def __init__(self) -> None:
+    def __init__(self, client_name: str = "Example Bank") -> None:
         self.identifiers: list[ResourceIdentifier] = []
+        self.client_name = client_name
 
     async def lookup(
         self,
@@ -83,7 +84,7 @@ class FakeResourceSource:
         return (
             {
                 "provisioned_client_id": identifier.value,
-                "client_name": "Example Bank",
+                "client_name": self.client_name,
                 "environment": "production",
             },
         )
@@ -287,11 +288,14 @@ def test_agent_keeps_mi3_in_all_non_data_internal_outputs() -> None:
 
 
 def test_agent_keeps_recovered_d2p_in_non_data_internal_outputs() -> None:
+    client_id = "792f7424-402e-4a7e-b4de-69f811435d9c"
     omitted = AirflowFailure(
         region=Region.US_01,
-        dag_id="client-dag",
+        dag_id=f"l3-main-{client_id}",
         run_id="run-24",
-        task_id="D2P",
+        task_id=(
+            "delivery_to_promise_other_products.delivery_to_promise_other_products_data"
+        ),
         start_at=datetime(2026, 9, 24, 5, tzinfo=UTC),
         end_at=datetime(2026, 9, 24, 6, tzinfo=UTC),
         log="discovery excerpt",
@@ -304,6 +308,9 @@ def test_agent_keeps_recovered_d2p_in_non_data_internal_outputs() -> None:
     agent = ProductionSupportWorkflow(
         source,
         clock=lambda: datetime(2026, 9, 25, 12, tzinfo=UTC),
+        resource_discovery=ResourceDiscoveryAgent(
+            FakeResourceSource("Bank of America")
+        ),
     )
 
     outcome = asyncio.run(agent.investigate("Do prod support"))
@@ -311,11 +318,20 @@ def test_agent_keeps_recovered_d2p_in_non_data_internal_outputs() -> None:
     assert source.fetched == [omitted.failure_id]
     assert outcome.diagnoses[0].kind.value != "omitted"
     assert (
-        "US\n\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
+        "US\n\n- Good\n  - check_for_subscriber_client_errors, D2P, MI3"
         in outcome.data_internal_report
     )
+    assert (
+        "Bank of America (792) failed on D2P—Other Products" in outcome.developer_report
+    )
     assert "Would you like to re-run:" in outcome.follow_up
-    assert "client-dag D2P job" in outcome.follow_up
+    assert (
+        f"Bank of America (792) l3-main-{client_id} D2P—Other Products job"
+        in outcome.follow_up
+    )
+    assert outcome.retry_candidates[0].label == (
+        "Bank of America (792): D2P—Other Products"
+    )
 
 
 def test_agent_does_not_omit_without_same_task_success() -> None:

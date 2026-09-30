@@ -67,6 +67,23 @@ cp configurations.yaml.example configurations.yaml
 environment variables and records which workspaces and environments you have
 turned on.
 
+Choose the parent directory where Data Engineering repositories are already
+checked out or should be cloned. The default is `~/ra`, but each developer can
+select a different location:
+
+```bash
+uv run agentbench setup
+```
+
+For non-interactive setup:
+
+```bash
+uv run agentbench setup --repositories-root ~/ra
+```
+
+The command creates the directory when it does not exist and records it at
+`workspaces.data_engineering.repositories.root`.
+
 **Every workspace is disabled by default.** An absent workspace, or an absent
 `enabled`, is false. Turn on only what you need.
 
@@ -110,6 +127,12 @@ exist to remove. Map them explicitly per call instead:
 
 Cortex inference runs through `warehouse-mcp`. Three things have to be true
 before it works, and none of them are on by default.
+
+The `remote-data-mcp` tool `make_snowflake_notebook` defaults to `prod_us`.
+Pass `environment="alpha"` or `environment="staging"` only when another
+Snowflake environment is intended. This default affects generated read-only
+notebooks only; `warehouse-mcp` retains its explicit deterministic sandbox
+configuration described below.
 
 **Install the driver.** The Snowflake connector is an optional extra, so that
 the sandbox and the test suite need no provider credentials:

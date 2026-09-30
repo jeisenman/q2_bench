@@ -1,5 +1,11 @@
 """Local adapters for development and deterministic tests."""
 
+from adapters.local.configuration import (
+    UserConfigurationError,
+    configure_data_engineering_repositories,
+    data_engineering_repositories_root,
+    load_configuration,
+)
 from adapters.local.datasets import InMemoryDatasetProvider
 from adapters.local.memory import (
     InMemoryAgentMemoryStore,
@@ -24,6 +30,10 @@ __all__ = [
     "MemoryNotFoundError",
     "ProdSupportOmissionsError",
     "ProdSupportUpdatesError",
+    "UserConfigurationError",
+    "configure_data_engineering_repositories",
+    "data_engineering_repositories_root",
     "filter_prod_support_updates",
+    "load_configuration",
     "load_prod_support_updates",
 ]

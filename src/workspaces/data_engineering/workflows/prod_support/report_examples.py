@@ -34,7 +34,7 @@ US
 
 CA
 - Ongoing
-- check_for_subscriber_client_errors, D2P, MI3
+  - check_for_subscriber_client_errors, D2P, MI3
 {COMPLIANT_MULTI_JOB_LINE}
 {COMPLIANT_SINGLE_JOB_LINE}
 {COMPLIANT_EVENTBUS_LINES}
@@ -42,8 +42,9 @@ CA
 
 The banner above is literal text. Do not render `:bangbang:` as an emoji or
 replace it with Unicode punctuation. Summarize configured omitted jobs with
-the exact region-level omission line instead of expanding them into client
-rows. Multi-job client rows contain exact job identifiers and no failure
+the exact nested region-level omission line instead of expanding them into
+client rows. An omission summary alone does not change a region from `Good` to
+`Ongoing`. Multi-job client rows contain exact job identifiers and no failure
 reasons.
 
 Non-compliant Data Internal example:

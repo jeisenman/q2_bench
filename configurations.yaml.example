@@ -14,6 +14,11 @@ workspaces:
   data_engineering:
     enabled: false
 
+    # Parent directory containing all local Data Engineering repository
+    # checkouts. Run `uv run agentbench setup` to choose and create it.
+    repositories:
+      root: ~/ra
+
     # Keys below are keys into DATABRICKS_TARGETS in
     # src/adapters/outbound/data_engineering/targets.py. A key with no registry
     # entry fails at load.

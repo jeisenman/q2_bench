@@ -245,7 +245,7 @@ def test_empty_omission_override_includes_every_job() -> None:
     )
 
     assert "US\n\n- Ongoing\n  - l3-main-client failed on D2P" in reports.data_internal
-    assert "l3-main-client delivery_to_promise_data job" in reports.follow_up
+    assert "l3-main-client D2P job" in reports.follow_up
 
 
 def test_large_resend_uses_raw_log_count_and_pd_rix_follow_up() -> None:

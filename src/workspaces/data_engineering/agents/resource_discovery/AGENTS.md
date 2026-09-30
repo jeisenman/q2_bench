@@ -23,8 +23,9 @@ ignored.
 `index.py` builds immutable indexes over authoritative, non-secret lookup
 records by normalized client UUID and parsed client name. The parser applies
 approved display conventions, including shortening
-`Scotiabank - Data Validation` to `Scotiabank DV`, while retaining both the
-original and parsed names as lookup keys.
+`Scotiabank - Data Validation` to `Scotiabank DV` and expanding `BoFA` to
+`Bank of America`, while retaining both the original and parsed names as
+lookup keys.
 `reporting.py` renders searches, alias confirmations, and feedback without raw
 conversation content. `agent_memory.AgentMemory` owns exact alias policy and
 depends on a storage port. `adapters.postgres` provides durable PostgreSQL

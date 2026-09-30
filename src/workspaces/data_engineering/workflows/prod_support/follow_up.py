@@ -24,6 +24,7 @@ from workspaces.data_engineering.workflows.prod_support.reporting_details import
     group_failures_for_reporting,
     is_hidden_from_report,
     is_resend_failure,
+    job_label,
 )
 
 LARGE_RESEND_THRESHOLD = 100
@@ -180,8 +181,8 @@ def _group_reruns_by_subject(
 
 
 def _rerun_jobs(failure: AirflowFailure) -> tuple[str, ...]:
-    """Return concise task names while preserving validated task identity."""
-    return (failure.task_id.rsplit(".", maxsplit=1)[-1],)
+    """Return the same concise job label used in developer reporting."""
+    return (job_label(failure.task_id),)
 
 
 def _unresolved_client_labels(

@@ -77,7 +77,7 @@ def regional_summary_error(
         if status != "- Ongoing":
             error = "status"
     elif shorthand:
-        if status != "- Ongoing":
+        if status != "- Good":
             error = "status"
         elif details != [f"  - {', '.join(shorthand)}"]:
             error = "details"

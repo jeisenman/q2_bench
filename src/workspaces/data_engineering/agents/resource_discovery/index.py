@@ -19,6 +19,9 @@ SCOTIABANK_DATA_VALIDATION = re.compile(
     r"^scotiabank\s*-\s*data\s+validation$",
     re.IGNORECASE,
 )
+CLIENT_DISPLAY_NAMES = {
+    "bofa": "Bank of America",
+}
 NAME_KEY_CHARACTERS = re.compile(r"[^a-z0-9]+")
 PARENTHETICAL = re.compile(r"\([^)]*\)")
 ACRONYM_WORDS = re.compile(r"[A-Za-z0-9]+")
@@ -31,7 +34,7 @@ def parse_client_name(name: str) -> str:
     normalized = " ".join(name.split())
     if SCOTIABANK_DATA_VALIDATION.fullmatch(normalized):
         return "Scotiabank DV"
-    return normalized
+    return CLIENT_DISPLAY_NAMES.get(normalized.casefold(), normalized)
 
 
 def client_name_index_key(name: str) -> str:

@@ -20,7 +20,7 @@ US
 CA
 
 - Good|Ongoing
-- check_for_subscriber_client_errors, D2P, MI3
+  - check_for_subscriber_client_errors, D2P, MI3
 
 Follow Up:
 - For CA, resend with <CA resend URL>:
@@ -53,10 +53,11 @@ Rules:
 - Say `suggest re-run` only for validated distinctness targets.
 - Say `Resending` while authorization or execution is pending.
 - Say `Resent` only after confirmed application success.
-- Mark a region `Good` only when it has no reportable findings.
+- Mark a region `Good` when it has no reportable findings. An omitted-job
+  summary does not make a region `Ongoing`.
 - Summarize configured omitted-job errors under the affected region with the
-  exact line `- check_for_subscriber_client_errors, D2P, MI3` when those jobs
-  failed. Do not expand that summary into client bullets.
+  exact nested line `  - check_for_subscriber_client_errors, D2P, MI3` when
+  those jobs failed. Do not expand that summary into client bullets.
 - Always include a `Follow Up:` section after Data Internal.
 - Keep Follow Up action-oriented and concise. Use `Send events for ...` for
   non-CA resend candidates and `Would you like to re-run:` for retry
@@ -66,10 +67,10 @@ Rules:
 - Under `Would you like to re-run:`, use one client per bullet and include the
   client label, full `l3-main-*` DAG ID, and comma-separated job identifiers.
 - Preserve this Markdown hierarchy exactly: region labels are plain text;
-  insert a blank line after each region label; regional status and omission
-  summaries are top-level bullets; client findings are two-space nested
-  bullets. Follow Up actions are top-level bullets, with rerun candidates
-  indented by two spaces beneath `Would you like to re-run:`.
+  insert a blank line after each region label; regional status is a top-level
+  bullet; omission summaries and client findings are two-space nested bullets.
+  Follow Up actions are top-level bullets, with rerun candidates indented by
+  two spaces beneath `Would you like to re-run:`.
 
 Compliant multi-job row:
 

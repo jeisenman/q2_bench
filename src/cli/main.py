@@ -30,6 +30,7 @@ from cli.prod_support_replay import (
     run_replay_case,
     write_recorded_outcome,
 )
+from cli.setup import setup
 from cli.skills import sync_skills
 from workspaces.data_engineering.benchmarks import (
     default_catalog,
@@ -69,6 +70,7 @@ def cli() -> None:
 cli.add_command(sync_skills)
 cli.add_command(capture_prod_support)
 cli.add_command(debug_prod_support)
+cli.add_command(setup)
 
 
 @cli.command("benchmarks")

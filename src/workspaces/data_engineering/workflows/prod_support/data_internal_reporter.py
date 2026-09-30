@@ -51,7 +51,7 @@ class DataInternalReporter:
             )
             lines.append(label)
             lines.append("")
-            lines.append("- Ongoing" if regional or omitted_summary else "- Good")
+            lines.append("- Ongoing" if regional else "- Good")
             lines.extend(
                 line
                 for group in group_failures_for_reporting(regional, identities)
@@ -62,5 +62,5 @@ class DataInternalReporter:
                 )
             )
             if omitted_summary:
-                lines.append(f"- {', '.join(omitted_summary)}")
+                lines.append(f"  - {', '.join(omitted_summary)}")
         return "\n".join(lines).replace(".", "")

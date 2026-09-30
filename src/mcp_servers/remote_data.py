@@ -11,6 +11,7 @@ from adapters.outbound.data_engineering import (
     DATABRICKS_TARGETS,
     OMS_TARGETS,
     SNOWFLAKE_TARGETS,
+    SnowflakeEnvironment,
 )
 from adapters.telemetry import configure_telemetry
 from mcp_servers.remote_data_notebooks import (
@@ -21,6 +22,7 @@ from mcp_servers.remote_data_notebooks import (
 from mcp_servers.remote_data_oms import execute_job_evidence, execute_oms_query
 
 SERVER_NAME = "remote-data"
+DEFAULT_SNOWFLAKE_ENVIRONMENT = SnowflakeEnvironment.PROD_US.value
 server = MCPServer(
     SERVER_NAME,
     description="Build read-only query notebooks and query approved remote data.",
@@ -97,14 +99,17 @@ async def make_adls_notebook(
 
 @server.tool(
     name="make_snowflake_notebook",
-    description="Build a bounded read-only Snowflake connector notebook.",
+    description=(
+        "Build a bounded read-only Snowflake connector notebook. Defaults to "
+        "US production when no environment is provided."
+    ),
 )
 async def make_snowflake_notebook(
-    environment: str,
     statement: str,
+    environment: str = DEFAULT_SNOWFLAKE_ENVIRONMENT,
     limit: int = 100,
 ) -> dict[str, object]:
-    """Return a Snowflake query notebook without executing it."""
+    """Return a Snowflake query notebook, defaulting to US production."""
     notebook = build_snowflake_notebook(environment, statement, limit)
     return {"target": notebook.target, "format": "SOURCE", "source": notebook.source}
 

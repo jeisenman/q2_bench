@@ -292,7 +292,7 @@ def test_mi3_and_d2p_omissions_are_summarized() -> None:
     )
 
     assert (
-        "CA\n\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3"
+        "CA\n\n- Good\n  - check_for_subscriber_client_errors, D2P, MI3"
         in report.data_internal
     )
     assert "Client A (111)" not in report.data_internal

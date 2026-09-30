@@ -45,8 +45,8 @@ def test_builds_bounded_adls_and_snowflake_notebooks() -> None:
     )
     snowflake = asyncio.run(
         remote_data.make_snowflake_notebook(
-            "staging",
             "select * from analytics.accounts",
+            environment="staging",
             limit=10,
         )
     )
@@ -58,11 +58,17 @@ def test_builds_bounded_adls_and_snowflake_notebooks() -> None:
     assert "fetchmany(10)" in snowflake["source"]
 
 
+def test_snowflake_defaults_to_us_production() -> None:
+    result = asyncio.run(remote_data.make_snowflake_notebook("select 1"))
+
+    assert result["target"] == "prod_us"
+    assert 'os.environ["SNOWFLAKE_PROD_US_ACCOUNT"]' in result["source"]
+
+
 def test_rejects_mutating_snowflake_notebook() -> None:
     with pytest.raises(RemoteDataNotebookError, match="read-only"):
         asyncio.run(
             remote_data.make_snowflake_notebook(
-                "prod_us",
                 "delete from analytics.accounts",
             )
         )
@@ -107,8 +113,8 @@ def test_rejects_mutating_snowflake_notebook() -> None:
         ),
         (
             lambda: remote_data.make_snowflake_notebook(
-                "unknown",
                 "select 1",
+                environment="unknown",
             ),
             "environment must be one of",
         ),

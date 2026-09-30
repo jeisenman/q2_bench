@@ -73,13 +73,13 @@ def test_default_omissions_only_hide_jobs_from_data_internal() -> None:
     assert "subscriber" in reports.developer
     assert "log_cleanup" not in reports.developer
     assert "D2P" in reports.developer
-    assert "US\n\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3" in (
+    assert "US\n\n- Good\n  - check_for_subscriber_client_errors, D2P, MI3" in (
         reports.data_internal
     )
     assert "MI3" in reports.data_internal
     assert "D2P" in reports.data_internal
     assert "Would you like to re-run:" in reports.follow_up
-    assert "mi_3_raw_output_validation" in reports.follow_up
+    assert "MI3" in reports.follow_up
     assert "check_for_subscriber_client_errors" in reports.follow_up
     assert "expire-logs-3" not in reports.follow_up
     for omitted in (
@@ -111,7 +111,7 @@ def test_subscriber_stays_on_omitted_line_without_recovery_success() -> None:
         context=ProdSupportReportContext(config=config),
     )
 
-    assert "US\n\n- Ongoing\n- check_for_subscriber_client_errors, D2P, MI3" in (
+    assert "US\n\n- Good\n  - check_for_subscriber_client_errors, D2P, MI3" in (
         reports.data_internal
     )
     assert "Subscriber validation failed on" not in reports.data_internal

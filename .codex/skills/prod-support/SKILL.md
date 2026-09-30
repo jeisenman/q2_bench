@@ -363,8 +363,9 @@ Apply these rules:
 - Map a high-quality distinctness target to its underlying RA job by omitting `high_quality_` and retaining the `ra_group.` prefix: for example, use `ra_group.get_core_deposit_accounts`, not `get_high_quality_core_deposit_accounts`.
 - Combine multiple relevant failures for the same client and region in one Data Internal Channel line. List each failed task or safe rerun target in that line. Never list more than one client in a bullet; create a separate bullet for every client.
 - When configured subscriber, D2P, or MI3 jobs fail, add the exact region-level
-  line `- check_for_subscriber_client_errors, D2P, MI3`; do not expand them into
-  client bullets.
+  nested line `  - check_for_subscriber_client_errors, D2P, MI3`; do not expand
+  them into client bullets or mark the region `Ongoing` solely because this
+  summary exists.
 - Data Internal bullets never end with periods. Preserve exact job identifiers,
   including underscores: `active_deposit_accounts`, never `active-deposit
   accounts`. For multiple jobs, omit causes and join identifiers with `and`:
