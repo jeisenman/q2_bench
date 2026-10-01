@@ -32,6 +32,8 @@ workspaces:
         auth: pat
         host_env: RA_DATABRICKS_HOST
         token_env: RA_DATABRICKS_TOKEN
+        cluster: radar-264227
+
 
       # Data Engineering PRODUCTION — pl-databricks-us-prod-01.
       # Production data. Requires enabled: true on BOTH this environment and
@@ -41,6 +43,7 @@ workspaces:
         auth: pat
         host_env: DE_DATABRICKS_HOST
         token_env: DE_DATABRICKS_TOKEN
+        cluster: pl-databricks-us-prod-01
 
     # Airflow connections, one per deployment. Each entry names environment
     # variables; values live in .env. Every key is required: a missing entry,
@@ -67,3 +70,9 @@ workspaces:
         host_env: CAAIRFLOWHOST
         user_env: CAAIRFLORUSER
         password_env: CAAIRFLOWPASSWORD
+      
+      oms:
+        pl-oms-us-primary: 71aa0ec0-8411-43a2-9908-ddd2add764eb
+        pl-oms-ca-primary: cde221ff-e7f4-4d39-be20-6f9d532cab60
+      
+  

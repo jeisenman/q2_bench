@@ -1,10 +1,10 @@
-"""Runnable stdio MCP server for the production-support agent."""
+"""Runnable MCP server for the production-support agent."""
 
 from __future__ import annotations
 
 import json
 import os
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from mcp.server.mcpserver import MCPServer
@@ -315,11 +315,24 @@ def prod_support_prompt(request: str) -> str:
     return f"{agent.definition.instructions}\n\nRequest: {request}"
 
 
-def main() -> None:
-    """Run the MCP server over stdio."""
+def main(
+    *,
+    transport: Literal["stdio", "streamable-http"] = "stdio",
+    host: str = "127.0.0.1",
+    port: int = 8000,
+) -> None:
+    """Run the MCP server over stdio or Streamable HTTP."""
     configure_telemetry(default_service_name=SERVER_NAME)
     JsonProdSupportOmissionStore().ensure()
-    server.run(transport="stdio")
+    if transport == "stdio":
+        server.run(transport="stdio")
+        return
+    server.run(
+        transport="streamable-http",
+        host=host,
+        port=port,
+        stateless_http=True,
+    )
 
 
 if __name__ == "__main__":

@@ -34,9 +34,7 @@ tool_timeout_sec = 120
 default_tools_approval_mode = "approve"
 
 [mcp_servers.prod_support]
-command = "uv"
-args = ["run", "--directory", "/Users/jeisenman/projects/agentsdk", "prod-support-mcp"]
-env = { PROD_SUPPORT_SOURCE = "production", Q2_MCP_DEBUG = "1", Q2_OTEL_EXPORTER = "none" }
+url = "http://127.0.0.1:8765/mcp"
 startup_timeout_sec = 20
 tool_timeout_sec = 300
 default_tools_approval_mode = "prompt"

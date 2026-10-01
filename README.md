@@ -244,7 +244,7 @@ Different MCP servers can import the same agent and select different bindings.
 The framework-neutral composition layer keeps MCP transport and authentication
 outside the agent.
 
-Run the bundled stdio MCP server directly:
+Run the bundled MCP server directly over stdio:
 
 ```bash
 uv run prod-support-mcp
@@ -257,13 +257,17 @@ local path with `PROD_SUPPORT_UPDATES_PATH`; reads are validated and never
 modify the source file.
 
 The `run_prod_support` tool uses the live production source when launched by
-the host-side entry point above. The Compose service loads established regional
-Airflow credentials from the ignored repository `.env` and explicitly selects
+the host-side entry point above. The long-running Compose service loads
+established regional Airflow credentials from the ignored repository `.env`,
+serves Streamable HTTP on `http://127.0.0.1:8765/mcp`, and explicitly selects
 the read-only production source:
 
 ```bash
-docker compose run --rm --no-deps prod-support-mcp
+uv run python scripts/restart_codex_runtime.py
 ```
+
+The restart utility rebuilds and recreates only the MCP container, so Codex
+stays open and reconnects through the stable localhost endpoint.
 
 Production mode fails immediately when any required US or CA Airflow credential
 or Resource Discovery credential is missing. It discovers failed task

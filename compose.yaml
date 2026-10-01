@@ -25,6 +25,12 @@ x-agentbench: &agentbench
     - ./configurations.yaml:/workspace/configurations.yaml:ro
     - ${HOME}/.aws:/home/agentbench/.aws:ro
     - ${CODEX_HOME}:/mnt/codex-host:ro
+    - type: bind
+      source: ${HOME}/projects/pl-data-plugins/product_support_updates.json
+      target: /workspace/product_support_updates.json
+      read_only: true
+      bind:
+        create_host_path: false
     - ./var/mlflow/assistant:/home/agentbench/.mlflow/assistant
 
 services:
@@ -107,11 +113,28 @@ services:
       CODEX_HOME: /home/agentbench/.bedrock_codex
       CODEX_SOURCE_HOME: /mnt/codex-host
       HOME: /home/agentbench
+      PROD_SUPPORT_MCP_HOST: 0.0.0.0
+      PROD_SUPPORT_MCP_PORT: "8000"
+      PROD_SUPPORT_MCP_TRANSPORT: streamable-http
       PROD_SUPPORT_SOURCE: production
+      PROD_SUPPORT_UPDATES_PATH: /workspace/product_support_updates.json
+      Q2_MCP_DEBUG: "1"
+      Q2_OTEL_EXPORTER: none
+      RESOURCE_DISCOVERY_CLIENT_LOOKUP: /workspace/src/workspaces/data_engineering/skills/resource-discovery/references/client-guuid-lookup.json
       SSL_CERT_FILE: /home/agentbench/.aws/q2-ca-bundle.pem
     command:
       - prod-support-mcp
-    stdin_open: true
+    ports:
+      - "127.0.0.1:8765:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import socket; socket.create_connection(('127.0.0.1', 8000), 2).close()"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   evaluation:
     <<: *agentbench
