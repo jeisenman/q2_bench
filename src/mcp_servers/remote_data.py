@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
 from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 
+from adapters.databricks import DatabricksRunRequest, submit_databricks_run
 from adapters.outbound.data_engineering import (
     ADLS_TARGETS,
     DATABRICKS_TARGETS,
@@ -72,7 +75,60 @@ async def make_databricks_notebook(
 ) -> dict[str, object]:
     """Return a Databricks source notebook without executing it."""
     notebook = build_databricks_notebook(platform, code)
-    return {"target": notebook.target, "format": "SOURCE", "source": notebook.source}
+    return {
+        "target": notebook.target,
+        "format": "SOURCE",
+        "source": notebook.source,
+        "source_sha256": hashlib.sha256(notebook.source.encode()).hexdigest(),
+    }
+
+
+@server.tool(
+    name="run_databricks_notebook",
+    description=(
+        "Submit an exact reviewed Databricks SOURCE notebook to an approved "
+        "existing cluster."
+    ),
+)
+async def run_databricks_notebook(
+    platform: str,
+    source: str,
+    source_sha256: str,
+    existing_cluster_id: str,
+    options: dict[str, Any] | None = None,
+) -> dict[str, object]:
+    """Import and trigger one reviewed Databricks notebook run."""
+    settings = options or {}
+    unknown_options = sorted(set(settings) - {"run_name", "timeout_seconds"})
+    if unknown_options:
+        message = f"unsupported options: {', '.join(unknown_options)}"
+        raise ValueError(message)
+    run_name = settings.get("run_name", "remote-data-mcp")
+    timeout_seconds = settings.get("timeout_seconds", 3_600)
+    if not isinstance(run_name, str):
+        message = "options.run_name must be a string"
+        raise TypeError(message)
+    if not isinstance(timeout_seconds, int):
+        message = "options.timeout_seconds must be an integer"
+        raise TypeError(message)
+    submitted = await asyncio.to_thread(
+        submit_databricks_run,
+        DatabricksRunRequest(
+            platform=platform,
+            source=source,
+            source_sha256=source_sha256,
+            existing_cluster_id=existing_cluster_id,
+            run_name=run_name,
+            timeout_seconds=timeout_seconds,
+        ),
+    )
+    return {
+        "target": submitted.target,
+        "notebook_path": submitted.notebook_path,
+        "run_id": submitted.run_id,
+        "source_sha256": submitted.source_sha256,
+        "status": "submitted",
+    }
 
 
 @server.tool(

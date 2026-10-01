@@ -11,6 +11,7 @@ mcp:
   tools:
     - list_remote_data_targets
     - make_databricks_notebook
+    - run_databricks_notebook
     - make_adls_notebook
     - make_snowflake_notebook
     - query_oms

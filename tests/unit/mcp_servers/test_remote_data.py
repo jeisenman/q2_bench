@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 
 import pytest
 
+from adapters.databricks import SubmittedDatabricksRun
 from mcp_servers import remote_data
 from mcp_servers.remote_data_notebooks import RemoteDataNotebookError
 
@@ -32,6 +34,63 @@ def test_builds_databricks_boilerplate_for_ra() -> None:
     assert result["target"] == "pl-databricks-us-rapreprod-01"
     assert result["source"].startswith("# Databricks notebook source")
     assert "display(spark.range(1))" in result["source"]
+    assert (
+        result["source_sha256"] == hashlib.sha256(result["source"].encode()).hexdigest()
+    )
+
+
+def test_delegates_reviewed_databricks_run_submission(monkeypatch) -> None:
+    timeout_seconds = 600
+
+    def fake_submit(request):
+        assert request.platform == "ra"
+        assert request.source == "# Databricks notebook source\n"
+        assert request.source_sha256 == "digest"
+        assert request.existing_cluster_id == "cluster-123"
+        assert request.run_name == "investigation"
+        assert request.timeout_seconds == timeout_seconds
+        return SubmittedDatabricksRun(
+            target="pl-databricks-us-rapreprod-01",
+            notebook_path="/Shared/remote-data-mcp/ra/digest",
+            run_id=42,
+            source_sha256="digest",
+        )
+
+    monkeypatch.setattr(remote_data, "submit_databricks_run", fake_submit)
+
+    result = asyncio.run(
+        remote_data.run_databricks_notebook(
+            "ra",
+            "# Databricks notebook source\n",
+            "digest",
+            "cluster-123",
+            options={
+                "run_name": "investigation",
+                "timeout_seconds": timeout_seconds,
+            },
+        )
+    )
+
+    assert result == {
+        "target": "pl-databricks-us-rapreprod-01",
+        "notebook_path": "/Shared/remote-data-mcp/ra/digest",
+        "run_id": 42,
+        "source_sha256": "digest",
+        "status": "submitted",
+    }
+
+
+def test_rejects_unknown_databricks_run_option() -> None:
+    with pytest.raises(ValueError, match="unsupported options: wait"):
+        asyncio.run(
+            remote_data.run_databricks_notebook(
+                "ra",
+                "# Databricks notebook source\n",
+                "digest",
+                "cluster-123",
+                options={"wait": True},
+            )
+        )
 
 
 def test_builds_bounded_adls_and_snowflake_notebooks() -> None:

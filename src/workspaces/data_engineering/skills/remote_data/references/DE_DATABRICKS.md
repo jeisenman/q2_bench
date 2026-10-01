@@ -51,8 +51,9 @@ Generate the notebook with:
 
 The target is `pl-databricks-us-prod-01`, so all execution must be treated as
 production access. `make_databricks_notebook` wraps the supplied code as a
-Databricks SOURCE notebook; it does not execute the code or prove that it is
-read-only.
+Databricks SOURCE notebook and returns its SHA-256 digest. After reviewing the
+exact source, `run_databricks_notebook` can import and submit it to an approved
+existing cluster. The generator does not prove that supplied code is read-only.
 
 A typical bounded folder investigation is:
 
@@ -73,6 +74,8 @@ Keep the generated code read-only:
 - never call `write`, `save`, `insert`, `merge`, `delete`, `vacuum`, or
   filesystem removal or move operations.
 
-Review the generated target and source before running it. If the task belongs
-to RA preproduction rather than DE production, use
+Review the generated target and source before passing the returned digest to
+`run_databricks_notebook`. The Data Engineering workspace and `de` environment
+must both be enabled in `configurations.yaml`. If the task belongs to RA
+preproduction rather than DE production, use
 [RA_DATABRICKS.md](RA_DATABRICKS.md).

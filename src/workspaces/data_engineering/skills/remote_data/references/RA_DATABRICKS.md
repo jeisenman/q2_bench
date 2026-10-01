@@ -52,7 +52,8 @@ display(data.limit(100))
 ```
 
 The notebook generator accepts arbitrary Python code. Keep it read-only and
-review it before execution:
+review it before passing the returned digest and an approved existing cluster
+ID to `run_databricks_notebook`:
 
 - scope reads to one client, dataset, version, and date where possible;
 - specify CSV options found in the source job instead of relying on inference;

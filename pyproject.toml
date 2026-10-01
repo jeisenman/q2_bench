@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.1",
+    "databricks-sdk>=0.142",
     "duckdb>=1.5.6",
     "inspect-ai>=0.3",
     "mcp>=1.0",

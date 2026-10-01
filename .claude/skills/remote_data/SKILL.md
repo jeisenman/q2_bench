@@ -13,14 +13,17 @@ classifying it.
 
 1. Call `list_remote_data_targets` when the target is not already explicit.
 2. Use `make_databricks_notebook` for Data Engineering or RA Databricks code.
-3. Use `make_adls_notebook` for bounded reads from dev, staging, US production,
+   Review the returned SOURCE and retain its `source_sha256`.
+3. Use `run_databricks_notebook` only after reviewing that exact source. Pass
+   its digest and an approved existing cluster ID; the tool returns after the
+   one-time run is submitted.
+4. Use `make_adls_notebook` for bounded reads from dev, staging, US production,
    or CA production ADLS.
-4. Use `make_snowflake_notebook` for bounded read-only SQL. It defaults to
+5. Use `make_snowflake_notebook` for bounded read-only SQL. It defaults to
    `prod_us`; pass `alpha` or `staging` only when the user explicitly requests
    another environment.
-5. Use `query_oms` or `query_job_evidence` only for raw OMS evidence from
+6. Use `query_oms` or `query_job_evidence` only for raw OMS evidence from
    `pl-oms-us-primary` or `pl-oms-ca-primary`.
-6. Review generated notebook source before running it in a remote workspace.
 
 ## Snowflake setup
 

@@ -4076,6 +4076,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
+    { name = "databricks-sdk" },
     { name = "duckdb" },
     { name = "inspect-ai" },
     { name = "mcp" },
@@ -4109,6 +4110,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1" },
+    { name = "databricks-sdk", specifier = ">=0.142" },
     { name = "duckdb", specifier = ">=1.5.6" },
     { name = "inspect-ai", specifier = ">=0.3" },
     { name = "mcp", specifier = ">=1.0" },
