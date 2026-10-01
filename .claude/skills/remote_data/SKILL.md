@@ -44,6 +44,5 @@ OMS classification belongs to production-support logic, not this skill.
 Read only the guide for the selected target:
 
 - [Snowflake](references/SNOWFLAKE.md)
-- [Data Engineering Databricks](references/DE_DATABRICKS.md)
-- [RA Databricks](references/RA_DATABRICKS.md)
+- [Databricks](references/DATABRICKS.md)
 - [OMS and Airflow task translation](references/OMS.md)
