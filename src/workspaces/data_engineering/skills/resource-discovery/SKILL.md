@@ -1,6 +1,6 @@
 ---
 name: resource-discovery
-description: Query the PrecisionLender Resource Discovery API for client names, client GUIDs, environments, database servers, databases, storage, and DataLake resources, and maintain a quick UUID-to-client lookup from those searches. Use when asked to look up client resources.
+description: Query Resource Discovery, local Contx metadata, and allowlisted Azure resource metadata for client names, client GUIDs, environments, databases, storage, DataLake, and cloud resources. Use when asked to look up client resources.
 ---
 
 # Resource Discovery
@@ -28,8 +28,33 @@ Use this skill to query the internal Resource Discovery API. The maintained quic
    python3 {{SKILL_DIR}}/scripts/resource_discovery_api.py /api/v1/resources --query name=<resource-name>
    ```
 
-5. Summarize only non-secret fields returned by the API. Never print access tokens, client secrets, or raw credential values.
-6. If the API returns multiple records, report each one and call out the ambiguity rather than choosing silently.
+5. For a question about a client's database, storage, DataLake, or complete
+   effective resource set, call `lookup_contx_resources`. Pass the client name
+   as written and select `resource_type` from `database`, `storage`,
+   `datalake`, or `all`. Use `resource_kind` only when the caller requests one
+   exact Contx datastore kind. The tool resolves the name to one Resource
+   Discovery UUID. When Resource Discovery has no exact canonical-name match,
+   it may use one exact normalized Contx client-group name to identify the
+   partition UUID. It then applies client-group precedence with shared-group
+   fallback for each resource kind.
+6. Summarize only non-secret fields returned by the API or Contx capability.
+   Never print access tokens, client secrets, secret references, users, or raw
+   credential values.
+7. If Resource Discovery returns multiple client UUIDs, report the ambiguity.
+   Do not query Contx until the client identity is unique.
+8. For Azure resource inventory, call `lookup_azure_resources` with one target:
+   - `ra_preprod` uses PrecisionLender PreProd
+     `cde221ff-e7f4-4d39-be20-6f9d532cab60`.
+   - `data_engineering` uses PrecisionLender DataScience
+     `b7b3f313-bcc8-4754-aa71-a8c9a910841c`.
+   - `production` covers production RA and Data Engineering resources in
+     PrecisionLender Production
+     `71aa0ec0-8411-43a2-9908-ddd2add764eb`.
+9. When the Azure capability returns `login_required` or
+   `subscription_access_required`, give the returned message and command to the
+   user and wait for them to complete `az login` before retrying. The capability
+   passes the subscription on every resource command and does not depend on the
+   globally active subscription.
 
 When resolving multiple client UUIDs for one production-support run, use the
 Resource Discovery batch capability once for the complete mapping. Do not loop
@@ -69,10 +94,34 @@ Resources:
 python3 {{SKILL_DIR}}/scripts/resource_discovery_api.py /api/v1/resources
 ```
 
+Client resources from the configured Contx checkout:
+
+```text
+lookup_contx_resources(
+  client_name="Bank United",
+  resource_kind="PrecisionLenderSqlServer",
+  environment="production",
+)
+```
+
+Azure resources in RA preprod:
+
+```text
+lookup_azure_resources(
+  target="ra_preprod",
+  resource_group="PL-GROUP-US-DIPIPELINE-PREPROD",
+)
+```
+
 ## Report Shape
 
 Return a concise answer with:
 
 - `Finding`: the direct API answer.
-- `Resource Discovery`: client name, provisioned client ID, subdomain, environment, zone, service, resource set, database, storage, and DataLake fields when present.
+- `Resource Discovery`: client name and provisioned client ID.
+- `Contx`: selected group, resource name and kind, environment, zone, database,
+  database server, storage, DataLake, region, and resource group when present.
+- `Azure`: target, subscription name and ID, command, result count, resource
+  name, type, group, location, and ID. If login is required, return the exact
+  message and command before any resource result.
 - `Ambiguities`: multiple API records, missing records, or the identifier needed to disambiguate.

@@ -6,6 +6,7 @@ import yaml
 from adapters.local.configuration import (
     UserConfigurationError,
     configure_data_engineering_repositories,
+    data_engineering_contx_repository,
     data_engineering_repositories_root,
     load_configuration,
 )
@@ -132,6 +133,35 @@ def test_read_repositories_root_requires_non_empty_path(tmp_path: Path) -> None:
 
     with pytest.raises(UserConfigurationError, match="must be a non-empty path"):
         data_engineering_repositories_root(configuration)
+
+
+def test_read_contx_repository_expands_configured_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configuration = tmp_path / "configurations.yaml"
+    monkeypatch.setenv("HOME", str(tmp_path))
+    configuration.write_text(
+        "version: 1\nworkspaces:\n  data_engineering:\n"
+        "    repositories:\n      contx: ~/source/contx\n",
+        encoding="utf-8",
+    )
+
+    assert data_engineering_contx_repository(configuration) == (
+        tmp_path / "source" / "contx"
+    )
+
+
+def test_read_contx_repository_requires_non_empty_path(tmp_path: Path) -> None:
+    configuration = tmp_path / "configurations.yaml"
+    configuration.write_text(
+        "version: 1\nworkspaces:\n  data_engineering:\n"
+        "    repositories:\n      contx: ''\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(UserConfigurationError, match=r"repositories\.contx"):
+        data_engineering_contx_repository(configuration)
 
 
 def test_configure_repositories_requires_template_for_new_configuration(

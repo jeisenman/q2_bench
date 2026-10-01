@@ -60,6 +60,7 @@ workspaces:
     enabled: true
     repositories:
       root: ~/ra
+      contx: ~/ra/contx
     databricks:
       de:
         enabled: false
@@ -81,6 +82,11 @@ registry entry fails at load, naming the valid keys.
 `workspaces.data_engineering.repositories.root` is the parent directory for
 all Data Engineering repository checkouts. It defaults to `~/ra` in the
 template but is explicitly per-user.
+
+`workspaces.data_engineering.repositories.contx` is the Contx checkout used by
+the Resource Discovery MCP. It may be anywhere on disk and is independent of
+`repositories.root`. The MCP reads `Metadata/<environment>` from the checkout's
+active branch, so it can use `DE-3041` before that metadata reaches `master`.
 
 Run `uv run agentbench setup` to choose the directory interactively, create it
 when absent, and write the value to `configurations.yaml`. Existing unrelated

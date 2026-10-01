@@ -10,7 +10,11 @@ from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
 
+from adapters.local import data_engineering_contx_repository
 from adapters.resource_discovery import (
+    AzureResourceSource,
+    ContxClientResourceResolver,
+    ContxMetadataSource,
     IndexedResourceDiscoverySource,
     JsonClientLookupSource,
     ResourceDiscoveryApiSource,
@@ -37,6 +41,19 @@ def _source() -> IndexedResourceDiscoverySource:
         ResourceDiscoveryApiSource.from_environment(),
         JsonClientLookupSource(configured_client_lookup_path()),
     )
+
+
+@lru_cache(maxsize=1)
+def _contx_resolver() -> ContxClientResourceResolver:
+    return ContxClientResourceResolver(
+        _source(),
+        ContxMetadataSource(data_engineering_contx_repository()),
+    )
+
+
+@lru_cache(maxsize=1)
+def _azure_source() -> AzureResourceSource:
+    return AzureResourceSource.create()
 
 
 @server.tool(
@@ -98,6 +115,65 @@ async def lookup_resources_batch(
             for identifier, identifier_records in zip(parsed, records, strict=True)
         ],
     }
+
+
+@server.tool(
+    name="lookup_contx_resources",
+    description=(
+        "Resolve one client name to a unique client UUID, then "
+        "return effective non-secret resources from the configured Contx "
+        "metadata checkout. Filter broadly by all, database, datalake, or "
+        "storage, or by one exact Contx resource kind."
+    ),
+)
+async def lookup_contx_resources(
+    client_name: str,
+    resource_type: str = "all",
+    resource_kind: str | None = None,
+    environment: str = "production",
+) -> dict[str, object]:
+    """Resolve a client name and return safe effective Contx resources."""
+    records = await _contx_resolver().lookup(
+        client_name,
+        resource_type=resource_type,
+        resource_kind=resource_kind,
+        environment=environment,
+    )
+    serialized = [_record(record) for record in records]
+    return {
+        "client_name": client_name,
+        "environment": environment,
+        "resource_type": resource_type,
+        "resource_kind": resource_kind,
+        "count": len(serialized),
+        "records": serialized,
+    }
+
+
+@server.tool(
+    name="lookup_azure_resources",
+    description=(
+        "List read-only Azure resource metadata in ra_preprod, "
+        "data_engineering, or production. The tool selects the required "
+        "subscription explicitly. When Azure CLI authentication or access is "
+        "missing, return an az login prompt for the user instead of querying."
+    ),
+)
+async def lookup_azure_resources(
+    target: str,
+    name: str | None = None,
+    resource_group: str | None = None,
+    resource_type: str | None = None,
+    max_results: int = 100,
+) -> dict[str, object]:
+    """Return bounded Azure resources or an actionable login prompt."""
+    return await _azure_source().lookup(
+        target,
+        name=name,
+        resource_group=resource_group,
+        resource_type=resource_type,
+        max_results=max_results,
+    )
 
 
 def _record(record: ResourceRecord) -> dict[str, object]:

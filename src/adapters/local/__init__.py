@@ -3,6 +3,7 @@
 from adapters.local.configuration import (
     UserConfigurationError,
     configure_data_engineering_repositories,
+    data_engineering_contx_repository,
     data_engineering_repositories_root,
     load_configuration,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "ProdSupportUpdatesError",
     "UserConfigurationError",
     "configure_data_engineering_repositories",
+    "data_engineering_contx_repository",
     "data_engineering_repositories_root",
     "filter_prod_support_updates",
     "load_configuration",

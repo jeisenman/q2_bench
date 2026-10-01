@@ -11,6 +11,8 @@ mcp:
   tools:
     - lookup_resources
     - lookup_resources_batch
+    - lookup_contx_resources
+    - lookup_azure_resources
 state:
   # Seeded on first sync, then owned by the harness at runtime. Excluded
   # from drift checks so using the skill does not fail the quality gate.

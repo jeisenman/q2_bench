@@ -46,6 +46,14 @@ class UserConfigurationError(ValueError):
         )
 
     @classmethod
+    def missing_contx_repository(cls, path: Path) -> UserConfigurationError:
+        """Return an error for an absent Contx repository path."""
+        return cls(
+            f"{path}: workspaces.data_engineering.repositories.contx "
+            "must be a non-empty path"
+        )
+
+    @classmethod
     def repository_root_is_file(cls, path: Path) -> UserConfigurationError:
         """Return an error when the selected repository root is a file."""
         return cls(f"Data Engineering repositories root is not a directory: {path}")
@@ -84,6 +92,20 @@ def data_engineering_repositories_root(
     if not isinstance(root, str) or not root.strip():
         raise UserConfigurationError.missing_repository_root(path)
     return Path(root).expanduser()
+
+
+def data_engineering_contx_repository(
+    path: Path = DEFAULT_CONFIGURATION_PATH,
+) -> Path:
+    """Return the configured Contx repository checkout."""
+    configuration = load_configuration(path)
+    workspaces = _required_mapping(configuration, "workspaces", path)
+    data_engineering = _required_mapping(workspaces, "data_engineering", path)
+    repositories = _required_mapping(data_engineering, "repositories", path)
+    contx = repositories.get("contx")
+    if not isinstance(contx, str) or not contx.strip():
+        raise UserConfigurationError.missing_contx_repository(path)
+    return Path(contx).expanduser()
 
 
 def configure_data_engineering_repositories(

@@ -32,6 +32,8 @@ depends on a storage port. `adapters.postgres` provides durable PostgreSQL
 storage; `adapters.local` provides the deterministic test implementation.
 `__init__.py` defines the public API.
 The shared observability boundary emits `agent.resource-discovery.run`.
+The capability MCP also exposes bounded Azure resource inventory through the
+locally authenticated Azure CLI.
 
 The agent holds no mutable state itself. Confirmed alias memory is scoped and
 persisted through the injected memory service. Provider and database concerns
@@ -46,7 +48,12 @@ remain behind typed ports.
 - `AgentMemory`: optional injected exact-alias service.
 - `adapters.resource_discovery`: production composition short-circuits unique
   local JSON identities before calling the Resource Discovery API. The lookup
-  path can be overridden with `RESOURCE_DISCOVERY_CLIENT_LOOKUP`.
+  path can be overridden with `RESOURCE_DISCOVERY_CLIENT_LOOKUP`. The dedicated
+  MCP also composes that identity source with `ContxMetadataSource`.
+  `lookup_contx_resources` resolves a client name to one provisioned UUID,
+  using an exact normalized Contx client-group name when Resource Discovery has
+  no exact canonical-name match. It selects the client partition and applies
+  client-group precedence with shared-group fallback per resource kind.
 - `adapters.mcp.ResourceDiscoveryMcpSource`: production-support MCP mode calls
   the dedicated read-only Resource Discovery server through the same source
   protocol. Its batch path sends all client mappings in one MCP capability call
@@ -56,6 +63,15 @@ remain behind typed ports.
   evidence history, and tenant row-level security.
 - External service: Resource Discovery API, when a production adapter is
   injected.
+- Local provider: a Contx checkout configured at
+  `workspaces.data_engineering.repositories.contx`. The checkout's active
+  branch supplies `Metadata/<environment>/application_partitions.json` and
+  `datastores.json`.
+- `AzureResourceSource`: read-only Azure CLI adapter with fixed logical targets
+  for RA preprod, Data Engineering, and shared production. It verifies login
+  and subscription access before running `az resource list`, passes the
+  subscription ID on every command, bounds returned records, and allowlists
+  resource identity fields.
 - Credentials: owned and validated by the external API adapter, never this
   package.
 - Mutable storage: optional PostgreSQL alias memories. Raw prompts, provider
@@ -80,15 +96,27 @@ remain behind typed ports.
 6. If local identity and memory cannot resolve the request, call the live
    Resource Discovery API. Production support uses the batch path for multiple
    client UUIDs before reporting.
-7. Validate returned records, discard unknown fields, and order safe metadata
+7. For client resource questions, the MCP resolves a unique client name through
+   Resource Discovery or one exact normalized Contx client-group name, finds
+   the UUID in the requested Contx environment, and selects effective datastore
+   instances. A client-group instance wins for its resource kind; the shared
+   group supplies kinds absent from the client group. Broad filters cover
+   databases, storage, DataLake, or all resources, while an exact kind filter
+   supports specific Contx datastore requests.
+8. Validate returned records, discard unknown fields, and order safe metadata
    by a stable key.
-8. Classify the result as `not_found`, `unique`, or `ambiguous`.
-9. Render only the fixed non-secret metadata fields. Preserve an explicit
+9. For Azure inventory, map the requested logical target to its fixed
+   subscription ID. Return an `az login` prompt when the CLI has no active
+   session or the identity lacks access. Otherwise run the filtered resource
+   listing with the explicit subscription and return only bounded allowlisted
+   fields.
+10. Classify the result as `not_found`, `unique`, or `ambiguous`.
+11. Render only the fixed non-secret metadata fields. Preserve an explicit
    reviewed resend URL and `prod_support_ignore` marker for typed downstream
    consumers; never derive either value from a subdomain or environment.
-10. Return the report, correlation ID, tool name `ResourceDiscovery`, and safe
+12. Return the report, correlation ID, tool name `ResourceDiscovery`, and safe
    cardinality attributes.
-11. End the delegated agent span; memory operations and async work retain its
+13. End the delegated agent span; memory operations and async work retain its
    parent context.
 
 Invalid identifiers, duplicate request attributes, invalid source records, and
@@ -101,7 +129,10 @@ Focused tests cover identifier validation, source failure propagation,
 deterministic ordering, not-found/unique/ambiguous reports, secret-field
 exclusion, JSON short-circuiting, acronym proposals, scoped confirmation,
 automatic alias promotion, rejection, PostgreSQL schema policy, maintained UUID
-resolution, and `AgentResult` tool metadata. Repository formatting, lint,
+resolution, Contx group precedence and resource filters, and `AgentResult`
+tool metadata. Azure tests cover all subscription mappings, authentication and
+access prompts, safe field filtering, command filters, result bounds, and
+invalid output. Repository formatting, lint,
 typing, test, file-length, and documentation checks verify the package
 boundaries.
 Shared observability tests verify W3C parentage, error recording, and exclusion

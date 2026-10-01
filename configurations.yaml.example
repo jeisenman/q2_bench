@@ -18,6 +18,9 @@ workspaces:
     # checkouts. Run `uv run agentbench setup` to choose and create it.
     repositories:
       root: ~/ra
+      # Contx checkout containing Metadata/<environment> JSON snapshots.
+      # The active branch supplies the metadata, currently DE-3041.
+      contx: ~/ra/contx
 
     # Keys below are keys into DATABRICKS_TARGETS in
     # src/adapters/outbound/data_engineering/targets.py. A key with no registry
