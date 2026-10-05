@@ -1,9 +1,0 @@
-schema_version: 1
-id: alpha-test
-workspace: data_engineering
-display_name: Alpha Test
-summary: Validate data-engineering branch changes in Alpha with deployment and data evidence.
-harnesses:
-  - claude
-  - codex
-

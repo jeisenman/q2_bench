@@ -8,7 +8,11 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 
-from adapters.databricks import DatabricksRunRequest, submit_databricks_run
+from adapters.databricks import (
+    DatabricksRunRequest,
+    submit_databricks_run,
+    upload_integration_branch,
+)
 from adapters.outbound.data_engineering import (
     ADLS_TARGETS,
     DATABRICKS_TARGETS,
@@ -128,6 +132,28 @@ async def run_databricks_notebook(
         "run_id": submitted.run_id,
         "source_sha256": submitted.source_sha256,
         "status": "submitted",
+    }
+
+
+@server.tool(
+    name="upload_databricks_integration_branch",
+    description=(
+        "Run the local dsint helper to upload master/main or one RA-#### branch "
+        "to the Data Science integration-testing workspace."
+    ),
+)
+async def upload_databricks_integration_branch(branch: str) -> dict[str, object]:
+    """Upload one explicitly selected branch without returning credentials."""
+    uploaded = await asyncio.to_thread(upload_integration_branch, branch)
+    return {
+        "branch": uploaded.branch,
+        "notebook_path": uploaded.notebook_path,
+        "output": uploaded.output,
+        "credential_requirements": [
+            "DE_DATABRICKS_HOST",
+            "DE_DATABRICKS_TOKEN",
+        ],
+        "status": "uploaded",
     }
 
 

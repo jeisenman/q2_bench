@@ -1,0 +1,181 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC # Production candidate discovery
+# MAGIC
+# MAGIC Read-only template for finding clients whose upstream field is populated.
+# MAGIC Resolve paths from the changed job and keep the client/date window bounded.
+# MAGIC
+# MAGIC After discovery, use the remote-data MCP
+# MAGIC `upload_databricks_integration_branch` tool for `master` and the selected
+# MAGIC `RA-####` branch. Run identical inputs through both uploaded versions.
+
+# COMMAND ----------
+
+"""Find bounded field-flow candidates in a Databricks notebook session."""
+
+# MAGIC %run /Shared/Universal/ADLSConnections
+
+# COMMAND ----------
+
+import json
+from datetime import UTC, datetime
+from typing import Any
+
+from pyspark.sql import functions as spark_functions
+
+dbutils: Any = globals()["dbutils"]
+spark: Any = globals()["spark"]
+
+CLIENT_ID = "99b9412b-70fd-4221-8431-d1b3934889ec"
+START = datetime(2026, 9, 1, tzinfo=UTC)
+END = datetime(2026, 10, 1, tzinfo=UTC)
+HOST = "pladls2usstaging.dfs.core.windows.net"
+RA_FILE = "DatabaseOutput/dbStagingDeliveryToPromiseAggregates.csv"
+FIELDS = [
+    "TreasuryInterestBearingBalance",
+    "TreasuryInterestBearingAverageBalance",
+    "TreasuryHybridBalance",
+    "TreasuryHybridAverageBalance",
+]
+
+
+def parse_timestamp(path: str, marker: str) -> datetime | None:
+    """Parse a timestamp from one partition path."""
+    value = path.rstrip("/").split(marker)[-1]
+    try:
+        return datetime.strptime(value[:16], "%Y-%m-%d-%H-%M").replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+
+root = f"abfss://datalake@{HOST}/ClientData/Client={CLIENT_ID}/DataIngress"
+file_paths = []
+for request_item in dbutils.fs.ls(root):
+    if "Request=" not in request_item.path:
+        continue
+    request_timestamp = parse_timestamp(request_item.path, "Request=")
+    if request_timestamp is None or not (START <= request_timestamp < END):
+        continue
+    for run_item in dbutils.fs.ls(request_item.path):
+        if "RaRun=" not in run_item.path:
+            continue
+        run_timestamp = parse_timestamp(run_item.path, "RaRun=")
+        if run_timestamp is None or not (START <= run_timestamp < END):
+            continue
+        candidate = run_item.path.rstrip("/") + "/" + RA_FILE
+        try:
+            dbutils.fs.ls(candidate)
+        except Exception:
+            continue
+        file_paths.append(candidate)
+
+if not file_paths:
+    dbutils.notebook.exit(
+        json.dumps(
+            {"client_id": CLIENT_ID, "status": "no_run_files_in_window"}, sort_keys=True
+        )
+    )
+
+frame = (
+    spark.read.option("header", True)
+    .option("inferSchema", False)
+    .csv(sorted(file_paths))
+    .withColumn(
+        "_run_date",
+        spark_functions.regexp_extract(
+            spark_functions.input_file_name(), r"RaRun=(\d{4}-\d{2}-\d{2})", 1
+        ),
+    )
+)
+missing_fields = [field for field in FIELDS if field not in frame.columns]
+if missing_fields:
+    dbutils.notebook.exit(
+        json.dumps(
+            {
+                "client_id": CLIENT_ID,
+                "status": "missing_columns",
+                "missing_fields": missing_fields,
+                "run_file_count": len(file_paths),
+            },
+            sort_keys=True,
+        )
+    )
+
+expressions = [spark_functions.count(spark_functions.lit(1)).alias("row_count")]
+for field in FIELDS:
+    normalized = spark_functions.trim(spark_functions.col(field))
+    expressions.extend(
+        [
+            spark_functions.sum(
+                spark_functions.when(
+                    spark_functions.col(field).isNotNull() & (normalized != ""), 1
+                ).otherwise(0)
+            ).alias(f"{field}__non_null"),
+            spark_functions.sum(
+                spark_functions.when(
+                    spark_functions.col(field).cast("double") != 0.0, 1
+                ).otherwise(0)
+            ).alias(f"{field}__non_zero"),
+        ]
+    )
+
+rows = frame.groupBy("_run_date").agg(*expressions).orderBy("_run_date").collect()
+daily = []
+for row in rows:
+    values = row.asDict()
+    row_count = int(values["row_count"])
+    fields = {}
+    for field in FIELDS:
+        non_null_count = int(values[f"{field}__non_null"] or 0)
+        non_zero_count = int(values[f"{field}__non_zero"] or 0)
+        fields[field] = {
+            "non_null_count": non_null_count,
+            "non_zero_count": non_zero_count,
+            "all_rows_non_null": non_null_count == row_count,
+            "all_rows_non_zero": non_zero_count == row_count,
+        }
+    daily.append(
+        {
+            "run_date": values["_run_date"],
+            "row_count": row_count,
+            "all_four_fields_non_null_for_all_rows": all(
+                item["all_rows_non_null"] for item in fields.values()
+            ),
+            "all_four_fields_non_zero_for_all_rows": all(
+                item["all_rows_non_zero"] for item in fields.values()
+            ),
+            "fields": fields,
+        }
+    )
+
+result = {
+    "client_id": CLIENT_ID,
+    "window_start": START.isoformat(),
+    "window_end_exclusive": END.isoformat(),
+    "run_file_count": len(file_paths),
+    "days_all_four_non_null": [
+        item["run_date"]
+        for item in daily
+        if item["all_four_fields_non_null_for_all_rows"]
+    ],
+    "days_all_four_non_zero": [
+        item["run_date"]
+        for item in daily
+        if item["all_four_fields_non_zero_for_all_rows"]
+    ],
+    "daily": daily,
+}
+
+dbutils.notebook.exit(json.dumps(result, sort_keys=True))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Optional notebook-local input patch
+# MAGIC
+# MAGIC Use only when natural Alpha/staging integration data cannot exercise the
+# MAGIC field, but read-only production discovery proves upstream values exist.
+# MAGIC Patch a bounded input DataFrame by the real business key, assert unchanged row
+# MAGIC and distinct-key counts, and pass it to the normal transformation entry point.
+# MAGIC Never write synthetic input to ADLS or shared tables. Report patched output as
+# MAGIC synthetic flow evidence, separately from natural-data validation.

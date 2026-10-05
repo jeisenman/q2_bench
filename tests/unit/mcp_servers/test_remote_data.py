@@ -5,7 +5,7 @@ import hashlib
 
 import pytest
 
-from adapters.databricks import SubmittedDatabricksRun
+from adapters.databricks import DatabricksIntegrationUpload, SubmittedDatabricksRun
 from mcp_servers import remote_data
 from mcp_servers.remote_data_notebooks import RemoteDataNotebookError
 
@@ -78,6 +78,27 @@ def test_delegates_reviewed_databricks_run_submission(monkeypatch) -> None:
         "source_sha256": "digest",
         "status": "submitted",
     }
+
+
+def test_delegates_dsint_branch_upload(monkeypatch) -> None:
+    def fake_upload(branch):
+        assert branch == "RA-1234"
+        return DatabricksIntegrationUpload(
+            branch=branch,
+            notebook_path="/Shared/Data-Science/DI-Pipelines/Integration-Testing/RA-1234",
+            output="Using branch: RA-1234",
+        )
+
+    monkeypatch.setattr(remote_data, "upload_integration_branch", fake_upload)
+
+    result = asyncio.run(remote_data.upload_databricks_integration_branch("RA-1234"))
+
+    assert result["status"] == "uploaded"
+    assert result["credential_requirements"] == [
+        "DE_DATABRICKS_HOST",
+        "DE_DATABRICKS_TOKEN",
+    ]
+    assert "token" not in result
 
 
 def test_rejects_unknown_databricks_run_option() -> None:

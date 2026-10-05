@@ -10,7 +10,9 @@ it.
 
 | Skill | Purpose | Harnesses |
 | --- | --- | --- |
-| `alpha-test` | Validate branch changes in Alpha with deployment, source-data, and rerun evidence. | claude, codex |
+| `dag-authorship` | Create and review Airflow DAGs, task groups, dependencies, schedules, and job wiring. | claude, codex |
+| `code-test` | Test data-engineering changes with qualifying Alpha source-data evidence. | claude, codex |
+| `deploy` | Plan, execute, and verify approved data-engineering deployments with bounded evidence. | claude, codex |
 | `remote-data` | Build read-only notebooks and query approved remote data endpoints. | claude, codex |
 | `resource-discovery` | Query PrecisionLender Resource Discovery for client and resource metadata. | claude, codex |
 | `benchmark-builder` | Turn a captured trace into a reviewable benchmark case with distractors. | claude, codex |

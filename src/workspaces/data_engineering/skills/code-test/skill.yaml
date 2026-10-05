@@ -1,0 +1,8 @@
+schema_version: 1
+id: code-test
+workspace: data_engineering
+display_name: Code Test
+summary: Test data-engineering changes with qualifying source-data and deployment evidence.
+harnesses:
+  - claude
+  - codex

@@ -1,0 +1,8 @@
+schema_version: 1
+id: dag-authorship
+workspace: data_engineering
+display_name: DAG Authorship
+summary: Create and review Airflow DAGs, task groups, dependencies, schedules, and job wiring.
+harnesses:
+  - claude
+  - codex
