@@ -7,6 +7,7 @@ This directory is the agent-readable entry point for the project.
 - [Setup and harness integration](../SETUP.md)
 - [Project architecture](architecture.md)
 - [Data-engineering workflow harness](workflow-harness.md)
+- [DI Pipelines repository lineage](lineage.md)
 - Python-upgrade benchmark:
   `src/workspaces/data_engineering/benchmarks/python_upgrade/`
 - [Agent documentation standard](agent-documentation-standard.md)

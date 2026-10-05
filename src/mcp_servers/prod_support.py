@@ -16,6 +16,7 @@ from adapters.local import (
 )
 from adapters.telemetry import configure_telemetry
 from mcp_servers.debug import McpDebugTrace
+from mcp_servers.lineage import register_lineage_tools
 from mcp_servers.prod_support_benchmark import (
     requests_benchmark_case,
 )
@@ -60,8 +61,11 @@ from workspaces.data_engineering.workflows.prod_support.reporting_config import 
 SERVER_NAME = "prod-support"
 server = MCPServer(
     SERVER_NAME,
-    description="Production-support tools for data-engineering incidents.",
+    description=(
+        "Production-support and repository-lineage tools for data engineering."
+    ),
 )
+register_lineage_tools(server)
 
 _agent_memory = _memory()
 _workflow_runner = WorkflowRunner()

@@ -8,6 +8,12 @@ from adapters.local.configuration import (
     load_configuration,
 )
 from adapters.local.datasets import InMemoryDatasetProvider
+from adapters.local.lineage import (
+    DEFAULT_LINEAGE_GRAPH_PATH,
+    LINEAGE_GRAPH_PATH_ENV,
+    JsonLineageGraphSource,
+    LocalLineageError,
+)
 from adapters.local.memory import (
     InMemoryAgentMemoryStore,
     MemoryConflictError,
@@ -24,9 +30,13 @@ from adapters.local.prod_support_updates import (
 )
 
 __all__ = [
+    "DEFAULT_LINEAGE_GRAPH_PATH",
+    "LINEAGE_GRAPH_PATH_ENV",
     "InMemoryAgentMemoryStore",
     "InMemoryDatasetProvider",
+    "JsonLineageGraphSource",
     "JsonProdSupportOmissionStore",
+    "LocalLineageError",
     "MemoryConflictError",
     "MemoryNotFoundError",
     "ProdSupportOmissionsError",

@@ -1,0 +1,62 @@
+name: lineage
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [di-pipelines-master-push]
+  schedule:
+    - cron: "17 * * * *"
+  push:
+    branches: [master, main]
+    paths:
+      - ".github/workflows/lineage.yml"
+      - "migrations/postgres/002_lineage.sql"
+      - "src/adapters/postgres/lineage.py"
+      - "src/cli/lineage.py"
+      - "src/workspaces/data_engineering/workflows/lineage/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lineage-di-pipelines-master
+  cancel-in-progress: false
+
+jobs:
+  synchronize:
+    runs-on: ubuntu-latest
+    env:
+      LINEAGE_POSTGRES_DSN: ${{ secrets.LINEAGE_POSTGRES_DSN }}
+    steps:
+      - name: Check out lineage repository
+        uses: actions/checkout@v4
+
+      - name: Check out DI Pipelines master
+        uses: actions/checkout@v4
+        with:
+          repository: precisionlender/di-pipelines
+          ref: master
+          path: external/di-pipelines
+          token: ${{ secrets.DI_PIPELINES_READ_TOKEN }}
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - run: uv sync --locked
+
+      - name: Apply lineage schema
+        run: psql "$LINEAGE_POSTGRES_DSN" -v ON_ERROR_STOP=1 -f migrations/postgres/002_lineage.sql
+
+      - name: Extract and persist graph
+        run: >-
+          uv run agentbench lineage-sync
+          --repository external/di-pipelines
+          --source-ref master
+          --output var/lineage/di-pipelines.json
+
+      - name: Upload review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: di-pipelines-lineage
+          path: var/lineage/di-pipelines.json
