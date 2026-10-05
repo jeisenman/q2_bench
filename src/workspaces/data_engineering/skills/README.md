@@ -10,6 +10,8 @@ it.
 
 | Skill | Purpose | Harnesses |
 | --- | --- | --- |
+| `alpha-test` | Validate branch changes in Alpha with deployment, source-data, and rerun evidence. | claude, codex |
+| `remote-data` | Build read-only notebooks and query approved remote data endpoints. | claude, codex |
 | `resource-discovery` | Query PrecisionLender Resource Discovery for client and resource metadata. | claude, codex |
 | `benchmark-builder` | Turn a captured trace into a reviewable benchmark case with distractors. | claude, codex |
 | `prod-support` | Discover, triage, and remediate production Airflow failures across US and CA. | claude, codex |

@@ -55,6 +55,20 @@ def test_sync_renders_each_harness_with_its_own_skill_path(tmp_path: Path) -> No
     assert ".codex/skills/demo/scripts/go.py" in codex.read_text(encoding="utf-8")
 
 
+def test_global_roots_render_absolute_skill_paths(tmp_path: Path) -> None:
+    write_skill(tmp_path)
+    skills = discover_skills(tmp_path / "src/workspaces")
+    roots = {
+        "claude": tmp_path / "global/.claude/skills",
+        "codex": tmp_path / "global/.codex/skills",
+    }
+    plan = plan_sync(tmp_path, skills, roots)
+    apply_plan(tmp_path, plan)
+
+    document = (roots["codex"] / "demo/SKILL.md").read_text(encoding="utf-8")
+    assert str(roots["codex"] / "demo/scripts/go.py") in document
+
+
 def test_harness_overlay_reaches_only_its_own_harness(tmp_path: Path) -> None:
     write_skill(tmp_path)
     sync(tmp_path)

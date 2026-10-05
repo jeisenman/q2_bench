@@ -1,5 +1,5 @@
 schema_version: 1
-id: remote_data
+id: remote-data
 workspace: data_engineering
 display_name: Remote Data
 summary: Build read-only notebooks and query approved remote data endpoints.

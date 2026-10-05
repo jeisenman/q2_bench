@@ -19,6 +19,7 @@ from adapters.mlflow import (
     publish_recorded_evaluation,
     register_agent_definitions,
 )
+from cli.deployment import approve_deployment
 from cli.mlflow import configure_codex_tracing
 from cli.prod_support_collection import (
     capture_prod_support,
@@ -68,6 +69,7 @@ def cli() -> None:
 
 
 cli.add_command(sync_skills)
+cli.add_command(approve_deployment)
 cli.add_command(capture_prod_support)
 cli.add_command(debug_prod_support)
 cli.add_command(setup)

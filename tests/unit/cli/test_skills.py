@@ -23,7 +23,7 @@ def write_skill(root: Path) -> Path:
     return directory
 
 
-def invoke(root: Path, *args: str):
+def invoke(root: Path, *args: str, env: dict[str, str] | None = None):
     return CliRunner().invoke(
         sync_skills,
         [
@@ -33,6 +33,7 @@ def invoke(root: Path, *args: str):
             str(root),
             *args,
         ],
+        env=env,
     )
 
 
@@ -55,6 +56,26 @@ def test_check_passes_on_a_current_tree(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert "are current" in result.output
+
+
+def test_global_sync_writes_to_user_level_roots(tmp_path: Path) -> None:
+    write_skill(tmp_path)
+    claude_root = tmp_path / "user/.claude"
+    codex_root = tmp_path / "user/.codex"
+
+    result = invoke(
+        tmp_path,
+        "--global",
+        env={
+            "CLAUDE_CONFIG_DIR": str(claude_root),
+            "CODEX_HOME": str(codex_root),
+        },
+    )
+
+    assert result.exit_code == 0
+    assert (claude_root / "skills/demo/SKILL.md").is_file()
+    assert (codex_root / "skills/demo/SKILL.md").is_file()
+    assert str(claude_root / "skills") in result.output
 
 
 def test_check_fails_and_names_the_fix_when_a_copy_is_edited(tmp_path: Path) -> None:

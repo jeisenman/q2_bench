@@ -10,6 +10,7 @@ from repository_checks.skill_sync import (
     HARNESS_ROOTS,
     apply_plan,
     discover_skills,
+    global_harness_roots,
     plan_sync,
     stale_targets,
 )
@@ -37,13 +38,25 @@ DEFAULT_WORKSPACES_ROOT = Path("src/workspaces")
     is_flag=True,
     help="Report drift and exit non-zero instead of writing files.",
 )
-def sync_skills(workspaces_root: Path, project_root: Path, check: bool) -> None:
+@click.option(
+    "--global",
+    "global_sync",
+    is_flag=True,
+    help="Write to the user-level Claude and Codex skill directories.",
+)
+def sync_skills(
+    workspaces_root: Path,
+    project_root: Path,
+    check: bool,
+    global_sync: bool,
+) -> None:
     """Generate harness skill directories from workspace skill sources."""
     skills = discover_skills(workspaces_root)
     if not skills:
         message = f"no skills found beneath {workspaces_root}/*/skills"
         raise click.ClickException(message)
-    plan = plan_sync(project_root, skills)
+    harness_roots = global_harness_roots() if global_sync else HARNESS_ROOTS
+    plan = plan_sync(project_root, skills, harness_roots)
     if check:
         problems = stale_targets(project_root, plan)
         if problems:
@@ -52,6 +65,6 @@ def sync_skills(workspaces_root: Path, project_root: Path, check: bool) -> None:
         return
     written = apply_plan(project_root, plan)
     for skill in skills:
-        targets = ", ".join(HARNESS_ROOTS[harness] for harness in skill.harnesses)
+        targets = ", ".join(str(harness_roots[harness]) for harness in skill.harnesses)
         click.echo(f"{skill.workspace}/{skill.skill_id} -> {targets}")
     click.echo(f"wrote {len(written)} files")

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -113,7 +114,7 @@ class SyncPlan:
                     "schema_version": 1,
                     "generated_from": "src/workspaces/*/skills",
                     "files": {
-                        str(item.target.relative_to(project_root)): item.digest
+                        _display_path(item.target, project_root): item.digest
                         for item in sorted(self.files, key=lambda item: item.target)
                         if not item.is_state
                     },
@@ -139,17 +140,42 @@ def discover_skills(workspaces_root: Path) -> tuple[Skill, ...]:
     return tuple(skills.values())
 
 
-def plan_sync(project_root: Path, skills: Iterable[Skill]) -> SyncPlan:
+def global_harness_roots() -> Mapping[str, Path]:
+    """Return the user-level skill directories for the supported harnesses."""
+    claude_config = Path(
+        os.environ.get("CLAUDE_CONFIG_DIR", str(Path.home() / ".claude"))
+    ).expanduser()
+    codex_config = Path(
+        os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))
+    ).expanduser()
+    return {
+        "claude": claude_config / "skills",
+        "codex": codex_config / "skills",
+    }
+
+
+def plan_sync(
+    project_root: Path,
+    skills: Iterable[Skill],
+    harness_roots: Mapping[str, Path | str] | None = None,
+) -> SyncPlan:
     """Render every harness file without touching the filesystem."""
+    roots_by_harness = harness_roots or HARNESS_ROOTS
     files: list[SyncedFile] = []
     roots: set[Path] = set()
     managed: set[Path] = set()
     for skill in skills:
         for harness in skill.harnesses:
-            root = project_root / HARNESS_ROOTS[harness] / skill.skill_id
-            roots.add(project_root / HARNESS_ROOTS[harness])
+            configured_root = roots_by_harness[harness]
+            skills_root_path = _resolve_root(project_root, configured_root)
+            root = skills_root_path / skill.skill_id
+            roots.add(skills_root_path)
             managed.add(root)
-            skills_root = HARNESS_ROOTS[harness]
+            skills_root = _render_root_path(
+                skills_root_path,
+                configured_root,
+                project_root,
+            )
             skill_dir = f"{skills_root}/{skill.skill_id}"
             files.extend(_render_skill(skill, harness, root, skill_dir, skills_root))
     return SyncPlan(
@@ -194,7 +220,7 @@ def stale_targets(project_root: Path, plan: SyncPlan) -> tuple[str, ...]:
     state = {item.target for item in plan.files if item.is_state}
     expected = {item.target: item.digest for item in plan.files if not item.is_state}
     for target, digest in sorted(expected.items()):
-        relative = target.relative_to(project_root)
+        relative = _display_path(target, project_root)
         if not target.is_file():
             problems.append(f"{relative}: missing; run 'agentbench sync-skills'")
             continue
@@ -208,7 +234,7 @@ def stale_targets(project_root: Path, plan: SyncPlan) -> tuple[str, ...]:
             if not path.is_file() or path.name == SYNC_MANIFEST:
                 continue
             if path not in expected and path not in state:
-                relative = path.relative_to(project_root)
+                relative = _display_path(path, project_root)
                 problems.append(
                     f"{relative}: not generated from its workspace skill source; "
                     "move it into the workspace skill directory"
@@ -299,3 +325,28 @@ def _render_skill(
 
 def _digest(content: str) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+def _resolve_root(project_root: Path, root: Path | str) -> Path:
+    """Resolve a local or absolute harness skill root."""
+    path = Path(root).expanduser()
+    return path if path.is_absolute() else project_root / path
+
+
+def _display_path(path: Path, project_root: Path) -> str:
+    """Display paths relative to the project when possible."""
+    try:
+        return str(path.relative_to(project_root))
+    except ValueError:
+        return str(path)
+
+
+def _render_root_path(
+    resolved_root: Path,
+    configured_root: Path | str,
+    project_root: Path,
+) -> str:
+    """Render local roots relatively and user-level roots absolutely."""
+    if Path(configured_root).expanduser().is_absolute():
+        return str(resolved_root)
+    return _display_path(resolved_root, project_root)

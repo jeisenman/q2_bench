@@ -1,5 +1,5 @@
 ---
-name: remote_data
+name: remote-data
 description: Build read-only notebooks and query approved Data Engineering Databricks, RA Databricks, ADLS, Snowflake, and production OMS targets.
 ---
 

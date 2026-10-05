@@ -33,6 +33,7 @@ This directory is the agent-readable entry point for the project.
 - [Cortex and Genie behind remote-data-mcp](remote-data-cortex-genie.md)
 - [Tracing an RA run in Databricks](ra-run-tracing.md)
 - [Per-user configurations.yaml](user-configuration.md)
+- [Deployment approval command](deployment-approval.md)
 
 ## Documentation policy
 

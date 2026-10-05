@@ -111,23 +111,23 @@
     "q2_client_id": null,
     "resource_sets": [
       {
+        "datalake": "pladls2cacprod",
+        "environment": "CAC01",
         "service": "Radar",
-        "environment": "CAC01",
-        "storage": "plstcarelsrvarchprod",
-        "datalake": "pladls2cacprod"
+        "storage": "plstcarelsrvarchprod"
       },
       {
-        "service": "Data Studio",
+        "datalake": "pladls2cacdatamartprod",
         "environment": "Data Studio CA",
-        "datalake": "pladls2cacdatamartprod"
+        "service": "Data Studio"
       },
       {
-        "service": "PLApp",
-        "environment": "CAC01",
-        "database_server": "pl-sqlfailover-cac-app-01.database.windows.net",
         "database": "pl_sqldb_cac_app_01",
-        "storage": "plstoragecacapp01",
-        "datalake": "pladls2cacprod"
+        "database_server": "pl-sqlfailover-cac-app-01.database.windows.net",
+        "datalake": "pladls2cacprod",
+        "environment": "CAC01",
+        "service": "PLApp",
+        "storage": "plstoragecacapp01"
       }
     ],
     "source": "user-confirmed",
@@ -347,7 +347,7 @@
   },
   "99b9412b-70fd-4221-8431-d1b3934889ec": {
     "api_status": "unique-match",
-    "last_checked": "2026-08-30",
+    "last_checked": "2026-10-01",
     "name": "First Example Bank",
     "source": "resource-discovery-api"
   },

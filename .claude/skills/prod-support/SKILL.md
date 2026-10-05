@@ -369,7 +369,10 @@ Apply these rules:
 - In the Data Internal Channel message, abbreviate every client UUID to its first three characters in parentheses. Do not use an ellipsis inside the parentheses.
 - Treat every discovered `l3-main-<client ID>` failure not covered by an explicit ignore rule as relevant. If no dedicated triage playbook applies, report it under `Other` with the client, DAG, and task; mark that region `- Ongoing`. Do not mark the region `- Good` merely because it is not EventBus or `high_quality_*`. For example, report `account_level_all_scenarios.account_level_all_scenarios` under `Other`.
 - Under `Other`, include only relevant failures not covered above.
-- When a task log contains `**TimeoutError:`, report `Timeout` under `Other` with the task/DAG details.
+- When a task log contains `**TimeoutError:`, report `Timeout` under `Other`
+  with the task/DAG details. If the task has a KPO override, read
+  [references/kpo-sizing.md](references/kpo-sizing.md) and offer its sizing
+  follow-up.
 - Ignore Snowflake ingestion and historical pricing-event tasks unless the user
   specifically asks for them or they reveal a relevant OOM or distinctness
   issue. Classify and report `check_for_subscriber_client_errors`,

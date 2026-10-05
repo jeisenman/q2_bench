@@ -3,7 +3,7 @@
 Use OMS for raw, bounded Log Analytics evidence when the exact Airflow task log
 is unavailable, incomplete, too large, or the user explicitly requests an OMS
 comparison. Production-support classification remains outside the
-`remote_data` skill.
+`remote-data` skill.
 
 ## Airflow identity maps directly to OMS
 
