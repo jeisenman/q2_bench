@@ -1,12 +1,17 @@
 ---
 name: code-test
-description: Test data-engineering changes, including finding qualifying Alpha source data, deployment validation, test loops, and PR evidence.
+description: Test data-engineering changes by finding qualifying source data, running bounded validation loops, and recording PR evidence after deployment.
 ---
 
 # Code Testing
 
-Use when DAG authorship is "finished" to begin testing.
+Use when implementation is ready for test-data selection and behavioral
+validation.
 
+This skill does not plan, trigger, approve, poll, retry, or verify deployments.
+When testing requires deployed DAG or job code, load and follow the `deploy`
+skill for the exact repository, commit, and environment. Resume this workflow
+only after `deploy` reports that every required stage succeeded.
 
 ## Finding Testing Data
 
@@ -93,34 +98,65 @@ that row and distinct-key counts are unchanged, never persist the patched
 input, and report the result as synthetic flow evidence rather than natural
 Alpha or staging evidence.
 
-## Deploying
+## Deployment handoff
 
+Give the `deploy` skill the exact repository, branch or commit, target
+environment, changed paths, and expected post-deployment check. It owns
+`deployment.md`, deployment scope, Azure execution, approvals, stage polling,
+retries, and deployment completion evidence.
 
-## Deploying Snowflake Evolution
-
-### Deployment to Staging
+After deployment succeeds, use the completion timestamp to select a new
+Airflow run and continue testing here. Databricks branch uploads used only for
+bounded notebook comparisons remain test setup rather than an environment
+deployment.
 
 ## Loop Testing
 
-Loop testing is the repeatable test cycle used to move a change from test-data
-selection to a passing result:
+Loop testing supports two targets:
 
-1. Find qualifying test data and record why it exercises the changed behavior.
-2. Select the test target:
-   - use Alpha for deployed DAG and job validation;
-   - use Databricks for bounded branch comparison or notebook-local synthetic
-     input testing.
-3. Deploy or upload the exact commit being tested. External deployments,
-   branch uploads, job runs, and Airflow clears require the authorization
-   applicable to that action.
-4. Run the smallest producer job that exercises the change, then poll the
-   submitted run until it reaches a terminal state.
-5. On success, validate the downstream dataset, including schema, row and key
-   counts, and non-null counts for every new field.
-6. On failure, collect the exact run, task, logs, and input evidence; diagnose
-   the cause before changing code.
-7. Apply the smallest supported fix, run local static and unit checks, push or
-   upload the new commit, and repeat from deployment.
+- Alpha for deployed DAG and job validation;
+- Databricks for bounded branch comparison or notebook-local synthetic input
+  testing.
+
+Start both loops by finding qualifying test data and recording why it exercises
+the changed behavior.
+
+### Alpha loop
+
+For every commit that is ready to test:
+
+1. Load and invoke `deploy` with the exact commit and Alpha environment.
+2. Wait for `deploy` to report every required stage successful for that commit.
+3. Select an Airflow run that started after deployment completed.
+4. Run the smallest producer job that exercises the change and poll it to a
+   terminal state.
+5. Validate the downstream dataset, including schema, row and key counts, and
+   non-null counts for every new field.
+6. On failure, collect the exact deployment, run, task, logs, and input
+   evidence before changing code.
+7. Apply the smallest supported fix and run local static and unit checks.
+8. Commit and push the fix, then invoke `deploy` again for the new commit.
+
+Never reuse a successful deployment from an earlier commit. Continue calling
+`deploy` whenever a new Alpha-testable commit is ready until validation passes
+or the stop condition is reached.
+
+### Databricks loop
+
+For every commit that is ready to compare:
+
+1. Upload the exact branch commit through the approved remote-data workflow.
+2. Run identical bounded inputs through the baseline and branch archives.
+3. Poll the submitted runs to terminal states.
+4. Compare row and key counts, schemas, dropped or duplicate rows, and relevant
+   non-null counts.
+5. On failure, collect the exact archive commits, notebook runs, logs, and input
+   evidence before changing code.
+6. Apply the smallest supported fix and run local static and unit checks.
+7. Commit and push the fix, upload the new commit, and repeat the comparison.
+
+Do not invoke `deploy` for a notebook-only Databricks comparison unless the
+test also requires an environment deployment.
 
 Keep each iteration tied to its commit, environment, input partition, and run
 ID. Do not reuse evidence from an earlier commit as proof for a later one.
@@ -128,115 +164,24 @@ Stop when the expected downstream result passes, the user declines another
 external mutation, or progress requires a new decision or credential.
 
 
-# Alpha Test
+# Alpha validation
 
-Use Alpha to validate branch behavior with a documented deployment scope,
-bounded source-data evidence, and an exact downstream rerun plan.
+Use Alpha to validate branch behavior with bounded source-data evidence and an
+exact downstream rerun plan.
 
-Do not trigger a deployment or clear Airflow tasks unless the user has
-authorized that external mutation. Every Airflow clear requires a reviewed
-dry-run selection and explicit approval for the exact DAG, run, and tasks.
+Before this workflow, use `deploy` to create `deployment.md`, determine the
+component stages, deploy the exact branch commit, and record successful stage
+completion times. Continue only with an Airflow run that started after every
+required deployment stage completed.
+
+Every Airflow clear requires a reviewed dry-run selection and explicit
+approval for the exact DAG, run, and tasks.
 
 ## Testing new fields in di-pipelines
 
 Use this workflow when a `di-pipelines` branch adds or changes dataset fields.
 
-### 1. Create or update deployment.md
-
-Before deploying, add `deployment.md` at the root of the feature branch.
-Record the intended test before collecting results:
-
-```markdown
-# Alpha deployment
-
-## Change
-
-- Branch:
-- Commit:
-- Dataset:
-- Dataset version:
-- New or changed fields:
-- Expected producer task:
-- Expected downstream consumers:
-
-## Deployment scope
-
-- [ ] DAGs
-- [ ] de-jobs
-- [ ] ds-jobs
-
-## Alpha deployment evidence
-
-| Component | Required | Pipeline stage | Status | Completed UTC |
-|---|---:|---|---|---|
-| DAGs |  | Alpha DAGs |  |  |
-| de-jobs |  | alpha_de_jobs |  |  |
-| ds-jobs |  | alpha_ds_jobs |  |  |
-
-## Source-data evidence
-
-- Environment: Alpha
-- Client ID:
-- UTC window:
-- RA run path:
-- Databricks parent run ID:
-- Databricks task run ID:
-
-| Field | Run date | Rows | Non-null | Non-zero | Notes |
-|---|---|---:|---:|---:|---|
-
-## Airflow rerun
-
-- DAG ID:
-- DAG run ID:
-- Starting task ID:
-- Dry-run selection:
-- Approval reference:
-- Final task states:
-```
-
-Do not put credentials, customer names, or unbounded production-backed rows in
-`deployment.md`.
-
-### 2. Determine deployment scope
-
-Inspect the branch diff and active DAG references:
-
-```bash
-git diff --name-only <target-branch>...HEAD
-rg -n -C 12 "<dataset-or-task-name>" \
-  dags/precisionlender/dags/
-```
-
-Map changed areas to Alpha stages:
-
-| Changed area | Required Alpha stage |
-|---|---|
-| `dags/` or `dag-utils/` | `Alpha DAGs` |
-| `de-jobs/` | `alpha_de_jobs` |
-| `ds-jobs/` | `alpha_ds_jobs` |
-
-Select every applicable stage. A field change can require all three when the
-ingestion contract, dataset metadata or consumers, and DAG parameters or
-dependencies change together.
-
-The jobs stages have these prerequisites:
-
-```text
-build_de_jobs -> feed_publish_de_jobs -> alpha_de_jobs
-build_ds_jobs -> feed_publish_ds_jobs -> alpha_ds_jobs
-Alpha DAGs
-```
-
-If deployment is authorized, trigger the branch pipeline and wait for every
-required Alpha stage to report success. Pipeline submission, artifact
-creation, or approval alone is not completion.
-
-Record each successful stage and completion time in `deployment.md`. Select a
-DAG run that started after all required deployments completed; an already
-running task can retain previously loaded code or configuration.
-
-### 3. Find non-null source evidence
+### 1. Find non-null source evidence
 
 Load and follow the `remote-data` skill for the approved, read-only Databricks
 workflow.
@@ -291,7 +236,7 @@ date qualifies, stop and distinguish:
 
 Do not rerun downstream tasks without suitable source evidence.
 
-### 4. Record source evidence
+### 2. Record source evidence
 
 Write exact counts and dates to `deployment.md`:
 
@@ -311,7 +256,7 @@ Also record:
 
 The evidence must support the rerun decision without exposing raw rows.
 
-### 5. Plan and approve the recursive downstream rerun
+### 3. Plan and approve the recursive downstream rerun
 
 Identify the exact producer task in the post-deployment Alpha DAG run.
 Preserve task-group prefixes, for example:
@@ -358,8 +303,7 @@ and record their outcomes and relevant failed-task logs in `deployment.md`.
 
 The test is complete when:
 
-- `deployment.md` records the change and test scope;
-- every required Alpha deployment succeeded;
+- the `deploy` skill recorded the exact commit and successful required stages;
 - the selected DAG run started after deployment;
 - remote-data evidence proves the fields are present and non-null;
 - the recursive downstream selection was reviewed and approved;

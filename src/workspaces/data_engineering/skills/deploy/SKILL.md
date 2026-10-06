@@ -14,8 +14,13 @@ Use skill to plan deployment for alpha, stage, or production environment.
 
 ## Production deployments
 
+### di-pipelines and di-pipelines-unified
 
-
+For a merged `di-pipelines` PR, read
+[di-pipelines deployment](references/di-pipelines.md). It defines PR diff
+resolution, path-to-stage mapping, Azure run discovery and triggering,
+30-second polling, approval handling, bounded stage retries, Slack completion
+messages, and user-requested post-deployment reruns.
 
 ## Establish the deployment contract
 
@@ -33,10 +38,11 @@ Do not infer a production target from an unset or ambiguous environment
 variable. Fail fast when the target, commit, or deployment mechanism is
 unclear.
 
-For `di-pipelines` changes, use the `alpha-test` skill when the request
-involves Alpha validation, new dataset fields, source-data evidence, or
-recursive Airflow reruns. This skill covers the deployment handoff and
-verification; `alpha-test` defines the field validation evidence.
+For `di-pipelines` changes, this skill owns the deployment contract,
+`deployment.md`, component-to-stage mapping, pipeline execution, approvals,
+polling, retries, and deployment verification. After deployment succeeds, use
+the `code-test` skill for source-data qualification, bounded result validation,
+and test evidence.
 
 ## Determine scope and prerequisites
 
@@ -76,6 +82,12 @@ If approval is required by the deployment system, use the repository's
 documented approval command and record the approval reference. Never broaden
 the target environment, include additional stages, or rerun unrelated jobs
 without renewed authorization.
+
+When a pipeline task reports critically low agent disk space, classify the
+failure as infrastructure-related. Inspect the failed task log, retry only the
+failed stage with `state=retry` and `forceRetryAllJobs=false`, and poll the
+same run. Allow one retry of that stage; if it fails again, stop and report
+the disk evidence instead of retrying the whole pipeline.
 
 ## Verify and report
 
