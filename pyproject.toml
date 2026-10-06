@@ -1,48 +1,19 @@
 [project]
 name = "q2-bench"
 version = "0.1.0"
-description = "Local-first data-engineering agent benchmark workspace."
+description = "Go SDK and MCP API with a Python-only Databricks runtime."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "click>=8.1",
     "databricks-sdk>=0.142",
-    "duckdb>=1.5.6",
-    "inspect-ai>=0.3",
-    "mcp>=1.0",
-    "mlflow==3.16.1",
-    "openai-agents>=0.22.3",
-    "opentelemetry-api>=1.44",
-    "opentelemetry-sdk>=1.44",
-    "packaging>=24.0",
-    "psycopg[binary]>=3.2",
-    "pytz>=2026.4",
     "pyyaml>=6.0",
-    "types-pytz>=2026.4.0.20260926",
 ]
-
-[project.optional-dependencies]
-# Heavy provider SDKs stay optional: the sandbox environment needs none
-# of them, so tests and benchmarks run without provider credentials.
-snowflake = ["snowflake-connector-python>=3.12"]
-
-[project.scripts]
-agentbench = "cli.main:main"
-airflow-mcp = "mcp_servers.airflow:main"
-dependency-intelligence-mcp = "mcp_servers.dependency_intelligence:main"
-oms-mcp = "mcp_servers.oms:main"
-prod-support-mcp = "cli.prod_support_mcp:main"
-python-upgrade-mcp = "mcp_servers.python_upgrade:main"
-remote-data-mcp = "mcp_servers.remote_data:main"
-resource-discovery-mcp = "mcp_servers.resource_discovery:main"
-warehouse-mcp = "mcp_servers.warehouse:main"
 
 [dependency-groups]
 dev = [
     "mypy>=1.18",
     "pre-commit>=4.3",
     "pytest>=8.4",
-    "pytest-cov>=7.0",
     "pytest-xdist>=3.8",
     "ruff>=0.13",
     "types-pyyaml>=6.0",
@@ -54,16 +25,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = [
-    "src/adapters",
-    "src/agent_memory",
-    "src/cli",
-    "src/dependency_intelligence",
-    "src/domain",
-    "src/mcp_servers",
-    "src/observability",
-    "src/ports",
-    "src/workflow_harness",
-    "src/workspaces",
+    "src/adapters/databricks",
+    "src/adapters/local",
+    "src/adapters/outbound",
+    "src/databricks_runtime",
 ]
 
 [tool.ruff]
@@ -98,6 +63,38 @@ select = [
 ignore = ["D203", "D213"]
 
 [tool.ruff.lint.per-file-ignores]
+# Databricks notebook source intentionally relies on runtime-provided globals
+# and remains Python. The same source is mirrored into both harnesses.
+"src/workspaces/*/skills/**/assets/kpo_adls_size_inventory.py" = [
+    "ANN001",
+    "ANN201",
+    "D100",
+    "D103",
+    "E501",
+    "F821",
+    "N812",
+    "TRY003",
+]
+".claude/skills/**/assets/kpo_adls_size_inventory.py" = [
+    "ANN001",
+    "ANN201",
+    "D100",
+    "D103",
+    "E501",
+    "F821",
+    "N812",
+    "TRY003",
+]
+".codex/skills/**/assets/kpo_adls_size_inventory.py" = [
+    "ANN001",
+    "ANN201",
+    "D100",
+    "D103",
+    "E501",
+    "F821",
+    "N812",
+    "TRY003",
+]
 # Skill scripts are standalone CLI helpers the harness executes directly,
 # not library code this package imports. They keep the correctness and
 # security rules and are excluded only from library-shaped style rules:
@@ -164,26 +161,11 @@ ignore = ["D203", "D213"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
-files = ["src"]
-# Skill scripts are executed by the harness, not imported by this package.
-exclude = "^src/workspaces/[^/]+/skills/"
-
-# The Snowflake connector is an optional extra and ships no type stubs.
-# This silences only the missing third-party stubs, never our own types.
-[[tool.mypy.overrides]]
-module = ["snowflake.*"]
-ignore_missing_imports = true
+files = ["src/adapters/databricks", "src/adapters/local", "src/adapters/outbound", "src/databricks_runtime"]
 
 [tool.pytest.ini_options]
-addopts = "--strict-config --strict-markers --cov=src --cov-report=term-missing"
-testpaths = ["tests"]
+addopts = "--strict-config --strict-markers"
+testpaths = ["tests/unit/adapters/databricks"]
 markers = [
     "production: read-only checks against explicitly enabled production resources",
 ]
-
-[tool.coverage.run]
-branch = true
-
-[tool.coverage.report]
-fail_under = 90
-show_missing = true

@@ -14,7 +14,6 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 COMPOSE_PATH = PROJECT_ROOT / "compose.yaml"
 MCP_SERVICE = "prod-support-mcp"
-MLFLOW_SERVICE = "mlflow"
 
 
 class ProductionConfigurationError(RuntimeError):
@@ -50,11 +49,8 @@ def validate_production_configuration() -> None:
         raise ProductionConfigurationError(source)
 
 
-def restart_command(*, include_mlflow: bool) -> list[str]:
+def restart_command() -> list[str]:
     """Build the isolated Compose command used for a full MCP refresh."""
-    services = [MCP_SERVICE]
-    if include_mlflow:
-        services.append(MLFLOW_SERVICE)
     return [
         "docker",
         "compose",
@@ -65,14 +61,14 @@ def restart_command(*, include_mlflow: bool) -> list[str]:
         "--wait",
         "--wait-timeout",
         "120",
-        *services,
+        MCP_SERVICE,
     ]
 
 
-def restart_runtime(*, include_mlflow: bool, dry_run: bool) -> None:
+def restart_runtime(*, dry_run: bool) -> None:
     """Restart MCP services without terminating Codex or its app-server."""
     validate_production_configuration()
-    command = restart_command(include_mlflow=include_mlflow)
+    command = restart_command()
     if dry_run:
         sys.stdout.write(f"would run: {shlex.join(command)}\n")
         return
@@ -83,17 +79,12 @@ def main() -> int:
     """Parse options and restart the configured local runtime."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--with-mlflow",
-        action="store_true",
-        help="Also rebuild and restart the local MLflow container.",
-    )
-    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show the exact restart command without changing containers.",
     )
     args = parser.parse_args()
-    restart_runtime(include_mlflow=args.with_mlflow, dry_run=args.dry_run)
+    restart_runtime(dry_run=args.dry_run)
     return 0
 
 

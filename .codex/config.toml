@@ -2,33 +2,33 @@
 # Codex loads this file only when the project is trusted.
 
 [mcp_servers.airflow]
-command = "uv"
-args = ["run", "--directory", "/Users/jeisenman/projects/agentsdk", "airflow-mcp"]
-env = { Q2_MCP_DEBUG = "1", Q2_OTEL_EXPORTER = "none" }
-startup_timeout_sec = 20
-tool_timeout_sec = 120
-default_tools_approval_mode = "approve"
-
-[mcp_servers.dependency_intelligence]
-command = "uv"
-args = ["run", "--directory", "/Users/jeisenman/projects/agentsdk", "dependency-intelligence-mcp"]
-env = { Q2_MCP_DEBUG = "1", Q2_OTEL_EXPORTER = "none" }
+command = "go"
+args = ["-C", "/Users/jeisenman/ra/qtwo_bench", "run", "./cmd/q2-mcp", "--server", "airflow"]
+env = { Q2_MCP_DEBUG = "1" }
 startup_timeout_sec = 20
 tool_timeout_sec = 120
 default_tools_approval_mode = "approve"
 
 [mcp_servers.remote_data]
-command = "uv"
-args = ["run", "--directory", "/Users/jeisenman/projects/agentsdk", "remote-data-mcp"]
-env = { Q2_MCP_DEBUG = "1", Q2_OTEL_EXPORTER = "none" }
+command = "go"
+args = ["-C", "/Users/jeisenman/ra/qtwo_bench", "run", "./cmd/q2-mcp", "--server", "remote-data"]
+env = { Q2_MCP_DEBUG = "1" }
 startup_timeout_sec = 20
 tool_timeout_sec = 120
 default_tools_approval_mode = "approve"
 
 [mcp_servers.resource_discovery]
-command = "uv"
-args = ["run", "--directory", "/Users/jeisenman/projects/agentsdk", "resource-discovery-mcp"]
-env = { Q2_MCP_DEBUG = "1", Q2_OTEL_EXPORTER = "none" }
+command = "go"
+args = ["-C", "/Users/jeisenman/ra/qtwo_bench", "run", "./cmd/q2-mcp", "--server", "resource-discovery"]
+env = { Q2_MCP_DEBUG = "1" }
+startup_timeout_sec = 20
+tool_timeout_sec = 120
+default_tools_approval_mode = "approve"
+
+[mcp_servers.oms]
+command = "go"
+args = ["-C", "/Users/jeisenman/ra/qtwo_bench", "run", "./cmd/q2-mcp", "--server", "oms"]
+env = { Q2_MCP_DEBUG = "1" }
 startup_timeout_sec = 20
 tool_timeout_sec = 120
 default_tools_approval_mode = "approve"
@@ -58,18 +58,4 @@ approval_mode = "prompt"
 approval_mode = "prompt"
 
 [mcp_servers.prod_support.tools.update_prod_support_omissions]
-approval_mode = "prompt"
-
-[mcp_servers.python_upgrade]
-command = "uv"
-args = ["run", "--directory", "/Users/jeisenman/projects/agentsdk", "python-upgrade-mcp"]
-env = { Q2_MCP_DEBUG = "1", Q2_OTEL_EXPORTER = "none" }
-startup_timeout_sec = 20
-tool_timeout_sec = 300
-default_tools_approval_mode = "prompt"
-
-[mcp_servers.python_upgrade.tools.plan_python_upgrade]
-approval_mode = "approve"
-
-[mcp_servers.python_upgrade.tools.apply_python_upgrade]
 approval_mode = "prompt"

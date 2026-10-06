@@ -14,13 +14,10 @@ workspaces:
   data_engineering:
     enabled: false
 
-    # Parent directory containing all local Data Engineering repository
-    # checkouts. Run `uv run agentbench setup` to choose and create it.
+    # Parent directory containing the local di-pipelines checkout used by the
+    # Databricks integration upload helper.
     repositories:
       root: ~/ra
-      # Contx checkout containing Metadata/<environment> JSON snapshots.
-      # The active branch supplies the metadata, currently DE-3041.
-      contx: ~/ra/contx
 
     # Keys below are keys into DATABRICKS_TARGETS in
     # src/adapters/outbound/data_engineering/targets.py. A key with no registry
@@ -70,9 +67,3 @@ workspaces:
         host_env: CAAIRFLOWHOST
         user_env: CAAIRFLORUSER
         password_env: CAAIRFLOWPASSWORD
-      
-      oms:
-        pl-oms-us-primary: 71aa0ec0-8411-43a2-9908-ddd2add764eb
-        pl-oms-ca-primary: cde221ff-e7f4-4d39-be20-6f9d532cab60
-      
-  

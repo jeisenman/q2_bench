@@ -13,6 +13,7 @@ INCLUDED_SUFFIXES = {
     ".css",
     ".html",
     ".md",
+    ".go",
     ".py",
     ".toml",
     ".yaml",
@@ -26,6 +27,7 @@ EXCLUDED_PARTS = {
     ".venv",
     "build",
     "dist",
+    "worktrees",
 }
 
 

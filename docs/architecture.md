@@ -2,100 +2,68 @@
 
 ## Purpose
 
-`q2-bench` provides typed building blocks for defining, benchmarking, tracing,
-and reviewing agent applications locally.
+`q2-bench` provides typed Go building blocks and MCP APIs for data-engineering
+agent workloads. Python is a narrow Databricks execution boundary.
 
 ## Layout
 
 ```text
-src/                Public library packages
-tests/              Tests mirroring production modules
-scripts/            Repository quality and policy checks
-docs/               Local, agent-readable documentation
+domain/              Provider-neutral Go domain contracts
+ports/               Go integration interfaces
+agents/              Go agent implementations
+agentmemory/         Go durable-memory policy
+workflowharness/     Go deterministic workflow runner
+workflows/           Go workflow packages
+adapters/            Go infrastructure adapters
+mcpapi/              Go MCP API composition
+cmd/                 Go command entry points
+src/                 Databricks-only Python runtime and notebook source
+tests/               Databricks Python tests
+scripts/             Quality and MCP restart utilities
 ```
 
 ## Dependency direction
 
 ```text
-application/integrations
+commands and MCP APIs
           |
           v
-    q2-bench APIs
+      workflows
           |
           v
- pure domain and vector logic
+ agents and typed ports
+          |
+          v
+ pure domain packages
 ```
 
-Core modules must not depend on provider SDKs, network clients, or application
-configuration. Integrations should adapt external SDK objects into local typed
-interfaces.
+Provider SDKs and network clients stay in adapters. Domain packages remain
+independent of process configuration and external services.
 
-## Observability
-
-OpenTelemetry is the required observability contract for agent execution.
-Composition roots create or continue the root span and inject provider-neutral
-telemetry dependencies. Agents create child spans for delegation, tools, and
-external adapter operations.
-
-```text
-MCP or application request
-          |
-          v
-    root agent span
-          |
-          +-- delegated subagent span
-          |       +-- model or tool span
-          |
-          +-- adapter span
-                  +-- external request
-```
-
-W3C trace context must propagate across asynchronous tasks, subprocesses, MCP
-requests, and service boundaries. Application correlation IDs remain searchable
-span attributes but do not replace trace IDs.
-
-Domain models and pure logic must remain independent of the OpenTelemetry SDK.
-Exporter configuration and vendor-specific integrations belong in adapters or
-composition roots. Spans must use bounded, redacted attributes and must never
-contain credentials, secrets, hidden benchmark answers, or unrestricted
-production payloads.
-
-## Agent memory
-
-Durable memory uses the provider-neutral contracts in `agent_memory`. A shared
-physical store is partitioned by agent, tenant, and user/team/organization
-scope. PostgreSQL details remain in `adapters.postgres`; local tests use the
-in-memory adapter.
-
-Memory records have explicit kinds and lifecycle states. Structured aliases
-use exact normalized keys and typed canonical identifiers. Optional vector
-fields support future semantic retrieval but do not replace deterministic
-identity lookup. Agents may persist only bounded confirmations, corrections,
-facts, preferences, or summaries; raw conversations and unrestricted provider
-payloads are not memory.
+The `remote-data` MCP API crosses into Python only for Databricks SDK operations.
+It exchanges JSON with `databricks_runtime.cli`; no general-purpose Python CLI
+or MCP server remains.
 
 ## Public API
 
-Only names deliberately exported from package `__init__.py` files are
-considered public. New public behavior requires:
+Exported Go identifiers are public. Names exported by retained Python
+`__init__.py` files are public only for the Databricks bridge.
 
-1. Typed implementation.
-2. Boundary and failure tests.
-3. OpenTelemetry spans and propagation tests for new execution boundaries.
-4. A concise local documentation update.
+New behavior requires:
+
+1. Typed Go implementation unless it is part of the documented Databricks
+   boundary.
+2. Success, boundary, and failure tests.
+3. Actionable boundary validation.
+4. Documentation updates.
 5. A clean `uv run python scripts/check.py` run.
 
-## Design rules
+## Runtime policy
 
-- Prefer immutable values and explicit dependencies.
-- Batch numeric work and use NumPy array operations.
-- Validate shape, dimensionality, and finite values at boundaries.
-- Keep provider-specific concerns in dedicated integration modules.
-- Emit OpenTelemetry-compatible spans for agent, subagent, tool, MCP, and
-  adapter execution boundaries.
-- Preserve parent-child relationships and record failures on the span where
-  they occur.
-- Redact telemetry before export and keep span attributes bounded.
-- Persist local benchmark runs and annotations in SQLite.
-- Use Inspect AI tasks as the benchmark execution boundary.
-- Split modules by responsibility before they approach 400 lines.
+Production-support investigation is read-only. Follow-up retries require an
+explicit approval ID, production mode, exact prior retry candidates, and both
+regional validation URLs. The Airflow adapter validates the exact dry-run
+selection before clearing failed task instances.
+
+MCP changes require a full server rebuild and recreation before behavioral
+validation.

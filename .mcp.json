@@ -2,25 +2,14 @@
   "mcpServers": {
     "airflow": {
       "type": "stdio",
-      "command": "uv",
+      "command": "go",
       "args": [
+        "-C",
+        "/Users/jeisenman/ra/qtwo_bench",
         "run",
-        "--directory",
-        "/Users/jeisenman/projects/agentsdk",
-        "airflow-mcp"
-      ],
-      "env": {
-        "Q2_MCP_DEBUG": "1"
-      }
-    },
-    "dependency-intelligence": {
-      "type": "stdio",
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/Users/jeisenman/projects/agentsdk",
-        "dependency-intelligence-mcp"
+        "./cmd/q2-mcp",
+        "--server",
+        "airflow"
       ],
       "env": {
         "Q2_MCP_DEBUG": "1"
@@ -28,12 +17,14 @@
     },
     "remote-data": {
       "type": "stdio",
-      "command": "uv",
+      "command": "go",
       "args": [
+        "-C",
+        "/Users/jeisenman/ra/qtwo_bench",
         "run",
-        "--directory",
-        "/Users/jeisenman/projects/agentsdk",
-        "remote-data-mcp"
+        "./cmd/q2-mcp",
+        "--server",
+        "remote-data"
       ],
       "env": {
         "Q2_MCP_DEBUG": "1"
@@ -41,25 +32,29 @@
     },
     "prod-support": {
       "type": "stdio",
-      "command": "uv",
+      "command": "go",
       "args": [
+        "-C",
+        "/Users/jeisenman/ra/qtwo_bench",
         "run",
-        "--directory",
-        "/Users/jeisenman/projects/agentsdk",
-        "prod-support-mcp"
+        "./cmd/q2-mcp",
+        "--server",
+        "prod-support"
       ],
       "env": {
         "Q2_MCP_DEBUG": "1"
       }
     },
-    "python-upgrade": {
+    "oms": {
       "type": "stdio",
-      "command": "uv",
+      "command": "go",
       "args": [
+        "-C",
+        "/Users/jeisenman/ra/qtwo_bench",
         "run",
-        "--directory",
-        "/Users/jeisenman/projects/agentsdk",
-        "python-upgrade-mcp"
+        "./cmd/q2-mcp",
+        "--server",
+        "oms"
       ],
       "env": {
         "Q2_MCP_DEBUG": "1"
@@ -67,29 +62,17 @@
     },
     "resource-discovery": {
       "type": "stdio",
-      "command": "uv",
+      "command": "go",
       "args": [
+        "-C",
+        "/Users/jeisenman/ra/qtwo_bench",
         "run",
-        "--directory",
-        "/Users/jeisenman/projects/agentsdk",
-        "resource-discovery-mcp"
+        "./cmd/q2-mcp",
+        "--server",
+        "resource-discovery"
       ],
       "env": {
         "Q2_MCP_DEBUG": "1"
-      }
-    },
-    "warehouse": {
-      "type": "stdio",
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/Users/jeisenman/projects/agentsdk",
-        "warehouse-mcp"
-      ],
-      "env": {
-        "Q2_MCP_DEBUG": "1",
-        "WAREHOUSE_ENVIRONMENT": "sandbox"
       }
     }
   }

@@ -1,34 +1,30 @@
-FROM ghcr.io/astral-sh/uv:0.8.15-python3.11-bookworm-slim
+FROM golang:1.25-bookworm AS build
 
-ENV HOME=/home/agentbench \
-    CODEX_HOME=/home/agentbench/.bedrock_codex \
-    CODEX_SOURCE_HOME=/mnt/codex-host \
-    PATH=/workspace/.venv/bin:$PATH \
-    PYTHONUNBUFFERED=1 \
-    UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY adapters ./adapters
+COPY agentmemory ./agentmemory
+COPY agents ./agents
+COPY cmd ./cmd
+COPY dependencyintelligence ./dependencyintelligence
+COPY domain ./domain
+COPY mcpapi ./mcpapi
+COPY ports ./ports
+COPY workflowharness ./workflowharness
+COPY workflows ./workflows
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /q2-mcp ./cmd/q2-mcp
 
-RUN groupadd --gid 1000 agentbench \
-    && useradd --create-home --uid 1000 --gid 1000 agentbench
+FROM debian:bookworm-slim
 
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends nodejs npm \
-    && npm install --global @openai/codex@0.156.1 \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install --yes --no-install-recommends ca-certificates netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 1000 agentbench \
+    && useradd --create-home --uid 1000 --gid 1000 agentbench
 
 WORKDIR /workspace
-
-COPY pyproject.toml uv.lock README.md ./
-COPY src ./src
-COPY containers/agentbench/entrypoint.sh /usr/local/bin/agentbench-entrypoint
-
-RUN uv sync --frozen --no-dev \
-    && chmod 755 /usr/local/bin/agentbench-entrypoint \
-    && mkdir -p /workspace/var /home/agentbench/.aws \
-        /home/agentbench/.bedrock_codex \
-    && chown -R agentbench:agentbench /workspace/var /home/agentbench
-
+COPY --from=build /q2-mcp /usr/local/bin/q2-mcp
 USER agentbench
-
-ENTRYPOINT ["agentbench-entrypoint"]
-CMD ["agentbench", "--help"]
+ENTRYPOINT ["q2-mcp"]
+CMD ["--server", "prod-support", "--transport", "streamable-http", "--host", "0.0.0.0"]

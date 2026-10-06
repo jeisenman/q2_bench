@@ -3,6 +3,6 @@ repos:
     hooks:
       - id: quality
         name: repository quality checks
-        entry: uv run python scripts/check.py
+        entry: uv run python scripts/check.py --check-format
         language: system
         pass_filenames: false
