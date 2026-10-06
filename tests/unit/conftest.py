@@ -4,6 +4,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from radar_fixtures import create_radar_repositories
+
+from workspaces.data_engineering.workflows.lineage import RadarRepositories
 
 
 @pytest.fixture
@@ -60,6 +63,7 @@ def _get_copy_tasks():
             {
                 "targetDatasetMetadata": METADATA,
                 "outputPathConvention": "client/{clientId}",
+                "raFile": "DatabaseOutput/dbStagingRelationshipNew.csv",
             },
             {"outputResource": "ClientDataMartADLS"},
         ),
@@ -241,6 +245,14 @@ class EngagementMetadata(BaseMetadata):
         "git@github.com:precisionlender/di-pipelines.git",
     )
     return repository
+
+
+@pytest.fixture
+def radar_repositories(
+    tmp_path: Path,
+    di_repository: Path,
+) -> RadarRepositories:
+    return create_radar_repositories(tmp_path, di_repository)
 
 
 def _write(path: Path, content: str) -> None:

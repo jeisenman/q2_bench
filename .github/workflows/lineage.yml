@@ -3,7 +3,7 @@ name: lineage
 on:
   workflow_dispatch:
   repository_dispatch:
-    types: [di-pipelines-master-push]
+    types: [di-pipelines-master-push, radar-lineage-source-push]
   schedule:
     - cron: "17 * * * *"
   push:
@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: lineage-di-pipelines-master
+  group: radar-lineage-static-analysis
   cancel-in-progress: false
 
 jobs:
@@ -39,6 +39,46 @@ jobs:
           path: external/di-pipelines
           token: ${{ secrets.DI_PIPELINES_READ_TOKEN }}
 
+      - name: Check out RADAR notebooks master
+        uses: actions/checkout@v4
+        with:
+          repository: precisionlender/radar-notebooks
+          ref: master
+          path: external/radar-notebooks
+          token: ${{ secrets.DI_PIPELINES_READ_TOKEN }}
+
+      - name: Check out RADAR libraries master
+        uses: actions/checkout@v4
+        with:
+          repository: precisionlender/radar-libraries
+          ref: master
+          path: external/radar-libraries
+          token: ${{ secrets.DI_PIPELINES_READ_TOKEN }}
+
+      - name: Check out RADAR ADF master
+        uses: actions/checkout@v4
+        with:
+          repository: precisionlender/radar-adf-pipeline
+          ref: master
+          path: external/radar-adf-pipeline
+          token: ${{ secrets.DI_PIPELINES_READ_TOKEN }}
+
+      - name: Check out DataIngress master
+        uses: actions/checkout@v4
+        with:
+          repository: precisionlender/pl-dataingress
+          ref: master
+          path: external/pl-dataingress
+          token: ${{ secrets.DI_PIPELINES_READ_TOKEN }}
+
+      - name: Check out calculation engine develop
+        uses: actions/checkout@v4
+        with:
+          repository: precisionlender/pl-calculation-engine
+          ref: develop
+          path: external/pl-calculation-engine
+          token: ${{ secrets.DI_PIPELINES_READ_TOKEN }}
+
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
@@ -52,11 +92,16 @@ jobs:
         run: >-
           uv run agentbench lineage-sync
           --repository external/di-pipelines
-          --source-ref master
-          --output var/lineage/di-pipelines.json
+          --radar-notebooks-repository external/radar-notebooks
+          --radar-libraries-repository external/radar-libraries
+          --radar-adf-repository external/radar-adf-pipeline
+          --data-ingress-repository external/pl-dataingress
+          --engine-repository external/pl-calculation-engine
+          --source-ref static-analysis
+          --output var/lineage/radar-lineage.json
 
       - name: Upload review artifact
         uses: actions/upload-artifact@v4
         with:
-          name: di-pipelines-lineage
-          path: var/lineage/di-pipelines.json
+          name: radar-lineage
+          path: var/lineage/radar-lineage.json

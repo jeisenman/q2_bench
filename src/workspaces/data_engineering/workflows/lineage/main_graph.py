@@ -13,7 +13,9 @@ from workspaces.data_engineering.workflows.lineage.ast_values import (
     string_value,
     target_names,
 )
-from workspaces.data_engineering.workflows.lineage.models import SourceLocation
+from workspaces.data_engineering.workflows.lineage.enrichments import (
+    SourceLocation,
+)
 from workspaces.data_engineering.workflows.lineage.physical import (
     FunctionExtractor,
     PhysicalExtraction,

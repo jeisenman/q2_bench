@@ -15,6 +15,7 @@ from adapters.postgres import LINEAGE_POSTGRES_DSN_ENV, PostgresLineageStore
 from mcp_servers.debug import McpDebugTrace
 from observability import current_trace_metadata, traced_operation
 from workspaces.data_engineering.workflows.lineage import (
+    RADAR_LINEAGE_REPOSITORY,
     LineageNode,
     LineageQueryService,
     LineageQuerySource,
@@ -110,7 +111,7 @@ def register_lineage_tools(server: MCPServer) -> None:
     server.tool(
         name="search_lineage_datasets",
         description=(
-            "Search datasets and Snowflake tables in the latest DI Pipelines "
+            "Search datasets and Snowflake tables in the latest RADAR "
             "source-derived lineage graph."
         ),
     )(search_lineage_datasets)
@@ -184,7 +185,10 @@ async def _execute(
                 "q2.agent.correlation_id": correlation_id,
             },
         ):
-            service = LineageQueryService(_source())
+            service = LineageQueryService(
+                _source(),
+                repository=RADAR_LINEAGE_REPOSITORY,
+            )
             result = await asyncio.to_thread(operation, service)
             result["trace"] = current_trace_metadata()
             debug.event("tool.complete", response_field_count=len(result))
@@ -208,7 +212,7 @@ def _source_mode() -> str:
     return "postgres" if dsn.strip() else "json-artifact"
 
 
-def _manifest(manifest: RepositoryManifest) -> dict[str, str]:
+def _manifest(manifest: RepositoryManifest) -> dict[str, object]:
     return manifest.to_dict()
 
 
@@ -224,6 +228,7 @@ def _node_summary(node: LineageNode) -> dict[str, object]:
         "fieldCount": len(node.fields),
         "locationCount": len(node.locations),
         "transformationCount": len(node.transformations),
+        "enrichmentCount": len(node.enrichments),
     }
 
 
@@ -238,5 +243,6 @@ def _node_details(node: LineageNode) -> dict[str, Any]:
         "sources": [source.to_dict() for source in node.sources],
         "context": node.context.to_dict() if node.context else None,
         "attributes": dict(node.attributes),
+        "enrichments": [enrichment.to_dict() for enrichment in node.enrichments],
         "contentHash": node.content_hash,
     }

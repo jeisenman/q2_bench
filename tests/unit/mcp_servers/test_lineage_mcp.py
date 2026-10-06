@@ -8,11 +8,13 @@ import pytest
 
 from mcp_servers import lineage as lineage_mcp
 from workspaces.data_engineering.workflows.lineage import (
+    RADAR_LINEAGE_REPOSITORY,
     EdgeKind,
     JobAllocation,
     LineageEdge,
     LineageGraph,
     LineageNode,
+    NodeEnrichment,
     RepositoryManifest,
     ResourceAllocation,
     SourceLocation,
@@ -25,8 +27,10 @@ from workspaces.data_engineering.workflows.lineage import (
 class GraphSource:
     def __init__(self, graph: LineageGraph) -> None:
         self.graph = graph
+        self.requested_repositories: list[str] = []
 
-    def latest(self, _repository: str, _profile: str) -> LineageGraph:
+    def latest(self, repository: str, _profile: str) -> LineageGraph:
+        self.requested_repositories.append(repository)
         return self.graph
 
     def history(
@@ -58,6 +62,14 @@ def graph() -> LineageGraph:
                 ),
             ),
         ),
+        enrichments=(
+            NodeEnrichment(
+                "engine-calculation",
+                "CalculateRelationship",
+                "Engine calculation contract.",
+                (SourceLocation("engine/IRelationship.cs", 10),),
+            ),
+        ),
     )
     return LineageGraph(
         RepositoryManifest(
@@ -80,15 +92,17 @@ def graph() -> LineageGraph:
 def install_source(
     monkeypatch: pytest.MonkeyPatch,
     expected: LineageGraph,
-) -> None:
-    monkeypatch.setattr(lineage_mcp, "_source", lambda: GraphSource(expected))
+) -> GraphSource:
+    source = GraphSource(expected)
+    monkeypatch.setattr(lineage_mcp, "_source", lambda: source)
+    return source
 
 
 def test_lineage_mcp_search_traversal_and_allocations(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     expected = graph()
-    install_source(monkeypatch, expected)
+    source = install_source(monkeypatch, expected)
     output = expected.nodes[2]
 
     search = asyncio.run(lineage_mcp.search_lineage_datasets("engagement"))
@@ -100,6 +114,9 @@ def test_lineage_mcp_search_traversal_and_allocations(
     assert upstream["nodeCount"] == len(expected.nodes) - 1
     transformations = details["node"]["transformations"]
     assert transformations[0]["allocation"]["standard"]["compute"] == "spark"
+    assert details["node"]["enrichments"][0]["name"] == "CalculateRelationship"
+    assert details["node"]["enrichmentCount"] == 1
+    assert source.requested_repositories == [RADAR_LINEAGE_REPOSITORY] * 3
 
 
 def test_lineage_mcp_history_and_debug_trace(

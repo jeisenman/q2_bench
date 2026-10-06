@@ -20,7 +20,9 @@ from workspaces.data_engineering.workflows.lineage.ast_values import (
     target_names,
     truth_value,
 )
-from workspaces.data_engineering.workflows.lineage.models import SourceLocation
+from workspaces.data_engineering.workflows.lineage.enrichments import (
+    SourceLocation,
+)
 from workspaces.data_engineering.workflows.lineage.physical_allocation import (
     resource_allocation as resources_for,
 )

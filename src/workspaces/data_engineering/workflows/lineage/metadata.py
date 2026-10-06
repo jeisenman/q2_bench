@@ -15,13 +15,13 @@ from workspaces.data_engineering.workflows.lineage.ast_values import (
     module_constants,
     string_value,
 )
+from workspaces.data_engineering.workflows.lineage.enrichments import (
+    SourceLocation,
+)
 from workspaces.data_engineering.workflows.lineage.identifiers import (
     dataset_identifier,
 )
-from workspaces.data_engineering.workflows.lineage.models import (
-    DatasetField,
-    SourceLocation,
-)
+from workspaces.data_engineering.workflows.lineage.models import DatasetField
 
 _VERSION_FIELDS = re.compile(r"_v(?P<major>\d+)_(?P<minor>\d+)_fields")
 _SCHEMA_METHOD = re.compile(r"_schema_v(?P<major>\d+)")

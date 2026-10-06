@@ -113,7 +113,7 @@ services:
       CODEX_HOME: /home/agentbench/.bedrock_codex
       CODEX_SOURCE_HOME: /mnt/codex-host
       HOME: /home/agentbench
-      LINEAGE_GRAPH_PATH: /workspace/var/lineage/di-pipelines.json
+      LINEAGE_GRAPH_PATH: /workspace/var/lineage/radar-lineage.json
       PROD_SUPPORT_MCP_HOST: 0.0.0.0
       PROD_SUPPORT_MCP_PORT: "8000"
       PROD_SUPPORT_MCP_TRANSPORT: streamable-http

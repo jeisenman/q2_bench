@@ -8,6 +8,9 @@ from dataclasses import dataclass, field
 from workspaces.data_engineering.workflows.lineage.allocations import (
     AllocationIndex,
 )
+from workspaces.data_engineering.workflows.lineage.enrichments import (
+    SourceLocation,
+)
 from workspaces.data_engineering.workflows.lineage.graph_models import (
     LineageGraph,
     RepositoryManifest,
@@ -30,7 +33,6 @@ from workspaces.data_engineering.workflows.lineage.models import (
     EdgeKind,
     LineageEdge,
     LineageNode,
-    SourceLocation,
     Transformation,
 )
 from workspaces.data_engineering.workflows.lineage.physical import (

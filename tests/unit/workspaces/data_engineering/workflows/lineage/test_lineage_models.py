@@ -17,8 +17,10 @@ from workspaces.data_engineering.workflows.lineage import (
     LineageEdge,
     LineageGraph,
     LineageNode,
+    NodeEnrichment,
     NodeKind,
     RepositoryManifest,
+    RepositoryRevision,
     ResourceAllocation,
     SourceLocation,
     Transformation,
@@ -47,6 +49,13 @@ def manifest(graph_id: UUID = GRAPH_ID) -> RepositoryManifest:
         profile="maximum-permissions",
         extractor_version="1",
         generated_at=datetime(2026, 10, 5, tzinfo=UTC),
+        source_repositories=(
+            RepositoryRevision(
+                "precisionlender/di-pipelines",
+                "a" * 40,
+                "master",
+            ),
+        ),
     )
 
 
@@ -90,6 +99,14 @@ def node(
         owners=("data-engineering",),
         context=DerivedContext("Materialized by one task.", "test"),
         attributes=(("stage", "Primary"),),
+        enrichments=(
+            NodeEnrichment(
+                "engine-calculation",
+                "CalculateRelationship",
+                "Public engine calculation contract.",
+                (SourceLocation("engine/IRARelationshipEngineService.cs", 10),),
+            ),
+        ),
     )
 
 

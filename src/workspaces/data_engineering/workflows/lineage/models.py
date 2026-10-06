@@ -11,6 +11,10 @@ from typing import Any, Self
 from workspaces.data_engineering.workflows.lineage.allocation_models import (
     JobAllocation,
 )
+from workspaces.data_engineering.workflows.lineage.enrichments import (
+    NodeEnrichment,
+    SourceLocation,
+)
 from workspaces.data_engineering.workflows.lineage.errors import (
     LineageValidationError,
 )
@@ -59,18 +63,6 @@ class CanonicalIdentifier:
             "namespace": self.namespace,
             "name": self.name,
         }
-
-
-@dataclass(frozen=True, slots=True)
-class SourceLocation:
-    """Repository source location supporting one lineage assertion."""
-
-    path: str
-    line: int
-
-    def to_dict(self) -> dict[str, object]:
-        """Serialize the source location."""
-        return {"path": self.path, "line": self.line}
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,6 +200,7 @@ class LineageNode:
     owners: tuple[str, ...] = ()
     context: DerivedContext | None = None
     attributes: tuple[tuple[str, str], ...] = ()
+    enrichments: tuple[NodeEnrichment, ...] = ()
 
     @property
     def node_id(self) -> str:
@@ -234,6 +227,7 @@ class LineageNode:
             "owners": list(self.owners),
             "context": self.context.to_dict() if self.context else None,
             "attributes": dict(self.attributes),
+            "enrichments": [enrichment.to_dict() for enrichment in self.enrichments],
         }
 
     @classmethod
@@ -277,6 +271,10 @@ class LineageNode:
                     (str(key), str(item))
                     for key, item in _mapping(value.get("attributes")).items()
                 )
+            ),
+            enrichments=tuple(
+                NodeEnrichment.from_dict(_mapping(item))
+                for item in _sequence(value.get("enrichments"))
             ),
         )
 

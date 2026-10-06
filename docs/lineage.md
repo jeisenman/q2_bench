@@ -1,17 +1,33 @@
-# DI Pipelines repository lineage
+# RADAR repository lineage
 
-The lineage workflow statically materializes the intended DI Pipelines
-`l3_main_graph` and `snowflake_ingestion` paths as a versioned,
-OpenLineage-compatible graph. It does not import Airflow, Spark, or DI
-Pipelines modules, so extraction does not execute repository code or read
-runtime credentials.
+The lineage workflow statically materializes the RADAR run path and its
+downstream DI Pipelines graph as one versioned, OpenLineage-compatible graph.
+It reads six local checkouts: `radar-notebooks`, `radar-libraries`,
+`radar-adf-pipeline`, `pl-dataingress`, `pl-calculation-engine`, and
+`di-pipelines`. It does not import or execute their application code.
 
 ## Current scope
 
-The extraction profile assumes one client with every permission and feature
-flag enabled. Both branches of source-controlled feature conditions are
-included. The graph contains:
+The extraction profile is an all-client static union. Client-specific RADAR
+notebooks and all feature-gated DI paths are included. The graph follows:
 
+`ClientUploadedFiles -> RawInputs -> MappingResults -> TransformResults ->
+computable DTOs -> EngineResults -> DatabaseOutput/DataEngineering ->
+DI Pipelines -> Snowflake`
+
+The graph contains:
+
+- extraction, mapping, and transform notebook calls resolved through the
+  generated RADAR loader and outputter library;
+- ApplicationInput, RelationshipServiceInput, MappingResults,
+  TransformResults, EngineResults, DatabaseOutput, and DataEngineering files
+  declared by the DataIngress schema;
+- ADF activity evidence for each orchestration stage;
+- DataIngress DTO mapping, calculation coordination, DatabaseOutput, and
+  DataEngineeringOutput jobs;
+- public RADAR engine `Calculate*` contracts as enrichment records on the
+  engine job only;
+- `raFile` edges from RADAR run files into the DI Pipelines task group;
 - logical task-group jobs and DAG dependencies from `l3_main_graph.py`;
 - custom operator activities and their mechanical dependencies;
 - each job's standard compute allocation, including shared Spark and
@@ -21,12 +37,13 @@ included. The graph contains:
 - dataset schema, description, version, and Snowflake mapping metadata;
 - final Snowflake load jobs, tables, and columns from
   `snowflake_ingestion.py`;
-- source locations and deterministic derived explanations.
+- source locations prefixed by repository and deterministic derived
+  explanations.
 
-Runtime Airflow comparison, PL Application DTOs, Data Ingress XML and ADF,
-and the Event Bus transport are outside this first graph. The canonical
-identifier and extractor boundaries allow those sources to add evidence to
-the same datasets later.
+Engine methods and formulas do not become graph nodes or edges. They are
+non-structural `enrichments` returned with the engine job's transformation
+details. Runtime executions, values, Event Bus transport, and PL Application
+internals remain outside the static graph.
 
 ## Canonical identifiers
 
@@ -38,6 +55,8 @@ database key.
 | --- | --- | --- |
 | Logical dataset | `q2://data-engineering` | `primary/pl_andi/engagement/plchatengagements` |
 | Airflow job | `q2://data-engineering/airflow` | `l3_main_graph/andi` |
+| RADAR job | `q2://data-engineering/radar` | `pl_dataingress/database_output` |
+| RADAR run file | `q2://data-engineering` | `databaseoutput/dbstagingrelationshipnew_csv` |
 | Snowflake table | `snowflake://q2/data-engineering` | `client_data_mart.monthly_financials` |
 
 Dataset identity comes from stage plus logical dataset path. Physical
@@ -65,10 +84,11 @@ framework defaults changes the generated graph.
 
 ## Versioning and changes
 
-The manifest records repository name, full commit SHA, source ref, extraction
-profile, extractor version, and generation time. Graph IDs are deterministic
-for repository, commit, profile, and extractor version. A new DI Pipelines
-master commit therefore produces a new immutable graph version.
+The aggregate manifest records every source repository, full commit SHA, and
+checked-out ref under `sourceRepositories`. Its top-level 40-character commit
+is a deterministic digest of those revisions. Graph IDs are deterministic for
+that digest, profile, and extractor version, so a change to any component
+produces a new immutable graph version.
 
 The workflow compares each graph with the latest stored graph for the same
 repository and profile. It records added, removed, and changed nodes and
@@ -86,11 +106,16 @@ Run a local review extraction:
 
 ```bash
 uv run agentbench lineage-sync \
-  --repository ../di-pipelines \
-  --source-ref master \
+  --source-ref static-analysis \
   --dry-run \
-  --output var/lineage/di-pipelines.json
+  --output var/lineage/radar-lineage.json
 ```
+
+The defaults expect all six repositories as siblings of this checkout.
+Explicit alternatives are available through `--repository`,
+`--radar-notebooks-repository`, `--radar-libraries-repository`,
+`--radar-adf-repository`, `--data-ingress-repository`, and
+`--engine-repository`.
 
 Persist a graph by setting `LINEAGE_POSTGRES_DSN` and omitting `--dry-run`.
 The write is atomic and idempotent for repository, commit, profile, and
@@ -106,17 +131,17 @@ five read-only tools:
 - `get_lineage_upstream` and `get_lineage_downstream` traverse a bounded
   number of graph levels and nodes.
 - `get_lineage_transformation` returns schema, physical locations, source
-  locations, mechanical transformations, standard job allocation, and
-  larger-client allocation overrides.
+  locations, mechanical transformations, engine enrichments, standard job
+  allocation, and larger-client allocation overrides.
 - `get_lineage_change_history` returns the commits where a node was created,
   changed, or removed.
 
 When `LINEAGE_POSTGRES_DSN` is configured, the MCP reads immutable graph
 versions from PostgreSQL. Otherwise it reads
 `LINEAGE_GRAPH_PATH`, which defaults to
-`var/lineage/di-pipelines.json`. Docker Compose mounts that path into the MCP
+`var/lineage/radar-lineage.json`. Docker Compose mounts that path into the MCP
 container. Regenerate the artifact with the local review extraction command
-above whenever the DI Pipelines checkout changes.
+above whenever any source checkout changes.
 
 Every response identifies the repository commit and extraction profile.
 Search and traversal limits are validated before reading data. MCP requests
@@ -125,11 +150,12 @@ are instrumented with bounded OpenTelemetry metadata and include
 
 ## GitHub automation
 
-[`lineage.yml`](../.github/workflows/lineage.yml) checks out DI Pipelines
-master, applies the migration, persists the graph, and uploads the JSON
-artifact. It runs from:
+[`lineage.yml`](../.github/workflows/lineage.yml) checks out the five
+master branches plus calculation engine `develop`, applies the migration,
+persists the graph, and uploads the JSON artifact. It runs from:
 
 - a `di-pipelines-master-push` repository dispatch sent by DI Pipelines;
+- a `radar-lineage-source-push` dispatch from another source repository;
 - an hourly reconciliation schedule;
 - manual dispatch;
 - changes to the lineage implementation in this repository.

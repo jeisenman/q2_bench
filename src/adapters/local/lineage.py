@@ -11,7 +11,7 @@ from typing import Any
 from workspaces.data_engineering.workflows.lineage.graph_models import LineageGraph
 
 LINEAGE_GRAPH_PATH_ENV = "LINEAGE_GRAPH_PATH"
-DEFAULT_LINEAGE_GRAPH_PATH = Path("var/lineage/di-pipelines.json")
+DEFAULT_LINEAGE_GRAPH_PATH = Path("var/lineage/radar-lineage.json")
 
 
 class LocalLineageError(RuntimeError):
@@ -66,8 +66,8 @@ class JsonLineageGraphSource:
         if not self._path.is_file():
             message = (
                 f"lineage graph artifact does not exist: {self._path}. "
-                "Run 'uv run agentbench lineage-sync --repository "
-                "../di-pipelines --source-ref master --dry-run "
+                "Run 'uv run agentbench lineage-sync --source-ref "
+                "static-analysis --dry-run "
                 f"--output {self._path}'."
             )
             raise LocalLineageError(message)

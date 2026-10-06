@@ -21,6 +21,37 @@ SHA_LENGTH = 40
 
 
 @dataclass(frozen=True, slots=True)
+class RepositoryRevision:
+    """One source repository revision contributing to an aggregate graph."""
+
+    repository: str
+    commit_sha: str
+    source_ref: str
+
+    def __post_init__(self) -> None:
+        """Validate the component revision."""
+        if len(self.commit_sha) != SHA_LENGTH:
+            raise LineageValidationError.invalid_commit_sha()
+
+    def to_dict(self) -> dict[str, str]:
+        """Serialize the component revision."""
+        return {
+            "repository": self.repository,
+            "commitSha": self.commit_sha,
+            "sourceRef": self.source_ref,
+        }
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> Self:
+        """Deserialize a component revision."""
+        return cls(
+            repository=str(value["repository"]),
+            commit_sha=str(value["commitSha"]),
+            source_ref=str(value["sourceRef"]),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class RepositoryManifest:
     """Source revision and extraction profile for one graph version."""
 
@@ -31,6 +62,7 @@ class RepositoryManifest:
     profile: str
     extractor_version: str
     generated_at: datetime
+    source_repositories: tuple[RepositoryRevision, ...] = ()
 
     def __post_init__(self) -> None:
         """Validate immutable revision identity."""
@@ -39,7 +71,7 @@ class RepositoryManifest:
         if self.generated_at.tzinfo is None:
             raise LineageValidationError.naive_generated_at()
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, object]:
         """Serialize the repository manifest."""
         return {
             "graphId": str(self.graph_id),
@@ -49,6 +81,9 @@ class RepositoryManifest:
             "profile": self.profile,
             "extractorVersion": self.extractor_version,
             "generatedAt": self.generated_at.isoformat(),
+            "sourceRepositories": [
+                revision.to_dict() for revision in self.source_repositories
+            ],
         }
 
     @classmethod
@@ -62,6 +97,10 @@ class RepositoryManifest:
             profile=str(value["profile"]),
             extractor_version=str(value["extractorVersion"]),
             generated_at=datetime.fromisoformat(str(value["generatedAt"])),
+            source_repositories=tuple(
+                RepositoryRevision.from_dict(_mapping(item))
+                for item in _sequence(value.get("sourceRepositories"))
+            ),
         )
 
 

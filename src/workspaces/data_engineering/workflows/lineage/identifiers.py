@@ -14,6 +14,7 @@ from workspaces.data_engineering.workflows.lineage.models import (
 
 DATASET_NAMESPACE = "q2://data-engineering"
 AIRFLOW_JOB_NAMESPACE = "q2://data-engineering/airflow"
+RADAR_JOB_NAMESPACE = "q2://data-engineering/radar"
 SNOWFLAKE_NAMESPACE = "snowflake://q2/data-engineering"
 _SEPARATOR = re.compile(r"[^a-z0-9]+")
 
@@ -42,6 +43,26 @@ def airflow_job_identifier(dag_id: str, job_name: str) -> CanonicalIdentifier:
         AIRFLOW_JOB_NAMESPACE,
         f"{canonical_segment(dag_id)}/{canonical_segment(job_name)}",
     )
+
+
+def radar_job_identifier(component: str, job_name: str) -> CanonicalIdentifier:
+    """Return a stable identity for a non-Airflow RADAR pipeline job."""
+    return CanonicalIdentifier(
+        NodeKind.JOB,
+        RADAR_JOB_NAMESPACE,
+        f"{canonical_segment(component)}/{canonical_segment(job_name)}",
+    )
+
+
+def run_file_identifier(path: str) -> CanonicalIdentifier:
+    """Return a dataset identity for one RADAR run-relative file."""
+    normalized = path.strip("/")
+    if normalized.startswith("./"):
+        return dataset_identifier("RadarRun", normalized.removeprefix("./"))
+    if "/" not in normalized:
+        return dataset_identifier("RadarRun", normalized)
+    stage, dataset = normalized.split("/", maxsplit=1)
+    return dataset_identifier(stage, dataset)
 
 
 def snowflake_dataset_identifier(
