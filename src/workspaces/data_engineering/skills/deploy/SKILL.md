@@ -61,6 +61,22 @@ Record the plan in `deployment.md` when the target repository uses that
 convention. Keep credentials, customer names, raw production rows, and
 unbounded logs out of the record.
 
+### Databricks cluster startup
+
+When a Databricks deployment or one-time validation uses an existing cluster:
+
+1. Resolve the cluster ID from the selected workspace. Never substitute a
+   cluster from another Databricks environment.
+2. If the cluster is terminated, start it and record the start timestamp.
+3. Poll the cluster state every 30 seconds. Allow 12 minutes by default:
+   10 minutes for the expected warm-up plus a 2-minute buffer.
+4. Continue only after the state is `RUNNING`. Stop and report immediately for
+   `ERROR` or `UNKNOWN`, or when the 12-minute deadline expires.
+
+The 12-minute window is a bounded operational default, not evidence that a
+cluster will become healthy. Record the observed warm-up duration and any
+startup error in the deployment evidence.
+
 ## Approval and execution
 
 Deployment is an external mutation. Before execution, present the exact:
