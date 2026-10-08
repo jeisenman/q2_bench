@@ -4,8 +4,30 @@ This repository is a set of **workspaces**. A workspace owns the skills, the
 MCP tool bindings, and the benchmarks for one domain. You are either Claude or
 Codex; the steps below differ by harness, so follow your own section.
 
-Everything here assumes local operation: a loopback MLflow server with a SQLite
-backend and a filesystem artifact store. Nothing requires a shared service.
+The harness and MCP processes run locally. Live connectors can still reach
+shared production services, so local execution does not imply sandbox data.
+
+## Prerequisites
+
+Install these before running setup:
+
+- Go 1.25 or newer;
+- Python 3.11 or newer and `uv`;
+- Docker Desktop with Compose;
+- Git;
+- the Claude or Codex harness you intend to use.
+
+The `gh`, `az`, and `databricks` CLIs are required only for workflows that use
+GitHub, Azure DevOps, or Databricks. Node.js and npm are required only for the
+optional Codex MLflow tracing hook.
+
+Confirm the base toolchain:
+
+```bash
+go version
+uv --version
+docker compose version
+```
 
 ## The model
 
@@ -23,33 +45,21 @@ benchmarks              score the harness + skill + MCP together
 
 Skills live with their workspace, at
 `src/workspaces/<workspace>/skills/<skill-id>/`. Harness directories
-(`.claude/skills/`, `.codex/skills/`) are **generated**. Never edit them
-directly — `scripts/check_skills.py` fails the build when they drift from the
-workspace source.
+(`.claude/skills/`, `.codex/skills/`) contain the harness-facing copies and
+are included in the checkout.
 
 ## Common steps
 
 ```bash
 uv sync
-uv run agentbench sync-skills
+go mod download
+go run ./cmd/agentbench version
 ```
 
-`sync-skills` reads every `src/workspaces/*/skills/*/skill.yaml` and renders
-each skill into the directories of the harnesses it declares. Per-harness
-overlay files live under `harness/<name>/` in the skill source and are merged
-in only for that harness. The `{{SKILL_DIR}}` token is replaced with the path
-the skill occupies in that harness, so script invocations resolve correctly on
-both sides.
-
-Files listed under `state:` in a skill manifest are seeded once and then owned
-by the harness at runtime. They survive re-syncs and are excluded from drift
-checks, so using a skill never fails the quality gate.
-
-Verify:
-
-```bash
-uv run agentbench sync-skills --check
-```
+The current Go `agentbench` command exposes `agents` and `version`. Historical
+`uv run agentbench setup`, `sync-skills`, benchmark, and tracing commands are
+not present in a clean checkout. Do not rely on those older examples when
+validating a new installation.
 
 ## Credentials and configuration
 
@@ -69,23 +79,40 @@ turned on.
 
 Choose the parent directory where Data Engineering repositories are already
 checked out or should be cloned. The default is `~/ra`, but each developer can
-select a different location:
+select a different location. Create it, then update
+`workspaces.data_engineering.repositories.root` in `configurations.yaml`:
 
 ```bash
-uv run agentbench setup
+mkdir -p ~/ra
 ```
-
-For non-interactive setup:
-
-```bash
-uv run agentbench setup --repositories-root ~/ra
-```
-
-The command creates the directory when it does not exist and records it at
-`workspaces.data_engineering.repositories.root`.
 
 **Every workspace is disabled by default.** An absent workspace, or an absent
 `enabled`, is false. Turn on only what you need.
+
+### Machine-local paths and files
+
+Review `.mcp.json` before opening the repository in a harness. Its `go -C`
+arguments and local connection files use absolute paths and must point to your
+clone and your own approved connection files. Never copy another developer's
+credentials or private keys. Treat those path substitutions as machine-local
+configuration; do not commit another user's paths over the shared file.
+
+The Compose services also have local file prerequisites:
+
+- `prod-support-mcp` requires
+  `~/projects/pl-data-plugins/product_support_updates.json`;
+- `warehouse-mcp` requires the Snowflake connection file described below.
+
+Obtain those files through the approved internal channel. If a file is absent,
+start only the service whose prerequisites are present; Compose intentionally
+does not create placeholder credential or production-data files.
+
+Validate configuration without starting containers:
+
+```bash
+docker compose config --quiet
+uv run python -m json.tool .mcp.json >/dev/null
+```
 
 ### Databricks tokens
 
@@ -198,10 +225,36 @@ A skill declares the MCP server and tools it needs in its `skill.yaml`. If
 those tools are not connected, say so and stop rather than approximating the
 work with shell commands.
 
+### Local-only production deployment skill
+
+The tracked `deploy` skill handles Alpha deployments only. Production
+deployment instructions are intentionally excluded from Git and supplied
+locally as `$dep`.
+
+A fresh clone therefore cannot perform the `$dep` workflow. An authorized user
+must obtain the approved `dep` skill bundle through the internal channel and
+place it in:
+
+```text
+src/workspaces/data_engineering/skills/dep/
+.claude/skills/dep/
+.codex/skills/dep/
+```
+
+These directories are gitignored. Confirm they remain local:
+
+```bash
+git check-ignore .codex/skills/dep/SKILL.md
+git ls-files --error-unmatch .codex/skills/dep/SKILL.md
+```
+
+The first command must print the path; the second must fail. Invoke the skill
+explicitly as `$dep`. Codex normally notices skill-file changes automatically;
+restart Codex if the skill does not appear.
+
 ## Claude
 
-Claude discovers skills from `.claude/skills/`. After `sync-skills`, the
-workspace skills are available by name.
+Claude discovers the checked-in skills from `.claude/skills/`.
 
 Enable trace capture so runs can become benchmark cases:
 
@@ -224,7 +277,8 @@ skill belongs in `harness/claude/` in that skill's source.
 
 ## Codex
 
-Codex discovers skills from `.codex/skills/`. The `harness/codex/` overlay
+Codex discovers this repository's skills from `.codex/skills/`. The
+`harness/codex/` overlay
 supplies `agents/openai.yaml`, which gives the skill its display name and
 default prompt in the Codex interface.
 
@@ -244,17 +298,9 @@ Then run the interactive configuration:
 mlflow-codex setup
 ```
 
-This repository can also write the Codex notify hook directly, which is useful
-when pinning a specific tracking URI and experiment:
-
-```bash
-uv run agentbench configure-codex-tracing --tracking-uri sqlite:///var/mlflow/backend.db
-```
-
-That writes `notify = ["mlflow-codex", "notify-hook"]` into your Codex
-`config.toml` and records the destination in `.codex/mlflow-tracing.json`. It
-refuses to overwrite an existing notify hook, so merge by hand if you already
-have one.
+The former repository command for writing the Codex notify hook is not
+available in the current Go CLI. Use `mlflow-codex setup` and review the
+resulting user-level Codex configuration instead.
 
 ## Traces become benchmarks
 
@@ -287,10 +333,12 @@ src/workspaces/<workspace>/skills/<skill-id>/
 
 `id` must match the directory name, and must be unique across all workspaces:
 harness skill directories are flat, so two workspaces cannot export the same
-skill name. The sync fails with both source paths when they collide.
+skill name.
 
-Then run `uv run agentbench sync-skills` and commit both the source and the
-generated output.
+The historical skill generator is not currently exposed by the Go CLI. Update
+the canonical source and both declared harness copies together, validate the
+skill structure, and commit all tracked copies. Do not commit local-only skill
+directories such as `dep`.
 
 ## Quality gate
 
@@ -298,5 +346,5 @@ generated output.
 uv run python scripts/check.py
 ```
 
-This runs formatting, lint, typing, tests, the file-length limit, the agent
-documentation policy, and the skill sync check.
+This runs Go formatting, vetting and tests; Python formatting, linting, typing
+and tests; the file-length policy; and repository-specific consistency checks.

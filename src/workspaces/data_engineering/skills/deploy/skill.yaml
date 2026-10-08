@@ -2,7 +2,7 @@ schema_version: 1
 id: deploy
 workspace: data_engineering
 display_name: Data Engineering Deploy
-summary: Plan, execute, and verify approved data-engineering deployments with bounded evidence.
+summary: Plan, execute, and verify approved Alpha data-engineering deployments.
 harnesses:
   - claude
   - codex

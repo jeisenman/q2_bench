@@ -1,26 +1,21 @@
 ---
 name: deploy
-description: Plan, execute, and verify data-engineering deployments. Use for deployment scope, prerequisite checks, approval-gated execution, and post-deployment verification.
+description: Plan, execute, and verify Alpha data-engineering deployments. Use for Alpha scope, prerequisite checks, approval-gated execution, and post-deployment verification. Do not use for production deployments.
 ---
 
 # Data Engineering Deploy
 
-Use skill to plan deployment for alpha, stage, or production environment.
+Use this skill for Alpha deployments. Production deployment procedures belong
+to the local-only `dep` skill.
 
 ## Alpha Deployments
 
-## DI-Pipelines
-
-
-## Production deployments
-
 ### di-pipelines and di-pipelines-unified
 
-For a merged `di-pipelines` PR, read
+For a `di-pipelines` feature branch, read
 [di-pipelines deployment](references/di-pipelines.md). It defines PR diff
 resolution, path-to-stage mapping, Azure run discovery and triggering,
-30-second polling, approval handling, bounded stage retries, Slack completion
-messages, and user-requested post-deployment reruns.
+30-second polling, Alpha approval handling, and bounded stage retries.
 
 ## Establish the deployment contract
 
@@ -34,9 +29,15 @@ Before changing external state, identify:
 - rollback or stop condition.
 
 Inspect the branch diff and the target repository's deployment configuration.
-Do not infer a production target from an unset or ambiguous environment
+Do not infer a target environment from an unset or ambiguous environment
 variable. Fail fast when the target, commit, or deployment mechanism is
 unclear.
+
+Before selecting a pipeline, confirm the workflow that will run from its
+definition and stage conditions. Choose the smallest workflow that deploys
+every required component and no unneeded component. A combined pipeline name
+or an existing run is not evidence that every contained deployment is needed.
+Do not trigger, approve, or retry unrelated Helm, image, DAG, or job stages.
 
 For `di-pipelines` changes, this skill owns the deployment contract,
 `deployment.md`, component-to-stage mapping, pipeline execution, approvals,
@@ -57,9 +58,30 @@ upstream build and publish stages succeeded, and that the target environment
 is the one named in the request. Check required approvals, credentials, and
 service health before submitting a deployment.
 
+Record both selected and excluded components with a reason. Documentation,
+tests, or metadata-only changes may require no deployment. A stage may be
+excluded only when the selected workflow's evaluated conditions prove it will
+be skipped; intent or naming alone is insufficient.
+
 Record the plan in `deployment.md` when the target repository uses that
-convention. Keep credentials, customer names, raw production rows, and
-unbounded logs out of the record.
+convention. Keep credentials, customer names, raw rows, and unbounded logs out
+of the record.
+
+### Databricks cluster startup
+
+When a Databricks deployment or one-time validation uses an existing cluster:
+
+1. Resolve the cluster ID from the selected workspace. Never substitute a
+   cluster from another Databricks environment.
+2. If the cluster is terminated, start it and record the start timestamp.
+3. Poll the cluster state every 30 seconds. Allow 12 minutes by default:
+   10 minutes for the expected warm-up plus a 2-minute buffer.
+4. Continue only after the state is `RUNNING`. Stop and report immediately for
+   `ERROR` or `UNKNOWN`, or when the 12-minute deadline expires.
+
+The 12-minute window is a bounded operational default, not evidence that a
+cluster will become healthy. Record the observed warm-up duration and any
+startup error in the deployment evidence.
 
 ## Approval and execution
 
@@ -87,7 +109,9 @@ When a pipeline task reports critically low agent disk space, classify the
 failure as infrastructure-related. Inspect the failed task log, retry only the
 failed stage with `state=retry` and `forceRetryAllJobs=false`, and poll the
 same run. Allow one retry of that stage; if it fails again, stop and report
-the disk evidence instead of retrying the whole pipeline.
+the disk evidence instead of retrying the whole pipeline. A `Bash exited with
+code '1'` alongside the low-space warning is still host infrastructure
+evidence, not a code failure.
 
 ## Verify and report
 
@@ -101,7 +125,6 @@ After deployment:
 5. Stop and report the first failed verification; do not automatically retry a
    mutating operation.
 
-The deployment is complete only when all required stages succeeded and the
-post-deployment checks support the requested outcome. Report the exact
-environment, deployed version, verification evidence, and any remaining
-uncertainty.
+The Alpha deployment is complete only when all required stages succeeded and
+the post-deployment checks support the requested outcome. Report the deployed
+version, verification evidence, and any remaining uncertainty.

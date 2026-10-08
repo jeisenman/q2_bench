@@ -15,3 +15,8 @@ reports/
 var/
 configurations.yaml
 !configurations.yaml.example
+
+# Local-only production deployment procedures.
+/src/workspaces/data_engineering/skills/dep/
+/.claude/skills/dep/
+/.codex/skills/dep/
