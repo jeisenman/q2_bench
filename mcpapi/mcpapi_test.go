@@ -47,6 +47,35 @@ func TestRemoteDataToolParity(t *testing.T) {
 	}
 }
 
+func TestWarehouseToolParity(t *testing.T) {
+	t.Parallel()
+	server := mcp.NewServer(&mcp.Implementation{Name: "test", Version: "1"}, nil)
+	registerWarehouse(server)
+	serverTransport, clientTransport := mcp.NewInMemoryTransports()
+	if _, err := server.Connect(context.Background(), serverTransport, nil); err != nil {
+		t.Fatal(err)
+	}
+	client := mcp.NewClient(&mcp.Implementation{Name: "test-client", Version: "1"}, nil)
+	session, err := client.Connect(context.Background(), clientTransport, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+	result, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := make([]string, len(result.Tools))
+	for index, tool := range result.Tools {
+		names[index] = tool.Name
+	}
+	sort.Strings(names)
+	expected := []string{"count_cortex_tokens", "run_cortex_complete"}
+	if !reflect.DeepEqual(names, expected) {
+		t.Fatalf("tools = %#v", names)
+	}
+}
+
 func TestUpdateOmissionsPersistsValidatedValues(t *testing.T) {
 	t.Parallel()
 	api := &prodSupportAPI{omissionsPath: t.TempDir() + "/omissions.json"}

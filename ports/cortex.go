@@ -8,6 +8,13 @@ import (
 	"github.com/jeisenman/q2_bench/domain"
 )
 
+const (
+	// MaxCortexModelBytes bounds provider routing input.
+	MaxCortexModelBytes = 256
+	// MaxCortexPromptBytes bounds one inference request before outbound I/O.
+	MaxCortexPromptBytes = 100_000
+)
+
 // CortexRequest is one model inference request.
 type CortexRequest struct {
 	Model       string
@@ -22,6 +29,20 @@ func (r CortexRequest) Validate() error {
 	}
 	if strings.TrimSpace(r.Prompt) == "" {
 		return fmt.Errorf("prompt must not be empty")
+	}
+	if len(r.Model) > MaxCortexModelBytes {
+		return fmt.Errorf(
+			"model must not exceed %d bytes; got %d",
+			MaxCortexModelBytes,
+			len(r.Model),
+		)
+	}
+	if len(r.Prompt) > MaxCortexPromptBytes {
+		return fmt.Errorf(
+			"prompt must not exceed %d bytes; got %d",
+			MaxCortexPromptBytes,
+			len(r.Prompt),
+		)
 	}
 	if r.Temperature < 0 || r.Temperature > 1 {
 		return fmt.Errorf(

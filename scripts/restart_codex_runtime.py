@@ -13,7 +13,7 @@ import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 COMPOSE_PATH = PROJECT_ROOT / "compose.yaml"
-MCP_SERVICE = "prod-support-mcp"
+MCP_SERVICES = ("prod-support-mcp", "warehouse-mcp")
 
 
 class ProductionConfigurationError(RuntimeError):
@@ -38,7 +38,7 @@ def validate_production_configuration() -> None:
     """Require the MCP container to select live production mode."""
     configuration = compose_configuration()
     services = configuration.get("services")
-    service = services.get(MCP_SERVICE) if isinstance(services, dict) else None
+    service = services.get(MCP_SERVICES[0]) if isinstance(services, dict) else None
     environment = service.get("environment") if isinstance(service, dict) else None
     source = (
         environment.get("PROD_SUPPORT_SOURCE")
@@ -61,7 +61,7 @@ def restart_command() -> list[str]:
         "--wait",
         "--wait-timeout",
         "120",
-        MCP_SERVICE,
+        *MCP_SERVICES,
     ]
 
 

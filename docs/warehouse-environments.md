@@ -1,19 +1,13 @@
-# Warehouse environments
+# Cortex environments
 
-Warehouse reads and Cortex inference resolve against one of four
-environments. `dev`, `stage`, and `prod` reach Snowflake through the Python
-connector. `sandbox` is served locally by DuckDB over CSV fixtures whose
-schemas mirror the real warehouse.
+Cortex inference resolves against one of four environments. `dev`, `stage`,
+and `prod` reach Snowflake through the Go driver. `sandbox` replays recorded
+responses.
 
 Only `sandbox` is deterministic, and every result says which environment
 produced it.
 
-## Two ports, because only one of them can be deterministic
-
-| Port | Backends | Double |
-| --- | --- | --- |
-| `WarehouseQuery` | Snowflake, DuckDB sandbox | CSV fixtures reproduce the data exactly |
-| `CortexInference` | Snowflake Cortex, recorded replay | responses captured once, replayed by request key |
+## Separate inference from deterministic queries
 
 Cortex is model inference, so no fixture can reproduce it. Keeping it behind
 its own port stops an LLM call from ending up inside a query a benchmark
@@ -27,7 +21,7 @@ environment:
 
 | Rejected | Use instead |
 | --- | --- |
-| `SNOWFLAKE.CORTEX.*` | the `CortexInference` port |
+| `SNOWFLAKE.CORTEX.*`, `AI_COMPLETE(...)` | the `CortexInference` port |
 | `payload:region` | `payload->>'region'` |
 | `LATERAL FLATTEN(...)` | `unnest(...)` |
 | `OBJECT_CONSTRUCT(...)` | `json_object(...)` |
@@ -50,7 +44,6 @@ production.
 
 ```bash
 export WAREHOUSE_ENVIRONMENT=sandbox        # dev | stage | prod | sandbox
-export WAREHOUSE_SANDBOX_FIXTURES=path/to/fixtures
 export WAREHOUSE_SANDBOX_CORTEX_RECORDINGS=path/to/recordings
 ```
 
@@ -71,84 +64,48 @@ Missing settings fail fast and name every variable to set. The credential is
 resolved at call time through a `SecretProvider` and never stored on a
 settings object.
 
-The Snowflake connector is an optional extra:
+The Snowflake Go driver is compiled into `warehouse-mcp`.
 
-```bash
-uv sync --extra snowflake
+Supported authenticators are `snowflake`, `oauth`, and `pat`. Password
+authentication resolves `SNOWFLAKE_<ENVIRONMENT>_PASSWORD`; OAuth and PAT
+resolve `SNOWFLAKE_<ENVIRONMENT>_TOKEN`. Interactive browser authentication is
+not supported by the container.
+
+## Sandbox recordings
+
+The sandbox recording directory contains one JSON file per captured request:
+
+```json
+{
+  "model": "<approved-model>",
+  "prompt": "Summarize this failure.",
+  "temperature": 0,
+  "text": "Recorded completion.",
+  "token_count": 4
+}
 ```
 
-## Fixtures
-
-A fixture directory holds `schema.yaml` and one CSV per table:
-
-```yaml
-tables:
-  - schema: ANALYTICS
-    name: FAILED_JOBS
-    data: analytics.failed_jobs.csv
-    columns:
-      - {name: CLIENT_ID, type: VARCHAR}
-      - {name: CLIENT_CODE, type: TEXT}
-      - {name: FAILED_AT, type: TIMESTAMP_TZ}
-      - {name: ROW_COUNT, type: NUMBER}
-      - {name: PAYLOAD, type: VARIANT}
-```
-
-Types use the warehouse vocabulary and are declared explicitly — inference
-never runs, so a fixture edit cannot silently change a column's type. `NUMBER`
-means `NUMBER(38,0)`, matching Snowflake. An empty CSV field loads as `NULL`,
-not an empty string. The CSV header must match the declared columns.
-
-Each fixture set carries a content digest, so a case pins the exact data it
-was written against.
-
-## Anonymizing production data into a fixture
-
-Real production data makes the best benchmark and cannot be committed.
-`benchmarks/anonymization.py` rewrites it under a per-fixture-set salt:
-
-| Strategy | Effect |
-| --- | --- |
-| `keep` | preserve exactly |
-| `redact` | replace with `[redacted]` |
-| `drop` | replace with `NULL`, keeping the column |
-| `pseudonym` | surrogate preserving length and character class |
-| `uuid` | surrogate UUID, so prefixes and joins still behave |
-| `generalize` | reduce precision, e.g. timestamp to date |
-
-Two properties are enforced. The same value and salt always produce the same
-output, so a rebuild is byte-identical. One identifier maps to one pseudonym
-in every table, so joins that worked in production still work in the fixture.
-
-Every column needs an explicit strategy. An undeclared column is an error, not
-a silent `keep`, so a new production column cannot leak into a committed
-fixture.
+The request identity includes model, prompt, and temperature. An unrecorded
+request fails instead of inventing an answer.
 
 ## MCP routes
 
-`warehouse-mcp` exposes three tools:
+`warehouse-mcp` exposes two tools:
 
-- `run_warehouse_query` — one read-only, portable statement with bound
-  parameters. Returns rows, the environment, and whether it was deterministic.
-  A non-portable statement comes back as a structured error naming each
-  violated rule and its fix.
 - `run_cortex_complete` — one Cortex completion. Reports whether the response
   was live or replayed.
-- `describe_warehouse_table` — the typed columns of one table.
+- `count_cortex_tokens` — one bounded tokenizer count without inference.
 
 Every route takes an optional `environment` that overrides the configured
 default.
 
-## Contract tests
+## Container
 
-`tests/contract/ports/test_warehouse_contract.py` runs one behavioral suite
-against every backend. DuckDB always runs. Snowflake runs when configured:
+Rebuild and recreate the service after code, dependency, prompt, environment,
+or configuration changes:
 
 ```bash
-export WAREHOUSE_CONTRACT_ENVIRONMENT=dev
-uv run pytest tests/contract/ports/test_warehouse_contract.py
+docker compose up -d --build --force-recreate --wait warehouse-mcp
 ```
 
-Without that configuration the Snowflake cases skip with an actionable
-reason. This suite is what keeps the sandbox honest: a backend that drifts
-fails here instead of inside a benchmark.
+The Streamable HTTP endpoint is `http://127.0.0.1:8766/mcp`.

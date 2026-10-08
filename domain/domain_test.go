@@ -71,3 +71,10 @@ func TestSQLNoiseIsIgnored(t *testing.T) {
 		}
 	}
 }
+
+func TestAICortexCallsAreNotPortable(t *testing.T) {
+	t.Parallel()
+	if !IsCortexCall("SELECT AI_COMPLETE('model', 'prompt')") {
+		t.Fatal("AI_COMPLETE must be routed through CortexInference")
+	}
+}

@@ -125,8 +125,9 @@ exist to remove. Map them explicitly per call instead:
 
 ### Snowflake and Cortex
 
-Cortex inference runs through `warehouse-mcp`. Three things have to be true
-before it works, and none of them are on by default.
+Cortex inference runs through the Go-native `warehouse-mcp`. The Compose
+service defaults to deterministic sandbox replay; live calls require explicit
+Snowflake configuration.
 
 The `remote-data-mcp` tool `make_snowflake_notebook` defaults to `prod_us`.
 Pass `environment="alpha"` or `environment="staging"` only when another
@@ -134,18 +135,10 @@ Snowflake environment is intended. This default affects generated read-only
 notebooks only; `warehouse-mcp` retains its explicit deterministic sandbox
 configuration described below.
 
-**Install the driver.** The Snowflake connector is an optional extra, so that
-the sandbox and the test suite need no provider credentials:
-
-```bash
-uv sync --extra snowflake
-```
-
-**Put the variables where the server will see them.** `warehouse-mcp` does
-**not** read `.env` — its `main()` only starts the server. Set them in the
-`env` block for `warehouse` in `.mcp.json`, or export them in the shell that
-launches your harness. `.env.example` lists them for reference, but copying
-them into `.env` alone will not work.
+**Put the variables where the server will see them.** The Compose service
+loads `.env`. The host-side stdio server reads variables from the environment
+block in `.mcp.json` or the shell that launches the harness. `.env.example`
+lists every supported value.
 
 Six are required per environment, and `load_settings` fails naming any that
 are missing:
@@ -159,28 +152,31 @@ SNOWFLAKE_DEV_ROLE        SNOWFLAKE_DEV_SCHEMA
 **Choose an authenticator.** `SNOWFLAKE_DEV_AUTHENTICATOR` selects how you
 sign in:
 
-| Value | Use | Password variable |
+| Value | Use | Credential variable |
 | --- | --- | --- |
 | unset / `snowflake` | Snowflake-native password | `SNOWFLAKE_DEV_PASSWORD` |
-| `externalbrowser` | **Okta or any SSO, on a desktop** | none |
-| `https://<org>.okta.com` | Okta, headless | `SNOWFLAKE_DEV_PASSWORD` |
-| `oauth`, `snowflake_jwt` | token or key-pair | per Snowflake docs |
+| `oauth` | OAuth token | `SNOWFLAKE_DEV_TOKEN` |
+| `pat` | Programmatic access token | `SNOWFLAKE_DEV_TOKEN` |
 
-With `externalbrowser` the connector opens a browser, you complete Okta, and
-no Snowflake password exists or is looked up. That mode is interactive, so it
-suits your desktop but cannot run unattended in CI or a benchmark.
+Interactive browser authentication is deliberately unsupported by the
+container. Use a password, OAuth token, or programmatic access token.
 
 The password variable name is derived, not configured: the secret reference
 defaults to `snowflake/dev/password`, and `/` and `-` become `_` and the whole
 thing uppercases, giving `SNOWFLAKE_DEV_PASSWORD`.
 
-**Then restart `warehouse-mcp` and name the environment.** A stdio server
-caches its environment at launch, so a client reconnect is not enough. The
-server defaults to `WAREHOUSE_ENVIRONMENT=sandbox`, so pass the environment
-explicitly on the call:
+**Then rebuild and recreate `warehouse-mcp` and name the environment.** A
+client reconnect is not enough after configuration or code changes:
+
+```bash
+docker compose up -d --build --force-recreate --wait warehouse-mcp
+```
+
+The server defaults to `WAREHOUSE_ENVIRONMENT=sandbox`, so pass the live
+environment explicitly on the call:
 
 ```text
-run_cortex_complete(model="claude-3-5-sonnet", prompt="...", environment="dev")
+run_cortex_complete(model="<approved-model>", prompt="...", environment="dev")
 ```
 
 **The sandbox is a separate setup.** Sandbox Cortex replays recordings from

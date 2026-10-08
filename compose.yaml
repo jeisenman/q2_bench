@@ -6,23 +6,27 @@ x-agentbench: &agentbench
     dockerfile: containers/agentbench/Dockerfile
   image: agentsdk-agentbench:local
   working_dir: /workspace
-  env_file:
-    - .env
   volumes:
     - ./var:/workspace/var
     - ./.env:/workspace/.env:ro
     - ./configurations.yaml:/workspace/configurations.yaml:ro
-    - type: bind
-      source: ${HOME}/projects/pl-data-plugins/product_support_updates.json
-      target: /workspace/product_support_updates.json
-      read_only: true
-      bind:
-        create_host_path: false
 
 services:
 
   prod-support-mcp:
     <<: *agentbench
+    env_file:
+      - .env
+    volumes:
+      - ./var:/workspace/var
+      - ./.env:/workspace/.env:ro
+      - ./configurations.yaml:/workspace/configurations.yaml:ro
+      - type: bind
+        source: ${HOME}/projects/pl-data-plugins/product_support_updates.json
+        target: /workspace/product_support_updates.json
+        read_only: true
+        bind:
+          create_host_path: false
     environment:
       PROD_SUPPORT_MCP_HOST: 0.0.0.0
       PROD_SUPPORT_MCP_PORT: "8000"
@@ -47,6 +51,64 @@ services:
         - -z
         - 127.0.0.1
         - "8000"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  warehouse-mcp:
+    <<: *agentbench
+    environment:
+      Q2_MCP_DEBUG: "1"
+      WAREHOUSE_ENVIRONMENT: ${WAREHOUSE_ENVIRONMENT:-sandbox}
+      WAREHOUSE_SANDBOX_CORTEX_RECORDINGS: ${WAREHOUSE_SANDBOX_CORTEX_RECORDINGS:-/workspace/var/cortex-recordings}
+      SNOWFLAKE_DEV_ACCOUNT: ${SNOWFLAKE_DEV_ACCOUNT:-}
+      SNOWFLAKE_DEV_USER: ${SNOWFLAKE_DEV_USER:-}
+      SNOWFLAKE_DEV_ROLE: ${SNOWFLAKE_DEV_ROLE:-}
+      SNOWFLAKE_DEV_WAREHOUSE: ${SNOWFLAKE_DEV_WAREHOUSE:-}
+      SNOWFLAKE_DEV_DATABASE: ${SNOWFLAKE_DEV_DATABASE:-}
+      SNOWFLAKE_DEV_SCHEMA: ${SNOWFLAKE_DEV_SCHEMA:-}
+      SNOWFLAKE_DEV_AUTHENTICATOR: ${SNOWFLAKE_DEV_AUTHENTICATOR:-snowflake}
+      SNOWFLAKE_DEV_SECRET_REF: ${SNOWFLAKE_DEV_SECRET_REF:-}
+      SNOWFLAKE_DEV_PASSWORD: ${SNOWFLAKE_DEV_PASSWORD:-}
+      SNOWFLAKE_DEV_TOKEN: ${SNOWFLAKE_DEV_TOKEN:-}
+      SNOWFLAKE_STAGE_ACCOUNT: ${SNOWFLAKE_STAGE_ACCOUNT:-}
+      SNOWFLAKE_STAGE_USER: ${SNOWFLAKE_STAGE_USER:-}
+      SNOWFLAKE_STAGE_ROLE: ${SNOWFLAKE_STAGE_ROLE:-}
+      SNOWFLAKE_STAGE_WAREHOUSE: ${SNOWFLAKE_STAGE_WAREHOUSE:-}
+      SNOWFLAKE_STAGE_DATABASE: ${SNOWFLAKE_STAGE_DATABASE:-}
+      SNOWFLAKE_STAGE_SCHEMA: ${SNOWFLAKE_STAGE_SCHEMA:-}
+      SNOWFLAKE_STAGE_AUTHENTICATOR: ${SNOWFLAKE_STAGE_AUTHENTICATOR:-snowflake}
+      SNOWFLAKE_STAGE_SECRET_REF: ${SNOWFLAKE_STAGE_SECRET_REF:-}
+      SNOWFLAKE_STAGE_PASSWORD: ${SNOWFLAKE_STAGE_PASSWORD:-}
+      SNOWFLAKE_STAGE_TOKEN: ${SNOWFLAKE_STAGE_TOKEN:-}
+      SNOWFLAKE_PROD_ACCOUNT: ${SNOWFLAKE_PROD_ACCOUNT:-}
+      SNOWFLAKE_PROD_USER: ${SNOWFLAKE_PROD_USER:-}
+      SNOWFLAKE_PROD_ROLE: ${SNOWFLAKE_PROD_ROLE:-}
+      SNOWFLAKE_PROD_WAREHOUSE: ${SNOWFLAKE_PROD_WAREHOUSE:-}
+      SNOWFLAKE_PROD_DATABASE: ${SNOWFLAKE_PROD_DATABASE:-}
+      SNOWFLAKE_PROD_SCHEMA: ${SNOWFLAKE_PROD_SCHEMA:-}
+      SNOWFLAKE_PROD_AUTHENTICATOR: ${SNOWFLAKE_PROD_AUTHENTICATOR:-snowflake}
+      SNOWFLAKE_PROD_SECRET_REF: ${SNOWFLAKE_PROD_SECRET_REF:-}
+      SNOWFLAKE_PROD_PASSWORD: ${SNOWFLAKE_PROD_PASSWORD:-}
+      SNOWFLAKE_PROD_TOKEN: ${SNOWFLAKE_PROD_TOKEN:-}
+    command:
+      - --server
+      - warehouse
+      - --transport
+      - streamable-http
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8001"
+    ports:
+      - "127.0.0.1:8766:8001"
+    healthcheck:
+      test:
+        - CMD
+        - nc
+        - -z
+        - 127.0.0.1
+        - "8001"
       interval: 5s
       timeout: 3s
       retries: 12

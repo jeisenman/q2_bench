@@ -7,10 +7,12 @@ import (
 )
 
 var (
-	cortexNamespace = regexp.MustCompile(`(?i)\bSNOWFLAKE\s*\.\s*CORTEX\s*\.`)
-	commentBlock    = regexp.MustCompile(`(?s)/\*.*?\*/`)
-	commentLine     = regexp.MustCompile(`--[^\n]*`)
-	stringLiteral   = regexp.MustCompile(`'(?:[^']|'')*'`)
+	cortexNamespace = regexp.MustCompile(
+		`(?i)(?:\bSNOWFLAKE\s*\.\s*CORTEX\s*\.|\bAI_COMPLETE\s*\()`,
+	)
+	commentBlock  = regexp.MustCompile(`(?s)/\*.*?\*/`)
+	commentLine   = regexp.MustCompile(`--[^\n]*`)
+	stringLiteral = regexp.MustCompile(`'(?:[^']|'')*'`)
 )
 
 // PortabilityRule describes a construct that differs across warehouse backends.

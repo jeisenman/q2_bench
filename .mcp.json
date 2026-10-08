@@ -30,6 +30,23 @@
         "Q2_MCP_DEBUG": "1"
       }
     },
+    "warehouse": {
+      "type": "stdio",
+      "command": "go",
+      "args": [
+        "-C",
+        "/Users/jeisenman/ra/qtwo_bench",
+        "run",
+        "./cmd/q2-mcp",
+        "--server",
+        "warehouse"
+      ],
+      "env": {
+        "Q2_MCP_DEBUG": "1",
+        "WAREHOUSE_ENVIRONMENT": "sandbox",
+        "WAREHOUSE_SANDBOX_CORTEX_RECORDINGS": "/Users/jeisenman/ra/qtwo_bench/var/cortex-recordings"
+      }
+    },
     "prod-support": {
       "type": "stdio",
       "command": "go",

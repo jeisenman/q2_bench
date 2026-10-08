@@ -57,6 +57,7 @@ go run ./cmd/agentbench agents
 - `prod-support`
 - `remote-data`
 - `resource-discovery`
+- `warehouse`
 
 Run a server over stdio:
 
@@ -71,6 +72,16 @@ docker compose up -d --build --force-recreate --wait prod-support-mcp
 ```
 
 The local endpoint is `http://127.0.0.1:8765/mcp`.
+
+Run Snowflake Cortex through the containerized warehouse server:
+
+```bash
+docker compose up -d --build --force-recreate --wait warehouse-mcp
+```
+
+The warehouse endpoint is `http://127.0.0.1:8766/mcp`. It defaults to
+deterministic sandbox replay. Set `WAREHOUSE_ENVIRONMENT` and the matching
+`SNOWFLAKE_<ENVIRONMENT>_*` variables in `.env` before making live calls.
 
 Production follow-up retries require all of the following:
 

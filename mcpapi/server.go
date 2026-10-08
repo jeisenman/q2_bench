@@ -38,6 +38,8 @@ func NewServer(config Config) (*mcp.Server, error) {
 		registerOMS(server)
 	case "remote-data":
 		registerRemoteData(server)
+	case "warehouse":
+		registerWarehouse(server)
 	case "prod-support":
 		if err := registerProdSupport(server, config); err != nil {
 			return nil, err
