@@ -3,6 +3,8 @@ package mcpapi
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
 	omsadapter "github.com/jeisenman/q2_bench/adapters/oms"
 	rdadapter "github.com/jeisenman/q2_bench/adapters/resourcediscovery"
@@ -20,12 +22,30 @@ type lookupBatchInput struct {
 	Identifiers []lookupInput `json:"identifiers"`
 }
 
+const defaultClientLookupPath = ".codex/skills/resource-discovery/references/client-guuid-lookup.json"
+
 func registerResourceDiscovery(server *mcp.Server) error {
 	config, err := rdadapter.ConfigFromEnvironment()
 	if err != nil {
 		return err
 	}
-	source := rdadapter.APISource{Config: config}
+	lookupPath := strings.TrimSpace(os.Getenv("RESOURCE_DISCOVERY_CLIENT_LOOKUP"))
+	if lookupPath == "" {
+		lookupPath = defaultClientLookupPath
+	}
+	local, err := rdadapter.NewJSONClientLookupSource(lookupPath)
+	if err != nil {
+		return err
+	}
+	agent := rdagent.Agent{Source: rdadapter.IndexedSource{
+		Primary:  rdadapter.APISource{Config: config},
+		Fallback: local,
+	}}
+	registerResourceDiscoveryAgent(server, agent)
+	return nil
+}
+
+func registerResourceDiscoveryAgent(server *mcp.Server, agent rdagent.Agent) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "lookup_resources",
 		Description: "Return every allowlisted Resource Discovery match for one identifier.",
@@ -41,15 +61,11 @@ func registerResourceDiscovery(server *mcp.Server) error {
 		if err := identifier.Validate(); err != nil {
 			return nil, nil, err
 		}
-		records, err := source.Lookup(ctx, identifier)
+		search, err := agent.Search(ctx, identifier)
 		if err != nil {
 			return nil, nil, err
 		}
-		return nil, map[string]any{
-			"identifier_kind":  input.IdentifierKind,
-			"identifier_value": input.IdentifierValue,
-			"count":            len(records), "records": records,
-		}, nil
+		return nil, searchPayload(search), nil
 	})
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "lookup_resources_batch",
@@ -71,21 +87,30 @@ func registerResourceDiscovery(server *mcp.Server) error {
 				return nil, nil, fmt.Errorf("identifier %d: %w", index, err)
 			}
 		}
-		records, err := source.LookupBatch(ctx, identifiers)
+		searches, err := agent.SearchBatch(ctx, identifiers)
 		if err != nil {
 			return nil, nil, err
 		}
-		results := make([]map[string]any, len(records))
-		for index, values := range records {
-			results[index] = map[string]any{
-				"identifier_kind":  input.Identifiers[index].IdentifierKind,
-				"identifier_value": input.Identifiers[index].IdentifierValue,
-				"count":            len(values), "records": values,
-			}
+		results := make([]map[string]any, len(searches))
+		for index, search := range searches {
+			results[index] = searchPayload(search)
 		}
 		return nil, map[string]any{"count": len(results), "results": results}, nil
 	})
-	return nil
+}
+
+func searchPayload(search rdagent.Search) map[string]any {
+	records := make([]map[string]any, len(search.Matches))
+	for index, metadata := range search.Matches {
+		records[index] = metadata.Record()
+	}
+	return map[string]any{
+		"identifier_kind":  string(search.Identifier.Kind),
+		"identifier_value": search.Identifier.Value,
+		"status":           string(search.Status()),
+		"count":            len(records),
+		"records":          records,
+	}
 }
 
 type omsQueryInput struct {

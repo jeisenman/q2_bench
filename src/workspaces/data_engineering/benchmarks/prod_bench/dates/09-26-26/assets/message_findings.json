@@ -5,7 +5,7 @@
     {
       "region": "US",
       "client_name": "BoFA",
-      "client_id_prefix": "792",
+      "client_id": "792f7424-402e-4a7e-b4de-69f811435d9c",
       "job": "Delivery to Promise Other Products",
       "error": "Spark executor memory exhaustion followed by dead-executor shuffle failures",
       "evidence_source": "exact Airflow task log",
@@ -15,7 +15,7 @@
     {
       "region": "CA",
       "client_name": "Scotiabank",
-      "client_id_prefix": "1f0",
+      "client_id": "1f06da19-2f61-401c-a1b7-38902e4f3543",
       "job": "validate_event_bus_opportunities",
       "error": "208 unique missing opportunity snapshots",
       "evidence_source": "exact Airflow task log",
@@ -27,7 +27,7 @@
     {
       "region": "CA",
       "client_name": "CIBC Canada",
-      "client_id_prefix": "fbf",
+      "client_id": "fbfcd207-8a85-4f28-a787-3ed1e2736f28",
       "job": "validate_event_bus_opportunities",
       "error": "79 unique missing opportunity snapshots",
       "evidence_source": "exact Airflow task log",
@@ -39,7 +39,7 @@
     {
       "region": "CA",
       "client_name": "Scotiabank Data Validation",
-      "client_id_prefix": "b49",
+      "client_id": "b4916353-ef8a-4af8-9601-74305858e905",
       "job": "validate_event_bus_opportunities",
       "error": "11 unique missing opportunity snapshots",
       "evidence_source": "exact Airflow task log",
@@ -51,7 +51,7 @@
     {
       "region": "CA",
       "client_name": "CIBC Canada Validation",
-      "client_id_prefix": "cef",
+      "client_id": "cefa3c2a-e1da-4c24-8676-532dc2b59056",
       "job": "opportunity_save_history",
       "error": "dependency-state evidence only",
       "evidence_source": "exact Airflow task state",
@@ -61,7 +61,7 @@
     {
       "region": "CA",
       "client_name": "CIBC Canada Validation",
-      "client_id_prefix": "cef",
+      "client_id": "cefa3c2a-e1da-4c24-8676-532dc2b59056",
       "job": "opportunities_report",
       "error": "dependency-state evidence only",
       "evidence_source": "exact Airflow task state",
@@ -71,7 +71,7 @@
     {
       "region": "CA",
       "client_name": "CIBC Canada Validation",
-      "client_id_prefix": "cef",
+      "client_id": "cefa3c2a-e1da-4c24-8676-532dc2b59056",
       "job": "relationship_quandrants",
       "error": "dependency-state evidence only",
       "evidence_source": "exact Airflow task state",
@@ -81,7 +81,7 @@
     {
       "region": "CA",
       "client_name": "Unresolved client",
-      "client_id_prefix": "473",
+      "client_id": "47322c85-71cf-45ea-9695-6bdcc1cc1ea9",
       "job": "credit_migration_matrix",
       "error": "dependency-state evidence only",
       "evidence_source": "exact Airflow task state",

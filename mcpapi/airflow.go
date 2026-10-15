@@ -19,6 +19,18 @@ type listFailuresInput struct {
 	Region string `json:"region,omitempty"`
 }
 
+type dagStatusInput struct {
+	Region string `json:"region"`
+	DAGID  string `json:"dag_id"`
+}
+
+type taskStateInput struct {
+	Region string `json:"region"`
+	DAGID  string `json:"dag_id"`
+	RunID  string `json:"run_id"`
+	TaskID string `json:"task_id"`
+}
+
 type failureInput struct {
 	Failure failurePayload `json:"failure"`
 }
@@ -84,6 +96,14 @@ func addAirflowTools(server *mcp.Server, api *airflowAPI) {
 		Name:        "get_task_metadata",
 		Description: "Read exact Airflow task operator metadata for workload routing.",
 	}, api.getTaskMetadata)
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "get_dag_status",
+		Description: "Check whether one exact Airflow DAG currently exists and is paused.",
+	}, api.getDAGStatus)
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "get_task_instance_state",
+		Description: "Read the current state of one exact Airflow task instance.",
+	}, api.getTaskInstanceState)
 }
 
 func (a *airflowAPI) listFailures(
@@ -171,6 +191,50 @@ func (a *airflowAPI) getTaskMetadata(
 	return nil, map[string]any{
 		"dag_id": metadata.DAGID, "task_id": metadata.TaskID,
 		"operator_name": metadata.OperatorName,
+	}, nil
+}
+
+func (a *airflowAPI) getDAGStatus(
+	ctx context.Context,
+	_ *mcp.CallToolRequest,
+	input dagStatusInput,
+) (*mcp.CallToolResult, map[string]any, error) {
+	region := prodsupport.Region(input.Region)
+	if region != prodsupport.US01 && region != prodsupport.CA02 {
+		return nil, nil, fmt.Errorf("region must be US-01 or CA-02")
+	}
+	status, err := a.source.GetDAGStatus(ctx, region, input.DAGID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, map[string]any{
+		"region": input.Region, "dag_id": input.DAGID,
+		"exists": status.Exists, "is_paused": status.IsPaused,
+	}, nil
+}
+
+func (a *airflowAPI) getTaskInstanceState(
+	ctx context.Context,
+	_ *mcp.CallToolRequest,
+	input taskStateInput,
+) (*mcp.CallToolResult, map[string]any, error) {
+	region := prodsupport.Region(input.Region)
+	if region != prodsupport.US01 && region != prodsupport.CA02 {
+		return nil, nil, fmt.Errorf("region must be US-01 or CA-02")
+	}
+	state, err := a.source.GetTaskState(
+		ctx,
+		region,
+		input.DAGID,
+		input.RunID,
+		input.TaskID,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	return nil, map[string]any{
+		"region": input.Region, "dag_id": input.DAGID, "run_id": input.RunID,
+		"task_id": input.TaskID, "state": state,
 	}, nil
 }
 

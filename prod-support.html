@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Production Support Rerun Plan</title>
+  <style>
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { color: #17202a; line-height: 1.5; margin: 0 auto; max-width: 1120px; padding: 2rem; }
+    h1, h2 { color: #123b5d; }
+    h1 { border-bottom: 3px solid #2f80ed; padding-bottom: .5rem; }
+    code { background: #f1f4f6; border-radius: 4px; padding: .1rem .25rem; }
+    table { border-collapse: collapse; font-size: .94rem; margin: 1rem 0 1.5rem; width: 100%; }
+    th, td { border: 1px solid #cbd5e1; padding: .65rem; text-align: left; vertical-align: top; }
+    th { background: #e8f1f8; color: #123b5d; }
+    tr:nth-child(even) { background: #f8fafc; }
+    .hold { color: #9a3412; font-weight: 600; }
+    .retry { color: #166534; font-weight: 600; }
+    .notice { background: #fff7ed; border-left: 4px solid #f97316; padding: .8rem 1rem; }
+    .muted { color: #475569; }
+  </style>
+</head>
+<body>
+  <h1>Production Support Rerun Plan</h1>
+  <p><strong>Date:</strong> 2026-10-15<br>
+  <strong>Scope:</strong> All supplied opportunity-related failures; detailed OMS proof uses client <code>7b427a3a-90ae-4a51-b249-6223108d327e</code><br>
+  <strong>Regions:</strong> US-01; CA-02 validation retained<br>
+  <strong>Requested rerun window:</strong> <code>2026-10-14T05:00:00Z</code> through <code>2026-10-15T05:00:00Z</code><br>
+  <strong>Production mutations performed:</strong> None</p>
+
+  <h2>Validation URLs</h2>
+  <ul>
+    <li><a href="https://airflow-us01.precisionlender.com/taskinstance/list/">US-01 Airflow</a></li>
+    <li><a href="https://airflow-ca02.precisionlender.com/taskinstance/list/">CA-02 Airflow</a></li>
+  </ul>
+
+  <h2>Narrowed rerun scope</h2>
+  <p>The rerun scope is now limited to failures from the last operational window: <code>2026-10-14T05:00:00Z</code> through <code>2026-10-15T05:00:00Z</code>. Failures dated <code>2026-10-13</code> and earlier remain documented for historical context but are excluded from this rerun plan.</p>
+  <p>Airflow did not return the exact last-night failure inventory because the production endpoint returned HTTP 403. OMS independently confirms one in-scope affected client: <code>7b427a3a-90ae-4a51-b249-6223108d327e</code>. No other client is promoted into the last-night rerun set without exact Airflow identity and state.</p>
+
+  <h2>Failed tasks grouped by known logical date</h2>
+  <p>This preserves the historical failures without expanding the last-night rerun scope. Dates below come from the available OMS evidence; entries without an exact date remain in the unresolved-date group.</p>
+
+  <h3>2026-10-14 — last-night scope</h3>
+  <p>OMS found 6 supplied clients with explicit missing-Opportunities messages (25 task events) and 15 supplied clients with an upstream empty/no-file signal (48 evidence rows).</p>
+  <ul>
+    <li>Client <code>7b427a3a-90ae-4a51-b249-6223108d327e</code>
+      <ul>
+        <li><code>pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history</code></li>
+        <li>OMS shows empty <code>OpportunitySaved</code> input upstream and <code>Missing required datasets Opportunities</code> downstream.</li>
+        <li><strong>In scope for the proof rerun, pending exact Airflow identity.</strong></li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>2026-10-13</h3>
+  <p>OMS found 9 supplied clients with explicit missing-Opportunities messages (36 task events) and 17 supplied clients with an upstream empty/no-file signal (63 evidence rows).</p>
+  <ul>
+    <li>Client <code>8b2e8a38-b778-402a-819a-4904f42f5a2a</code> —
+      <code>pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history</code>;
+      OMS: 25 total / 25 unique.</li>
+    <li>Client <code>6dcb0497-1497-4eb4-9d1b-4313e6869fdc</code> —
+      <code>pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history</code>;
+      OMS: 1 total / 1 unique; no terminal error recorded.</li>
+    <li>Client <code>c3563e8a-3e29-45e9-9dad-9e6743126d78</code> —
+      <code>pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history</code>;
+      OMS: 4 total / 4 unique; no terminal error recorded.</li>
+    <li><strong>Excluded from the narrowed rerun.</strong></li>
+  </ul>
+  <p>No explicit Opportunities distinctness or <code>DataValidationError</code> marker was found in the targeted 10/13–10/14 query. The known duplicate <code>OpportunityId</code> case for <code>4dfb1084-98d3-41cf-9071-64035fdba4e8</code> is dated 2026-10-08 and remains outside these two proof groups.</p>
+
+  <h3>2026-10-12</h3>
+  <ul>
+    <li>Client <code>076939cf-4a4a-4fa4-a5e6-44a4c8d33bb2</code> —
+      <code>pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history</code>;
+      OMS: 91 total / 91 unique.</li>
+    <li><strong>Excluded from the narrowed rerun.</strong></li>
+  </ul>
+
+  <h3>2026-10-11</h3>
+  <ul>
+    <li>Client <code>63ecb663-1de9-4ed7-a5fb-cae3a6e8c68c</code> —
+      <code>pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history</code>;
+      OMS: transient ADLS service-principal token <code>ConnectionResetError</code>; later data passed.</li>
+    <li><strong>Excluded from the narrowed rerun.</strong></li>
+  </ul>
+
+  <h3>2026-10-10</h3>
+  <ul>
+    <li>Client <code>792f7424-402e-4a7e-b4de-69f811435d9c</code> —
+      <code>pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history</code>;
+      OMS: 7 total / 7 unique; Airflow/Spark-driver completion issue.</li>
+    <li><strong>Excluded from the narrowed rerun.</strong></li>
+  </ul>
+
+  <h3>2026-10-08</h3>
+  <ul>
+    <li>Client <code>4dfb1084-98d3-41cf-9071-64035fdba4e8</code> —
+      <code>pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history</code>;
+      OMS: 10 total / 9 unique with duplicate <code>OpportunityId</code> validation failure.</li>
+    <li><strong>Excluded from the narrowed rerun.</strong></li>
+  </ul>
+
+  <h3>2026-10-06</h3>
+  <ul>
+    <li>Client <code>792f7424-402e-4a7e-b4de-69f811435d9c</code> —
+      <code>pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history</code>;
+      OMS: 164 total / 163 unique with a distinctness exception.</li>
+    <li><strong>Excluded from the narrowed rerun.</strong></li>
+  </ul>
+
+  <h3>Date unresolved — retained, not scheduled for rerun</h3>
+  <p>The following supplied failures remain in the inventory, but their exact logical dates and Airflow run identities were not available:</p>
+  <ul>
+    <li><code>pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history</code>:
+      <code>83377b51-9ab0-4974-93ff-4ab1c0d5cea8</code>,
+      <code>14318ae0-6040-4bd2-b64b-b97f76c31023</code>,
+      <code>fbd20269-6104-4cc6-9a16-655fb81c0fd1</code>.</li>
+    <li><code>pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history</code>:
+      <code>4dfb1084-98d3-41cf-9071-64035fdba4e8</code>.</li>
+    <li><code>account_level_opportunity_draw_schedule_history.account_level_opportunity_draw_schedule_history</code>:
+      <code>83377b51-9ab0-4974-93ff-4ab1c0d5cea8</code>,
+      <code>1d4573dc-1507-4b10-aae5-27bdd05fc69e</code>,
+      <code>223083ed-017c-409d-a430-fcdede2c18fb</code>,
+      <code>d5ce6f39-3930-4090-ace3-ab7777f46530</code>,
+      <code>5d13454b-e8a4-4ada-98bd-b1ab2754ad89</code>.</li>
+    <li><code>high_quality_core_account_financial_statements.high_quality_core_account_financial_statements</code>:
+      <code>b441897e-a525-4546-b68c-3f6820de847c</code>,
+      <code>022312e6-2997-4156-bf22-921fdb1cbf40</code>,
+      <code>076939cf-4a4a-4fa4-a5e6-44a4c8d33bb2</code>,
+      <code>8b2e8a38-b778-402a-819a-4904f42f5a2a</code>.</li>
+    <li><code>ra_group.get_relationship_financial_statement</code>:
+      <code>be9a26dc-5d2a-4962-8e63-2665eea43266</code>,
+      <code>63ecb663-1de9-4ed7-a5fb-cae3a6e8c68c</code>,
+      <code>91064ffe-8911-4045-87ba-6dee194f711b</code>,
+      <code>6ae21d5f-bc53-4329-b237-0e9554dd1dd8</code>,
+      <code>29c5f53b-e83d-4765-8c73-7b58a36a775f</code>.</li>
+    <li><code>opportunity_save_history.opportunity_save_history</code>:
+      <code>c17c8b87-ac7a-49d2-afc4-d8bba2e86d95</code>,
+      <code>223083ed-017c-409d-a430-fcdede2c18fb</code>,
+      <code>2352e91f-e147-4ffa-b704-51344e70dcb9</code>,
+      <code>cab2c4b2-d95f-44f8-854e-2ca31eeb0e99</code>.</li>
+    <li><code>account_level_opportunities.account_level_opportunities_history.account_level_opportunities_history</code>:
+      <code>792f7424-402e-4a7e-b4de-69f811435d9c</code>,
+      <code>6dcb0497-1497-4eb4-9d1b-4313e6869fdc</code>,
+      <code>a9cdadd4-1324-4a7a-842e-fe8fc9fe37f1</code>,
+      <code>1629288a-bae1-42c5-8334-613959c829be</code>.</li>
+    <li><code>delivery_to_promise.delivery_to_promise_data</code>:
+      <code>9d272969-2cdd-401b-a373-6a73cf5a3042</code>.</li>
+    <li><code>delivery_to_promise_other_products.delivery_to_promise_other_products_data</code>:
+      <code>792f7424-402e-4a7e-b4de-69f811435d9c</code>.</li>
+  </ul>
+
+  <h2>Root-cause comparison for 2026-10-13 and 2026-10-14</h2>
+  <p>Counts are limited to the supplied client UUIDs and supplied opportunity-related task families, using US production OMS evidence.</p>
+  <table>
+    <thead><tr><th>Logical date</th><th>Explicit missing Opportunities</th><th>Upstream empty/no-file signal</th><th>Root-cause conclusion</th></tr></thead>
+    <tbody>
+      <tr><td><code>2026-10-13</code></td><td>9 clients / 36 task events</td><td>17 clients / 63 evidence rows</td><td>Primary Opportunities input is missing for a large subset; producer/copy tasks receive empty input.</td></tr>
+      <tr><td><code>2026-10-14</code></td><td>6 clients / 25 task events</td><td>15 clients / 48 evidence rows</td><td>The same upstream source-gap pattern continues into the last-night window.</td></tr>
+    </tbody>
+  </table>
+  <p>The client count is the useful scope measure; task-event counts are higher because one client can fail multiple opportunity consumers. The empty/no-file count is broader than the explicit history error and includes clients where an upstream producer or copy logged empty input before a downstream task emitted the missing-dataset message.</p>
+  <p>For the two proof clients, <code>validate_event_bus_opportunities</code> logged <code>Opportunity snapshots are all accounted for in the event bus</code>, while the producer logged no <code>OpportunitySaved</code> files and the Primary Opportunities path returned no files. This points to a missing upstream source/aggregation dependency, not an Opportunities validation failure. Separate <code>ConnectionResetError</code> markers were present for 2 client/task records on 10/13 and 7 on 10/14; those are transport failures, not missing Opportunities dependencies.</p>
+
+  <h2>Minimal check and rerun plan by day</h2>
+  <p>These are bounded proof plans only. No production mutation has been performed, and Airflow must confirm the exact failed task state before either plan can be executed.</p>
+
+  <h3>2026-10-13 proof client</h3>
+  <p><strong>Client:</strong> <code>14318ae0-6040-4bd2-b64b-b97f76c31023</code><br>
+  <strong>Observed OMS run:</strong> <code>manual__2026-10-13T05:00:00+00:00</code><br>
+  <strong>Primary history task:</strong> <code>pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history</code></p>
+  <p><strong>Minimal pre-check:</strong></p>
+  <ol>
+    <li>Confirm the EventPayloadsHistorical <code>OpportunitySaved</code> path for <code>DatePartition=20261013</code> has no files.</li>
+    <li>Confirm the Primary Opportunities path for <code>DatePartition=20261013</code> has no files or rows.</li>
+    <li>Confirm OMS shows event-bus snapshots accounted for, producer empty input, and downstream <code>Missing required datasets Opportunities</code>.</li>
+  </ol>
+  <p><strong>Minimal rerun:</strong> Restore/backfill the source partition; run <code>opportunity_avro_aggregation_backfill</code> or its supported equivalent including producer and ADLS copies; rerun the exact failed history task with only failed downstream tasks recursively; then verify non-empty Primary Opportunities and downstream history output.</p>
+
+  <h3>2026-10-14 proof client</h3>
+  <p><strong>Client:</strong> <code>7b427a3a-90ae-4a51-b249-6223108d327e</code><br>
+  <strong>Observed OMS run:</strong> <code>manual__2026-10-14T05:00:00+00:00</code><br>
+  <strong>Primary history task:</strong> <code>pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history</code></p>
+  <p><strong>Minimal pre-check:</strong></p>
+  <ol>
+    <li>Confirm the EventPayloadsHistorical <code>OpportunitySaved</code> path for <code>DatePartition=20261014</code> has no files.</li>
+    <li>Confirm the Primary Opportunities path for <code>DatePartition=20261014</code> has no files or rows.</li>
+    <li>Confirm OMS shows event-bus snapshots accounted for, producer empty input, and downstream <code>Missing required datasets Opportunities</code>.</li>
+  </ol>
+  <p><strong>Minimal rerun:</strong> Restore/backfill the source partition; run <code>opportunity_avro_aggregation_backfill</code> or its supported equivalent including producer and ADLS copies; rerun the exact failed history task with only failed downstream tasks recursively; then verify non-empty Primary Opportunities and downstream history output.</p>
+
+  <h2>Correct rerun order</h2>
+  <ol>
+    <li>Restore or verify upstream source data for the affected client and logical date.</li>
+    <li>Run <code>pl_storage.opportunity_avro_aggregation</code> when EventBus <code>OpportunitySaved</code> data is available.</li>
+    <li>Verify the required Primary Opportunities and Users partitions in Databricks.</li>
+    <li>Run the failed Opportunities history task.</li>
+    <li>After history succeeds, run failed downstream tasks recursively, if any.</li>
+    <li>Re-run bounded Databricks validation and confirm output rows.</li>
+  </ol>
+  <p class="muted">Relationships are optional for this v1 history job; a missing Relationships partition alone does not justify rerunning history.</p>
+
+  <h2>Projected rerun job set</h2>
+  <p>These are projected dependency-plan entries, not executable Airflow retry candidates. Exact <code>region</code>, <code>dag_id</code>, <code>run_id</code>, <code>task_id</code>, timestamps, and try number must be resolved from Airflow before any production mutation.</p>
+  <p>The general upstream recovery job is <code>opportunity_avro_aggregation_backfill</code>.</p>
+  <ol>
+    <li>Confirm or restore the <code>EventPayloadsHistorical</code> <code>OpportunitySaved</code> source partition. If a source backfill is required, resolve the exact <code>event_bus_to_payloads_historical</code> DAG/task identity first.</li>
+    <li>Run <code>opportunity_avro_aggregation_backfill</code>, or the equivalent supported producer sequence below. Do not run both paths redundantly.</li>
+    <li>Run or verify <code>pl_storage.opportunity_avro_aggregation</code>, which produces Primary Opportunities.</li>
+    <li>Run or verify <code>pl_storage.opportunity_avro_aggregation_to_client_datamart_adls</code>.</li>
+    <li>Run or verify <code>pl_storage.opportunity_avro_aggregation_to_internal_adls</code>.</li>
+    <li>Re-run the failed client-specific history task.</li>
+    <li>Include failed downstream tasks recursively in the same client DAG run.</li>
+    <li>Validate Primary Opportunities, Users, and downstream output in Databricks.</li>
+  </ol>
+  <p>For client <code>7b427a3a-90ae-4a51-b249-6223108d327e</code>, OMS showed the producer receiving empty input and the history task reporting <code>Missing required datasets Opportunities</code>. Steps 1–5 are prerequisites; rerunning history alone is not expected to create opportunity data.</p>
+
+  <h3>Failed downstream task families from the supplied inventory</h3>
+  <p>The following exact task identifiers are projected downstream targets. The UUIDs are affected clients from the supplied failure inventory; they do not replace exact Airflow run identities.</p>
+  <table>
+    <thead><tr><th>Projected task</th><th>Affected client UUIDs</th></tr></thead>
+    <tbody>
+      <tr><td><code>pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history</code></td><td><code>7b427a3a-90ae-4a51-b249-6223108d327e</code>, <code>83377b51-9ab0-4974-93ff-4ab1c0d5cea8</code>, <code>4dfb1084-98d3-41cf-9071-64035fdba4e8</code>, <code>792f7424-402e-4a7e-b4de-69f811435d9c</code>, <code>14318ae0-6040-4bd2-b64b-b97f76c31023</code>, <code>fbd20269-6104-4cc6-9a16-655fb81c0fd1</code></td></tr>
+      <tr><td><code>pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history</code></td><td><code>8b2e8a38-b778-402a-819a-4904f42f5a2a</code>, <code>4dfb1084-98d3-41cf-9071-64035fdba4e8</code>, <code>076939cf-4a4a-4fa4-a5e6-44a4c8d33bb2</code>, <code>6dcb0497-1497-4eb4-9d1b-4313e6869fdc</code>, <code>63ecb663-1de9-4ed7-a5fb-cae3a6e8c68c</code>, <code>c3563e8a-3e29-45e9-9dad-9e6743126d78</code></td></tr>
+      <tr><td><code>account_level_opportunity_draw_schedule_history.account_level_opportunity_draw_schedule_history</code></td><td><code>83377b51-9ab0-4974-93ff-4ab1c0d5cea8</code>, <code>1d4573dc-1507-4b10-aae5-27bdd05fc69e</code>, <code>223083ed-017c-409d-a430-fcdede2c18fb</code>, <code>d5ce6f39-3930-4090-ace3-ab7777f46530</code>, <code>5d13454b-e8a4-4ada-98bd-b1ab2754ad89</code></td></tr>
+      <tr><td><code>high_quality_core_account_financial_statements.high_quality_core_account_financial_statements</code></td><td><code>b441897e-a525-4546-b68c-3f6820de847c</code>, <code>022312e6-2997-4156-bf22-921fdb1cbf40</code>, <code>076939cf-4a4a-4fa4-a5e6-44a4c8d33bb2</code>, <code>8b2e8a38-b778-402a-819a-4904f42f5a2a</code></td></tr>
+      <tr><td><code>ra_group.get_relationship_financial_statement</code></td><td><code>be9a26dc-5d2a-4962-8e63-2665eea43266</code>, <code>63ecb663-1de9-4ed7-a5fb-cae3a6e8c68c</code>, <code>91064ffe-8911-4045-87ba-6dee194f711b</code>, <code>6ae21d5f-bc53-4329-b237-0e9554dd1dd8</code>, <code>29c5f53b-e83d-4765-8c73-7b58a36a775f</code></td></tr>
+      <tr><td><code>opportunity_save_history.opportunity_save_history</code></td><td><code>c17c8b87-ac7a-49d2-afc4-d8bba2e86d95</code>, <code>223083ed-017c-409d-a430-fcdede2c18fb</code>, <code>2352e91f-e147-4ffa-b704-51344e70dcb9</code>, <code>cab2c4b2-d95f-44f8-854e-2ca31eeb0e99</code></td></tr>
+      <tr><td><code>account_level_opportunities.account_level_opportunities_history.account_level_opportunities_history</code></td><td><code>792f7424-402e-4a7a-b4de-69f811435d9c</code>, <code>6dcb0497-1497-4eb4-9d1b-4313e6869fdc</code>, <code>a9cdadd4-1324-4a7a-842e-fe8fc9fe37f1</code>, <code>1629288a-bae1-42c5-8334-613959c829be</code></td></tr>
+      <tr><td><code>delivery_to_promise.delivery_to_promise_data</code></td><td><code>9d272969-2cdd-401b-a373-6a73cf5a3042</code></td></tr>
+      <tr><td><code>delivery_to_promise_other_products.delivery_to_promise_other_products_data</code></td><td><code>792f7424-402e-4a7a-b4de-69f811435d9c</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Additional downstream consumers to inspect</h3>
+  <p>When recursive downstream expansion identifies these tasks as failed in the same client DAG run, include them in the downstream rerun plan:</p>
+  <ul>
+    <li><code>andi.aggregate_application_events</code></li>
+    <li><code>andi.aggregate_engagements</code></li>
+    <li><code>similar_loans_opportunities</code></li>
+    <li><code>similar_loans_portfolio</code></li>
+    <li><code>treasury_external_acquisition</code></li>
+    <li><code>client_monthly_metrics.client_specific_meta_data</code></li>
+    <li><code>active_loan_accounts.library_active_loan_accounts</code></li>
+    <li><code>active_commercial_loan_accounts.active_commercial_loan_accounts</code></li>
+    <li><code>cap_floor_impact</code></li>
+    <li><code>product_mapping</code></li>
+    <li><code>client_index_rates</code></li>
+    <li>Remaining <code>high_quality_core_loan_accounts</code> tasks</li>
+    <li>Remaining <code>ra_group.get_*_financial_statement_breakdown</code> tasks</li>
+  </ul>
+  <p>These are not independent global reruns. Resolve the exact failed task instances from the affected client DAG run, and use downstream inclusion with upstream, past, and future inclusion disabled.</p>
+
+  <h3>Proof run for client <code>7b427a3a-90ae-4a51-b249-6223108d327e</code></h3>
+  <p>Before state for the <code>2026-10-11</code> logical run is supported by OMS:</p>
+  <ul>
+    <li><code>pl_storage.opportunity_avro_aggregation</code> logged <code>transformation function passed empty data, exiting...</code>.</li>
+    <li>The ADLS copy tasks logged the same empty-data condition.</li>
+    <li>The downstream history task logged <code>Missing required datasets Opportunities</code>.</li>
+  </ul>
+  <p>After the source partition is restored and the projected sequence completes, the proof succeeds only when aggregation receives non-empty input, Primary Opportunities contains rows, history completes without the missing-dataset error, and the downstream Databricks validation finds expected Opportunities rows.</p>
+
+  <h2>Client-by-client plan</h2>
+  <table>
+    <thead><tr><th>#</th><th>Client</th><th>UUID</th><th>Finding</th><th>Rerun disposition</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Unresolved</td><td><code>7b427a3a-90ae-4a51-b249-6223108d327e</code></td><td>Required Opportunities input missing; no minor-version partition for <code>2026-10-11</code>.</td><td class="hold"><strong>Hold.</strong> Restore or backfill upstream OpportunitySaved/Primary Opportunities data first.</td></tr>
+      <tr><td>2</td><td>Truist Bank</td><td><code>83377b51-9ab0-4974-93ff-4ab1c0d5cea8</code></td><td>OMS completed with distinctness passing: 5 total, 5 unique; Airflow failed during Spark-driver completion.</td><td class="retry"><strong>Retry candidate after exact run resolution.</strong> Then downstream recursive tasks if present.</td></tr>
+      <tr><td>3</td><td>Unresolved</td><td><code>4dfb1084-98d3-41cf-9071-64035fdba4e8</code></td><td>Opportunities validation found 10 total and 9 unique with a <code>DataValidationError</code> on <code>OpportunityId</code>.</td><td class="hold"><strong>Hold.</strong> Correct duplicate data before retrying.</td></tr>
+      <tr><td>4a</td><td>BoFA</td><td><code>792f7424-402e-4a7e-b4de-69f811435d9c</code></td><td><code>2026-10-06</code> run had 164 total and 163 unique with a distinctness exception.</td><td class="hold"><strong>Hold.</strong> Correct duplicate data before retrying.</td></tr>
+      <tr><td>4b</td><td>BoFA</td><td><code>792f7424-402e-4a7e-b4de-69f811435d9c</code></td><td><code>2026-10-10</code> run had 7 total and 7 unique; OMS completed, but Airflow/Spark-driver completion failed.</td><td class="retry"><strong>Retry candidate after exact run resolution.</strong> Then downstream recursive tasks if present.</td></tr>
+      <tr><td>5</td><td>Unresolved</td><td><code>14318ae0-6040-4bd2-b64b-b97f76c31023</code></td><td>Opportunities path not found; required Opportunities dataset missing.</td><td class="hold"><strong>Hold.</strong> Restore or backfill upstream OpportunitySaved/Primary Opportunities data first.</td></tr>
+      <tr><td>6</td><td>Fieldpoint Private Bank &amp; Trust</td><td><code>fbd20269-6104-4cc6-9a16-655fb81c0fd1</code></td><td>Opportunities missing; Relationships path also missing; required input issue is primarily Opportunities.</td><td class="hold"><strong>Hold.</strong> Restore or backfill Opportunities first; verify Users and optional Relationships.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Recommended executable retry set</h2>
+  <p>For the narrowed last-night scope, only this proof case is in scope:</p>
+  <ul>
+    <li>Client <code>7b427a3a-90ae-4a51-b249-6223108d327e</code>, logical date <code>2026-10-14</code> —
+      <code>pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history</code></li>
+  </ul>
+  <p>This is still a projected target, not an executable Airflow retry candidate, until the exact failed run identity is recovered. All failures with logical dates from <code>2026-10-13</code> and earlier, including the 2026-10-06 and 2026-10-10 BoFA cases, are explicitly excluded from the narrowed rerun.</p>
+
+  <h2>Execution safeguards</h2>
+  <div class="notice">
+    The supplied investigation does not contain exact <code>run_id</code>, task start/end timestamps, or try number for each failed task. These are planning targets, not executable retry candidates. Resolve those fields and confirm the task is still failed and the DAG is unpaused before any production mutation.
+  </div>
+  <p>Use the production-support follow-up mechanism with downstream inclusion enabled and upstream, past, and future inclusion disabled. Do not mutate Airflow directly.</p>
+
+  <h2>Follow Up</h2>
+  <ul>
+    <li>Resolve the exact last-night failed run for client <code>7b427a3a-90ae-4a51-b249-6223108d327e</code>.</li>
+    <li>Verify or repair its upstream OpportunitySaved/Primary Opportunities data.</li>
+    <li>Execute only the last-night upstream-to-history-to-downstream sequence after the required source partition exists.</li>
+    <li>Recheck Databricks output and Airflow task states after each run.</li>
+  </ul>
+</body>
+</html>

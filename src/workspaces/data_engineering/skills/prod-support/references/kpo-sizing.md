@@ -19,7 +19,9 @@ configured KPO CPU and memory, and same-tier peers.
 The notebook inventories explicit per-client `container_resources` overrides
 from `dag-utils/resource_allocation.py`. It measures the latest source RA file
 or Historical Data Mart date partition, sorts results by KPO memory and input
-size, and summarizes jobs sharing the same memory tier.
+size, and summarizes jobs sharing the same memory tier. The
+`relationship_signals_time_series_agg_cp_to_snowflake` job measures its complete
+`VersionPartition` root regardless of the `latest_only` setting.
 
 Inventory rows use client UUIDs only. Resolve client names through Resource
 Discovery; comments beside overrides are historical notes and are not an

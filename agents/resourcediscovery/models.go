@@ -51,9 +51,7 @@ func (i Identifier) Validate() error {
 		return fmt.Errorf("value must not be empty")
 	}
 	if i.Kind == ClientID && !validUUID(i.Value) {
-		return fmt.Errorf(
-			"client_id must be a complete UUID; three-character prefixes are report-only",
-		)
+		return fmt.Errorf("client_id must be a complete UUID")
 	}
 	return nil
 }

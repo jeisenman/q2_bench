@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "findings": [
-    {"region": "CA", "client": "Scotiabank (1f0)", "job": "validate_event_bus_opportunities"},
-    {"region": "CA", "client": "CIBC Canada (fbf)", "job": "validate_event_bus_opportunities"},
-    {"region": "CA", "client": "Scotiabank Data Validation (b49)", "job": "validate_event_bus_opportunities"},
-    {"region": "CA", "client": "CIBC Canada Validation (cef)", "job": "opportunity_save_history"},
-    {"region": "CA", "client": "CIBC Canada Validation (cef)", "job": "opportunities_report"},
-    {"region": "CA", "client": "CIBC Canada Validation (cef)", "job": "relationship_quandrants"}
+    {"region": "CA", "client": "Scotiabank (1f06da19-2f61-401c-a1b7-38902e4f3543)", "job": "validate_event_bus_opportunities"},
+    {"region": "CA", "client": "CIBC Canada (fbfcd207-8a85-4f28-a787-3ed1e2736f28)", "job": "validate_event_bus_opportunities"},
+    {"region": "CA", "client": "Scotiabank Data Validation (b4916353-ef8a-4af8-9601-74305858e905)", "job": "validate_event_bus_opportunities"},
+    {"region": "CA", "client": "CIBC Canada Validation (cefa3c2a-e1da-4c24-8676-532dc2b59056)", "job": "opportunity_save_history"},
+    {"region": "CA", "client": "CIBC Canada Validation (cefa3c2a-e1da-4c24-8676-532dc2b59056)", "job": "opportunities_report"},
+    {"region": "CA", "client": "CIBC Canada Validation (cefa3c2a-e1da-4c24-8676-532dc2b59056)", "job": "relationship_quandrants"}
   ]
 }

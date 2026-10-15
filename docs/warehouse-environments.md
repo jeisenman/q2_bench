@@ -47,6 +47,16 @@ export WAREHOUSE_ENVIRONMENT=sandbox        # dev | stage | prod | sandbox
 export WAREHOUSE_SANDBOX_CORTEX_RECORDINGS=path/to/recordings
 ```
 
+The dev container reuses the ignored ds-airflow Airflow connection:
+
+```text
+~/projects/ds-airflow/chart/local_connections/de_transforms_snowflake.json
+```
+
+It mounts that file read-only and resolves its account, login, and
+`private_key_content` only when a request is made. Set
+`DS_AIRFLOW_SNOWFLAKE_CONNECTION_FILE` to override the host path.
+
 Snowflake settings are read per environment, so one process can address
 several without ambiguity:
 
@@ -66,10 +76,11 @@ settings object.
 
 The Snowflake Go driver is compiled into `warehouse-mcp`.
 
-Supported authenticators are `snowflake`, `oauth`, and `pat`. Password
+Supported authenticators are `snowflake_jwt`, `snowflake`, `oauth`, and `pat`.
+JWT reads a PKCS#8 RSA key from an Airflow connection file. Password
 authentication resolves `SNOWFLAKE_<ENVIRONMENT>_PASSWORD`; OAuth and PAT
-resolve `SNOWFLAKE_<ENVIRONMENT>_TOKEN`. Interactive browser authentication is
-not supported by the container.
+resolve `SNOWFLAKE_<ENVIRONMENT>_TOKEN`. Interactive browser authentication
+is not supported by the container.
 
 ## Sandbox recordings
 

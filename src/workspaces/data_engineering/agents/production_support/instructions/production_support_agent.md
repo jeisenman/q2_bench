@@ -190,7 +190,7 @@ Failed jobs:
 - Valley National Bank (8b2e8a38-b778-402a-819a-4904f42f5a2a) failed on high_quality_core_account_financial_statements.high_quality_core_account_financial_statements: classification: distinctness; upstream rerun: ra_group.get_deposit_financial_statement_breakdown
 
 Follow Up:
-- Would you like to re-run Valley National Bank (8b2) l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a ra_group.get_deposit_financial_statement_breakdown job
+- Would you like to re-run Valley National Bank (8b2e8a38-b778-402a-819a-4904f42f5a2a) l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a ra_group.get_deposit_financial_statement_breakdown job
 ```
 
 The Production Support Agent returns:
@@ -204,7 +204,7 @@ Failed jobs:
 - Valley National Bank (8b2e8a38-b778-402a-819a-4904f42f5a2a) failed on high_quality_core_account_financial_statements.high_quality_core_account_financial_statements: classification: distinctness; upstream rerun: ra_group.get_deposit_financial_statement_breakdown
 
 Follow Up:
-- Would you like to re-run Valley National Bank (8b2) l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a ra_group.get_deposit_financial_statement_breakdown job
+- Would you like to re-run Valley National Bank (8b2e8a38-b778-402a-819a-4904f42f5a2a) l3-main-8b2e8a38-b778-402a-819a-4904f42f5a2a ra_group.get_deposit_financial_statement_breakdown job
 ```
 
 This is compliant because the Production Support Agent added only the validated

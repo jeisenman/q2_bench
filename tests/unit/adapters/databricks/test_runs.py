@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+import adapters.databricks.runs as databricks_runs
 from adapters.databricks.runs import (
     DatabricksConnection,
     DatabricksRunError,
@@ -105,6 +106,7 @@ def test_submits_exact_reviewed_source_to_verified_workspace(
         DatabricksConnection(
             "https://adb-7628572648057993.13.azuredatabricks.net",
             "secret",
+            7628572648057993,
         )
     ]
     assert fake.imported == (expected_path, SOURCE)
@@ -117,6 +119,32 @@ def test_submits_exact_reviewed_source_to_verified_workspace(
     assert result.run_id == SUBMITTED_RUN_ID
     assert result.target == "pl-databricks-us-rapreprod-01"
     assert result.source_sha256 == digest
+
+
+def test_sdk_client_uses_configured_workspace_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    class FakeWorkspaceClient:
+        def __init__(self, **kwargs: object) -> None:
+            calls.append(kwargs)
+
+    monkeypatch.setattr(databricks_runs, "WorkspaceClient", FakeWorkspaceClient)
+
+    databricks_runs.SdkDatabricksRunClient(
+        DatabricksConnection("https://example.databricks.net", "secret", 12345)
+    )
+
+    assert calls == [
+        {
+            "host": "https://example.databricks.net",
+            "token": "secret",
+            "auth_type": "pat",
+            "workspace_id": 12345,
+            "product": "q2-bench",
+        }
+    ]
 
 
 @pytest.mark.parametrize(

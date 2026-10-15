@@ -61,6 +61,7 @@ class DatabricksConnection:
 
     host: str
     token: str
+    workspace_id: int
 
 
 class DatabricksRunClient(Protocol):
@@ -92,6 +93,7 @@ class SdkDatabricksRunClient:
             host=connection.host,
             token=connection.token,
             auth_type="pat",
+            workspace_id=connection.workspace_id,
             product="q2-bench",
         )
 
@@ -166,6 +168,7 @@ def submit_databricks_run(
 
     connection = _load_connection(
         configuration_key,
+        target.workspace_id,
         configuration_path,
         os.environ if environ is None else environ,
     )
@@ -218,6 +221,7 @@ def _validate_source(source: str, expected_sha256: str) -> str:
 
 def _load_connection(
     configuration_key: str,
+    workspace_id: str,
     path: Path,
     environ: Mapping[str, str],
 ) -> DatabricksConnection:
@@ -277,7 +281,16 @@ def _load_connection(
     if not host.startswith("https://"):
         message = f"{variable_names['host_env']} must be an https:// URL"
         raise DatabricksRunError(message)
-    return DatabricksConnection(host=host, token=values["token_env"])
+    try:
+        resolved_workspace_id = int(workspace_id)
+    except ValueError as error:
+        message = f"Databricks {configuration_key} workspace ID must be numeric"
+        raise DatabricksRunError(message) from error
+    return DatabricksConnection(
+        host=host,
+        token=values["token_env"],
+        workspace_id=resolved_workspace_id,
+    )
 
 
 def _mapping_at(

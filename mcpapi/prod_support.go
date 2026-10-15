@@ -15,6 +15,7 @@ import (
 
 type prodSupportAPI struct {
 	airflow       *airflowAPI
+	cluster       *clusterHealthAPI
 	updatesPath   string
 	omissionsPath string
 }
@@ -30,9 +31,10 @@ func registerProdSupport(server *mcp.Server, config Config) error {
 	if err != nil {
 		return err
 	}
+	clusterAPI := newClusterHealthAPI(airflowAPI)
 	api := &prodSupportAPI{
 		airflow: airflowAPI, updatesPath: config.UpdatesPath,
-		omissionsPath: config.OmissionsPath,
+		omissionsPath: config.OmissionsPath, cluster: clusterAPI,
 	}
 	if api.updatesPath == "" {
 		api.updatesPath = os.Getenv("PROD_SUPPORT_UPDATES_PATH")
@@ -41,6 +43,10 @@ func registerProdSupport(server *mcp.Server, config Config) error {
 		api.omissionsPath = filepath.Join(".agentsdk", "prod-support-omissions.json")
 	}
 	addAirflowTools(server, airflowAPI)
+	addClusterHealthTool(server, clusterAPI)
+	if err := registerKPOSizing(server); err != nil {
+		return err
+	}
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "run_prod_support",
 		Description: "Investigate production Airflow failures and return an evidence-based report.",
@@ -285,8 +291,12 @@ func (a *prodSupportAPI) executeFollowUp(
 	if err != nil {
 		return nil, nil, err
 	}
+	batches := prodsupport.RetryBatches(selected)
+	if err := a.preflightFollowUp(ctx, batches); err != nil {
+		return nil, nil, err
+	}
 	states := make([]prodsupport.RetryTaskReference, 0, len(selected))
-	for _, batch := range prodsupport.RetryBatches(selected) {
+	for _, batch := range batches {
 		retried, retryErr := a.airflow.source.ExecuteRetry(ctx, batch, input.ApprovalID)
 		if retryErr != nil {
 			return nil, nil, retryErr

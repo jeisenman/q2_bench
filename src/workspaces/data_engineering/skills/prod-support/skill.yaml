@@ -9,18 +9,27 @@ harnesses:
 mcp:
   server: prod-support
   tools:
-    - run_prod_support
+    - inspect_cluster_health
+    - get_prod_support_omissions
+    - list_failed_task_instances
+    - get_dag_status
+    - get_task_instance_state
+    - get_task_log
+    - has_task_success
+    - get_task_metadata
     - execute_prod_support_follow_up
     - setup_prod_support
-    - get_prod_support_omissions
     - set_prod_support_omissions
     - update_prod_support_omissions
     - list_prod_support_updates
+    - get_kpo_job_templates
+    - estimate_kpo_resources
+    - run_prod_support
 requires_env:
-  # direct | mcp | replay | empty
   - PROD_SUPPORT_SOURCE
-  - DATA_ENGINEERING_AZURE_CLIENT_ID
-  - DATA_ENGINEERING_AZURE_CLIENT_SECRET
-  - DATA_ENGINEERING_AZURE_TENANT_ID
+  - USAIRFLOWHOST
+  - USAIRFLORUSER
+  - USAIRFLOWPASSWORD
+  - CAAIRFLOWHOST
   - CAAIRFLORUSER
   - CAAIRFLOWPASSWORD

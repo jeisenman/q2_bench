@@ -13,6 +13,7 @@ GO_EXCLUDED_PARTS = frozenset(
 PYTHON_PATHS = [
     "scripts/check.py",
     "scripts/check_file_lengths.py",
+    "scripts/check_kpo_inventory_sync.py",
     "scripts/restart_codex_runtime.py",
     "src/adapters",
     "src/databricks_runtime",
@@ -77,6 +78,7 @@ def main() -> int:
 
     run(format_command)
     run(["ruff", "check", *PYTHON_PATHS])
+    run(["python", "scripts/check_kpo_inventory_sync.py"])
     run(["mypy"])
     run(["pytest", "-n", "auto", "--dist", "loadscope"])
     run(["python", "scripts/check_file_lengths.py"])

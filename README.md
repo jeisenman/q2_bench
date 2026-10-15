@@ -25,6 +25,8 @@ cp configurations.yaml.example configurations.yaml
 ```
 
 Credential values belong only in the ignored `.env` file or the environment.
+The Go MCP launcher loads `.env` when it exists and preserves variables
+already exported in the process environment.
 
 ## Go SDK
 
@@ -80,18 +82,38 @@ docker compose up -d --build --force-recreate --wait warehouse-mcp
 ```
 
 The warehouse endpoint is `http://127.0.0.1:8766/mcp`. It defaults to
-deterministic sandbox replay. Set `WAREHOUSE_ENVIRONMENT` and the matching
-`SNOWFLAKE_<ENVIRONMENT>_*` variables in `.env` before making live calls.
+deterministic sandbox replay. Dev calls reuse the ignored
+`~/projects/ds-airflow/chart/local_connections/de_transforms_snowflake.json`
+key-pair connection through a read-only mount. Other environments use the
+matching `SNOWFLAKE_<ENVIRONMENT>_*` variables in `.env`.
 
 Production follow-up retries require all of the following:
 
 - `PROD_SUPPORT_SOURCE=production`
 - an explicit `approval_id`
-- retry candidates returned by `run_prod_support`
+- retry candidates preserved by the connector-driven skill procedure or
+  returned by the compatibility `run_prod_support` façade
 - the original US-01 and CA-02 validation URLs
 
 The tool dry-runs and validates the exact Airflow task selection before clearing
 failed task instances.
+
+For interactive live support, the `$prod-support` Markdown procedure calls the
+Airflow, Resource Discovery, and OMS MCP connectors directly and performs all
+triage in the current agent. It does not route failures to subagents.
+`run_prod_support` remains available for compatibility and benchmark callers.
+
+The `prod-support` server also exposes `get_kpo_job_templates` and
+`estimate_kpo_resources`, deterministic and network-free static planning
+capabilities. The bounded catalog can supply verified job identity,
+runner/family routes, and known chunk or concurrency defaults. Measured
+runtime-dependent evidence remains mandatory. Estimates return exact byte
+components, GiB renderings, CPU guidance, assumptions, warnings, the applied
+template, and the effective configuration; they reject contradictions, missing
+evidence, and requests above reviewed tiers. Neither tool changes production
+allocations. See
+[docs/kpo-sizing-estimator.md](docs/kpo-sizing-estimator.md) for formulas and
+input semantics.
 
 ## Databricks Python boundary
 

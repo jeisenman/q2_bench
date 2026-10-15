@@ -56,6 +56,39 @@ func TestClientIDsAndLabels(t *testing.T) {
 	}
 }
 
+func TestFailureSubjectPreservesCompleteClientUUID(t *testing.T) {
+	t.Parallel()
+	const clientID = "11111111-1111-4111-8111-111111111111"
+	failure := AirflowFailure{
+		Region: US01, DAGID: "l3-main-" + clientID, RunID: "run",
+		TaskID: "task", StartAt: time.Now(), EndAt: time.Now(), TryNumber: 1,
+	}
+	identities := map[string]ClientIdentity{
+		clientID: {ClientID: clientID, Name: "Example Bank", Status: "reviewed"},
+	}
+
+	got := FailureSubject(failure, identities)
+	want := "Example Bank (" + clientID + ")"
+	if got != want {
+		t.Fatalf("FailureSubject() = %q, want %q", got, want)
+	}
+}
+
+func TestFailureSubjectPreservesCompleteUnresolvedUUID(t *testing.T) {
+	t.Parallel()
+	const clientID = "22222222-2222-4222-8222-222222222222"
+	failure := AirflowFailure{
+		Region: CA02, DAGID: "l3-main-" + clientID, RunID: "run",
+		TaskID: "task", StartAt: time.Now(), EndAt: time.Now(), TryNumber: 1,
+	}
+
+	got := FailureSubject(failure, nil)
+	want := "Unresolved client (" + clientID + ")"
+	if got != want {
+		t.Fatalf("FailureSubject() = %q, want %q", got, want)
+	}
+}
+
 func TestEventCountUsesLargestEvidenceCount(t *testing.T) {
 	t.Parallel()
 	count := EventCount(FailureDiagnosis{

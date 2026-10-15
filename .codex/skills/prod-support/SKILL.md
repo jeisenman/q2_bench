@@ -1,398 +1,245 @@
 ---
 name: prod-support
-description: Discover, triage, and remediate di-pipelines production Airflow failures. Use when checking the prior day's failed task instances in US-01 and CA-02, investigating or resending recoverable validate_event_bus_opportunities failures, resolving a client UUID to its PrecisionLender environment, or identifying Derived RA high_quality distinctness failures and their safe rerun targets.
+description: Discover, triage, and prepare approval-gated remediation for di-pipelines production Airflow failures in US-01 and CA-02. Use for daily production support, EventBus opportunity validation, client identity resolution, recurring D2P or subscriber failures, Derived RA high-quality distinctness failures, and exact Airflow retry follow-up.
 ---
 
 # Prod Support
 
-## Local Test-Suite Policy
+## Local test-suite policy
 
-When working in `di-pipelines`, `di-scheduling`, or `di-pyjobs`, do not run local unit, integration, or full test suites. Use static inspection, targeted non-test checks, and remote or Alpha evidence instead. Run a local test suite only when the user explicitly requests it.
+When working in `di-pipelines`, `di-scheduling`, or `di-pyjobs`, do not run
+local unit, integration, or full test suites unless the user explicitly asks.
+Use static inspection, targeted non-test checks, and remote or Alpha evidence.
 
-You are an experienced software engineer responsible for finding production failures and for which clients. You access Airflow in US01 and CA environments and provide a clear concise report of the failures.
+## Operating model
 
-You perform the following steps in order:
-- Discovery
-- Client identity resolution
-- Failure triage
-- Summary
+The Markdown procedure in this skill is authoritative for interactive live
+production support. Perform it in the current agent and call the typed MCP
+connectors directly. Do not create, delegate to, or route failures through
+subagents.
 
-For investigation delegation and result aggregation, read
-[references/investigations.md](references/investigations.md). For failure
-classification, including OOM confidence and recurring D2P/subscriber policy,
-read [references/classifications.md](references/classifications.md).
-When production tasks have since been rerun or the user requests replay from
-captured evidence, read [references/local-evidence.md](references/local-evidence.md)
-and do not rediscover the historical window. When the `prod-support` MCP
-server is connected, read [references/mcp-tools.md](references/mcp-tools.md)
-first: it runs this whole workflow as one typed, authenticated call.
+Read these references before acting:
 
-## Discovery
+- [references/mcp-tools.md](references/mcp-tools.md) for connector ownership,
+  inputs, and fail-closed behavior.
+- [references/investigations.md](references/investigations.md) for evidence
+  ordering and domain parsers.
+- [references/classifications.md](references/classifications.md) for OOM,
+  timeout, D2P, and subscriber classification.
+- [references/reporting.md](references/reporting.md) for the required report.
+- [references/retries.md](references/retries.md) before any Airflow mutation.
 
-Do not manually browse or scrape Airflow. Use the authenticated Airflow API for
-discovery, exact task logs, and operations. The exact-log collector batches
-REST requests concurrently and applies the standard 502/503 backoff.
+`run_prod_support` is a retained deterministic compatibility façade. Do not
+call it for an ordinary live request such as “do prod support.” Use it only
+when the user explicitly requests the façade or a benchmark harness calls for
+it. Never use it to conceal missing connector evidence.
 
-## Access boundaries
+## Safety boundaries
 
-Use the Airflow API and exact-task Airflow log collector as the default
-read-only sources. Parse the Airflow log locally before starting OMS work.
+- The initial production-support run is read-only.
+- Use MCP connectors, not browser scraping, direct REST scripts, Azure CLI, or
+  missing local parsers.
+- Never infer a client, environment, root cause, resend target, or rerun target.
+- Never resend opportunity snapshots during triage. The current MCP has no
+  resend mutation; prepare copy-ready operator input only.
+- Never clear Airflow tasks until the user explicitly approves the reported
+  exact retry candidates.
+- If a required connector is unavailable, preserve the known Airflow failure,
+  mark the missing evidence, and fail closed for the affected remediation.
 
-- Before Log Analytics work, run `az account show` and require subscription ID
-  `71aa0ec0-8411-43a2-9908-ddd2add764eb`. If it is not active, run `az account
-  set --subscription 71aa0ec0-8411-43a2-9908-ddd2add764eb`; if unavailable, ask
-  the user to run `az login` and obtain access. Do not continue to OMS queries
-  until verified by ID. A complete service-principal configuration remains supported and takes precedence.
-  When neither authentication path is available, collect the failed Airflow
-  task log and pass it to the applicable parser with `--log-file`.
-- Do not use Azure Storage Browser as a required diagnostic step. Inspect ADLS
-  only when an authenticated, read-only programmatic path is available;
-  otherwise report the storage path from the Airflow log as unavailable for
-  direct inspection.
-- Do not use the Resend Opportunity Snapshots application or assume an
-  application API/token flow exists during triage. Prepare deduplicated,
-  client-scoped batches only; require explicit authorization and an already
-  authenticated operator session before any UI submission.
-- Do not infer a client name or environment when Resource Discovery is
-  ambiguous. Report the UUID as unresolved, identify the missing unique
-  Resource Discovery match, ask a human to resolve the identity, and do not
-  propose a resend or rerun for that client.
-- Do not rely on the `l3-main-*`-only log collector for Market Insights,
-  subscriber, or other non-L3 DAGs. Use a generic Airflow API log retrieval
-  path when one is available; otherwise report their DAG and task without
-  claiming root-cause triage.
+## Procedure
 
-Run the discovery script first using `.env`. The default operational anchor is
-the current UTC date minus one day at `05:00:00Z`. On 2026-09-24, for example,
-the anchor is `2026-09-23T05:00:00Z`. Query task instances whose `end_date` is
-at or after that anchor so long-running tasks from the operational run remain
-visible. If the user specifies another date or time, pass it with `--since`.
-Airflow is a production network resource: invoke this read-only query with the
-environment's approved network access immediately. Do not run an unprivileged
-sandbox preflight or retry solely to diagnose DNS/network access; that path
-cannot reach the Airflow APIs and adds no diagnostic value.
+Perform these stages in order.
 
-Define the discovery window by when a failed task instance ended, not when it
-started. Query failed task instances with `end_date_gte` for the prior-day
-cutoff. Do not substitute `start_date_gte`: a long-running task can start before
-the cutoff and fail inside the reporting window. Include both scheduled and
-manual DAG runs, and do not exclude a failed `l3-main-*` task based on run type.
+### 1. Resolve scope
 
-```bash
-python3 .codex/skills/prod-support/scripts/discover_failures.py
-```
+The default operational anchor is the previous UTC date at `05:00:00Z`.
+Define the failure window by `end_date >= anchor`; do not substitute task start
+time and do not add an upper cutoff. Include scheduled and manual runs.
 
-Use `--at` to derive the default anchor from a historical reference time,
-`--since` to set an explicit anchor, and `--dry-run` to display the query
-without calling Airflow:
+Default to both regions. Use `US-01` before `CA-02` in calls and reporting
+unless the user explicitly limits scope.
 
-```bash
-python3 .codex/skills/prod-support/scripts/discover_failures.py \
-  --at '2026-07-24T15:23:00-04:00' --dry-run
-
-python3 .codex/skills/prod-support/scripts/discover_failures.py \
-  --since '2026-07-23T05:00:00Z' --dry-run
-```
-
-Airflow scripts resolve hosts and credentials from the `produs`, `prodca`,
-`alpha`, and `staging` entries under `workspaces.data_engineering.airflow` in
-`configurations.yaml`; values come from `.env`. A missing entry or value is an
-error. Use `--config <path>` or `--env-file <path>` to override either file. `--dry-run` prints the UTC query window without calling Airflow.
-
-Report the script's `URLs to validate` block before the detailed findings. Check `US-01` before `CA-02`.
-
-Discovery will yield failures in the following categories:
-- Eventbus Opportunity Validation
-- High Quality (HQ)
-- Delivery To Promise
-- ra_group
-- Other client-DAG failures
-
-Configured Data Internal omissions do not authorize skipping evidence. Read the
-exact failed task log for every omission candidate, then query Airflow for a
-success of the same DAG and task inside the operational window. Collapse the
-candidate to its omission code only when that bounded success exists. Otherwise
-report and diagnose it as an ordinary failure. Do not query OMS solely to
-verify an omission. These settings apply only to Data Internal; retain every failure in developer reporting, follow-up actions, retry planning, Resource Discovery, and triage.
-
-## Direct ADLS file inspection
-
-When a US production Airflow log identifies a source or destination under
-`pladls2usdatamartprod`, inspect the related files in the Azure Storage Browser:
-
-`https://portal.azure.com/#@precisionlender.com/resource/subscriptions/71aa0ec0-8411-43a2-9908-ddd2add764eb/resourceGroups/PL-GROUP-US-DIPIPELINE-PROD-01/providers/Microsoft.Storage/storageAccounts/pladls2usdatamartprod/storagebrowser`
-
-Use the logged filesystem and path to locate the files. Treat this as read-only
-investigation unless the user explicitly authorizes an external mutation.
-
-For a captured Airflow task log that includes Azure HTTP diagnostics, extract
-every recorded object size and its request context with:
-
-```bash
-python3 .codex/skills/prod-support/scripts/parse_content_lengths.py <log-file>
-```
-
-## Client identity resolution (required before reporting)
-
-Immediately after discovery and before investigating or writing any production-support update, extract every unique client UUID from discovered `l3-main-<client-uuid>` DAG IDs. Also include client UUIDs returned by EventBus validation when applicable.
-
-Resolve one complete client-ID-to-request mapping through the Resource Discovery
-batch capability exactly once before reporting. Use the structured batch results
-directly for developer and channel labels, environment, and resend routing. Do
-not call `format_client.py` or `lookup_client.py` once per UUID, and do not
-refresh individual UUIDs after a batch result. Preserve unresolved or ambiguous
-batch items as unresolved and report the missing unique match. Add or update a
-name only after a unique API result or explicit user confirmation. Do not infer
-a name or environment from the Airflow region, DAG name, application subdomain,
-or a partial UUID.
-
-Fail closed for a client identity: if Resource Discovery returns no record, multiple client names, or an otherwise ambiguous result, use the batch result's unresolved label and include `Resource Discovery: no unique match` in the developer message. This applies to every client-scoped failure, including Delivery-to-Promise.
-In Follow Ups, use this exact dated action and do not continue with client
-remediation:
+Retain both validation URLs for the report and any approved follow-up, even
+when the investigation itself is limited to one region:
 
 ```text
-Ask a human to resolve the client identity for <unresolved client labels> before proposing remediation for date <MM-DD-YY>.
+https://airflow-us01.precisionlender.com/taskinstance/list/
+https://airflow-ca02.precisionlender.com/taskinstance/list/
 ```
 
-If the resolved or user-confirmed client name is a PrecisionLender Canary account, ignore the client for prod-support reporting after identity resolution. When the quick lookup contains `prod_support_ignore: true`, honor it and omit that client from the developer and Data Internal Channel messages unless the failure has a clear production side effect outside the canary client.
+### 2. Verify clusters, settings, and DAGs
 
-## EventBus opportunity validation
+Before failure triage, call `inspect_cluster_health` once for every selected
+region. Use the operational anchor as `start_at` and anchor plus 24 hours as
+`end_at`. Independent regional checks may run concurrently.
 
-`validate_event_bus_opportunities` runs inside the per-client `l3-main-{clientId}` DAG, so investigate it with that client DAG/run context rather than as a global EventBus failure.
+Require each result to confirm `cluster_exists: true`. Retain pod readiness,
+windowed and cumulative restart counts, active DAG count, and
+`dags_parsing_healthy` as separate evidence. Do not describe a cluster as
+healthy when the tool fails, the active DAG count is unavailable, or either
+health signal is false. A cluster-health evidence gap does not erase Airflow
+failures; report the gap separately. Retry execution still requires explicit
+approval, exact failed-task candidates, and successful Airflow DAG guards.
 
-For each failed task with `task_id=validate_event_bus_opportunities`, use the
-Luna contract and source-selection rules in `references/investigations.md`.
-Prefer the exact Airflow task log for small results. Use OMS when the payload
-volume makes the Airflow response impractical or the log is incomplete.
+Call `get_prod_support_omissions` once. Omissions affect only the Data Internal
+message; they do not remove failures from discovery, evidence collection,
+developer reporting, identity resolution, or retry planning.
 
-```bash
-python3 .codex/skills/prod-support/scripts/validate_event_bus_opportunities.py \
-  --region us01 --run-id '<run-id>' --start-utc '<start>' --end-utc '<end>'
-```
+Call `list_failed_task_instances` with the RFC3339 anchor. Prefer one call with
+no region to retrieve both regions. When the user limits scope, pass exactly
+`US-01` or `CA-02`.
 
-The script parses `ClientId`, `OpportunityId`, and `Is Recoverable` from either
-the exact Airflow log or OMS. It prints the affected DAG ID/link, recoverable
-IDs grouped by client for the Resend Opportunity Snapshots UI, and
-non-recoverable counts separately. It never sends an event.
+Preserve each returned failure object unchanged. Its region, DAG ID, run ID,
+task ID, start/end timestamps, and try number are the exact identity used by
+all later connector calls.
 
-For Airflow-log mode, retrieve the exact failed task log and pipe it to the
-parser:
+Deduplicate the discovered `(region, dag_id)` pairs and call `get_dag_status`
+once per unique pair. Preserve `exists` and `is_paused` independently. Retain
+failures from a missing or paused DAG in the report, but do not fetch further
+task evidence when the DAG no longer exists and never create a retry candidate
+for a missing or paused DAG.
 
-```bash
-python3 .codex/skills/prod-support/scripts/get_airflow_task_logs.py \
-  'https://airflow-us01.precisionlender.com/dags/l3-main-<client-uuid>/grid' \
-  --run-id '<run-id>' --task-id validate_event_bus_opportunities --max-log-chars 0 \
-| python3 .codex/skills/prod-support/scripts/validate_event_bus_opportunities.py \
-  --region us01 --run-id '<run-id>' --log-file -
-```
+### 3. Collect exact Airflow evidence
 
-The parser extracts every ordered `ClientId`, `OpportunityId`, and
-`Is Recoverable` triple, such as:
+Call `get_task_log` once for every discovered failure. Independent read-only
+calls may run concurrently within normal connector bounds, but all reasoning
+and aggregation remain in this agent.
+
+For an omission candidate, also call `has_task_success` for the same DAG and
+task within the operational window. Collapse it to the configured regional
+omission summary only when that bounded success exists. Otherwise triage and
+report it as an ordinary failure.
+
+Call `get_task_metadata` only when operator type is needed to decide whether
+OMS is a valid fallback. Airflow-control operators may have no job stream.
+
+### 4. Resolve client identities once
+
+Extract complete client UUIDs from every `l3-main-<uuid>` DAG and from parsed
+EventBus records. Resolve the complete deduplicated set in one read of
+`.codex/skills/resource-discovery/references/client-guuid-lookup.json`; do not
+loop the single-client lookup helper and do not call a Resource Discovery MCP.
+
+Use only exact UUID entries for client names, environments, and resend routing.
+Preserve missing or unresolved entries as unresolved. Never infer identity
+from an Airflow region, DAG name, partial UUID, or hostname.
+
+If an exact entry marks a PrecisionLender Canary client or
+`prod_support_ignore: true`, omit that client from normal reports unless the
+failure has a clear production side effect outside the canary.
+
+### 5. Triage each failure
+
+Apply [references/investigations.md](references/investigations.md) and
+[references/classifications.md](references/classifications.md). Start with the
+exact Airflow log. Call `query_job_evidence` only when that log is unavailable
+or incomplete for one Spark-backed task. Use `query_oms` only for a bounded
+cross-attempt or domain aggregation that the exact-job tool cannot represent.
+
+Keep Airflow and OMS conclusions source-qualified. A successful OMS query with
+zero rows is `no matching OMS evidence`, not proof that the Airflow failure did
+not occur.
+
+#### EventBus opportunity validation
+
+For `validate_event_bus_opportunities`, parse every ordered `ClientId`,
+`OpportunityId`, and `Is Recoverable` triple. Deduplicate by client and
+opportunity. Preserve conflicts; if one opportunity is both recoverable and
+non-recoverable, exclude it from resend candidates.
+
+Only recoverable IDs are resend candidates. Render copy-ready blocks of at
+most 1,000 comma-separated IDs per uniquely resolved client:
 
 ```text
-ClientId: 8b2e8a38-b778-402a-819a-4904f42f5a2a
-OpportunityId: f67e50f5-251a-41ae-837c-6f9eba431b5f
-Is Recoverable: True
+Client: <resolved name> (<full UUID>)
+App URL: <environment-specific resend URL>
+Opportunity IDs: <comma-separated recoverable IDs>
 ```
 
-Deduplicate IDs per client while keeping recoverable and non-recoverable IDs
-separate. Only recoverable IDs are resend candidates. The Resend Opportunity
-Snapshots UI accepts at most 1,000 comma-separated Opportunity IDs per client;
-report any excess instead of silently dropping it.
+Route only from the exact Resource Discovery environment:
 
-For every client with recoverable IDs, default the developer-facing output to
-this copy-ready shape before any resend attempt:
+- `us01`: `https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots`
+- `us02`: `https://us02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots`
+- `ENT01`: `https://bacprod.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots`
+- `ca02`: `https://cac01-app.precisionlender.com/Admin/Troubleshooting/ResendSnapshotsForClient`
+
+Do not construct a URL for an unresolved environment and do not claim an event
+was resent without an external operator-confirmed success result.
+
+#### Derived RA high quality
+
+For every failed `high_quality_*` task, report every distinctness count found
+in the exact evidence:
 
 ```text
-Client: <resolved client name> (<full client UUID>)
-App URL: <environment-specific Resend Opportunity Snapshots URL>
-Opportunity IDs: <all deduplicated recoverable Opportunity IDs as one comma-separated value>
+<DatasetForm>: total <n>; unique <m>; pass|mismatch
 ```
 
-Resolve the client name and PLApp environment through Resource Discovery before
-printing this block. Fail closed and state the unresolved field when either
-value is unavailable or ambiguous; do not guess the application URL. When more
-than 1,000 IDs exist, print additional `Opportunity IDs` blocks of at most
-1,000 IDs each so every block can be pasted directly into the UI.
+Map rerun targets only from a proven mismatch or explicit distinctness
+exception. Keep the `ra_group.` prefix and omit `high_quality_`. Map
+`DepositFinancialStatementsBreakdown` exactly to
+`ra_group.get_deposit_financial_statement_breakdown`.
 
-Unattended Log Analytics queries may authenticate explicitly as the
-`data-engineering` service principal. Interactive runs may use the already
-validated Azure CLI session on subscription ID
-`71aa0ec0-8411-43a2-9908-ddd2add764eb` described under
-Access boundaries. Do not reuse Resource Discovery credentials: that identity
-does not necessarily have Log Analytics read access. Configure the unattended
-role in the local, ignored `.env` file:
+An explicit timeout is `Other / Timeout`; it does not imply a distinctness
+target. Apply the confidence rules before labeling OOM.
 
-```bash
-export DATA_ENGINEERING_AZURE_CLIENT_ID='...'
-export DATA_ENGINEERING_AZURE_CLIENT_SECRET='...'
-export DATA_ENGINEERING_AZURE_TENANT_ID='...'
-```
+#### D2P and subscriber checks
 
-The shared OMS helper loads these variables from `.env` without overriding
-exported values. A complete set takes precedence and triggers service-principal
-login. If none are present, it requires an existing Azure CLI session on
-`PrecisionLender Production`. A partial set fails closed. Never fall back to
-`RESOURCE_DISCOVERY_*` or generic `AZURE_*` credentials.
+When D2P or subscriber-client failures exist, call
+`list_failed_task_instances` once more with a 30-day cutoff and filter that
+inventory to the same task and affected clients. Use `has_task_success` when a
+bounded success pattern is required. Classify each finding as `new`,
+`known_recurring_unchanged`, `known_recurring_changed`, or `recovered`.
 
-## Resend recoverable opportunity snapshots
+#### Other failures
 
-Every proposed event send must use this exact report template:
+Retain every otherwise-unhandled `l3-main-*` failure as `Other`. Ignore
+Snowflake ingestion, historical pricing-event, and routine log-cleanup failures
+unless the user asks for them or the evidence contains a relevant OOM,
+timeout, distinctness, or production-impact signal.
+
+For a timeout with a KPO override, read
+[references/kpo-sizing.md](references/kpo-sizing.md) and use
+`get_kpo_job_templates` or `estimate_kpo_resources` only as documented there.
+
+### 6. Report and retain follow-up state
+
+Render the result with [references/reporting.md](references/reporting.md).
+Always include validation URLs, the developer message, the Data Internal
+message, and `Follow Up`.
+
+Preserve every complete client UUID, DAG ID, run ID, and task ID in every
+audience and retained follow-up object. Never use an identifier prefix,
+ellipsis, shortened display form, or client name in place of an exact ID.
+
+For each exact failed task offered for MCP retry, retain a stable numbered
+candidate with:
 
 ```text
-Send events for <client names> on [Resend Opportunity Snapshots](<approved link>) for date <MM-DD-YY>.
+number, region, dag_id, run_id, task_id, label
 ```
 
-Do not paraphrase it as “consider resending.” Follow Ups contain supported
-actions, not broad requests to review or investigate infrastructure. Keep
-retired DAG-processor and KEDA warnings in developer evidence unless a
-supported action exists.
+Also retain the two validation URLs and one correlation ID. Do not create a
+retry candidate for a task that is not currently failed or for a client whose
+identity is unresolved.
 
-Process one client UUID at a time:
+## Approved follow-up
 
-1. Use the authenticated Playwright Resource Finder flow to select the affected
-   client UUID in `Select a Client` and read its `Environment` column. Do this
-   for each client with one or more **recoverable** IDs; never route a client
-   for resend based on non-recoverable IDs.
-2. Fail closed if the client is missing, the selection is ambiguous, or the
-   environment is not one of the supported values below.
-3. Route by the exact normalized environment value:
-   - `us01`: `https://us01-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots`
-   - `us02`: `https://us02-app.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots`
-   - `ENT01`: `https://bacprod.precisionlender.com/Admin/Troubleshooting/ResendOpportunitySnapshots`
-   - `ca02`: `https://cac01-app.precisionlender.com/Admin/Troubleshooting/ResendSnapshotsForClient`
-4. In the selected client's Resend Opportunity Snapshots page, enter only that
-   client's deduplicated recoverable Opportunity IDs as one comma-separated
-   value. Preserve every ID and split at 1,000 IDs per submission.
-5. Before submitting, verify the destination hostname matches the discovered
-   environment, the client UUID matches the Resource Finder selection, and the
-   comma-separated value contains exactly the intended recoverable IDs.
-6. Treat `Resend` as an external side effect. If the user's current request
-   does not explicitly authorize resending these specific IDs, ask for
-   confirmation immediately before clicking it. If the request already
-   provides that narrow authorization, proceed.
-7. After submission, verify the UI's success signal. Report events as resent
-   only when the UI confirms success; otherwise report the visible error and
-   leave the remediation ongoing.
+A general request to perform production support is not retry approval. After
+the report, an explicit user direction containing `follow up` or `retry` may
+select the preserved candidates by number or region.
 
-Do not infer an environment from the Airflow region or client UUID. Resource Finder is authoritative. Do not resend IDs when Resource Finder or the target application requires authentication that is not already available; ask the user to sign in to the selected browser and continue after they confirm it is ready.
+Call `execute_prod_support_follow_up` with the preserved candidates, original
+validation URLs, correlation ID, exact user direction, and a nonempty approval
+reference. Do not reconstruct targets from prose. If the exact follow-up state
+is unavailable, repeat the read-only procedure before asking for approval.
 
-## Derived RA high_quality
+Report returned task states as submitted, queued, running, successful, failed,
+or unknown. Submission is not success.
 
-For every failed task in a `high_quality_*` Derived RA task group, create one
-isolated Luna parsing agent using `references/investigations.md`. Collect the
-exact Airflow task log first and pass it to the local parsers. Use OMS only
-when the Airflow log is incomplete or lacks the required records. Give the
-agent the region, client UUID, task ID, DAG run, attempt, and captured log.
+## Reflection
 
-The investigation subagent must:
-
-1. Parse the exact Airflow task log locally before requesting OMS.
-2. Search for `OOMKilled`, out-of-memory markers,
-   SIGKILL/exit `-9`, `**TimeoutError`, `ErrorTimeout`, `AirflowTaskTimeout`,
-   `execution_timeout`, and other explicit timeout text.
-3. Report every distinctness count and explicit distinctness failure. Map
-   rerun targets only from proven results.
-4. If OMS fallback is required, run `az account show`, require subscription ID
-   `71aa0ec0-8411-43a2-9908-ddd2add764eb`, and query by task ID, run ID, and
-   `client_id_g`.
-5. Make no production changes.
-
-Have it run:
-
-```bash
-python3 .codex/skills/prod-support/scripts/triage_high_quality.py \
-  --region us01 --client-id '<client-uuid>' --task-id '<failed-task-id>' \
-  --run-id '<run-id>' --start-utc '<start>' --end-utc '<end>'
-```
-
-The script parses either captured Airflow logs or OMS results and detects
-explicit `Distinctness validation failed for <DatasetForm>` errors or any
-`Validate distinctness - counts` record where total and unique differ. If any
-DatasetForm has a mismatch or explicit distinctness error, convert only that
-failed DatasetForm to its corresponding underlying RA task. If the log contains
-`**TimeoutError:`,
-classify the failure as a timeout under `Other`; do not infer a rerun target
-from that error alone.
-
-Report every `Validate distinctness - counts` record from each investigated task, including three or more records. For every DatasetForm, include total and unique counts and classify it as `pass` when they match or `mismatch` when they differ. Generate rerun targets only for DatasetForms with a proven mismatch or an explicit distinctness exception. Never map a passing DatasetForm merely because another result in the same task failed. Use exact Airflow task IDs prefixed by `ra_group.`. In particular, map `DepositFinancialStatementsBreakdown` to the singular task ID `ra_group.get_deposit_financial_statement_breakdown`. When raw task logs are supplied, parse them with `triage_high_quality.py --log-file` instead of treating unavailable Log Analytics or an Airflow log-view error as evidence that no distinctness result exists.
-
-When examining captured logs instead, use `--log-file <path>` or `--log-file -`. The subagent must report every checked dataset form before the rerun targets in this form:
-
-```text
-Validate distinctness checks on <clientA>:
-- <DatasetFormA>: total <n>; unique <m>; pass|mismatch
-- <DatasetFormB>: total <n>; unique <m>; pass|mismatch
-Validate distinctness error on <clientA>, <clientB>; suggest re-run:
-l3-main-<clientA>
-ra_group.get_<job1>
-ra_group.get_<job2>
-```
-
-This report directs the operator to rerun the listed jobs; it does not rerun them itself.
-
-## Mapping Client GUUIDs
-
-Complete the required Client identity resolution step before beginning the summary. Never defer Resource Discovery name resolution until after the production-support update is drafted.
-
-## Summary and final output format
-
-Render the final developer and Data Internal Channel messages using
-[references/reporting.md](references/reporting.md). Use the operational
-anchor's UTC date in the heading.
-
-## Developer Notes
-
-For every Delivery-to-Promise or subscriber-client failure, apply the 30-day
-history and reporting rules in `references/classifications.md`.
-
-Apply these rules:
-
-- If EventBus validation finds recoverable events, list the client ID and every Opportunity ID to enter in the resend UI. Keep unrecoverable IDs separate and report their count. Say `Resending events for ...` as an operator instruction; never claim that events were resent unless the operator explicitly confirms that action.
-- If the resend UI confirms success, say `Resent events for ...` and include the resolved environment. If resending is awaiting authorization, authentication, or a UI result, keep `Resending events for ...` under `Ongoing` and state the blocker.
-- Classify OOM and exit `-9` evidence using
-  `references/classifications.md`; do not promote probable or unknown
-  termination to confirmed OOM.
-- If a Derived RA `high_quality_*` task has a distinctness validation failure, list the client ID and suggest rerunning only the exact `ra_group.get_<job_name>` targets whose DatasetForms mismatched or were explicitly named by the exception.
-- Map a high-quality distinctness target to its underlying RA job by omitting `high_quality_` and retaining the `ra_group.` prefix: for example, use `ra_group.get_core_deposit_accounts`, not `get_high_quality_core_deposit_accounts`.
-- Combine multiple relevant failures for the same client and region in one Data Internal Channel line. List each failed task or safe rerun target in that line. Never list more than one client in a bullet; create a separate bullet for every client.
-- When configured subscriber, D2P, or MI3 jobs fail, add the exact region-level
-  nested line `  - check_for_subscriber_client_errors, D2P, MI3`; do not expand
-  them into client bullets or mark the region `Ongoing` solely because this
-  summary exists.
-- Data Internal bullets never end with periods. Preserve exact job identifiers,
-  including underscores: `active_deposit_accounts`, never `active-deposit
-  accounts`. For multiple jobs, omit causes and join identifiers with `and`:
-  `Scotiabank (1f0) failed on monthly_relationships and similar_loans_portfolio`.
-- Render a confirmed distinctness-validation finding compactly as
-  `<client> (<code>) failed DV`.
-- In the Data Internal Channel message, abbreviate every client UUID to its first three characters in parentheses. Do not use an ellipsis inside the parentheses.
-- Treat every discovered `l3-main-<client ID>` failure not covered by an explicit ignore rule as relevant. If no dedicated triage playbook applies, report it under `Other` with the client, DAG, and task; mark that region `- Ongoing`. Do not mark the region `- Good` merely because it is not EventBus or `high_quality_*`. For example, report `account_level_all_scenarios.account_level_all_scenarios` under `Other`.
-- Under `Other`, include only relevant failures not covered above.
-- When a task log contains `**TimeoutError:`, report `Timeout` under `Other`
-  with the task/DAG details. If the task has a KPO override, read
-  [references/kpo-sizing.md](references/kpo-sizing.md) and offer its sizing
-  follow-up.
-- Ignore Snowflake ingestion and historical pricing-event tasks unless the user
-  specifically asks for them or they reveal a relevant OOM or distinctness
-  issue. Classify and report `check_for_subscriber_client_errors`,
-  subscriber-client checks, and Delivery-to-Promise only through
-  `references/classifications.md`.
-- Use `- Good` for a region with no relevant findings. Use `- Ongoing` when relevant remediation is pending, such as event resends or suggested reruns.
-- Always return a `Follow Up:` section after the Data Internal message. Keep
-  it concise and action-oriented:
-  - `Send events for ...`
-  - `Would you like to re-run:`
-    - `<Bank> (<code>) <full l3-main DAG ID> <job1>, <job2> jobs`
-
-Do not clear or retry Airflow tasks, change Kubernetes state, or call application APIs unless the user explicitly asks. Never resend non-recoverable opportunity snapshots.
-
-## Manual Approval for Airflow Retries
-
-Use `scripts/rerun_airflow_tasks.py` and follow
-[references/retries.md](references/retries.md). Airflow retries always require
-the post-dry-run approval described there.
-
-## Reflection Mechanism: 
-
-We are always trying to improve on this SKILL. If there is an edge case, new error type, or new failure not documented in this skill -- after summary -- please raise the problem to the user.
+After the report, identify any new production failure pattern that is not
+covered by these references. Raise it to the user as a proposed skill update;
+do not silently add a new remediation rule during the incident.

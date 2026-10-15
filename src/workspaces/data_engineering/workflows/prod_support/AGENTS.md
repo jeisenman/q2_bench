@@ -2,11 +2,17 @@
 
 ## Purpose
 
-One deterministic composition of tools for production support. The control
-flow here is fixed: no model chooses the next step. The agent loop belongs to
-the harness, which follows
-[`skills/prod-support`](../../skills/prod-support/SKILL.md) and
-reaches these tools through the `prod-support` MCP server.
+This package provides the deterministic production-support compatibility
+workflow. Its control flow is fixed: no model chooses the next step.
+
+Interactive live support follows
+[`skills/prod-support`](../../skills/prod-support/SKILL.md), whose Markdown
+procedure composes the Airflow and OMS MCP connectors directly in the current
+agent, with the checked-in client UUID lookup JSON for identity resolution. It
+first collects regional cluster health and active DAG counts, then verifies
+every unique discovered DAG still exists before collecting task evidence. It
+does not route failures to subagents.
+Explicit compatibility and benchmark callers may still use `run_prod_support`.
 
 The default scope is US and CA for the previous operational day beginning at
 05:00 UTC. Investigation is read-only. A developer follow-up authorizes
@@ -37,7 +43,8 @@ Reporting is deterministic. [`reporting.py`](reporting.py) and its
 messages from findings. [`report_examples.py`](report_examples.py) holds the
 compliant and non-compliant Data Internal lines that both the renderer and the
 skill are written against. The narrative framing a reader sees is produced by
-the harness from the skill, not by a model inside this package.
+the harness from the skill, not by a model inside this package. All client,
+DAG, run, and task identifiers remain complete in every audience.
 
 [`harness.py`](harness.py) adapts the workflow to the shared
 [`workflow_harness`](../../../../workflow_harness/) contracts, so the
@@ -62,8 +69,8 @@ the composition root in `mcp_servers/prod_support_sources.py`:
   `produs` and `prodca` entries in `configurations.yaml`; a missing entry or
   value raises `AirflowConfigurationError` at startup.
 - `ClusterHealthSource` — the read-only cluster script.
-- `ResourceDiscoveryBatchInvoker` — the Resource Discovery agent, for resolving
-  a complete client-UUID mapping in one batch before reporting.
+- The checked-in Resource Discovery UUID lookup JSON supplies exact client
+  labels and environments for the Markdown-orchestrated live path.
 - `OmsJobEvidenceSource` — DI_Scheduling_CL for Spark job evidence.
 - `AgentMemory` — durable scoped summaries.
 
@@ -88,11 +95,13 @@ not import from `workspaces.data_engineering.agents`, except for the
 3. Hand the full failure inventory to `TriageManager` in one call.
 4. Resolve each failure from the cheapest sufficient evidence, escalating to an
    exact task log only when needed.
-5. Resolve client identity through Resource Discovery using the complete UUID
-   mapping, batching the lookups before reporting.
+5. Resolve client identity from the checked-in complete UUID lookup JSON.
 6. Render the combined, developer, and Data Internal reports.
 7. Compute retry candidates. Execution happens only on explicit developer
-   authorization through `execute_prod_support_follow_up`.
+   authorization through `execute_prod_support_follow_up`. The MCP verifies
+   all selected DAGs exist and are not paused; cluster health is retained as
+   investigation evidence but is not a retry prerequisite. Exact task states
+   are read through `get_task_instance_state`.
 
 ## Benchmark behavior
 

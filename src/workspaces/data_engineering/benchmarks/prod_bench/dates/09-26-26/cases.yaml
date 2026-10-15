@@ -144,7 +144,7 @@ cases:
       - Group clients that fail on the same job and group multiple jobs for one client.
       - Include job, complete error or evidence gap, evidence source, and root cause.
       - Prefer explicit timeout, OOM, and distinctness diagnoses when supported.
-      - Use client names rather than raw UUIDs.
+      - Use client names with complete UUIDs; never emit a bare or abbreviated UUID.
 
   - id: data-internal-message
     prompt: Render only the compact Data Internal message from the supplied findings.
@@ -162,6 +162,7 @@ cases:
       - Collapse configured subscriber, maintenance, backfill, and credit_migration_matrix or CMM findings to short regional codes.
       - Treat validate_event_bus_opportunities as sufficient to imply missing snapshots.
       - Include explicit OOM, timeout, or distinctness diagnoses when supported.
+      - Preserve every complete client UUID; never abbreviate an identifier.
       - Use no periods, blank lines, resend counts, dates, or routing details.
 
   - id: regional-consistency
@@ -188,4 +189,5 @@ cases:
       - Group all clients sharing one job into one bullet.
       - Group all jobs for one client into one bullet.
       - Mention every client-job pair exactly once.
+      - Preserve complete client UUIDs in every grouped label.
       - Do not add diagnoses or render unrelated report sections.

@@ -11,6 +11,7 @@ JOB_SOURCES = {
         {
             "job": "relationship_signals_time_series_agg_cp_to_snowflake",
             "kind": "historical",
+            "historical_scope": "version_root",
             "dataset": "PL_RelationshipAwareness/Relationships/RelationshipSignalsTimeSeriesAgg",
             "stage": "Derived",
             "version": "v1.0",
@@ -222,25 +223,19 @@ def render_notebook(inventory: list[dict[str, Any]], source_commit: str) -> str:
 # MAGIC # KPO ADLS Size Inventory
 # MAGIC
 # MAGIC Read-only inventory of explicit per-client KubernetesPodOperator memory overrides.
-# MAGIC It measures the latest RA run file or Historical Data Mart date partition and compares
-# MAGIC jobs using the same pod memory tier. Source commit: `{source_commit}`.
-
+# MAGIC It measures RA run files, dated Historical Data Mart partitions, or a full
+# MAGIC VersionPartition root, then compares jobs by pod memory tier. Source commit: `{source_commit}`.
 # COMMAND ----------
-
 import json
 from collections import deque
-
 from pyspark.sql import functions as F
-
 INVENTORY = json.loads({inventory_json!r})
 SOURCE_COMMIT = {source_commit!r}
-
 dbutils.widgets.text("client_ids", "", "Client UUIDs (comma-separated; blank = all)")
 dbutils.widgets.text("default_storage_account", "pladls2usdatamartprod", "Default ADLS account")
 dbutils.widgets.text("storage_account_overrides_json", '{{}}', "Client UUID to ADLS account JSON")
 dbutils.widgets.dropdown("latest_only", "true", ["true", "false"], "Historical: latest DatePartition only")
 dbutils.widgets.text("max_ra_requests", "30", "Maximum recent RA requests to inspect")
-
 selected_clients = {{value.strip() for value in dbutils.widgets.get("client_ids").split(",") if value.strip()}}
 account_overrides = json.loads(dbutils.widgets.get("storage_account_overrides_json"))
 default_account = dbutils.widgets.get("default_storage_account").strip()
@@ -249,10 +244,11 @@ max_ra_requests = int(dbutils.widgets.get("max_ra_requests"))
 if max_ra_requests < 1:
     raise ValueError("max_ra_requests must be at least 1")
 
-
 def list_items(path):
-    return list(dbutils.fs.ls(path))
-
+    try:
+        return list(dbutils.fs.ls(path))
+    except Exception as error:
+        raise RuntimeError(f"Unable to list ADLS path {{path}}: {{error}}") from error
 
 def recursive_size(path):
     pending = deque([path])
@@ -268,7 +264,6 @@ def recursive_size(path):
                 file_count += 1
     return total_bytes, file_count
 
-
 def recent_ra_runs(root):
     requests = sorted(
         (item.path for item in list_items(root) if item.isDir() and "Request=" in item.path),
@@ -280,7 +275,6 @@ def recent_ra_runs(root):
             reverse=True,
         )
         yield from runs
-
 
 def measure_ra_file(row, account):
     root = f"abfss://datalake@{{account}}.dfs.core.windows.net/ClientData/Client={{row['client_id']}}/DataIngress"
@@ -298,7 +292,6 @@ def measure_ra_file(row, account):
         f"No matching {{row['path']}} found in the latest {{max_ra_requests}} requests under {{root}}"
     )
 
-
 def measure_historical(row, account):
     dataset = row["dataset"].strip("/")
     root = (
@@ -306,6 +299,19 @@ def measure_historical(row, account):
         f"ClientId={{row['client_id']}}/L3/v1.0/{{row['stage']}}/{{dataset}}/"
         f"InstancePartition={{row['client_id']}}/VersionPartition={{row['version']}}"
     )
+    historical_scope = row.get("historical_scope")
+    if (
+        historical_scope is None
+        and row["job"] == "relationship_signals_time_series_agg_cp_to_snowflake"
+    ):
+        historical_scope = "version_root"
+    if historical_scope == "version_root":
+        total_bytes, file_count = recursive_size(root)
+        return total_bytes, file_count, root
+    if historical_scope not in (None, "date_partition"):
+        raise ValueError(
+            f"Unsupported historical_scope {{historical_scope!r}} for job {{row['job']}}"
+        )
     partitions = sorted(
         (item.path for item in list_items(root) if item.isDir() and "DatePartition=" in item.path),
         reverse=True,
@@ -315,7 +321,6 @@ def measure_historical(row, account):
     targets = partitions[:1] if latest_only else partitions
     totals = [recursive_size(target) for target in targets]
     return sum(item[0] for item in totals), sum(item[1] for item in totals), ",".join(targets)
-
 
 results = []
 for row in INVENTORY:
@@ -347,7 +352,6 @@ for row in INVENTORY:
 
 if not results:
     dbutils.notebook.exit("No inventory rows matched client_ids")
-
 result_frame = spark.createDataFrame(results)
 ordered = result_frame.orderBy(
     F.desc("memory_gib"),
@@ -357,9 +361,7 @@ ordered = result_frame.orderBy(
     F.asc("client_id"),
 )
 display(ordered)
-
 # COMMAND ----------
-
 # Same-runner peers make it easy to compare observed input sizes within each KPO memory tier.
 peer_summary = (
     ordered.filter(F.col("status") == "measured")

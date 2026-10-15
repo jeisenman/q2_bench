@@ -1,4 +1,15 @@
 interface:
   display_name: "Prod Support"
-  short_description: "Parallel Airflow failure triage and reruns"
-  default_prompt: "Use $prod-support to identify production Airflow issues, investigate each failure in parallel, and rerun eligible EventBus or OOM tasks."
+  short_description: "Connector-driven Airflow triage and follow-up"
+  default_prompt: "Use $prod-support to run the production-support procedure through the typed connectors and prepare approval-gated follow-up."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "prod-support"
+      description: "Airflow evidence, settings, KPO sizing, and approved retry execution"
+    - type: "mcp"
+      value: "resource-discovery"
+      description: "Batch client identity and environment resolution"
+    - type: "mcp"
+      value: "remote-data"
+      description: "Bounded OMS fallback evidence"

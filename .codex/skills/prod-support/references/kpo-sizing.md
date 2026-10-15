@@ -19,7 +19,9 @@ configured KPO CPU and memory, and same-tier peers.
 The notebook inventories explicit per-client `container_resources` overrides
 from `dag-utils/resource_allocation.py`. It measures the latest source RA file
 or Historical Data Mart date partition, sorts results by KPO memory and input
-size, and summarizes jobs sharing the same memory tier.
+size, and summarizes jobs sharing the same memory tier. The
+`relationship_signals_time_series_agg_cp_to_snowflake` job measures its complete
+`VersionPartition` root regardless of the `latest_only` setting.
 
 Inventory rows use client UUIDs only. Resolve client names through Resource
 Discovery; comments beside overrides are historical notes and are not an
@@ -36,10 +38,10 @@ The checked-in notebook source is
 dataset changes:
 
 ```bash
-python3 .codex/skills/prod-support/scripts/build_kpo_size_notebook.py \
+python3 {{SKILL_DIR}}/scripts/build_kpo_size_notebook.py \
   --di-pipelines-root <di-pipelines-root> \
   --source-commit <di-pipelines-commit> \
-  --output .codex/skills/prod-support/assets/kpo_adls_size_inventory.py
+  --output {{SKILL_DIR}}/assets/kpo_adls_size_inventory.py
 ```
 
 Review the generated notebook before importing it. Importing or replacing a

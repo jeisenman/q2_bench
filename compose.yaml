@@ -28,6 +28,7 @@ services:
         bind:
           create_host_path: false
     environment:
+      Q2_MCP_DEBUG: "1"
       PROD_SUPPORT_MCP_HOST: 0.0.0.0
       PROD_SUPPORT_MCP_PORT: "8000"
       PROD_SUPPORT_MCP_TRANSPORT: streamable-http
@@ -57,17 +58,28 @@ services:
 
   warehouse-mcp:
     <<: *agentbench
+    volumes:
+      - ./var:/workspace/var
+      - ./.env:/workspace/.env:ro
+      - ./configurations.yaml:/workspace/configurations.yaml:ro
+      - type: bind
+        source: ${DS_AIRFLOW_SNOWFLAKE_CONNECTION_FILE:-${HOME}/projects/ds-airflow/chart/local_connections/de_transforms_snowflake.json}
+        target: /run/secrets/ds-airflow-snowflake.json
+        read_only: true
+        bind:
+          create_host_path: false
     environment:
       Q2_MCP_DEBUG: "1"
       WAREHOUSE_ENVIRONMENT: ${WAREHOUSE_ENVIRONMENT:-sandbox}
       WAREHOUSE_SANDBOX_CORTEX_RECORDINGS: ${WAREHOUSE_SANDBOX_CORTEX_RECORDINGS:-/workspace/var/cortex-recordings}
+      SNOWFLAKE_DEV_CONNECTION_FILE: /run/secrets/ds-airflow-snowflake.json
       SNOWFLAKE_DEV_ACCOUNT: ${SNOWFLAKE_DEV_ACCOUNT:-}
       SNOWFLAKE_DEV_USER: ${SNOWFLAKE_DEV_USER:-}
       SNOWFLAKE_DEV_ROLE: ${SNOWFLAKE_DEV_ROLE:-}
       SNOWFLAKE_DEV_WAREHOUSE: ${SNOWFLAKE_DEV_WAREHOUSE:-}
       SNOWFLAKE_DEV_DATABASE: ${SNOWFLAKE_DEV_DATABASE:-}
       SNOWFLAKE_DEV_SCHEMA: ${SNOWFLAKE_DEV_SCHEMA:-}
-      SNOWFLAKE_DEV_AUTHENTICATOR: ${SNOWFLAKE_DEV_AUTHENTICATOR:-snowflake}
+      SNOWFLAKE_DEV_AUTHENTICATOR: ${SNOWFLAKE_DEV_AUTHENTICATOR:-snowflake_jwt}
       SNOWFLAKE_DEV_SECRET_REF: ${SNOWFLAKE_DEV_SECRET_REF:-}
       SNOWFLAKE_DEV_PASSWORD: ${SNOWFLAKE_DEV_PASSWORD:-}
       SNOWFLAKE_DEV_TOKEN: ${SNOWFLAKE_DEV_TOKEN:-}

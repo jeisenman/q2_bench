@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"sort"
 	"strconv"
@@ -307,10 +306,18 @@ func databricksBridge(
 		ctx, "uv", "run", "python", "-m", "databricks_runtime.cli", operation,
 	)
 	command.Stdin = bytes.NewReader(payload)
-	command.Stderr = os.Stderr
+	var stderr bytes.Buffer
+	command.Stderr = &stderr
 	output, err := command.Output()
 	if err != nil {
-		return nil, nil, fmt.Errorf("Databricks runtime failed: %w", err)
+		detail := strings.TrimSpace(stderr.String())
+		if len(detail) > 4_000 {
+			detail = detail[len(detail)-4_000:]
+		}
+		if detail == "" {
+			return nil, nil, fmt.Errorf("Databricks runtime failed: %w", err)
+		}
+		return nil, nil, fmt.Errorf("Databricks runtime failed: %w: %s", err, detail)
 	}
 	var result map[string]any
 	if err := json.Unmarshal(output, &result); err != nil {

@@ -127,11 +127,11 @@ import json
 
 from pyspark.sql import functions as F
 
-CLIENT_ID = "{client_id}"                       # e.g. "99b9412b-70fd-4221-8431-d1b3934889ec"
+CLIENT_ID = "{client_id}"  # e.g. "99b9412b-70fd-4221-8431-d1b3934889ec"
 START = datetime({start_year}, {start_month}, {start_day}, tzinfo=timezone.utc)
 END = datetime({end_year}, {end_month}, {end_day}, tzinfo=timezone.utc)
-HOST = "{host}"                                 # e.g. "pladls2usstaging.dfs.core.windows.net"
-RA_FILE = "{ra_file}"                           # e.g. "DatabaseOutput/dbStagingDeliveryToPromiseAggregates.csv"
+HOST = "{host}"  # e.g. "pladls2usstaging.dfs.core.windows.net"
+RA_FILE = "{ra_file}"  # e.g. "DatabaseOutput/dbStagingDeliveryToPromiseAggregates.csv"
 FIELDS = [
     # one or more column names to check, e.g.:
     # "TreasuryInterestBearingBalance",
@@ -144,7 +144,9 @@ FIELDS = [
 def parse_timestamp(path, marker):
     value = path.rstrip("/").split(marker)[-1]
     try:
-        return datetime.strptime(value[:16], "%Y-%m-%d-%H-%M").replace(tzinfo=timezone.utc)
+        return datetime.strptime(value[:16], "%Y-%m-%d-%H-%M").replace(
+            tzinfo=timezone.utc
+        )
     except ValueError:
         return None
 
@@ -171,24 +173,34 @@ for request_item in dbutils.fs.ls(root):
         file_paths.append(candidate)
 
 if not file_paths:
-    dbutils.notebook.exit(json.dumps({{"client_id": CLIENT_ID, "status": "no_run_files_in_window"}}, sort_keys=True))
+    dbutils.notebook.exit(
+        json.dumps(
+            {{"client_id": CLIENT_ID, "status": "no_run_files_in_window"}},
+            sort_keys=True,
+        )
+    )
 
 frame = (
     spark.read.option("header", True)
     .option("inferSchema", False)
     .csv(sorted(file_paths))
-    .withColumn("_run_date", F.regexp_extract(F.input_file_name(), r"RaRun=(\d{{4}}-\d{{2}}-\d{{2}})", 1))
+    .withColumn(
+        "_run_date",
+        F.regexp_extract(F.input_file_name(), r"RaRun=(\d{{4}}-\d{{2}}-\d{{2}})", 1),
+    )
 )
 missing_fields = [field for field in FIELDS if field not in frame.columns]
 if missing_fields:
     dbutils.notebook.exit(
         json.dumps(
-            {{
-                "client_id": CLIENT_ID,
-                "status": "missing_columns",
-                "missing_fields": missing_fields,
-                "run_file_count": len(file_paths),
-            }},
+            {
+                {
+                    "client_id": CLIENT_ID,
+                    "status": "missing_columns",
+                    "missing_fields": missing_fields,
+                    "run_file_count": len(file_paths),
+                }
+            },
             sort_keys=True,
         )
     )
@@ -198,8 +210,12 @@ for field in FIELDS:
     normalized = F.trim(F.col(field))
     expressions.extend(
         [
-            F.sum(F.when(F.col(field).isNotNull() & (normalized != ""), 1).otherwise(0)).alias(f"{{field}}__non_null"),
-            F.sum(F.when(F.col(field).cast("double") != 0.0, 1).otherwise(0)).alias(f"{{field}}__non_zero"),
+            F.sum(
+                F.when(F.col(field).isNotNull() & (normalized != ""), 1).otherwise(0)
+            ).alias(f"{{field}}__non_null"),
+            F.sum(F.when(F.col(field).cast("double") != 0.0, 1).otherwise(0)).alias(
+                f"{{field}}__non_zero"
+            ),
         ]
     )
 
@@ -212,31 +228,49 @@ for row in rows:
     for field in FIELDS:
         non_null_count = int(values[f"{{field}}__non_null"] or 0)
         non_zero_count = int(values[f"{{field}}__non_zero"] or 0)
-        fields[field] = {{
-            "non_null_count": non_null_count,
-            "non_zero_count": non_zero_count,
-            "all_rows_non_null": non_null_count == row_count,
-            "all_rows_non_zero": non_zero_count == row_count,
-        }}
+        fields[field] = {
+            {
+                "non_null_count": non_null_count,
+                "non_zero_count": non_zero_count,
+                "all_rows_non_null": non_null_count == row_count,
+                "all_rows_non_zero": non_zero_count == row_count,
+            }
+        }
     daily.append(
-        {{
-            "run_date": values["_run_date"],
-            "row_count": row_count,
-            "all_fields_non_null_for_all_rows": all(item["all_rows_non_null"] for item in fields.values()),
-            "all_fields_non_zero_for_all_rows": all(item["all_rows_non_zero"] for item in fields.values()),
-            "fields": fields,
-        }}
+        {
+            {
+                "run_date": values["_run_date"],
+                "row_count": row_count,
+                "all_fields_non_null_for_all_rows": all(
+                    item["all_rows_non_null"] for item in fields.values()
+                ),
+                "all_fields_non_zero_for_all_rows": all(
+                    item["all_rows_non_zero"] for item in fields.values()
+                ),
+                "fields": fields,
+            }
+        }
     )
 
-result = {{
-    "client_id": CLIENT_ID,
-    "window_start": START.isoformat(),
-    "window_end_exclusive": END.isoformat(),
-    "run_file_count": len(file_paths),
-    "days_all_fields_non_null": [item["run_date"] for item in daily if item["all_fields_non_null_for_all_rows"]],
-    "days_all_fields_non_zero": [item["run_date"] for item in daily if item["all_fields_non_zero_for_all_rows"]],
-    "daily": daily,
-}}
+result = {
+    {
+        "client_id": CLIENT_ID,
+        "window_start": START.isoformat(),
+        "window_end_exclusive": END.isoformat(),
+        "run_file_count": len(file_paths),
+        "days_all_fields_non_null": [
+            item["run_date"]
+            for item in daily
+            if item["all_fields_non_null_for_all_rows"]
+        ],
+        "days_all_fields_non_zero": [
+            item["run_date"]
+            for item in daily
+            if item["all_fields_non_zero_for_all_rows"]
+        ],
+        "daily": daily,
+    }
+}
 
 dbutils.notebook.exit(json.dumps(result, sort_keys=True))
 ```

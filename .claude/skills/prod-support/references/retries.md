@@ -1,21 +1,79 @@
-# Airflow retries
+# MCP Airflow follow-up
 
-Every Airflow clear or retry requires a manual approval checkpoint.
+Airflow retries use `execute_prod_support_follow_up`. Do not use the retired
+local rerun script or call Airflow mutation endpoints directly.
 
-1. Verify the exact task instance is still failed.
-2. Run `scripts/rerun_airflow_tasks.py --plan-only` with the exact region, DAG,
-   run, and task IDs.
-3. Present the returned task instances and request approval.
-4. After approval, execute the identical request with
-   `--execute --approval-id '<approval reference>'`.
-5. Read the task state back and report queued, running, successful, or failed.
+## Authorization
 
-All clear requests must set upstream, downstream, past, and future inclusion to
-false. Use `only_failed=true` by default.
+A daily production-support request is read-only and is not approval. Execute a
+follow-up only after the user explicitly says `follow up` or `retry` after
+seeing the exact numbered candidates.
 
-For validated Derived RA distinctness targets, use `only_failed=false` only
-when the mapped underlying `ra_group` task succeeded in the original run.
-State that exception in the approval request.
+The call must carry:
 
-A general request to perform production support is not retry approval.
-Approval must follow the dry-run and identify its exact targets.
+- the user's exact selection direction;
+- the complete preserved retry-candidate array;
+- both original US-01 and CA-02 validation URLs;
+- the preserved correlation ID;
+- a nonempty durable approval reference.
+
+Do not reconstruct a candidate from a client name, abbreviated UUID, job label,
+or an old report. Repeat discovery if the exact state is unavailable.
+
+## Candidate requirements
+
+Every candidate must contain:
+
+```text
+number
+region: US-01|CA-02
+dag_id
+run_id
+task_id
+label
+```
+
+Candidates must identify currently failed task instances. The current MCP uses
+`only_failed=true`; it cannot rerun a succeeded upstream task merely because a
+downstream distinctness check suggests that task.
+
+## Current execution contract
+
+The MCP refuses execution unless `PROD_SUPPORT_SOURCE=production`. It validates
+the candidate schema and requires exactly two validation URLs containing
+`airflow-us01` and `airflow-ca02`.
+
+For each selected regional DAG run, the MCP:
+
+1. checks every selected DAG exists and is not paused;
+2. submits an Airflow dry-run;
+3. requires the dry-run task instances to include every approved task and
+   permits only downstream failed-task expansion within the same DAG run;
+4. submits the clear request with the same identity and expanded task set;
+5. reads every cleared task state back.
+
+The retry path does not require the optional `kubectl`-backed cluster health
+check. Cluster health remains available through `inspect_cluster_health` for
+investigation and reporting.
+
+The current clear payload sets:
+
+```text
+include_upstream=false
+include_downstream=true
+include_past=false
+include_future=false
+only_failed=true
+```
+
+The clear payload enables downstream inclusion while keeping upstream, past,
+and future inclusion disabled. The dry-run and clear responses must contain the
+same task set, all returned tasks must belong to the approved DAG run, and the
+original approved tasks must be present. Do not bypass those checks with a
+manual clear.
+
+## Reporting
+
+Report each returned state exactly. A cleared, scheduled, queued, or running
+task is not yet successful. If execution fails validation, report the rejected
+selection and make no claim that production changed.

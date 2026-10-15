@@ -40,8 +40,12 @@ jq -r --arg dag_id '<dag-id>' --arg run_id '<run-id>' \
    .log' "$PROD_SUPPORT_DATASET"
 ```
 
-Pass the selected log to deterministic parsers with `--log-file`. Use OMS only
-when the captured log is incomplete and preserve that source distinction.
+Parse the selected log in the current agent using
+[investigations.md](investigations.md) and
+[classifications.md](classifications.md). Do not call live Airflow, Resource
+Discovery, or OMS connectors while reproducing the snapshot. Preserve
+unresolved identities and unavailable secondary evidence rather than mixing
+current production facts into the historical result.
 
 The dataset is already redacted. Do not replace it with logs from a later
 rerun, and do not update expected output until a human reviewer explicitly

@@ -49,7 +49,8 @@ remain behind typed ports.
 - `adapters.resource_discovery`: production composition short-circuits unique
   local JSON identities before calling the Resource Discovery API. The lookup
   path can be overridden with `RESOURCE_DISCOVERY_CLIENT_LOOKUP`. The dedicated
-  MCP also composes that identity source with `ContxMetadataSource`.
+  MCP routes single and batch lookups through this indexed agent source rather
+  than calling the API adapter directly.
   `lookup_contx_resources` resolves a client name to one provisioned UUID,
   using an exact normalized Contx client-group name when Resource Discovery has
   no exact canonical-name match. It selects the client partition and applies

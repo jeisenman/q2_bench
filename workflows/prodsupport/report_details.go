@@ -70,7 +70,7 @@ func ClientIdentities(results []domain.AgentResult) map[string]ClientIdentity {
 	return identities
 }
 
-// DataInternalClientIdentities applies channel-only client abbreviations.
+// DataInternalClientIdentities applies channel-only client-name conventions.
 func DataInternalClientIdentities(
 	results []domain.AgentResult,
 ) map[string]ClientIdentity {
@@ -221,11 +221,7 @@ func subjectForIdentifier(
 	if name == "" {
 		name = "Unresolved client"
 	}
-	prefix := identifier
-	if len(prefix) > 3 {
-		prefix = prefix[:3]
-	}
-	return fmt.Sprintf("%s (%s)", name, prefix)
+	return fmt.Sprintf("%s (%s)", name, identifier)
 }
 
 func dataInternalName(name string) string {

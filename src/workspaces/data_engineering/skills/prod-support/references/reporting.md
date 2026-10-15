@@ -8,6 +8,8 @@ URLs to validate
 <CA-02 URL>
 
 Message for developer:
+  - US-01 Cluster Health: <evidence-qualified status and active DAG count>
+  - CA-02 Cluster Health: <evidence-qualified status and active DAG count>
   - <one client or one known recurring issue per bullet>
 
 Message for Data Internal Channel
@@ -15,7 +17,7 @@ Message for Data Internal Channel
 US
 
 - Good|Ongoing
-  - <client name> (<first three UUID characters>) failed on <job identifiers>
+  - <client name> (<full client UUID>) failed on <job identifiers>
 
 CA
 
@@ -26,17 +28,23 @@ Follow Up:
 - For CA, resend with <CA resend URL>:
   - <client name> for <start-date> to <end-date>
 - Would you like to re-run:
-  - <client name> (<first three UUID characters>) <full DAG ID> <job identifiers> job
+  - <client name> (<full client UUID>) <full DAG ID> <job identifiers> job
 ```
 
 Rules:
 
 - Put US-01 before CA-02.
+- Put one evidence-qualified cluster-health bullet per selected region before
+  failure findings in the developer message. Include cluster existence, pod
+  readiness, restart counts, active DAG count, and DAG-parsing health. Report
+  missing evidence as unavailable, never healthy.
+- Report missing or paused discovered DAGs in the developer message and exclude
+  them from retry candidates.
 - Data Internal omission settings apply only to the Data Internal message.
   Developer reporting, follow-up actions, retry planning, Resource Discovery,
   and triage retain every discovered failure.
-- Developer messages retain full UUIDs when needed for action.
-- Channel messages use only the first three UUID characters.
+- Preserve complete client UUIDs in developer, Data Internal, and follow-up
+  messages. Never shorten client UUIDs, DAG IDs, run IDs, or task IDs.
 - Use exactly one client per bullet.
 - Combine multiple findings for the same client on one channel line.
 - Use these Data Internal-only client abbreviations: `Scotiabank - Data
@@ -75,29 +83,30 @@ Rules:
 Compliant multi-job row:
 
 ```text
-Scotiabank (1f0) failed on monthly_relationships and similar_loans_portfolio
+Scotiabank (1f06da19-2f61-401c-a1b7-38902e4f3543) failed on monthly_relationships and similar_loans_portfolio
 ```
 
 Compliant single-job row:
 
 ```text
-Renasant Bank (49f) failed on active_deposit_accounts
+Renasant Bank (49f3873c-deb0-4846-88bd-4628cef8abfe) failed on active_deposit_accounts
 ```
 
 Non-compliant multi-job row:
 
 ```text
-Scotiabank (1f0) failed monthly relationships because an RA run date was missing and failed similar-loans portfolio with an unknown terminal cause.
+Scotiabank failed monthly relationships because an RA run date was missing and failed similar-loans portfolio with an unknown terminal cause.
 ```
 
 ```text
-Renasant Bank (49f) failed active-deposit accounts
+Renasant Bank failed active-deposit accounts
 ```
 
-The non-compliant row uses prose job names, includes root-cause details, and
-ends with a period. The Renasant row incorrectly hyphenates and removes the
-underscore from `active_deposit_accounts`. Data Internal rows contain only the
-client label and exact job identifiers.
+The non-compliant Scotiabank row omits the UUID, uses prose job names, includes
+root-cause details, and ends with a period. The Renasant row omits the UUID,
+hyphenates the job, and removes the underscore from
+`active_deposit_accounts`. Data Internal rows contain only the client label
+with complete UUID and exact job identifiers.
 
 Non-compliant patterns include claiming a rerun is active without a confirmed
 Airflow mutation, combining clients in one bullet, guessing a client identity,

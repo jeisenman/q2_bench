@@ -39,14 +39,18 @@ child spans. Pure classification and reporting create no spans.
 2. Discover Airflow failures and cluster health concurrently by region.
 3. Deduplicate and sort exact task failures.
 4. Classify bounded evidence and derive workload or cluster findings.
-5. Produce audience-safe report details and retry candidates.
+5. Produce audience-safe report details with complete client and Airflow
+   identifiers, plus exact retry candidates.
 6. Parse an explicit follow-up direction and group selected tasks by region,
-   DAG, and run for a separately authorized adapter call.
+   DAG, and run for a separately authorized adapter call. The MCP mutation
+   boundary rechecks every selected DAG before any clear request; cluster
+   health remains investigation evidence and is not a retry prerequisite.
 
 Invalid boundaries, incomplete evidence, unknown retry numbers, and source
 failures stop immediately. Investigation has no external side effects. This
 package selects retries but does not execute them. Trace context remains active
 across each concurrent source call and ends in the invoking composition root.
+Client UUIDs, DAG IDs, run IDs, and task IDs are never abbreviated in output.
 
 ## Verification
 

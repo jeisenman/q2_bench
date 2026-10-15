@@ -15,6 +15,6 @@ rubric:
   - id: grouped_reporting
     weight: 1.0
     reward: Produces the minimum region-pure bullets by grouping shared jobs across clients and remaining jobs per client, with every pair represented once.
-    punish: Repeats a client-job pair, emits one bullet per failure, mixes regions, drops a client or job, or adds unsupported diagnosis.
+    punish: Repeats a client-job pair, abbreviates a client UUID, emits one bullet per failure, mixes regions, drops a client or job, or adds unsupported diagnosis.
 group_by: [matrix_id, suite, case_id]
 compare_by: [profile, model, reasoning_effort]

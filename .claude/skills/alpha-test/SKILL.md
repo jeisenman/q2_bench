@@ -145,12 +145,10 @@ for field in FIELDS:
     populated = F.col(field).isNotNull() & (F.trim(F.col(field)) != "")
     aggregates.extend(
         [
-            F.sum(F.when(populated, 1).otherwise(0)).alias(
-                f"{field}__non_null"
+            F.sum(F.when(populated, 1).otherwise(0)).alias(f"{field}__non_null"),
+            F.sum(F.when(F.col(field).cast("double") != 0.0, 1).otherwise(0)).alias(
+                f"{field}__non_zero"
             ),
-            F.sum(
-                F.when(F.col(field).cast("double") != 0.0, 1).otherwise(0)
-            ).alias(f"{field}__non_zero"),
         ]
     )
 

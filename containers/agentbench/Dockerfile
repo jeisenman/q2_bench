@@ -9,6 +9,7 @@ COPY agents ./agents
 COPY cmd ./cmd
 COPY dependencyintelligence ./dependencyintelligence
 COPY domain ./domain
+COPY kposizing ./kposizing
 COPY mcpapi ./mcpapi
 COPY ports ./ports
 COPY workflowharness ./workflowharness

@@ -11,6 +11,7 @@ import (
 
 type fakeTransport struct {
 	payloads []map[string]any
+	expanded bool
 }
 
 func (t *fakeTransport) Request(
@@ -23,11 +24,16 @@ func (t *fakeTransport) Request(
 	if method == "GET" {
 		return map[string]any{"state": "queued"}, nil
 	}
-	return map[string]any{
-		"task_instances": []any{map[string]any{
-			"dag_id": "dag", "dag_run_id": "run", "task_id": "task", "state": "failed",
-		}},
-	}, nil
+	items := []any{map[string]any{
+		"dag_id": "dag", "dag_run_id": "run", "task_id": "task", "state": "failed",
+	}}
+	if t.expanded {
+		items = append(items, map[string]any{
+			"dag_id": "dag", "dag_run_id": "run",
+			"task_id": "downstream", "state": "failed",
+		})
+	}
+	return map[string]any{"task_instances": items}, nil
 }
 
 func TestRetryUsesExactSafePayload(t *testing.T) {
@@ -45,7 +51,9 @@ func TestRetryUsesExactSafePayload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if references[0].Region != prodsupport.CA02 || transport.payloads[0]["dry_run"] != true {
+	if references[0].Region != prodsupport.CA02 ||
+		transport.payloads[0]["dry_run"] != true ||
+		transport.payloads[0]["include_downstream"] != true {
 		t.Fatalf("references = %#v, payload = %#v", references, transport.payloads[0])
 	}
 }
@@ -74,6 +82,102 @@ func TestExecuteRetryRevalidatesAndReadsState(t *testing.T) {
 	}
 	if got := []any{transport.payloads[0]["dry_run"], transport.payloads[1]["dry_run"]}; !reflect.DeepEqual(got, []any{true, false}) {
 		t.Fatalf("dry runs = %#v", got)
+	}
+}
+
+func TestExecuteRetryReadsApprovedDownstreamExpansion(t *testing.T) {
+	t.Parallel()
+	transport := &fakeTransport{expanded: true}
+	batch := prodsupport.RetryBatch{
+		Region: prodsupport.US01, DAGID: "dag", RunID: "run", TaskIDs: []string{"task"},
+	}
+	read := make([]string, 0, 2)
+	states, err := ExecuteRetry(
+		context.Background(),
+		batch,
+		"approval-1",
+		Credentials{},
+		transport,
+		func(_ context.Context, taskID string) (any, error) {
+			read = append(read, taskID)
+			return map[string]any{"state": "queued"}, nil
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(states) != 2 || !reflect.DeepEqual(read, []string{"downstream", "task"}) {
+		t.Fatalf("states = %#v, read = %#v", states, read)
+	}
+}
+
+func TestPlanRetryRejectsTaskFromAnotherDAGRun(t *testing.T) {
+	t.Parallel()
+	transport := &fakeTransport{}
+	transport.payloads = nil
+	batch := prodsupport.RetryBatch{
+		Region: prodsupport.US01, DAGID: "dag", RunID: "run", TaskIDs: []string{"task"},
+	}
+	response := map[string]any{"task_instances": []any{
+		map[string]any{
+			"dag_id": "other-dag", "dag_run_id": "run",
+			"task_id": "task", "state": "failed",
+		},
+	}}
+	if _, err := references(response, batch); err == nil {
+		t.Fatal("expected cross-DAG response to fail")
+	}
+}
+
+func TestGetTaskStateReadsExactTaskInstance(t *testing.T) {
+	source := NewSource([]RegionConfig{{
+		Region: prodsupport.US01, Credentials: Credentials{Host: "https://airflow"},
+	}}, transportFunc(func(
+		_ context.Context,
+		_ Credentials,
+		method string,
+		path string,
+		_ map[string]any,
+	) (any, error) {
+		if method != "GET" ||
+			path != "/api/v1/dags/dag/dagRuns/run/taskInstances/task" {
+			t.Fatalf("unexpected request %s %s", method, path)
+		}
+		return map[string]any{"state": "running"}, nil
+	}))
+
+	state, err := source.GetTaskState(
+		context.Background(), prodsupport.US01, "dag", "run", "task",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state != "running" {
+		t.Fatalf("state = %q", state)
+	}
+}
+
+func TestGetTaskStateNormalizesEmptyState(t *testing.T) {
+	source := NewSource([]RegionConfig{{
+		Region: prodsupport.US01, Credentials: Credentials{Host: "https://airflow"},
+	}}, transportFunc(func(
+		_ context.Context,
+		_ Credentials,
+		_ string,
+		_ string,
+		_ map[string]any,
+	) (any, error) {
+		return map[string]any{"state": nil}, nil
+	}))
+
+	state, err := source.GetTaskState(
+		context.Background(), prodsupport.US01, "dag", "run", "task",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state != "unknown" {
+		t.Fatalf("state = %q", state)
 	}
 }
 
@@ -180,6 +284,56 @@ func TestHasSuccessWithinUsesHalfOpenWindow(t *testing.T) {
 	}
 	if !recovered {
 		t.Fatal("expected matching success")
+	}
+}
+
+func TestGetDAGStatusReturnsMissingForNotFound(t *testing.T) {
+	t.Parallel()
+	source := NewSource([]RegionConfig{{
+		Region: prodsupport.US01, Credentials: Credentials{},
+	}}, transportFunc(func(
+		context.Context,
+		Credentials,
+		string,
+		string,
+		map[string]any,
+	) (any, error) {
+		return nil, &HTTPStatusError{StatusCode: 404}
+	}))
+	status, err := source.GetDAGStatus(
+		context.Background(),
+		prodsupport.US01,
+		"retired-dag",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.Exists {
+		t.Fatalf("status = %#v", status)
+	}
+}
+
+func TestActiveDAGCountReadsTotalEntries(t *testing.T) {
+	t.Parallel()
+	source := NewSource([]RegionConfig{{
+		Region: prodsupport.CA02, Credentials: Credentials{},
+	}}, transportFunc(func(
+		_ context.Context,
+		_ Credentials,
+		method, path string,
+		_ map[string]any,
+	) (any, error) {
+		if method != "GET" || path != "/api/v1/dags?limit=1&only_active=true" {
+			t.Fatalf("unexpected request %s %s", method, path)
+		}
+		return map[string]any{"dags": []any{}, "total_entries": 34}, nil
+	}))
+	count, err := source.ActiveDAGCount(context.Background(), prodsupport.CA02)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 34 {
+		t.Fatalf("count = %d", count)
 	}
 }
 

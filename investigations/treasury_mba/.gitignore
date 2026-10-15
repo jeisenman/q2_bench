@@ -1,0 +1,4 @@
+# Local offline extract used only for notebook validation; contains
+# relationship-level data and is a cache, so it must not be committed.
+.snapshot_cache.csv
+__pycache__/

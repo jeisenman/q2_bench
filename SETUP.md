@@ -116,31 +116,74 @@ uv run python -m json.tool .mcp.json >/dev/null
 
 ### Databricks tokens
 
-A Databricks personal access token is **workspace-scoped**. A token minted in
-one workspace does not authenticate against another, so you need one token per
-environment you enable.
+This application currently supports Databricks personal access token (PAT)
+authentication only. Do not paste OAuth U2M or M2M access tokens into the PAT
+variables: they are short-lived credentials and the runtime explicitly uses
+PAT authentication.
 
-To mint one, in the workspace you want:
+A PAT is valid for one workspace. Create separate credentials for:
 
-1. Open that workspace, for example
-   `https://adb-7628572648057993.13.azuredatabricks.net`.
-2. Avatar menu (top right) -> **Settings** -> **Developer** -> **Access
-   tokens** -> **Manage**. Direct link:
-   `https://<workspace-host>/settings/user/developer/access-tokens`
-3. **Generate new token**, give it a comment and a lifetime, then copy the
-   value. It is shown once.
-4. Paste it into `.env` under the variable for that environment.
+| Variable | Workspace | Workspace ID | Data |
+| --- | --- | --- | --- |
+| `RA_DATABRICKS_TOKEN` | `pl-databricks-us-rapreprod-01` | `7628572648057993` | preprod |
+| `DE_DATABRICKS_TOKEN` | `pl-databricks-us-prod-01` | `3510128597187204` | **production** |
 
-Two Databricks environments are registered:
+#### User PAT
 
-| Prefix | Workspace | Data |
-| --- | --- | --- |
-| `RA_` | `pl-databricks-us-rapreprod-01` | preprod |
-| `DE_` | `pl-databricks-us-prod-01` | **production** |
+Repeat these steps inside each workspace you are authorized to enable:
 
-DE is production data. Enabling it takes `enabled: true` on both the
-`data_engineering` workspace and its `de` environment in
-`configurations.yaml` — two deliberate edits, never one.
+1. Open the target workspace and confirm its name and workspace ID.
+2. Select your username, then **Settings** -> **Developer** -> **Access
+   tokens** -> **Manage**.
+3. Select **Generate new token**, enter a recognizable name and approved
+   lifetime, and choose the workspace-approved API scopes.
+4. Generate and copy the value immediately. Databricks does not show it again.
+5. Store it only in the matching `.env` variable.
+
+For RA preproduction, open
+`https://adb-7628572648057993.13.azuredatabricks.net` and set:
+
+```dotenv
+RA_DATABRICKS_HOST=https://adb-7628572648057993.13.azuredatabricks.net
+RA_DATABRICKS_TOKEN=<RA-workspace-PAT>
+```
+
+For DE production, open `pl-databricks-us-prod-01` from the Azure portal or
+your approved workspace link, copy its full workspace URL, and set:
+
+```dotenv
+DE_DATABRICKS_HOST=<DE-production-workspace-URL>
+DE_DATABRICKS_TOKEN=<DE-production-workspace-PAT>
+```
+
+Never reuse the RA token for DE. Enabling DE also requires `enabled: true` on
+both the `data_engineering` workspace and its `de` environment in
+`configurations.yaml`.
+
+If **Access tokens** is missing or generation is denied, ask a workspace admin
+to confirm PAT authentication is enabled and that your identity has `CAN USE`
+token permission. Do not work around the restriction with another user's
+token.
+
+#### Service-principal PAT
+
+For unattended automation, an approved Databricks service principal can own
+the PAT instead of a person:
+
+1. Have an account or workspace admin add the service principal to the target
+   workspace and grant only the required workspace, cluster, and job access.
+2. Use an approved Databricks CLI profile that authenticates as that service
+   principal. Keep its client secret outside this repository.
+3. Create the PAT as the service principal:
+
+   ```bash
+   databricks tokens create \
+     --lifetime-seconds <approved-lifetime-seconds> \
+     --profile <service-principal-profile>
+   ```
+
+4. Copy `token_value` into the matching RA or DE `.env` variable. A service
+   principal still needs a separate PAT for each workspace.
 
 Do not export a bare `DATABRICKS_HOST` or `DATABRICKS_TOKEN`. The `databricks`
 CLI reads those as ambient credentials, which is the cross-wiring the prefixes
@@ -149,6 +192,9 @@ exist to remove. Map them explicitly per call instead:
 ```bash
 (set -a; . ./.env; set +a; DATABRICKS_HOST="$RA_DATABRICKS_HOST" DATABRICKS_TOKEN="$RA_DATABRICKS_TOKEN" databricks current-user me)
 ```
+
+Repeat the verification with the `DE_` variables only when production access
+has been explicitly enabled.
 
 ### Snowflake and Cortex
 
@@ -162,25 +208,28 @@ Snowflake environment is intended. This default affects generated read-only
 notebooks only; `warehouse-mcp` retains its explicit deterministic sandbox
 configuration described below.
 
-**Put the variables where the server will see them.** The Compose service
-loads `.env`. The host-side stdio server reads variables from the environment
-block in `.mcp.json` or the shell that launches the harness. `.env.example`
-lists every supported value.
+**Use the existing dev connection.** The Compose service mounts the ignored
+`~/projects/ds-airflow/chart/local_connections/de_transforms_snowflake.json`
+file read-only. `warehouse-mcp` reads its account, login, and PKCS#8 private
+key at call time and authenticates with `snowflake_jwt`. Override the host
+path with `DS_AIRFLOW_SNOWFLAKE_CONNECTION_FILE` when needed.
 
-Six are required per environment, and `load_settings` fails naming any that
-are missing:
+The dev connection file supplies the two required identity values:
 
 ```text
-SNOWFLAKE_DEV_ACCOUNT     SNOWFLAKE_DEV_WAREHOUSE
-SNOWFLAKE_DEV_USER        SNOWFLAKE_DEV_DATABASE
-SNOWFLAKE_DEV_ROLE        SNOWFLAKE_DEV_SCHEMA
+SNOWFLAKE_DEV_ACCOUNT     SNOWFLAKE_DEV_USER
 ```
 
-**Choose an authenticator.** `SNOWFLAKE_DEV_AUTHENTICATOR` selects how you
-sign in:
+Role, warehouse, database, and schema remain optional overrides for Cortex.
+For environments without a connection file, configure all six values in
+`.env`; missing values fail fast and name every variable to set.
+
+**Choose an authenticator.** `SNOWFLAKE_<ENVIRONMENT>_AUTHENTICATOR` selects
+how you sign in:
 
 | Value | Use | Credential variable |
 | --- | --- | --- |
+| `snowflake_jwt` | Airflow connection PKCS#8 key | connection file |
 | unset / `snowflake` | Snowflake-native password | `SNOWFLAKE_DEV_PASSWORD` |
 | `oauth` | OAuth token | `SNOWFLAKE_DEV_TOKEN` |
 | `pat` | Programmatic access token | `SNOWFLAKE_DEV_TOKEN` |

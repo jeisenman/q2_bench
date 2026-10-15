@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/jeisenman/q2_bench/adapters/local"
 	"github.com/jeisenman/q2_bench/mcpapi"
 )
 
@@ -20,6 +21,9 @@ func main() {
 	configPath := flag.String("config", "configurations.yaml", "configuration YAML")
 	flag.Parse()
 
+	if err := local.LoadDotEnv(".env"); err != nil {
+		log.Fatal(err)
+	}
 	server, err := mcpapi.NewServer(mcpapi.Config{
 		Name: *name, ConfigurationPath: *configPath,
 		UpdatesPath:   os.Getenv("PROD_SUPPORT_UPDATES_PATH"),

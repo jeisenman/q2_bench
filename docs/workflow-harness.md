@@ -1,13 +1,15 @@
 # Data-engineering workflow harness
 
 The workflow harness provides typed, provider-neutral contracts for executing
-repeatable data-engineering workflows. Workflows own orchestration and policy;
+repeatable data-engineering workflows. Deterministic workflows own fixed
+orchestration and policy; skills may own model-directed connector composition;
 MCP servers and local adapters provide external capabilities; benchmark and
 MLflow adapters measure behavior.
 
 ## Boundaries
 
-- Skills translate user intent and explain approval requirements.
+- Skills translate user intent, compose typed connectors when model judgment is
+  required, and explain approval requirements.
 - Workflows declare ordered stages, allowed capabilities, and side-effect
   policy.
 - Capability adapters access systems such as Airflow, OMS, Resource Discovery,
@@ -61,6 +63,13 @@ the workflow name, version, and completed stages.
 
 Approved retry execution remains a separate MCP tool and is not part of the
 read-only investigation workflow.
+
+The interactive `$prod-support` skill uses a different composition boundary:
+its Markdown procedure calls the Airflow, Resource Discovery, and OMS
+capability tools directly, keeps all evidence reasoning in the current agent,
+and does not delegate failures to subagents. `run_prod_support` is retained as
+the deterministic compatibility façade for explicit callers and benchmarks;
+it is not the default live skill route.
 
 Production support supports these composition modes through
 `PROD_SUPPORT_SOURCE`:

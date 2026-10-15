@@ -46,6 +46,8 @@ Batch requests validate all identifiers before the provider call. Invalid
 metadata, ambiguity, memory conflicts, and provider failures stop immediately.
 Alias evidence is the only mutation and is limited to the injected memory
 store. Trace context is propagated to every invoked dependency.
+The Resource Discovery MCP routes single and batch tools through this agent
+with an indexed JSON source in front of the remote API source.
 
 ## Verification
 
