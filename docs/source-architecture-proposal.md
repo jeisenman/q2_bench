@@ -347,13 +347,14 @@ lineage beneath them.
 - hidden answers, private datasets, production data snapshots, or credentials;
 - Dockerfiles, deployment manifests, and connector profile files;
 - large public datasets or downloaded Git repositories;
-- exploratory notebooks and one-off investigations;
+- exploratory notebooks and one-off investigations unrelated to a workspace;
 - generated API documentation, caches, wheels, or virtual environments.
 
-Use top-level `containers/`, `deploy/`, `config/`, `investigations/`,
-`docs/`, and ignored `var/` directories for those concerns. Only small,
-non-sensitive benchmark manifests, task code, scorers, and public fixtures
-belong under the installable source tree.
+Use top-level `containers/`, `deploy/`, `config/`, `docs/`, and ignored `var/`
+directories for repository-wide concerns. Put workspace-owned reproducible
+analysis in `src/workspaces/<workspace>/investigations/`. Only small,
+non-sensitive benchmark manifests, task code, scorers, public fixtures, and
+workspace-owned source belong under the installable source tree.
 
 ## Suggested implementation order
 

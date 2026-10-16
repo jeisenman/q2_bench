@@ -11,7 +11,10 @@ uv run inspect eval src/benchmarks/benchmark1/task.py
 
 ```text
 src/
-  workspaces/                Workspace agents and benchmark definitions
+  workspaces/
+    data_engineering/        Data Engineering workspace
+      investigations/       Reproducible workspace analysis
+      kposizing/             Workspace-owned Go sizing package
   benchmarks/
     benchmark1/              Minimal benchmark example
     benchmarkn/              Larger benchmark template
@@ -19,7 +22,6 @@ src/
       assets/                Public inputs and fixtures
       rubric/                Scoring criteria
       hidden/                Protected expected answers
-  investigations/            Reproducible analysis notes
   resources/
     manifest.yaml            External repository pointers
     Dockerfile               Local benchmark container example

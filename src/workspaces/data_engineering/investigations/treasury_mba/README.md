@@ -66,7 +66,7 @@ fact in this dataset, and it is the `OBX Integrated & Co.` foreign-wire gap.
 ## Layout
 
 ```
-investigations/treasury_mba/
+src/workspaces/data_engineering/investigations/treasury_mba/
 ├── README.md                             this file
 ├── GROUND_TRUTH.md                       verified data facts — authoritative
 ├── mba_common.py                         shared loader + metric primitives
@@ -102,7 +102,7 @@ session automatically. `mba_common.py` must sit alongside the notebook.
 Locally:
 
 ```bash
-cd investigations/treasury_mba
+cd src/workspaces/data_engineering/investigations/treasury_mba
 python3 -m nbclient 01_classical_association_rules.ipynb --timeout 300
 ```
 

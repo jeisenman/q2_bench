@@ -9,9 +9,9 @@ COPY agents ./agents
 COPY cmd ./cmd
 COPY dependencyintelligence ./dependencyintelligence
 COPY domain ./domain
-COPY kposizing ./kposizing
 COPY mcpapi ./mcpapi
 COPY ports ./ports
+COPY src/workspaces/data_engineering/kposizing ./src/workspaces/data_engineering/kposizing
 COPY workflowharness ./workflowharness
 COPY workflows ./workflows
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /q2-mcp ./cmd/q2-mcp

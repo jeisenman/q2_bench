@@ -27,7 +27,8 @@ uv run python scripts/restart_codex_runtime.py
 Use --dry-run first when validating the restart command.
 
 Architecture
-Production code belongs in top-level Go packages.
+Production code belongs in top-level Go packages unless it is owned by one
+workspace, in which case it belongs under `src/workspaces/<workspace>/`.
 Python under src/ is limited to Databricks SDK integration, configuration needed by that integration, and notebook source.
 The agent loop is the harness (Claude or Codex), not this repository. Baseline procedures belong in src/workspaces/<workspace>/skills/<skill_id>/; tools belong behind MCP.
 Harness skill directories (.claude/skills/, .codex/skills/) contain checked-in instructions and retained Databricks assets.
@@ -36,7 +37,8 @@ Data-engineering agents belong in agents/<agent_name>/.
 Every agent and workflow package must contain an AGENTS.md documenting its architecture, dependencies, and workflow.
 When an agent implementation approaches or exceeds 400 lines, split it into focused modules such as dates, tools, classification, reporting, and data.
 Runtime containers and connector configuration belong outside src/.
-Reproducible analysis belongs in the top-level investigations/ directory.
+Workspace-specific reproducible analysis belongs in
+`src/workspaces/<workspace>/investigations/`.
 Go tests live beside production packages. Retained Python tests mirror the Databricks modules under tests/.
 Keep integrations behind typed Go interfaces.
 Keep pure domain logic independent from network and provider SDKs.

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jeisenman/q2_bench/kposizing"
+	"github.com/jeisenman/q2_bench/src/workspaces/data_engineering/kposizing"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 

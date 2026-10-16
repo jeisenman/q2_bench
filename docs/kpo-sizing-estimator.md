@@ -1,7 +1,7 @@
 # KPO sizing estimator
 
 The `prod-support` MCP server exposes two deterministic, read-only wrappers
-around the pure Go `kposizing` package:
+around the pure Go `src/workspaces/data_engineering/kposizing` package:
 
 - `get_kpo_job_templates` lists the bounded verified job catalog or resolves a
   canonical job name or documented alias.
