@@ -34,6 +34,7 @@ services:
       PROD_SUPPORT_MCP_TRANSPORT: streamable-http
       PROD_SUPPORT_SOURCE: production
       PROD_SUPPORT_UPDATES_PATH: /workspace/product_support_updates.json
+      LINEAGE_GRAPH_PATH: /workspace/var/lineage/di-pipelines.json
     command:
       - --server
       - prod-support

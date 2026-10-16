@@ -44,6 +44,9 @@ func registerProdSupport(server *mcp.Server, config Config) error {
 	}
 	addAirflowTools(server, airflowAPI)
 	addClusterHealthTool(server, clusterAPI)
+	if err := registerLineage(server); err != nil {
+		return err
+	}
 	if err := registerKPOSizing(server); err != nil {
 		return err
 	}

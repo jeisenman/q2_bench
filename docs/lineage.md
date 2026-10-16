@@ -97,10 +97,11 @@ hashes exclude generation time.
 
 ## PostgreSQL storage
 
-Apply [`002_lineage.sql`](../migrations/postgres/002_lineage.sql) before the
-first run. It stores the full review artifact and normalized graph, node,
-edge, and diff rows. The normalized tables support later dataset search and
-upstream or downstream MCP tools without reparsing JSON.
+Apply [`002_lineage.sql`](../migrations/postgres/002_lineage.sql) before
+persisting graphs to PostgreSQL. The migration stores the full review artifact
+and normalized graph, node, edge, and diff rows. The current Go MCP query
+workflow reads the generated JSON artifact directly; PostgreSQL-backed query
+history remains a future adapter.
 
 Run a local review extraction:
 
@@ -123,8 +124,8 @@ extractor version.
 
 ## MCP tools
 
-The existing `prod-support-mcp` server exposes the staged lineage through
-five read-only tools:
+The Go `lineage` server and the existing `prod-support-mcp` server expose the
+staged lineage through five read-only tools:
 
 - `search_lineage_datasets` searches logical datasets and final Snowflake
   tables by canonical ID, name, description, or field name.
@@ -136,12 +137,12 @@ five read-only tools:
 - `get_lineage_change_history` returns the commits where a node was created,
   changed, or removed.
 
-When `LINEAGE_POSTGRES_DSN` is configured, the MCP reads immutable graph
-versions from PostgreSQL. Otherwise it reads
-`LINEAGE_GRAPH_PATH`, which defaults to
-`var/lineage/radar-lineage.json`. Docker Compose mounts that path into the MCP
-container. Regenerate the artifact with the local review extraction command
-above whenever any source checkout changes.
+The Go implementation reads `LINEAGE_GRAPH_PATH`, which defaults to
+`var/lineage/di-pipelines.json`. Docker Compose mounts that path into the
+MCP container. The current JSON source exposes the checked-in/generated graph
+as the latest version; change-history queries become richer when a versioned
+source adapter is added. Regenerate the artifact whenever any source checkout
+changes.
 
 Every response identifies the repository commit and extraction profile.
 Search and traversal limits are validated before reading data. MCP requests

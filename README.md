@@ -55,6 +55,7 @@ go run ./cmd/agentbench agents
 `q2-mcp` serves these capability sets:
 
 - `airflow`
+- `lineage`
 - `oms`
 - `prod-support`
 - `remote-data`
@@ -66,6 +67,11 @@ Run a server over stdio:
 ```bash
 go run ./cmd/q2-mcp --server remote-data
 ```
+
+The read-only `lineage` server and the `prod-support` server expose bounded
+lineage search, upstream/downstream traversal, transformation details, and
+change-history tools. They read `LINEAGE_GRAPH_PATH`, defaulting to
+`var/lineage/di-pipelines.json`.
 
 Run the production-support server over Streamable HTTP:
 

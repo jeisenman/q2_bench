@@ -14,6 +14,7 @@ agents/              Go agent implementations
 agentmemory/         Go durable-memory policy
 workflowharness/     Go deterministic workflow runner
 workflows/           Go workflow packages
+  lineage/            Read-only staged lineage query workflow
 adapters/            Go infrastructure adapters
 mcpapi/              Go MCP API composition
 cmd/                 Go command entry points
