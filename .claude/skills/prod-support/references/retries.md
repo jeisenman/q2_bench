@@ -77,3 +77,32 @@ manual clear.
 Report each returned state exactly. A cleared, scheduled, queued, or running
 task is not yet successful. If execution fails validation, report the rejected
 selection and make no claim that production changed.
+
+## Changed-dataset dependency re-runs
+
+When corrected data from one operational day feeds later DAG runs, use
+`plan_prod_support_dependency_rerun` and
+`execute_prod_support_dependency_rerun`. List every affected later DAG run
+explicitly with its exact starting task. The plan selects that task and its
+downstream descendants with:
+
+```text
+include_downstream=true
+include_upstream=false
+include_past=false
+include_future=false
+only_failed=false
+```
+
+Keeping `include_future=false` is intentional: the caller must bound future
+recomputation with exact run IDs. The plan fails when any selected task is
+active. Execution requires the unchanged plan ID, both validation URLs,
+`PROD_SUPPORT_SOURCE=production`, and an explicit approval ID. Use this path
+only when evidence or the user confirms that the dependent dataset changed;
+ordinary failed-task retries continue to use `execute_prod_support_follow_up`.
+
+For clients that cached the pre-restart tool list, the existing
+`execute_prod_support_follow_up` tool also routes to this policy when the
+approved direction explicitly contains both re-run and dependency language.
+It still requires exact per-run candidates, performs an internal dry-run, and
+returns `mode=dependency_rerun` plus the plan ID.

@@ -6,7 +6,8 @@ This package provides deterministic production-support domain operations:
 operational windows, regional Airflow and cluster checks, evidence
 classification, report details, and exact retry selection. Investigation is
 read-only; retry execution belongs to an adapter and requires explicit caller
-authorization.
+authorization. Confirmed changed datasets may also use an approval-gated,
+exact-run downstream recomputation path for non-failed tasks.
 
 ## Architecture
 
@@ -16,6 +17,8 @@ values. [`checkers.go`](checkers.go) performs bounded regional reads.
 [`workloads.go`](workloads.go) derive findings. [`report_config.go`](report_config.go)
 and [`report_details.go`](report_details.go) prepare deterministic reporting.
 [`retry.go`](retry.go) selects and groups exact retry candidates.
+The Airflow adapter owns both failed-task retry policy and changed-dataset
+downstream recomputation policy.
 
 The package owns no global mutable state. Airflow and cluster checks fan out
 once per selected region and preserve result order. `context.Context` carries
@@ -45,6 +48,9 @@ child spans. Pure classification and reporting create no spans.
    DAG, and run for a separately authorized adapter call. The MCP mutation
    boundary rechecks every selected DAG before any clear request; cluster
    health remains investigation evidence and is not a retry prerequisite.
+7. For a confirmed changed dataset, dry-run each explicitly listed later DAG
+   run with non-failed downstream selection, bind approval to the plan ID, and
+   execute only if the revalidated plan is unchanged.
 
 Invalid boundaries, incomplete evidence, unknown retry numbers, and source
 failures stop immediately. Investigation has no external side effects. This

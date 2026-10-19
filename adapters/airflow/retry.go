@@ -10,10 +10,40 @@ import (
 	"github.com/jeisenman/q2_bench/workflows/prodsupport"
 )
 
+type clearPolicy struct {
+	includeDownstream bool
+	includeFuture     bool
+	includePast       bool
+	includeUpstream   bool
+	onlyFailed        bool
+	onlyRunning       bool
+	resetDAGRuns      bool
+}
+
+var failedRetryPolicy = clearPolicy{
+	includeDownstream: true,
+	includeFuture:     false,
+	includePast:       false,
+	includeUpstream:   false,
+	onlyFailed:        true,
+	onlyRunning:       false,
+	resetDAGRuns:      true,
+}
+
 // PlanRetry returns Airflow's validated dry-run task selection.
 func PlanRetry(
 	ctx context.Context,
 	batch prodsupport.RetryBatch,
+	config Credentials,
+	transport Transport,
+) ([]prodsupport.RetryTaskReference, error) {
+	return planClear(ctx, batch, failedRetryPolicy, config, transport)
+}
+
+func planClear(
+	ctx context.Context,
+	batch prodsupport.RetryBatch,
+	policy clearPolicy,
 	config Credentials,
 	transport Transport,
 ) ([]prodsupport.RetryTaskReference, error) {
@@ -22,7 +52,7 @@ func PlanRetry(
 		config,
 		"POST",
 		clearPath(batch.DAGID),
-		retryPayload(batch, true),
+		clearPayload(batch, policy, true),
 	)
 	if err != nil {
 		return nil, err
@@ -40,10 +70,39 @@ func ExecuteRetry(
 	transport Transport,
 	stateReader func(context.Context, string) (any, error),
 ) ([]prodsupport.RetryTaskReference, error) {
+	return executeClear(
+		ctx,
+		batch,
+		approvalID,
+		failedRetryPolicy,
+		config,
+		transport,
+		stateReader,
+		PlanRetry,
+	)
+}
+
+type planClearFunc func(
+	context.Context,
+	prodsupport.RetryBatch,
+	Credentials,
+	Transport,
+) ([]prodsupport.RetryTaskReference, error)
+
+func executeClear(
+	ctx context.Context,
+	batch prodsupport.RetryBatch,
+	approvalID string,
+	policy clearPolicy,
+	config Credentials,
+	transport Transport,
+	stateReader func(context.Context, string) (any, error),
+	plan planClearFunc,
+) ([]prodsupport.RetryTaskReference, error) {
 	if strings.TrimSpace(approvalID) == "" {
-		return nil, fmt.Errorf("Airflow retry execution requires an approval ID")
+		return nil, fmt.Errorf("Airflow clear execution requires an approval ID")
 	}
-	planned, err := PlanRetry(ctx, batch, config, transport)
+	planned, err := plan(ctx, batch, config, transport)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +111,7 @@ func ExecuteRetry(
 		config,
 		"POST",
 		clearPath(batch.DAGID),
-		retryPayload(batch, false),
+		clearPayload(batch, policy, false),
 	)
 	if err != nil {
 		return nil, err
@@ -108,12 +167,21 @@ func clearPath(dagID string) string {
 	return "/api/v1/dags/" + url.PathEscape(dagID) + "/clearTaskInstances"
 }
 
-func retryPayload(batch prodsupport.RetryBatch, dryRun bool) map[string]any {
+func clearPayload(
+	batch prodsupport.RetryBatch,
+	policy clearPolicy,
+	dryRun bool,
+) map[string]any {
 	return map[string]any{
 		"dag_run_id": batch.RunID, "dry_run": dryRun,
-		"include_downstream": true, "include_future": false, "include_past": false,
-		"include_upstream": false, "only_failed": true, "only_running": false,
-		"reset_dag_runs": true, "task_ids": append([]string(nil), batch.TaskIDs...),
+		"include_downstream": policy.includeDownstream,
+		"include_future":     policy.includeFuture,
+		"include_past":       policy.includePast,
+		"include_upstream":   policy.includeUpstream,
+		"only_failed":        policy.onlyFailed,
+		"only_running":       policy.onlyRunning,
+		"reset_dag_runs":     policy.resetDAGRuns,
+		"task_ids":           append([]string(nil), batch.TaskIDs...),
 	}
 }
 

@@ -13,6 +13,7 @@ var (
 	exclusionPattern = regexp.MustCompile(`(?i)(?:don't|do not|except|exclude)\s+(?:do\s+)?(.*)`)
 	caDirection      = regexp.MustCompile(`(?i)\bca(?:-?02)?\b`)
 	usDirection      = regexp.MustCompile(`(?i)\bus(?:-?01)?\b`)
+	rerunDirection   = regexp.MustCompile(`(?i)\b(?:retry|re-?run|follow up)\b`)
 )
 
 // RetryBatch contains tasks sharing one regional DAG run.
@@ -38,8 +39,8 @@ func SelectRetryCandidates(
 	candidates []RetryCandidate,
 ) ([]RetryCandidate, error) {
 	lowered := strings.ToLower(direction)
-	if !strings.Contains(lowered, "retry") && !strings.Contains(lowered, "follow up") {
-		return nil, fmt.Errorf("follow-up direction must request retry or follow up")
+	if !rerunDirection.MatchString(lowered) {
+		return nil, fmt.Errorf("follow-up direction must request retry, re-run, or follow up")
 	}
 	exclusion := exclusionPattern.FindStringSubmatchIndex(direction)
 	includedText := direction

@@ -104,6 +104,17 @@ Production follow-up retries require all of the following:
 The tool dry-runs and validates the exact Airflow task selection before clearing
 failed task instances.
 
+For a confirmed changed dataset, use
+`plan_prod_support_dependency_rerun` followed by
+`execute_prod_support_dependency_rerun`. This separate flow accepts exact later
+DAG run IDs, selects the starting task and downstream descendants with
+`only_failed=false`, blocks active tasks, and executes only when the approved
+dry-run plan is unchanged. It keeps Airflow `include_future=false` so the
+recomputation window cannot expand beyond the listed runs.
+Clients that cached the pre-restart tool list can use the dependency mode on
+`execute_prod_support_follow_up`; an explicit re-run/dependency direction
+activates the same bounded policy.
+
 For interactive live support, the `$prod-support` Markdown procedure calls the
 Airflow, Resource Discovery, and OMS MCP connectors directly and performs all
 triage in the current agent. It does not route failures to subagents.

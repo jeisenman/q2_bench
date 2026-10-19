@@ -260,6 +260,62 @@ func (s *Source) ExecuteRetry(
 	)
 }
 
+// PlanDependencyRerun returns an exact non-failed downstream dry-run selection.
+func (s *Source) PlanDependencyRerun(
+	ctx context.Context,
+	batch prodsupport.RetryBatch,
+) ([]prodsupport.RetryTaskReference, error) {
+	config, err := s.configFor(batch.Region)
+	if err != nil {
+		return nil, err
+	}
+	runState, err := s.GetDAGRunState(
+		ctx,
+		batch.Region,
+		batch.DAGID,
+		batch.RunID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return PlanDependencyRerun(
+		ctx,
+		batch,
+		config.Credentials,
+		s.Transport,
+		runState,
+	)
+}
+
+// ExecuteDependencyRerun clears one exact approved downstream selection.
+func (s *Source) ExecuteDependencyRerun(
+	ctx context.Context,
+	batch prodsupport.RetryBatch,
+	approvalID string,
+) ([]prodsupport.RetryTaskReference, error) {
+	config, err := s.configFor(batch.Region)
+	if err != nil {
+		return nil, err
+	}
+	runState, err := s.GetDAGRunState(
+		ctx,
+		batch.Region,
+		batch.DAGID,
+		batch.RunID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return ExecuteDependencyRerun(
+		ctx,
+		batch,
+		approvalID,
+		config.Credentials,
+		s.Transport,
+		runState,
+	)
+}
+
 func (s *Source) discoverRegion(
 	ctx context.Context,
 	config RegionConfig,

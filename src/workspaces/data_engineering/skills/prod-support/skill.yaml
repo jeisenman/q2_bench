@@ -18,6 +18,8 @@ mcp:
     - has_task_success
     - get_task_metadata
     - execute_prod_support_follow_up
+    - plan_prod_support_dependency_rerun
+    - execute_prod_support_dependency_rerun
     - setup_prod_support
     - set_prod_support_omissions
     - update_prod_support_omissions

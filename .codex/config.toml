@@ -51,6 +51,12 @@ approval_mode = "approve"
 [mcp_servers.prod_support.tools.execute_prod_support_follow_up]
 approval_mode = "prompt"
 
+[mcp_servers.prod_support.tools.plan_prod_support_dependency_rerun]
+approval_mode = "approve"
+
+[mcp_servers.prod_support.tools.execute_prod_support_dependency_rerun]
+approval_mode = "prompt"
+
 [mcp_servers.prod_support.tools.setup_prod_support]
 approval_mode = "prompt"
 

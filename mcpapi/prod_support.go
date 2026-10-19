@@ -71,9 +71,20 @@ func registerProdSupport(server *mcp.Server, config Config) error {
 		Description: "Add or remove named omission groups from private settings.",
 	}, api.updateOmissions)
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "execute_prod_support_follow_up",
-		Description: "Execute exact eligible Airflow retries after explicit approval.",
+		Name: "execute_prod_support_follow_up",
+		Description: "Execute exact eligible Airflow retries or explicitly " +
+			"approved changed-dataset downstream re-runs.",
 	}, api.executeFollowUp)
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "plan_prod_support_dependency_rerun",
+		Description: "Dry-run exact downstream recomputation for changed " +
+			"datasets, including non-failed tasks in explicitly listed DAG runs.",
+	}, api.planDependencyRerun)
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "execute_prod_support_dependency_rerun",
+		Description: "Execute an unchanged approved downstream recomputation " +
+			"plan for explicitly listed DAG runs.",
+	}, api.executeDependencyRerun)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_prod_support_updates",
 		Description: "Read genuine production-support updates.",
@@ -297,6 +308,9 @@ func (a *prodSupportAPI) executeFollowUp(
 	batches := prodsupport.RetryBatches(selected)
 	if err := a.preflightFollowUp(ctx, batches); err != nil {
 		return nil, nil, err
+	}
+	if dependencyRerunRequested(input.Direction) {
+		return a.executeDependencyMode(ctx, input, batches)
 	}
 	states := make([]prodsupport.RetryTaskReference, 0, len(selected))
 	for _, batch := range batches {
