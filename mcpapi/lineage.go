@@ -56,7 +56,7 @@ func registerLineageWithSource(
 	annotations := lineageReadOnlyAnnotations()
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "search_lineage_datasets",
-		Description: "Search datasets and Snowflake tables in the staged lineage graph.",
+		Description: "Search staged datasets, Snowflake tables, and synchronized semantic meaning.",
 		Annotations: annotations,
 	}, api.search)
 	mcp.AddTool(server, &mcp.Tool{
@@ -71,7 +71,7 @@ func registerLineageWithSource(
 	}, api.downstream)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_lineage_transformation",
-		Description: "Read schema, locations, transformations, and sources for one node.",
+		Description: "Read schema, locations, transformations, sources, and semantic meaning for one node.",
 		Annotations: annotations,
 	}, api.transformation)
 	mcp.AddTool(server, &mcp.Tool{
@@ -109,7 +109,7 @@ func (a *lineageAPI) search(
 	}
 	datasets := make([]map[string]any, len(result.Nodes))
 	for index, node := range result.Nodes {
-		datasets[index] = node.Summary()
+		datasets[index] = node.SearchSummary()
 	}
 	return nil, map[string]any{
 		"graph": result.Graph.Manifest,

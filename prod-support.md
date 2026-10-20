@@ -1,6 +1,6 @@
 # Production Support Rerun Plan
 
-**Date:** 2026-10-15  
+**Date:** 2026-10-16
 **Scope:** All supplied opportunity-related failures; detailed OMS proof uses client `7b427a3a-90ae-4a51-b249-6223108d327e`  
 **Regions:** US-01; CA-02 validation retained  
 **Requested rerun window:** `2026-10-14T05:00:00Z` through `2026-10-15T05:00:00Z`  
@@ -36,7 +36,7 @@ OMS found 6 supplied clients with explicit missing-Opportunities messages
 (25 task events) and 15 supplied clients with an upstream empty/no-file signal
 (48 evidence rows).
 
-- Client `7b427a3a-90ae-4a51-b249-6223108d327e`
+- Client Pacific National Bank (`7b427a3a-90ae-4a51-b249-6223108d327e`)
   - `pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history`
   - OMS shows empty `OpportunitySaved` input upstream and
     `Missing required datasets Opportunities` downstream.
@@ -171,7 +171,7 @@ Minimal rerun sequence:
 
 ### 2026-10-14 proof client
 
-**Client:** `7b427a3a-90ae-4a51-b249-6223108d327e`  
+**Client:** Pacific National Bank (`7b427a3a-90ae-4a51-b249-6223108d327e`)
 **Observed OMS run:** `manual__2026-10-14T05:00:00+00:00`  
 **Primary history task:** `pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history`
 
@@ -244,7 +244,7 @@ For a client whose EventBus source data is missing, the projected order is:
 8. Validate Primary Opportunities, Users, and the downstream output in
    Databricks.
 
-For client `7b427a3a-90ae-4a51-b249-6223108d327e`, OMS showed the producer
+For Pacific National Bank (`7b427a3a-90ae-4a51-b249-6223108d327e`), OMS showed the producer
 receiving empty input and the history task reporting `Missing required
 datasets Opportunities`. Therefore, steps 1–5 are prerequisites; rerunning
 the history task alone is not expected to create opportunity data.
@@ -356,7 +356,7 @@ logs before a root cause or rerun can be assigned.
 
 For the narrowed last-night scope, only this proof case is in scope:
 
-- Client `7b427a3a-90ae-4a51-b249-6223108d327e`, logical date `2026-10-14`:
+- Pacific National Bank (`7b427a3a-90ae-4a51-b249-6223108d327e`), logical date `2026-10-14`:
   `pipeline_scenarios_opportunities_v1.pipeline_scenarios_opportunities_history_v1_history.pipeline_scenarios_opportunities_history`
 
 This is still a projected target, not an executable Airflow retry candidate,
@@ -372,14 +372,19 @@ entries are planning targets, not executable retry candidates. Before any
 production mutation, resolve and record those exact fields and confirm that
 each task is still failed and its DAG is unpaused.
 
+If a client UUID is missing or unresolved, search the complete provisioned
+client ID in the [Resource Discovery console](https://resourcediscovery.precisionlender.com/#/resourcefinder).
+Accept only an exact UUID match; if there is no unique match, keep the client
+unresolved and do not infer its environment.
+
 Airflow retries must use the production-support follow-up mechanism with
 downstream inclusion enabled and upstream, past, and future inclusion disabled.
 No direct Airflow API mutation should be used.
 
 ## Follow Up
 
-- Resolve the exact last-night failed run for client
-  `7b427a3a-90ae-4a51-b249-6223108d327e`.
+- Resolve the exact last-night failed run for Pacific National Bank
+  (`7b427a3a-90ae-4a51-b249-6223108d327e`).
 - Verify or repair its upstream OpportunitySaved/Primary Opportunities data.
 - Execute only the last-night upstream-to-history-to-downstream sequence after
   the required source partition exists.

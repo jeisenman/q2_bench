@@ -44,6 +44,29 @@ Keep integrations behind typed Go interfaces.
 Keep pure domain logic independent from network and provider SDKs.
 Public APIs must be exported deliberately from Go packages and retained Python package __init__.py files.
 Prefer immutable values and dependency injection over global state.
+
+Researcher Semantic Layer
+Treat the sibling Researcher repository's latest complete published Semantic
+Layer generation as the upstream source of truth for PrecisionLender lineage
+and generated business meaning. qtwo_bench owns the ingestion boundary in
+`workflows/semanticsync`; do not import Researcher Python, read its protected
+semantic implementation trees, or create a competing semantic service.
+
+Before lineage analysis, validate and synchronize the snapshot:
+
+go run ./cmd/agentbench semantic-sync --dry-run
+go run ./cmd/agentbench semantic-sync
+
+The default Researcher checkout is `../researcher`, and the default staged
+output is the ignored runtime artifact `var/lineage/di-pipelines.json`. Use
+`--researcher-root` for another checkout and `--generation` when an exact
+published generation must be pinned. The sync must remain fail-closed: accept
+only supported versioned contracts, verify the published request digest,
+require exact graph/request/response node coverage, retain provenance, and
+publish atomically. The existing read-only lineage MCP is the serving boundary
+and must expose synchronized `q2_semanticMeaning`; do not add a second MCP
+surface for the same data.
+
 Code rules
 No tracked source or documentation file may exceed 400 lines.
 Concurrency bounds such as max_parallel limit outbound I/O fan-out only. Validate that they are at least 1 and never silently reduce a requested value. Agent-loop parallelism is owned by the harness, not this repository.

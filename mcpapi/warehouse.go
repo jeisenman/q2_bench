@@ -28,14 +28,24 @@ type cortexTokenInput struct {
 	Environment string `json:"environment,omitempty" jsonschema:"dev, stage, prod, or sandbox"`
 }
 
+type cortexAgentInput struct {
+	AgentName                string `json:"agent_name" jsonschema:"Fully qualified Snowflake Cortex Agent name"`
+	Version                  string `json:"version,omitempty" jsonschema:"VERSION$N, alias, LIVE, DEFAULT, LAST, or FIRST"`
+	RequestBody              string `json:"request_body" jsonschema:"JSON request body passed to DATA_AGENT_RUN"`
+	CreateThreadIfNotPresent bool   `json:"create_thread_if_not_present,omitempty" jsonschema:"Create a thread when request_body has no thread_id"`
+	Environment              string `json:"environment,omitempty" jsonschema:"dev, stage, prod, or sandbox"`
+}
+
 type cortexResolver func(domain.Environment) (ports.CortexInference, error)
+type cortexAgentResolver func(domain.Environment) (ports.CortexAgent, error)
 
 type warehouseAPI struct {
-	resolve cortexResolver
+	resolve      cortexResolver
+	resolveAgent cortexAgentResolver
 }
 
 func registerWarehouse(server *mcp.Server) {
-	api := &warehouseAPI{resolve: resolveCortex}
+	api := &warehouseAPI{resolve: resolveCortex, resolveAgent: resolveCortexAgent}
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "run_cortex_complete",
 		Description: "Run one bounded Snowflake Cortex completion. Live environments are non-deterministic; sandbox responses are recorded replays.",
@@ -44,6 +54,10 @@ func registerWarehouse(server *mcp.Server) {
 		Name:        "count_cortex_tokens",
 		Description: "Count tokens with Snowflake Cortex without running inference. Sandbox counts come from a recording.",
 	}, api.countCortexTokens)
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "run_cortex_agent",
+		Description: "Run one explicitly selected Snowflake Cortex Agent version. Sandbox responses are recorded replays.",
+	}, api.runCortexAgent)
 }
 
 func (a *warehouseAPI) runCortexComplete(
@@ -112,6 +126,47 @@ func (a *warehouseAPI) countCortexTokens(
 	}, nil
 }
 
+func (a *warehouseAPI) runCortexAgent(
+	ctx context.Context,
+	_ *mcp.CallToolRequest,
+	input cortexAgentInput,
+) (*mcp.CallToolResult, map[string]any, error) {
+	environment, err := requestedEnvironment(input.Environment)
+	if err != nil {
+		return nil, nil, err
+	}
+	request := ports.CortexAgentRequest{
+		AgentName: input.AgentName, Version: input.Version,
+		RequestBody:              input.RequestBody,
+		CreateThreadIfNotPresent: input.CreateThreadIfNotPresent,
+	}
+	if err := request.Validate(); err != nil {
+		return nil, nil, err
+	}
+	agent, err := a.resolveAgent(environment)
+	if err != nil {
+		return nil, nil, err
+	}
+	bounded, cancel := context.WithTimeout(ctx, cortexRequestTimeout)
+	defer cancel()
+	response, err := agent.Run(bounded, request)
+	if err != nil {
+		return nil, nil, err
+	}
+	version := response.Version
+	if version == "" {
+		version = "DEFAULT"
+	}
+	return nil, map[string]any{
+		"environment":   response.Environment,
+		"agent_name":    response.AgentName,
+		"version":       version,
+		"response":      response.Response,
+		"recorded":      response.Recorded,
+		"deterministic": response.Recorded,
+	}, nil
+}
+
 func requestedEnvironment(requested string) (domain.Environment, error) {
 	name := strings.TrimSpace(requested)
 	if name == "" {
@@ -138,4 +193,21 @@ func resolveCortex(environment domain.Environment) (ports.CortexInference, error
 		return nil, fmt.Errorf("configure Cortex %s: %w", environment, err)
 	}
 	return cortex, nil
+}
+
+func resolveCortexAgent(environment domain.Environment) (ports.CortexAgent, error) {
+	if environment == domain.EnvironmentSandbox {
+		return snowflake.LoadRecordedAgent(
+			strings.TrimSpace(os.Getenv("WAREHOUSE_SANDBOX_CORTEX_AGENT_RECORDINGS")),
+		)
+	}
+	settings, err := snowflake.LoadSettings(environment)
+	if err != nil {
+		return nil, err
+	}
+	agent, err := snowflake.NewAgent(settings, snowflake.EnvironmentSecrets{})
+	if err != nil {
+		return nil, fmt.Errorf("configure Cortex Agent %s: %w", environment, err)
+	}
+	return agent, nil
 }

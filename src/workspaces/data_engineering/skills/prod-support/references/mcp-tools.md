@@ -10,8 +10,10 @@ classification, and reporting. It does not delegate failures to subagents.
 | --- | --- | --- |
 | `prod-support` | `inspect_cluster_health`, `get_prod_support_omissions`, `list_failed_task_instances`, `get_dag_status`, `get_task_instance_state`, `get_task_log`, `has_task_success`, `get_task_metadata` | Cluster and DAG guards, settings, discovery, exact state, and Airflow evidence |
 | `remote-data` | `query_job_evidence`, `query_oms` | Bounded production OMS fallback |
-| `prod-support` | `execute_prod_support_follow_up` | Approval-gated exact Airflow retry execution |
+| `prod-support` | `execute_prod_support_follow_up` | Approval-gated exact failed-task retries and backward-compatible changed-dataset re-runs |
+| `prod-support` | `plan_prod_support_dependency_rerun`, `execute_prod_support_dependency_rerun` | Approval-gated recomputation of non-failed downstream tasks in explicitly listed DAG runs |
 | `prod-support` | `get_kpo_job_templates`, `estimate_kpo_resources` | Conditional, read-only KPO sizing |
+| `prod-support` | `prepare_kpo_memory_profile`, `watch_kpo_task_memory` | Exact retry preparation and read-only pod memory profiling |
 
 The standalone `airflow` server exposes the same five Airflow read tools, and
 the standalone `oms` server exposes `query_oms`. Prefer the tools already
@@ -137,3 +139,15 @@ returned warnings and source without rewriting them.
 Omission setters change future reporting policy. Confirm intent before calling
 `set_prod_support_omissions` or `update_prod_support_omissions`; never change
 omissions as a side effect of daily support.
+
+## KPO memory-profile contracts
+
+Call `prepare_kpo_memory_profile` with the exact failed task identity. It
+verifies the DAG, failed state, operator, and current try number, then returns
+the candidate and baseline needed by the existing approval-gated retry.
+
+After the approved retry, call `watch_kpo_task_memory` only with that preserved
+baseline. The watcher refuses to sample the old attempt. Each call is bounded
+to five minutes; pass its returned `history` into the next call. Spark profiles
+follow the driver pod's `spark-app-selector` to include executors. The watcher
+reads `kubectl` and `metrics.k8s.io` but never changes Kubernetes state.

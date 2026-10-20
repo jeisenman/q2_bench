@@ -52,3 +52,32 @@ Do not recommend a KPO size from file size alone. Compare the failed
 job/client with measured peers on the same job and memory tier, then account
 for file format, row width, parsing behavior, concurrency, and whether the
 failure was actually a timeout rather than OOM.
+
+## Live memory profiling
+
+Use the live profile only for an exact failed `SparkSubmitOperator` or
+`KubernetesPodOperator` task:
+
+1. Call `prepare_kpo_memory_profile` with the complete region, DAG ID, run ID,
+   and task ID. It must pass the regional Kubernetes metrics preflight before
+   offering a retry candidate.
+2. Present the returned retry candidate and obtain explicit user approval.
+3. Call `execute_prod_support_follow_up` with the preserved candidate,
+   validation URLs, direction, correlation ID, and approval reference.
+4. Call `watch_kpo_task_memory` with the returned watch input. Pass its
+   complete `history` into each later watch call until `complete` is true or
+   the user stops monitoring.
+
+Do not call the watcher against the baseline failed attempt. It requires an
+Airflow try number newer than `baseline_try_number`.
+
+One watcher call is bounded to five minutes. It maps the new Airflow attempt's
+log to the exact Kubernetes pod. For Spark it follows `spark-app-selector` and
+records the driver and all currently visible executors. It returns exact byte
+usage, pod limits, utilization, explicit `OOMKilled` evidence, graph-ready
+points, and a compact graph preview.
+
+The MCP process must have the regional `kubectl` context and access to the
+Kubernetes Metrics API. Missing metrics are evidence gaps. `oom_observed=false`
+means no OOM was present in retained samples; it does not prove that an
+unsampled or already-deleted pod never OOMed.

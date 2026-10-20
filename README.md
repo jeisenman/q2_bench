@@ -71,7 +71,17 @@ go run ./cmd/q2-mcp --server remote-data
 The read-only `lineage` server and the `prod-support` server expose bounded
 lineage search, upstream/downstream traversal, transformation details, and
 change-history tools. They read `LINEAGE_GRAPH_PATH`, defaulting to
-`var/lineage/di-pipelines.json`.
+`var/lineage/di-pipelines.json`. Synchronize the latest complete Semantic
+Layer generation from the sibling Researcher checkout before querying:
+
+```bash
+go run ./cmd/agentbench semantic-sync --dry-run
+go run ./cmd/agentbench semantic-sync
+```
+
+The sync validates exact graph/request/response coverage, attaches Researcher
+meaning as `q2_semanticMeaning` facets, and atomically replaces the staged
+graph. Use `--researcher-root` when the checkout is not at `../researcher`.
 
 Run the production-support server over Streamable HTTP:
 
@@ -87,11 +97,19 @@ Run Snowflake Cortex through the containerized warehouse server:
 docker compose up -d --build --force-recreate --wait warehouse-mcp
 ```
 
-The warehouse endpoint is `http://127.0.0.1:8766/mcp`. It defaults to
+The warehouse endpoint is `http://127.0.0.1:8766/mcp`. Starting it also starts
+the Cortex-only sidecar at `http://127.0.0.1:8767/mcp`. Both default to
 deterministic sandbox replay. Dev calls reuse the ignored
 `~/projects/ds-airflow/chart/local_connections/de_transforms_snowflake.json`
 key-pair connection through a read-only mount. Other environments use the
 matching `SNOWFLAKE_<ENVIRONMENT>_*` variables in `.env`.
+
+The warehouse server also exposes `run_cortex_agent`. Pass a fully qualified
+Snowflake Cortex Agent name plus an optional `version` such as `VERSION$2`,
+`LIVE`, `DEFAULT`, `LAST`, or `FIRST`; omitting it uses Snowflake's default
+version. Sandbox agent responses use
+`WAREHOUSE_SANDBOX_CORTEX_AGENT_RECORDINGS` and fail closed when no matching
+recording exists.
 
 Production follow-up retries require all of the following:
 
@@ -131,6 +149,13 @@ evidence, and requests above reviewed tiers. Neither tool changes production
 allocations. See
 [docs/kpo-sizing-estimator.md](docs/kpo-sizing-estimator.md) for formulas and
 input semantics.
+
+For measured runtime validation, `prepare_kpo_memory_profile` creates an exact
+approval-gated retry candidate and `watch_kpo_task_memory` samples the newer
+attempt's Kubernetes memory. Spark profiles follow the driver application's
+selector so driver and executor pods are graphed together. The watcher is
+read-only, bounded to five minutes per call, and requires the MCP host to have
+the regional `kubectl` context and Kubernetes Metrics API access.
 
 ## Databricks Python boundary
 

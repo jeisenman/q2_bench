@@ -45,6 +45,7 @@
         "Q2_MCP_DEBUG": "1",
         "WAREHOUSE_ENVIRONMENT": "sandbox",
         "WAREHOUSE_SANDBOX_CORTEX_RECORDINGS": "/Users/jeisenman/ra/qtwo_bench/var/cortex-recordings",
+        "WAREHOUSE_SANDBOX_CORTEX_AGENT_RECORDINGS": "/Users/jeisenman/ra/qtwo_bench/var/cortex-agent-recordings",
         "SNOWFLAKE_DEV_CONNECTION_FILE": "/Users/jeisenman/projects/ds-airflow/chart/local_connections/de_transforms_snowflake.json",
         "SNOWFLAKE_DEV_AUTHENTICATOR": "snowflake_jwt"
       }

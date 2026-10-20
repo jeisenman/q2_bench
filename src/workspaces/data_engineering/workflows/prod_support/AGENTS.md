@@ -8,11 +8,21 @@ workflow. Its control flow is fixed: no model chooses the next step.
 Interactive live support follows
 [`skills/prod-support`](../../skills/prod-support/SKILL.md), whose Markdown
 procedure composes the Airflow and OMS MCP connectors directly in the current
-agent, with the checked-in client UUID lookup JSON for identity resolution. It
-first collects regional cluster health and active DAG counts, then verifies
-every unique discovered DAG still exists before collecting task evidence. It
-does not route failures to subagents.
+agent, with required read-only Chrome inspection of both regional Airflow Task
+Instances pages and the checked-in client UUID lookup JSON for identity
+resolution. It first collects regional cluster health and active DAG counts,
+then verifies every unique discovered DAG still exists before collecting task
+evidence. The Chrome stage visibly applies the failed-task filters, expands
+the `Search` panel, applies the `State = failed` and `Start Date > anchor`
+filters, inspects all visible rows, and reconciles them with the typed MCP
+inventory. It leaves both filtered regional result pages open for manual
+operator inspection. Browser work uses Chrome browser-tab control only, never
+native application or operating-system screen control. It does not route
+failures to subagents.
 Explicit compatibility and benchmark callers may still use `run_prod_support`.
+Changed-dataset remediation uses a separate MCP path that dry-runs and clears
+non-failed downstream tasks only in explicitly listed DAG runs. It does not
+use Airflow's open-ended future-run expansion.
 
 The default scope is US and CA for the previous operational day beginning at
 05:00 UTC. Investigation is read-only. A developer follow-up authorizes
@@ -95,13 +105,18 @@ not import from `workspaces.data_engineering.agents`, except for the
 3. Hand the full failure inventory to `TriageManager` in one call.
 4. Resolve each failure from the cheapest sufficient evidence, escalating to an
    exact task log only when needed.
-5. Resolve client identity from the checked-in complete UUID lookup JSON.
-6. Render the combined, developer, and Data Internal reports.
-7. Compute retry candidates. Execution happens only on explicit developer
+5. Verify both regional failure inventories through the read-only Chrome UI.
+6. Resolve client identity from the checked-in complete UUID lookup JSON.
+7. Render the combined, developer, and fixed-format Data Internal reports.
+8. Compute retry candidates. Execution happens only on explicit developer
    authorization through `execute_prod_support_follow_up`. The MCP verifies
    all selected DAGs exist and are not paused; cluster health is retained as
    investigation evidence but is not a retry prerequisite. Exact task states
    are read through `get_task_instance_state`.
+9. When corrected data affects later operational dates, plan exact per-run
+   downstream recomputation through `plan_prod_support_dependency_rerun`.
+   Execute only through `execute_prod_support_dependency_rerun` with the
+   unchanged plan ID and explicit approval.
 
 ## Benchmark behavior
 

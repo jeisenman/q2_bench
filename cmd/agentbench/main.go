@@ -3,11 +3,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"sort"
 
 	"github.com/jeisenman/q2_bench/agents"
+	"github.com/jeisenman/q2_bench/workflows/semanticsync"
 )
 
 const version = "0.1.0"
@@ -33,9 +36,60 @@ func run(_ context.Context, arguments []string) error {
 		return nil
 	case "agents":
 		return listAgents()
+	case "semantic-sync":
+		return semanticSync(arguments[1:])
 	default:
 		return fmt.Errorf("unsupported agentbench command %q", arguments[0])
 	}
+}
+
+func semanticSync(arguments []string) error {
+	flags := flag.NewFlagSet("semantic-sync", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	researcherRoot := flags.String(
+		"researcher-root",
+		"../researcher",
+		"path to the Researcher checkout",
+	)
+	generation := flags.String(
+		"generation",
+		"",
+		"explicit Researcher generation directory; defaults to latest complete",
+	)
+	output := flags.String(
+		"output",
+		"var/lineage/di-pipelines.json",
+		"staged semantic lineage graph",
+	)
+	dryRun := flags.Bool("dry-run", false, "validate without replacing the staged graph")
+	if err := flags.Parse(arguments); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return fmt.Errorf("semantic-sync does not accept positional arguments")
+	}
+	var (
+		inputs semanticsync.Inputs
+		err    error
+	)
+	if *generation == "" {
+		inputs, err = semanticsync.DiscoverLatest(*researcherRoot)
+	} else {
+		inputs, err = semanticsync.InputsForGeneration(*researcherRoot, *generation)
+	}
+	if err != nil {
+		return err
+	}
+	receipt, err := semanticsync.Sync(inputs, *output, *dryRun)
+	if err != nil {
+		return err
+	}
+	encoded, err := json.Marshal(receipt)
+	if err != nil {
+		return fmt.Errorf("encode semantic sync receipt: %w", err)
+	}
+	fmt.Println(string(encoded))
+	return nil
 }
 
 func listAgents() error {
@@ -72,10 +126,14 @@ func printHelp() {
 
 Usage:
   agentbench agents
+  agentbench semantic-sync [--researcher-root PATH] [--generation PATH]
+                           [--output PATH] [--dry-run]
   agentbench version
 
 Go owns provider-neutral contracts, deterministic agents, memory, Airflow,
 OMS, Resource Discovery, production-support policy, and MCP APIs.
-Databricks execution is available through the remote-data MCP server.
+Databricks execution is available through the remote-data MCP server. The
+semantic-sync command stages Researcher's latest complete Semantic Layer
+snapshot for the read-only lineage MCP.
 `)
 }

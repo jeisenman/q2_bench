@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"strconv"
 	"sync"
 	"time"
 
@@ -84,39 +83,14 @@ func (s *Source) FetchLog(
 	ctx context.Context,
 	failure prodsupport.AirflowFailure,
 ) (string, error) {
-	config, err := s.configFor(failure.Region)
-	if err != nil {
-		return "", err
-	}
-	parts := []string{
-		"dags", failure.DAGID, "dagRuns", failure.RunID, "taskInstances",
-		failure.TaskID, "logs", strconv.Itoa(failure.TryNumber),
-	}
-	path := "/api/v1"
-	for _, part := range parts {
-		path += "/" + url.PathEscape(part)
-	}
-	response, err := RequestWithTransientRetry(
+	return s.FetchTaskLog(
 		ctx,
-		s.Transport,
-		config.Credentials,
-		"GET",
-		path,
-		nil,
-		s.Sleep,
+		failure.Region,
+		failure.DAGID,
+		failure.RunID,
+		failure.TaskID,
+		failure.TryNumber,
 	)
-	if err != nil {
-		return "", err
-	}
-	switch typed := response.(type) {
-	case string:
-		return typed, nil
-	case map[string]any:
-		if content, ok := typed["content"].(string); ok {
-			return content, nil
-		}
-	}
-	return "", fmt.Errorf("Airflow task log response must contain text content")
 }
 
 // FetchTaskMetadata retrieves exact operator metadata.
@@ -124,48 +98,12 @@ func (s *Source) FetchTaskMetadata(
 	ctx context.Context,
 	failure prodsupport.AirflowFailure,
 ) (prodsupport.AirflowTaskMetadata, error) {
-	config, err := s.configFor(failure.Region)
-	if err != nil {
-		return prodsupport.AirflowTaskMetadata{}, err
-	}
-	path := fmt.Sprintf(
-		"/api/v1/dags/%s/tasks/%s",
-		url.PathEscape(failure.DAGID),
-		url.PathEscape(failure.TaskID),
-	)
-	response, err := RequestWithTransientRetry(
+	return s.FetchTaskOperator(
 		ctx,
-		s.Transport,
-		config.Credentials,
-		"GET",
-		path,
-		nil,
-		s.Sleep,
+		failure.Region,
+		failure.DAGID,
+		failure.TaskID,
 	)
-	if err != nil {
-		return prodsupport.AirflowTaskMetadata{}, err
-	}
-	payload, ok := response.(map[string]any)
-	if !ok {
-		return prodsupport.AirflowTaskMetadata{}, fmt.Errorf(
-			"Airflow task metadata response must be an object",
-		)
-	}
-	operator, _ := payload["operator_name"].(string)
-	if operator == "" {
-		if classRef, ok := payload["class_ref"].(map[string]any); ok {
-			operator, _ = classRef["class_name"].(string)
-		}
-	}
-	metadata := prodsupport.AirflowTaskMetadata{
-		DAGID: failure.DAGID, TaskID: failure.TaskID, OperatorName: operator,
-	}
-	if err := metadata.Validate(); err != nil {
-		return prodsupport.AirflowTaskMetadata{}, fmt.Errorf(
-			"Airflow task metadata response is missing operator_name",
-		)
-	}
-	return metadata, nil
 }
 
 // HasSuccessWithin checks for the same DAG and task in a bounded success window.

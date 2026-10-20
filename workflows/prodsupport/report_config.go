@@ -9,35 +9,46 @@ import (
 type OmissionGroup string
 
 const (
-	OmitD2P         OmissionGroup = "d2p"
-	OmitMI3         OmissionGroup = "mi3"
-	OmitSubscriber  OmissionGroup = "subscriber"
-	OmitMaintenance OmissionGroup = "maintenance"
-	OmitBackfill    OmissionGroup = "backfill"
-	OmitCMM         OmissionGroup = "cmm"
+	OmitD2P                OmissionGroup = "d2p"
+	OmitMI3                OmissionGroup = "mi3"
+	OmitSubscriber         OmissionGroup = "subscriber"
+	OmitMaintenance        OmissionGroup = "maintenance"
+	OmitBackfill           OmissionGroup = "backfill"
+	OmitCMM                OmissionGroup = "cmm"
+	OmitEventBusHistorical OmissionGroup = "event_bus_to_payloads_historical"
 )
 
 var (
-	allOmissionGroups = []OmissionGroup{
+	defaultOmissionGroups = []OmissionGroup{
 		OmitD2P, OmitMI3, OmitSubscriber, OmitMaintenance, OmitBackfill, OmitCMM,
 	}
+	supportedOmissionGroups = append(
+		append([]OmissionGroup(nil), defaultOmissionGroups...),
+		OmitEventBusHistorical,
+	)
 	omissionPatterns = map[OmissionGroup][]string{
-		OmitD2P:         {"delivery_to_promise", "d2p"},
-		OmitMI3:         {"market_insights_3", "mi_3", "mi3"},
-		OmitSubscriber:  {"check_for_subscriber_client_errors", "subscriber"},
-		OmitMaintenance: {"log_cleanup", "expire_logs", "expire-logs"},
-		OmitBackfill:    {"backfill"},
-		OmitCMM:         {"credit_migration_matrix", "credit-migration-matrix", "cmm"},
+		OmitD2P:                {"delivery_to_promise", "d2p"},
+		OmitMI3:                {"market_insights_3", "mi_3", "mi3"},
+		OmitSubscriber:         {"check_for_subscriber_client_errors", "subscriber"},
+		OmitMaintenance:        {"log_cleanup", "expire_logs", "expire-logs"},
+		OmitBackfill:           {"backfill"},
+		OmitCMM:                {"credit_migration_matrix", "credit-migration-matrix", "cmm"},
+		OmitEventBusHistorical: {"event_bus_to_payloads_historical"},
 	}
 	omissionCodes = map[OmissionGroup]string{
-		OmitD2P: "D2P", OmitMI3: "MI3", OmitSubscriber: "Subscriber",
-		OmitMaintenance: "log_cleanup", OmitBackfill: "Backfill", OmitCMM: "CMM",
+		OmitD2P:                "D2P",
+		OmitMI3:                "MI3",
+		OmitSubscriber:         "Subscriber",
+		OmitMaintenance:        "log_cleanup",
+		OmitBackfill:           "Backfill",
+		OmitCMM:                "CMM",
+		OmitEventBusHistorical: "event_bus_to_payloads_historical",
 	}
 )
 
 // DefaultOmissions returns the canonical audience omission order.
 func DefaultOmissions() []OmissionGroup {
-	return append([]OmissionGroup(nil), allOmissionGroups...)
+	return append([]OmissionGroup(nil), defaultOmissionGroups...)
 }
 
 // ReportConfig controls audience filtering after recovery verification.
@@ -156,7 +167,7 @@ func UpdateOmissionValues(current []string, direction string) ([]string, error) 
 		return nil, fmt.Errorf("omission direction must say exactly one of add or remove")
 	}
 	requested := make([]OmissionGroup, 0)
-	for _, group := range allOmissionGroups {
+	for _, group := range supportedOmissionGroups {
 		if strings.Contains(lowered, string(group)) ||
 			strings.Contains(lowered, strings.ToLower(omissionCodes[group])) {
 			requested = append(requested, group)
@@ -186,7 +197,7 @@ func UpdateOmissionValues(current []string, direction string) ([]string, error) 
 }
 
 func validOmissionGroup(group OmissionGroup) bool {
-	return containsOmission(allOmissionGroups, group)
+	return containsOmission(supportedOmissionGroups, group)
 }
 
 func containsOmission(values []OmissionGroup, group OmissionGroup) bool {
@@ -209,8 +220,8 @@ func removeOmission(values []OmissionGroup, group OmissionGroup) []OmissionGroup
 }
 
 func omissionGroupNames() string {
-	values := make([]string, len(allOmissionGroups))
-	for index, group := range allOmissionGroups {
+	values := make([]string, len(supportedOmissionGroups))
+	for index, group := range supportedOmissionGroups {
 		values[index] = string(group)
 	}
 	return strings.Join(values, ", ")

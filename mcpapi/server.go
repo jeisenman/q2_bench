@@ -40,6 +40,8 @@ func NewServer(config Config) (*mcp.Server, error) {
 		registerRemoteData(server)
 	case "warehouse":
 		registerWarehouse(server)
+	case "cortex":
+		registerWarehouse(server)
 	case "lineage":
 		if err := registerLineage(server); err != nil {
 			return nil, err

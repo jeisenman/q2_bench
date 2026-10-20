@@ -37,6 +37,35 @@ func TestSearchDatasetsRanksExactMatchesAndFields(t *testing.T) {
 	}
 }
 
+func TestSearchDatasetsUsesSynchronizedSemanticMeaning(t *testing.T) {
+	graph := testGraph()
+	graph.Nodes[2].Data["facets"] = map[string]any{
+		"q2_semanticMeaning": map[string]any{
+			"status": "available",
+			"entries": []any{map[string]any{
+				"description":     "Delivery to promise measures",
+				"businessContext": "Used by portfolio reporting",
+			}},
+		},
+	}
+	service, err := NewService(memorySource{latest: graph})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := service.SearchDatasets(context.Background(), "portfolio promise", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Nodes) != 1 || result.Nodes[0].ID != "dataset:engagement" {
+		t.Fatalf("nodes = %#v", result.Nodes)
+	}
+	summary := result.Nodes[0].SearchSummary()
+	if summary["semanticStatus"] != "available" ||
+		summary["semanticDescription"] != "Delivery to promise measures" {
+		t.Fatalf("summary = %#v", summary)
+	}
+}
+
 func TestTraverseBoundsAndDirections(t *testing.T) {
 	service := testService(t)
 

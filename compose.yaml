@@ -34,6 +34,7 @@ services:
       PROD_SUPPORT_MCP_TRANSPORT: streamable-http
       PROD_SUPPORT_SOURCE: production
       PROD_SUPPORT_UPDATES_PATH: /workspace/product_support_updates.json
+      PROD_SUPPORT_OMISSIONS_PATH: /workspace/var/prod-support-omissions.json
       LINEAGE_GRAPH_PATH: /workspace/var/lineage/di-pipelines.json
     command:
       - --server
@@ -57,7 +58,7 @@ services:
       timeout: 3s
       retries: 12
 
-  warehouse-mcp:
+  warehouse-mcp: &snowflake-mcp
     <<: *agentbench
     volumes:
       - ./var:/workspace/var
@@ -73,6 +74,7 @@ services:
       Q2_MCP_DEBUG: "1"
       WAREHOUSE_ENVIRONMENT: ${WAREHOUSE_ENVIRONMENT:-sandbox}
       WAREHOUSE_SANDBOX_CORTEX_RECORDINGS: ${WAREHOUSE_SANDBOX_CORTEX_RECORDINGS:-/workspace/var/cortex-recordings}
+      WAREHOUSE_SANDBOX_CORTEX_AGENT_RECORDINGS: ${WAREHOUSE_SANDBOX_CORTEX_AGENT_RECORDINGS:-/workspace/var/cortex-agent-recordings}
       SNOWFLAKE_DEV_CONNECTION_FILE: /run/secrets/ds-airflow-snowflake.json
       SNOWFLAKE_DEV_ACCOUNT: ${SNOWFLAKE_DEV_ACCOUNT:-}
       SNOWFLAKE_DEV_USER: ${SNOWFLAKE_DEV_USER:-}
@@ -115,6 +117,9 @@ services:
       - "8001"
     ports:
       - "127.0.0.1:8766:8001"
+    depends_on:
+      cortex-mcp:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -122,6 +127,31 @@ services:
         - -z
         - 127.0.0.1
         - "8001"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  cortex-mcp:
+    <<: *snowflake-mcp
+    command:
+      - --server
+      - cortex
+      - --transport
+      - streamable-http
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8002"
+    ports:
+      - "127.0.0.1:8767:8002"
+    depends_on: {}
+    healthcheck:
+      test:
+        - CMD
+        - nc
+        - -z
+        - 127.0.0.1
+        - "8002"
       interval: 5s
       timeout: 3s
       retries: 12

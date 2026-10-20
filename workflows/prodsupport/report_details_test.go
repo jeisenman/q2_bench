@@ -26,6 +26,42 @@ func TestOmissionUpdates(t *testing.T) {
 	}
 }
 
+func TestEventBusHistoricalOmissionIsOptIn(t *testing.T) {
+	t.Parallel()
+	if containsOmission(DefaultOmissions(), OmitEventBusHistorical) {
+		t.Fatal("event-bus omission must remain opt-in")
+	}
+
+	config, err := NewReportConfig([]string{"event_bus_to_payloads_historical"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	failure := AirflowFailure{
+		Region: CA02, DAGID: "event_bus_to_payloads_historical",
+		TaskID: "check_for_subscriber_client_errors",
+	}
+	if got := config.ConfiguredOmissionGroup(failure); got != OmitEventBusHistorical {
+		t.Fatalf("ConfiguredOmissionGroup() = %q, want %q", got, OmitEventBusHistorical)
+	}
+
+	values, err := UpdateOmissionValues(
+		[]string{"subscriber"},
+		"add event_bus_to_payloads_historical",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"subscriber", "event_bus_to_payloads_historical"}
+	if !reflect.DeepEqual(values, want) {
+		t.Fatalf("values = %#v, want %#v", values, want)
+	}
+
+	codes := config.OmissionCodes([]AirflowFailure{failure})
+	if !reflect.DeepEqual(codes, []string{"event_bus_to_payloads_historical"}) {
+		t.Fatalf("OmissionCodes() = %#v", codes)
+	}
+}
+
 func TestClientIdentitiesTrustOnlyReviewedStatuses(t *testing.T) {
 	t.Parallel()
 	results := []domain.AgentResult{{

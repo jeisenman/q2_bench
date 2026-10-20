@@ -1,4 +1,4 @@
-// Package snowflake implements live and recorded Snowflake Cortex adapters.
+// Package snowflake implements live and recorded Snowflake Cortex adapters and agents.
 package snowflake
 
 import (

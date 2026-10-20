@@ -103,24 +103,25 @@ and normalized graph, node, edge, and diff rows. The current Go MCP query
 workflow reads the generated JSON artifact directly; PostgreSQL-backed query
 history remains a future adapter.
 
-Run a local review extraction:
+Synchronize the latest complete Semantic Layer generation from a sibling
+Researcher checkout:
 
 ```bash
-uv run agentbench lineage-sync \
-  --source-ref static-analysis \
-  --dry-run \
-  --output var/lineage/radar-lineage.json
+go run ./cmd/agentbench semantic-sync --dry-run
+go run ./cmd/agentbench semantic-sync
 ```
 
-The defaults expect all six repositories as siblings of this checkout.
-Explicit alternatives are available through `--repository`,
-`--radar-notebooks-repository`, `--radar-libraries-repository`,
-`--radar-adf-repository`, `--data-ingress-repository`, and
-`--engine-repository`.
+The default Researcher root is `../researcher`, and the default output is
+`var/lineage/di-pipelines.json`. Use `--researcher-root` for another checkout,
+`--generation` to pin an exact published generation directory, and `--output`
+to stage elsewhere.
 
-Persist a graph by setting `LINEAGE_POSTGRES_DSN` and omitting `--dry-run`.
-The write is atomic and idempotent for repository, commit, profile, and
-extractor version.
+The sync accepts only the current versioned Researcher bundle, graph,
+generation, semantic-request, and semantic-response contracts. It requires
+one request and one response for every logical node, retains source and model
+provenance in the graph manifest, projects each response into the standard
+`q2_semanticMeaning` facet, and publishes the output atomically. The same
+upstream generation produces the same staged bytes.
 
 ## MCP tools
 
@@ -128,21 +129,23 @@ The Go `lineage` server and the existing `prod-support-mcp` server expose the
 staged lineage through five read-only tools:
 
 - `search_lineage_datasets` searches logical datasets and final Snowflake
-  tables by canonical ID, name, description, or field name.
+  tables by canonical ID, name, description, field name, or synchronized
+  semantic description and business context.
 - `get_lineage_upstream` and `get_lineage_downstream` traverse a bounded
   number of graph levels and nodes.
 - `get_lineage_transformation` returns schema, physical locations, source
-  locations, mechanical transformations, engine enrichments, standard job
-  allocation, and larger-client allocation overrides.
+  locations, mechanical transformations, engine enrichments, synchronized
+  semantic meaning, standard job allocation, and larger-client allocation
+  overrides.
 - `get_lineage_change_history` returns the commits where a node was created,
   changed, or removed.
 
 The Go implementation reads `LINEAGE_GRAPH_PATH`, which defaults to
-`var/lineage/di-pipelines.json`. Docker Compose mounts that path into the
-MCP container. The current JSON source exposes the checked-in/generated graph
-as the latest version; change-history queries become richer when a versioned
-source adapter is added. Regenerate the artifact whenever any source checkout
-changes.
+`var/lineage/di-pipelines.json`. Docker Compose mounts that path into the MCP
+container. The current JSON source exposes the synchronized Researcher
+snapshot as the latest version; change-history queries become richer when a
+versioned source adapter is added. Run `semantic-sync` whenever Researcher
+publishes a newer complete Semantic Layer generation.
 
 Every response identifies the repository commit and extraction profile.
 Search and traversal limits are validated before reading data. MCP requests

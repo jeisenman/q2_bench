@@ -376,9 +376,12 @@
     "source": "resource-discovery-api"
   },
   "a6f685af-1ea3-4b06-974e-a522b9655a95": {
-    "api_status": "no-unique-match",
-    "last_checked": "2026-09-20",
-    "source": "unresolved"
+    "api_status": "user-confirmed",
+    "environment": "US02",
+    "last_checked": "2026-10-16",
+    "name": "CIBC US",
+    "source": "user-confirmed",
+    "subdomain": "cibc-us"
   },
   "a9cdadd4-1324-4a7a-842e-fe8fc9fe37f1": {
     "api_status": "unique-match",
@@ -575,5 +578,137 @@
     "last_checked": "2026-09-01",
     "name": "Bank of Purpose",
     "source": "resource-discovery-api"
+  },
+  "04e02366-1bde-4d83-9d97-e03fb519e2c6": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Dollar Bank (Pittsburgh, PA)",
+    "source": "resource-discovery-api"
+  },
+  "1d4573dc-1507-4b10-aae5-27bdd05fc69e": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Northrim Bank",
+    "source": "resource-discovery-api"
+  },
+  "223083ed-017c-409d-a430-fcdede2c18fb": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Tri Counties Bank (Chico, CA)",
+    "source": "resource-discovery-api"
+  },
+  "2352e91f-e147-4ffa-b704-51344e70dcb9": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "The Farmers Bank, Frankfort, Indiana",
+    "source": "resource-discovery-api"
+  },
+  "29c5f53b-e83d-4765-8c73-7b58a36a775f": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Capitol Federal Savings Bank",
+    "source": "resource-discovery-api"
+  },
+  "2af37a7d-65ea-4df7-a975-5ab12dd74d03": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Green Bank (Houston, TX)",
+    "source": "resource-discovery-api"
+  },
+  "482d7756-c397-433a-8e71-379f0e99df1f": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Bank of Montreal (BMO) (Toronto, Ontario)",
+    "source": "resource-discovery-api"
+  },
+  "4dfb1084-98d3-41cf-9071-64035fdba4e8": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "INB, National Association",
+    "source": "resource-discovery-api"
+  },
+  "5e31eddc-b5cf-4ff3-b2c1-14aa5226e3d4": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "United Prairie Bank (Mountain Lake, MN)",
+    "source": "resource-discovery-api"
+  },
+  "635e5443-4a6c-4124-bf66-805274acc13f": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Ames National Corporation",
+    "source": "resource-discovery-api"
+  },
+  "7b427a3a-90ae-4a51-b249-6223108d327e": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Pacific National Bank (Miami, FL)",
+    "source": "resource-discovery-api"
+  },
+  "8daaedc7-cdc1-4146-bf90-f00d017b1962": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Guaranty Bank & Trust (Mount Pleasant, TX)",
+    "source": "resource-discovery-api"
+  },
+  "8fa45c05-cc2d-41d9-bac4-519950fcbd8e": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Paragon Bank",
+    "source": "resource-discovery-api"
+  },
+  "91946d90-afdf-48d1-855f-28e9dbb77e6b": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Woodforest National Bank (Houston, TX)",
+    "source": "resource-discovery-api"
+  },
+  "cab2c4b2-d95f-44f8-854e-2ca31eeb0e99": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Home Bank (Lafayette, LA)",
+    "source": "resource-discovery-api"
+  },
+  "d016ad30-a39d-43d8-844f-29a854b2ade7": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "The First National Bank of Eagle Lake",
+    "source": "resource-discovery-api"
+  },
+  "d6326d17-888c-4829-aec4-6e27492f3e3b": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "BAML UAT (ENTB01)",
+    "source": "resource-discovery-api"
+  },
+  "d791415b-f8c3-4d84-92a2-d7fe97f94237": {
+    "api_status": "unique-match",
+    "last_checked": "2026-10-16",
+    "name": "Silver Lake Bank",
+    "source": "resource-discovery-api"
+  },
+  "0ce51df7-36ec-4ba5-a647-4e3aaa029a66": {
+    "api_status": "user-confirmed",
+    "environment": "US02",
+    "last_checked": "2026-10-16",
+    "name": "Flagstar Bank",
+    "source": "user-confirmed",
+    "subdomain": "application2"
+  },
+  "41a45dc1-7f96-4897-962f-030e3ddbbc9f": {
+    "api_status": "user-confirmed",
+    "environment": "US02",
+    "last_checked": "2026-10-16",
+    "name": "1stsecuritybank",
+    "source": "user-confirmed",
+    "subdomain": "application2"
+  },
+  "c9a2c29e-5191-4fe6-bd9f-0800015f7160": {
+    "api_status": "user-confirmed",
+    "environment": "US01",
+    "last_checked": "2026-10-16",
+    "name": "Classic Bank, NA",
+    "source": "user-confirmed",
+    "subdomain": "application"
   }
 }

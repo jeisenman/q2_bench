@@ -18,6 +18,7 @@ type Node struct {
 
 // Summary returns the compact representation used by MCP search and traversal.
 func (n Node) Summary() map[string]any {
+	semanticStatus, _, _ := n.semanticSummary()
 	return map[string]any{
 		"id":                  n.ID,
 		"kind":                n.Kind,
@@ -29,7 +30,17 @@ func (n Node) Summary() map[string]any {
 		"fieldCount":          len(n.sliceValue("fields")),
 		"locationCount":       len(n.sliceValue("locations")),
 		"transformationCount": len(n.sliceValue("transformations")),
+		"semanticStatus":      semanticStatus,
 	}
+}
+
+// SearchSummary includes meaning text for a dataset returned by semantic search.
+func (n Node) SearchSummary() map[string]any {
+	result := n.Summary()
+	_, description, businessContext := n.semanticSummary()
+	result["semanticDescription"] = description
+	result["semanticBusinessContext"] = businessContext
+	return result
 }
 
 // ContentHash returns the stable hash of the stored node payload.
@@ -50,6 +61,18 @@ func (n Node) stringValue(key string) string {
 func (n Node) sliceValue(key string) []any {
 	values, _ := n.Data[key].([]any)
 	return values
+}
+
+func (n Node) semanticSummary() (string, any, any) {
+	facets, _ := n.Data["facets"].(map[string]any)
+	meaning, _ := facets["q2_semanticMeaning"].(map[string]any)
+	status, _ := meaning["status"].(string)
+	entries, _ := meaning["entries"].([]any)
+	if len(entries) == 0 {
+		return status, nil, nil
+	}
+	entry, _ := entries[0].(map[string]any)
+	return status, entry["description"], entry["businessContext"]
 }
 
 // Edge is one directed relationship between two graph nodes.

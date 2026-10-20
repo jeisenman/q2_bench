@@ -66,7 +66,7 @@ func NewService(source QuerySource) (*Service, error) {
 	return &Service{source: source}, nil
 }
 
-// SearchDatasets finds dataset nodes by ID, name, description, or field name.
+// SearchDatasets finds datasets by identity, fields, or synchronized meaning.
 func (s *Service) SearchDatasets(
 	ctx context.Context,
 	query string,
@@ -229,12 +229,32 @@ func nodeMatches(node Node, needle string) bool {
 			}
 		}
 	}
-	for _, value := range values {
-		if strings.Contains(strings.ToLower(value), needle) {
-			return true
+	values = append(values, semanticValues(node)...)
+	terms := strings.Fields(needle)
+	combined := strings.ToLower(strings.Join(values, " "))
+	for _, term := range terms {
+		if !strings.Contains(combined, term) {
+			return false
 		}
 	}
-	return false
+	return len(terms) > 0
+}
+
+func semanticValues(node Node) []string {
+	facets, _ := node.Data["facets"].(map[string]any)
+	meaning, _ := facets["q2_semanticMeaning"].(map[string]any)
+	entries, _ := meaning["entries"].([]any)
+	values := make([]string, 0, len(entries)*2)
+	for _, rawEntry := range entries {
+		entry, _ := rawEntry.(map[string]any)
+		if description, ok := entry["description"].(string); ok {
+			values = append(values, description)
+		}
+		if context, ok := entry["businessContext"].(string); ok {
+			values = append(values, context)
+		}
+	}
+	return values
 }
 
 func searchKey(node Node, needle string) matchKey {

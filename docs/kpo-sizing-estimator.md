@@ -11,6 +11,22 @@ around the pure Go `src/workspaces/data_engineering/kposizing` package:
 Neither tool performs network calls, reads production systems, or changes
 allocations.
 
+The same server also exposes a production-backed, approval-gated memory
+profiling flow:
+
+- `prepare_kpo_memory_profile` verifies an exact failed Airflow task, active
+  DAG, supported operator, baseline try number, and Kubernetes Metrics API
+  access. It returns the exact retry candidate required by
+  `execute_prod_support_follow_up`.
+- `watch_kpo_task_memory` watches only an attempt newer than that baseline. It
+  maps the Airflow log to a Kubernetes pod, follows the Spark application
+  selector when present, and samples driver and executor memory from the
+  Kubernetes Metrics API.
+
+Preparation and watching are read-only. The existing production follow-up tool
+is the only operation that clears the failed Airflow task, and it retains its
+explicit approval, production-source, dry-run, DAG, and task-selection guards.
+
 ## Planning boundary
 
 This is a static planning estimate, not calibrated production truth. It models
@@ -120,3 +136,31 @@ context; it does not round the cluster total into one pod tier.
 
 CPU is preserved unless explicit CPU evidence is supplied. Memory sizing is not
 CPU evidence.
+
+## Live memory profile
+
+Run the live profile as three explicit stages:
+
+1. Call `prepare_kpo_memory_profile` with the exact region, DAG ID, run ID, and
+   task ID. Preserve its retry candidate, validation URLs, baseline try number,
+   and watch input.
+2. After explicit user approval, call `execute_prod_support_follow_up` with the
+   preserved candidate and URLs. Submission or a queued state is not success.
+3. Call `watch_kpo_task_memory` with the preserved watch input. Pass the
+   returned `history` into the next call until `complete` is true or the
+   operator stops monitoring.
+
+One watch call is bounded to five minutes and 20 polls. The default is four
+polls at 15-second intervals. History is bounded to 600 samples and contains
+exact byte values, per-pod limits and utilization, explicit `OOMKilled`
+evidence, a compact graph preview, and graph-ready series points.
+
+`SparkSubmitOperator` profiles include the driver and every currently visible
+executor sharing its `spark-app-selector`. `KubernetesPodOperator` profiles
+include the exact pod emitted in the Airflow log. The MCP process must have the
+regional `kubectl` context and access to `metrics.k8s.io`.
+
+An empty `OOMKilled` result means no OOM was observed in the retained samples;
+it is not proof that an unsampled or already-deleted pod never OOMed. Treat
+near-limit utilization, missing metrics, pod deletion, and Airflow terminal
+state as separate evidence.

@@ -70,7 +70,9 @@ func TestWarehouseToolParity(t *testing.T) {
 		names[index] = tool.Name
 	}
 	sort.Strings(names)
-	expected := []string{"count_cortex_tokens", "run_cortex_complete"}
+	expected := []string{
+		"count_cortex_tokens", "run_cortex_agent", "run_cortex_complete",
+	}
 	if !reflect.DeepEqual(names, expected) {
 		t.Fatalf("tools = %#v", names)
 	}

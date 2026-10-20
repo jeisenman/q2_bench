@@ -9,8 +9,8 @@ search, traversal, node-detail, and history operations.
 
 ## Architecture
 
-- `models.go` contains the provider-neutral graph contracts and artifact
-  decoding.
+- `models.go` contains the provider-neutral graph contracts, artifact
+  decoding, and compact synchronized semantic-meaning projection.
 - `source.go` owns the injected graph source and local JSON-artifact loading.
 - `query.go` owns validation, deterministic ordering, bounded traversal, and
   change classification.
@@ -23,7 +23,8 @@ dependencies into the workflow.
 
 - Standard-library JSON and filesystem access only.
 - The generated artifact path is selected by `LINEAGE_GRAPH_PATH` and defaults
-  to `var/lineage/di-pipelines.json`.
+  to `var/lineage/di-pipelines.json`. `agentbench semantic-sync` stages the
+  newest complete Researcher Semantic Layer snapshot at that path.
 - The package does not execute source repositories, call external services, or
   mutate graph state.
 

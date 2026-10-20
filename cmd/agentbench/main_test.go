@@ -37,3 +37,11 @@ func TestRemovedPythonCommandFailsClearly(t *testing.T) {
 		t.Fatalf("error = %v", err)
 	}
 }
+
+func TestSemanticSyncRejectsPositionalArguments(t *testing.T) {
+	t.Parallel()
+	err := run(context.Background(), []string{"semantic-sync", "unexpected"})
+	if err == nil || err.Error() != "semantic-sync does not accept positional arguments" {
+		t.Fatalf("error = %v", err)
+	}
+}

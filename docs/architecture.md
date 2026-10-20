@@ -15,7 +15,9 @@ agentmemory/         Go durable-memory policy
 workflowharness/     Go deterministic workflow runner
 workflows/           Go workflow packages
   lineage/            Read-only staged lineage query workflow
+  semanticsync/        Researcher Semantic Layer ingestion workflow
 adapters/            Go infrastructure adapters
+kpomonitor/           Pure pod-correlation, profile summary, and graph values
 mcpapi/              Go MCP API composition
 cmd/                 Go command entry points
 src/                 Databricks-only Python runtime and notebook source
@@ -41,6 +43,13 @@ commands and MCP APIs
 Provider SDKs and network clients stay in adapters. Domain packages remain
 independent of process configuration and external services.
 
+`workflows/semanticsync` is the typed boundary for Researcher's published
+Semantic Layer artifacts. It discovers or accepts one complete generation,
+validates its versioned bundle, requests, and responses, then atomically
+stages a semantic-enriched graph. `workflows/lineage` remains the read-only
+query surface used by MCP; qtwo_bench does not import or execute Researcher
+implementation code.
+
 The `remote-data` MCP API crosses into Python only for Databricks SDK operations.
 It exchanges JSON with `databricks_runtime.cli`; no general-purpose Python CLI
 or MCP server remains.
@@ -65,6 +74,11 @@ Production-support investigation is read-only. Follow-up retries require an
 explicit approval ID, production mode, exact prior retry candidates, and both
 regional validation URLs. The Airflow adapter validates the exact dry-run
 selection before clearing failed task instances.
+
+KPO live profiling composes the existing approval-gated Airflow retry with a
+separate read-only watcher. Airflow logs provide the exact pod identity;
+`adapters/kubernetes` reads current pod resources and `metrics.k8s.io`, while
+`kpomonitor` owns deterministic aggregation and graph-ready output.
 
 MCP changes require a full server rebuild and recreation before behavioral
 validation.

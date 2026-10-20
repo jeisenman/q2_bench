@@ -15,6 +15,27 @@ type fakeCortex struct {
 	request     ports.CortexRequest
 }
 
+type fakeCortexAgent struct {
+	environment domain.Environment
+	request     ports.CortexAgentRequest
+}
+
+func (f *fakeCortexAgent) Environment() domain.Environment {
+	return f.environment
+}
+
+func (f *fakeCortexAgent) Run(
+	_ context.Context,
+	request ports.CortexAgentRequest,
+) (ports.CortexAgentResponse, error) {
+	f.request = request
+	return ports.CortexAgentResponse{
+		AgentName: request.AgentName, Version: request.Version,
+		Response: `{"status":"ok"}`, Environment: f.environment,
+		Recorded: f.environment.Deterministic(),
+	}, nil
+}
+
 func (f *fakeCortex) Environment() domain.Environment {
 	return f.environment
 }
@@ -92,5 +113,55 @@ func TestRequestedEnvironmentDefaultsToSandbox(t *testing.T) {
 	}
 	if environment != domain.EnvironmentSandbox {
 		t.Fatalf("environment = %q", environment)
+	}
+}
+
+func TestRunCortexAgentPreservesVersionAndReportsExecutionMode(t *testing.T) {
+	t.Parallel()
+	fake := &fakeCortexAgent{environment: domain.EnvironmentSandbox}
+	api := &warehouseAPI{resolveAgent: func(
+		environment domain.Environment,
+	) (ports.CortexAgent, error) {
+		if environment != domain.EnvironmentSandbox {
+			return nil, errors.New("unexpected environment")
+		}
+		return fake, nil
+	}}
+	_, output, err := api.runCortexAgent(
+		context.Background(),
+		nil,
+		cortexAgentInput{
+			AgentName: "DB.SCHEMA.AGENT", Version: "VERSION$2",
+			RequestBody: `{"messages":[]}`, Environment: "sandbox",
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if output["version"] != "VERSION$2" || output["recorded"] != true {
+		t.Fatalf("output = %#v", output)
+	}
+	if fake.request.QualifiedName() != "DB.SCHEMA.AGENT!VERSION$2" {
+		t.Fatalf("request = %#v", fake.request)
+	}
+}
+
+func TestRunCortexAgentRejectsStreamingRequestBeforeResolution(t *testing.T) {
+	t.Parallel()
+	api := &warehouseAPI{resolveAgent: func(
+		domain.Environment,
+	) (ports.CortexAgent, error) {
+		t.Fatal("resolver should not be called")
+		return nil, nil
+	}}
+	_, _, err := api.runCortexAgent(
+		context.Background(),
+		nil,
+		cortexAgentInput{
+			AgentName: "DB.SCHEMA.AGENT", RequestBody: `{"stream":true}`,
+		},
+	)
+	if err == nil || !strings.Contains(err.Error(), "stream must be false") {
+		t.Fatalf("err = %v", err)
 	}
 }

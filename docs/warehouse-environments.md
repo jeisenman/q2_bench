@@ -45,6 +45,7 @@ production.
 ```bash
 export WAREHOUSE_ENVIRONMENT=sandbox        # dev | stage | prod | sandbox
 export WAREHOUSE_SANDBOX_CORTEX_RECORDINGS=path/to/recordings
+export WAREHOUSE_SANDBOX_CORTEX_AGENT_RECORDINGS=path/to/agent-recordings
 ```
 
 The dev container reuses the ignored ds-airflow Airflow connection:
@@ -101,11 +102,20 @@ request fails instead of inventing an answer.
 
 ## MCP routes
 
-`warehouse-mcp` exposes two tools:
+`warehouse-mcp` exposes three tools:
 
 - `run_cortex_complete` — one Cortex completion. Reports whether the response
   was live or replayed.
 - `count_cortex_tokens` — one bounded tokenizer count without inference.
+- `run_cortex_agent` — one Cortex Agent request with an optional immutable
+  version, alias, or system shortcut such as `VERSION$2`, `LIVE`, `DEFAULT`,
+  `LAST`, or `FIRST`. Sandbox responses are keyed by agent, version, request
+  body, and thread-creation flag.
+
+Omitting `version` uses the agent's Snowflake `DEFAULT` version. The route
+returns the requested selector so callers can record whether they targeted a
+committed version, alias, or mutable live/default pointer. The response is
+always non-streaming because `DATA_AGENT_RUN` is a non-streaming wrapper.
 
 Every route takes an optional `environment` that overrides the configured
 default.
@@ -119,4 +129,6 @@ or configuration changes:
 docker compose up -d --build --force-recreate --wait warehouse-mcp
 ```
 
-The Streamable HTTP endpoint is `http://127.0.0.1:8766/mcp`.
+This starts both the warehouse service and its Cortex-only sidecar. The
+Streamable HTTP endpoints are `http://127.0.0.1:8766/mcp` for warehouse and
+`http://127.0.0.1:8767/mcp` for Cortex.

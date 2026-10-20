@@ -33,6 +33,11 @@ task_id
 label
 ```
 
+The label is display-only and may be a resolved client name or
+`Unidentified client (<first-three UUID characters>)`. The latter is valid
+when the exact failed task identity and complete client UUID are preserved in
+the DAG ID and internal candidate state, and the DAG exists and is unpaused.
+
 Candidates must identify currently failed task instances. The current MCP uses
 `only_failed=true`; it cannot rerun a succeeded upstream task merely because a
 downstream distinctness check suggests that task.

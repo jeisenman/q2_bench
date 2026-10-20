@@ -109,13 +109,24 @@ func (c *Cortex) queryRow(
 	statement string,
 	arguments ...any,
 ) rowScanner {
+	return queryRow(ctx, c.settings, c.secrets, c.open, statement, arguments...)
+}
+
+func queryRow(
+	ctx context.Context,
+	settings Settings,
+	secrets ports.SecretProvider,
+	open databaseOpener,
+	statement string,
+	arguments ...any,
+) rowScanner {
 	return deferredRow{
 		run: func() (rowScanner, error) {
-			secret, err := c.secrets.GetSecret(ctx, c.settings.SecretRef)
+			secret, err := secrets.GetSecret(ctx, settings.SecretRef)
 			if err != nil {
 				return nil, err
 			}
-			connection, err := c.open(c.settings, secret)
+			connection, err := open(settings, secret)
 			if err != nil {
 				return nil, err
 			}

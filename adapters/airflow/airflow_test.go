@@ -181,6 +181,37 @@ func TestGetTaskStateNormalizesEmptyState(t *testing.T) {
 	}
 }
 
+func TestGetTaskInstanceReturnsAttemptAndTimestamps(t *testing.T) {
+	t.Parallel()
+	source := NewSource([]RegionConfig{{
+		Region: prodsupport.US01, Credentials: Credentials{Host: "https://airflow"},
+	}}, transportFunc(func(
+		_ context.Context,
+		_ Credentials,
+		_ string,
+		_ string,
+		_ map[string]any,
+	) (any, error) {
+		return map[string]any{
+			"state":      "running",
+			"try_number": 7,
+			"start_date": "2026-10-15T19:00:00Z",
+			"end_date":   nil,
+		}, nil
+	}))
+
+	instance, err := source.GetTaskInstance(
+		context.Background(), prodsupport.US01, "dag", "run", "task",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if instance.State != "running" || instance.TryNumber != 7 ||
+		instance.StartAt == nil || instance.EndAt != nil {
+		t.Fatalf("instance = %#v", instance)
+	}
+}
+
 func TestTransientRetry(t *testing.T) {
 	t.Parallel()
 	attempts := 0

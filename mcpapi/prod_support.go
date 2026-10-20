@@ -50,6 +50,9 @@ func registerProdSupport(server *mcp.Server, config Config) error {
 	if err := registerKPOSizing(server); err != nil {
 		return err
 	}
+	if err := registerKPOMonitor(server, airflowAPI); err != nil {
+		return err
+	}
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "run_prod_support",
 		Description: "Investigate production Airflow failures and return an evidence-based report.",
@@ -327,7 +330,6 @@ func (a *prodSupportAPI) executeFollowUp(
 		"approval_id":     input.ApprovalID,
 	}, nil
 }
-
 func containsURL(values []string, marker string) bool {
 	for _, value := range values {
 		if strings.Contains(strings.ToLower(value), marker) {

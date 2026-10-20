@@ -9,6 +9,7 @@ COPY agents ./agents
 COPY cmd ./cmd
 COPY dependencyintelligence ./dependencyintelligence
 COPY domain ./domain
+COPY kpomonitor ./kpomonitor
 COPY mcpapi ./mcpapi
 COPY ports ./ports
 COPY src/workspaces/data_engineering/kposizing ./src/workspaces/data_engineering/kposizing
