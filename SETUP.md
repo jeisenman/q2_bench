@@ -7,6 +7,15 @@ Codex; the steps below differ by harness, so follow your own section.
 The harness and MCP processes run locally. Live connectors can still reach
 shared production services, so local execution does not imply sandbox data.
 
+## Connection walkthrough
+
+Follow the [connection guide](docs/connections.md) in order: create
+[`configurations.yaml`](configurations.yaml.example), then configure
+[Airflow](docs/connections.md#airflow),
+[Resource Discovery](docs/connections.md#resource-discovery),
+[Databricks](#databricks-tokens), and [Snowflake / Cortex](#snowflake-and-cortex).
+Finish by connecting the [MCP endpoints](#mcp-endpoints) in your harness.
+
 ## Prerequisites
 
 Install these before running setup:
@@ -29,24 +38,8 @@ uv --version
 docker compose version
 ```
 
-## The model
-
-```text
-claude / codex          the agent loop — not defined in this repository
-      │ invokes
-      ▼
-workspace skills        baseline procedures: "do production support"
-      │ calls
-      ▼
-MCP servers             typed, authenticated tools
-      ▲
-benchmarks              score the harness + skill + MCP together
-```
-
-Skills live with their workspace, at
-`src/workspaces/<workspace>/skills/<skill-id>/`. Harness directories
-(`.claude/skills/`, `.codex/skills/`) contain the harness-facing copies and
-are included in the checkout.
+Skills live at `src/workspaces/<workspace>/skills/<skill-id>/`; harness copies
+are included in `.claude/skills/` and `.codex/skills/`.
 
 ## Common steps
 
@@ -259,6 +252,11 @@ run_cortex_complete(model="<approved-model>", prompt="...", environment="dev")
 `WAREHOUSE_SANDBOX_CORTEX_RECORDINGS` and fails loudly when a request was
 never captured. Recordings are captured against a real environment first, so
 live access has to work before sandbox Cortex can.
+
+### MCP endpoints
+
+See [MCP connection endpoints](docs/connections.md#mcp-endpoints) for transport
+types, local URLs, and links to each endpoint's tools.
 
 ## Working in a workspace
 
