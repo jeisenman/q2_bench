@@ -1,0 +1,53 @@
+{
+  "format": "q2-d2p-synthetic-execution/v1",
+  "status": "pass",
+  "client_id": "99b9412b-70fd-4221-8431-d1b3934889ec",
+  "synthetic": true,
+  "fixture_clock_utc": "2026-10-29T05:00:00Z",
+  "fixture_sha256": "036cbb27df11b655bc4324974ac810082092aea5d06cb124dde868658e2ce1b9",
+  "golden_sha256": "d4c6d720d38d884523960d2faab453164110811d557b69367845e07ef8974739",
+  "platform": "data_engineering",
+  "workspace": "pl-databricks-us-prod-01",
+  "existing_cluster_id": "0901-134744-3vwa15kr",
+  "run_id": 916624163559760,
+  "task_run_id": 738254268188204,
+  "source_sha256": "3b765518c2d0309d26608b85cdc0f22fd0946c74f8068ee4f69ba5888be30e3a",
+  "notebook_path": "/Shared/remote-data-mcp/data_engineering/3b765518c2d0309d26608b85cdc0f22fd0946c74f8068ee4f69ba5888be30e3a",
+  "run_url": "https://adb-3510128597187204.4.azuredatabricks.net/?o=3510128597187204#job/116881781425574/run/916624163559760",
+  "spark_version": "4.1.0",
+  "pandas_version": "2.2.3",
+  "passed": 164,
+  "failed": 0,
+  "scenario_count": 163,
+  "full_report_assertions": 1,
+  "source_predicate_only_cases": 6,
+  "pinned_source_count": 11,
+  "whole_live_pipeline_validated": false,
+  "real_client_data_read": false,
+  "cloud_data_writes": false,
+  "retrieval": "Databricks Jobs get-run-output for child task; embedded suite status and complete case identities verified",
+  "attempts": [
+    {
+      "run_id": 896461818996360,
+      "status": "canceled",
+      "executed": false,
+      "reason": "Superseded before execution by expanded fixture pack"
+    },
+    {
+      "run_id": 386949752775266,
+      "task_run_id": 669291210228788,
+      "status": "harness_failure",
+      "passed": 128,
+      "failed": 36,
+      "reason": "Missing StringType dependency in isolated AST namespace",
+      "evidence": "attempt-01-harness-failure.json"
+    },
+    {
+      "run_id": 916624163559760,
+      "task_run_id": 738254268188204,
+      "status": "pass",
+      "passed": 164,
+      "failed": 0
+    }
+  ]
+}

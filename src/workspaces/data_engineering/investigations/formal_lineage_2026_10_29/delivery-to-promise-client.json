@@ -1,0 +1,47 @@
+{
+  "format": "q2-client-selection-investigation/v1",
+  "user_identifier": "99b..",
+  "client_id": "99b9412b-70fd-4221-8431-d1b3934889ec",
+  "client_name": "First Example Bank",
+  "identity_lookup": {
+    "tool": "lookup_resources",
+    "identifier_kind": "client_id",
+    "identifier_value": "99b9412b-70fd-4221-8431-d1b3934889ec",
+    "status": "unique",
+    "count": 1,
+    "routing_source": "local-client-index:resource-discovery-api",
+    "upstream_cache_last_checked": "2026-10-01",
+    "qualification": "The MCP resolved one API-derived indexed identity; this is not a fresh live Resource Discovery API observation."
+  },
+  "oms_searches": [
+    {
+      "environment": "production",
+      "region": "us",
+      "workspace": "pl-oms-us-primary",
+      "start_at": "2026-10-22T20:42:29Z",
+      "end_at": "2026-10-29T20:42:29Z",
+      "table": "DI_Scheduling_CL",
+      "task_ids": ["delivery_to_promise.delivery_to_promise_data", "delivery_to_promise_report.delivery_to_promise"],
+      "result_rows": 0
+    },
+    {
+      "environment": "production",
+      "region": "us",
+      "workspace": "pl-oms-us-primary",
+      "start_at": "2026-09-29T20:42:29Z",
+      "end_at": "2026-10-29T20:42:29Z",
+      "table": "DI_Scheduling_CL",
+      "task_id_contains": "delivery_to_promise",
+      "result_rows": 0
+    }
+  ],
+  "qualification": "Searches used the full client UUID and returned bounded run/status aggregates only. No matching OMS evidence does not establish absence of Airflow runs or retained report files.",
+  "snapshot": {
+    "status": "unbound",
+    "environment": null,
+    "window_start_utc": null,
+    "run_id": null,
+    "immutable_input_versions_verified": false,
+    "report_rows_predicted": false
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "format": "q2-d2p-module-comparison/v1",
+  "status": "pass_scoped",
+  "baseline": "results.json",
+  "imported_result": "modules-results.json",
+  "fixture": "cases.json",
+  "golden": "golden-report.json",
+  "scenario_count": 163,
+  "compared_checks": 164,
+  "expected_effect_mismatches": 0,
+  "missing_cases": [],
+  "unexpected_cases": [],
+  "duplicate_cases": [],
+  "same_literal_fixture_and_golden_files": true,
+  "complete_golden_rows_equal": true,
+  "report_columns": 50,
+  "column_order_asserted_in_notebook": true,
+  "observational_differences_outside_asserted_oracle": [
+    {
+      "id": "dispatch_multiple_csv",
+      "field": "error_type",
+      "baseline": "ValueError",
+      "imported": "MoreThanOneDatafeedRecord",
+      "asserted_by_literal_oracle": false
+    },
+    {
+      "id": "ra_distinct_duplicate",
+      "field": "error_type",
+      "baseline": "ValueError",
+      "imported": "DataValidationError",
+      "asserted_by_literal_oracle": false
+    },
+    {
+      "id": "optional_deposit_products_raw_false",
+      "field": "evidence_tier",
+      "baseline": "source_predicate_only",
+      "imported": "original_history_account_union_projection",
+      "asserted_by_literal_oracle": false
+    },
+    {
+      "id": "optional_deposit_products_raw_true",
+      "field": "evidence_tier",
+      "baseline": "source_predicate_only",
+      "imported": "original_history_account_union_projection",
+      "asserted_by_literal_oracle": false
+    },
+    {
+      "id": "optional_commercial_loan_products_raw_false",
+      "field": "evidence_tier",
+      "baseline": "source_predicate_only",
+      "imported": "original_history_account_union_projection",
+      "asserted_by_literal_oracle": false
+    },
+    {
+      "id": "optional_commercial_loan_products_raw_true",
+      "field": "evidence_tier",
+      "baseline": "source_predicate_only",
+      "imported": "original_history_account_union_projection",
+      "asserted_by_literal_oracle": false
+    },
+    {
+      "id": "optional_master_commitment_products_raw_false",
+      "field": "evidence_tier",
+      "baseline": "source_predicate_only",
+      "imported": "original_history_account_union_projection",
+      "asserted_by_literal_oracle": false
+    },
+    {
+      "id": "optional_master_commitment_products_raw_true",
+      "field": "evidence_tier",
+      "baseline": "source_predicate_only",
+      "imported": "original_history_account_union_projection",
+      "asserted_by_literal_oracle": false
+    }
+  ],
+  "history_scope": "Original History account construction and original union projected to OpportunityId, AccountId and AccountType; final History formatting and full schema excluded.",
+  "whole_pipeline_equivalence_proven": false
+}

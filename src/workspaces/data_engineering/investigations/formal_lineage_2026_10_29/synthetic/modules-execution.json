@@ -1,0 +1,197 @@
+{
+  "format": "q2-d2p-imported-module-execution/v1",
+  "status": "pass_scoped",
+  "synthetic": true,
+  "client_id": "99b9412b-70fd-4221-8431-d1b3934889ec",
+  "fixture_clock_utc": "2026-10-29T05:00:00Z",
+  "fixture_sha256": "036cbb27df11b655bc4324974ac810082092aea5d06cb124dde868658e2ce1b9",
+  "golden_sha256": "d4c6d720d38d884523960d2faab453164110811d557b69367845e07ef8974739",
+  "platform": "data_engineering",
+  "workspace": "pl-databricks-us-prod-01",
+  "existing_cluster_id": "0901-134744-3vwa15kr",
+  "databricks_runtime_alias": "18.x-scala2.13",
+  "run_id": 61721601275456,
+  "task_run_id": 400260749213415,
+  "run_url": "https://adb-3510128597187204.4.azuredatabricks.net/?o=3510128597187204#job/746373793441598/run/61721601275456",
+  "source_sha256": "709429f5b2783b715ac6f36c0e3f29ff1284aaff67418cd0ad1eb707b09ad4e9",
+  "unwrapped_source_sha256": "0fa5a6c7f83eff72a9ed425add908370839ca1c240e4c56892b754eb626051b8",
+  "notebook_path": "/Shared/remote-data-mcp/data_engineering/709429f5b2783b715ac6f36c0e3f29ff1284aaff67418cd0ad1eb707b09ad4e9",
+  "start_utc": "2026-10-30T15:18:39.355Z",
+  "end_utc": "2026-10-30T15:22:28.039Z",
+  "databricks_lifecycle_result": "SUCCESS",
+  "suite_status": "pass",
+  "scenario_count": 163,
+  "full_report_assertions": 1,
+  "full_report_columns": 50,
+  "passed": 164,
+  "failed": 0,
+  "results": "modules-results.json",
+  "comparison": "modules-comparison.json",
+  "application_pins": {
+    "di-model-server": "7b73b3cdc2b44d29758e5733cf05e7e246dd717d",
+    "di-pipelines": "fd9d9b74b53946150a01ed68fb87e4ffa4b7bc1e",
+    "di-pyjobs": "32fbfc493d7f039def61c157e579caf24288db48"
+  },
+  "selected_modules_verified_against_receipt": 11,
+  "loaded_application_modules_verified_under_pinned_root": 124,
+  "dependency_lock": {
+    "repository": "di-pyjobs",
+    "commit": "32fbfc493d7f039def61c157e579caf24288db48",
+    "path": "uv.lock",
+    "sha256": "0030c90cccddf2affb7c173f53a553c9aef863d635c1a281025fad47669a00f3",
+    "installed_import_versions": {
+      "SQLAlchemy": "1.4.54",
+      "asn1crypto": "1.5.1",
+      "azure-core": "1.38.0",
+      "azure-identity": "1.25.1",
+      "azure-storage-blob": "12.26.0",
+      "azure-storage-file-datalake": "12.21.0",
+      "cryptography": "46.0.0",
+      "fastavro": "1.12.0",
+      "greenlet": "3.3.1",
+      "isodate": "0.7.2",
+      "msal": "1.34.0",
+      "msal-extensions": "1.3.1",
+      "pyjwt": "2.11.0",
+      "pyopenssl": "25.3.0",
+      "snowflake-connector-python": "3.18.0",
+      "sortedcontainers": "2.4.0",
+      "tomlkit": "0.14.0",
+      "typing-extensions": "4.15.0"
+    }
+  },
+  "history": {
+    "checks": 6,
+    "execution_mode": "account-union",
+    "evidence_tier": "original_history_account_union_projection",
+    "identity_columns": [
+      "OpportunityId",
+      "AccountId",
+      "AccountType"
+    ],
+    "source_predicate_only_cases": 0,
+    "full_history_output_validated": false,
+    "remaining_history_formatting_validated": false
+  },
+  "full_D2P_entrypoint": "original DeliveryToPromise.run with intercepted uploader",
+  "real_client_data_read": false,
+  "application_data_writes": false,
+  "workspace_notebook_sources_created": true,
+  "driver_temporary_source_and_dependency_files_created": true,
+  "global_cluster_libraries_changed": false,
+  "whole_live_pipeline_validated": false,
+  "all_input_formal_equivalence_proved": false,
+  "excluded_boundaries": [
+    "Airflow scheduling and task-group trigger rules",
+    "Physical path discovery and real input-file enumeration",
+    "Physical CSV/Parquet/ADLS persistence and committed target state",
+    "Remote transport, credentials and failure behavior",
+    "Full History output values/schema and remaining formatting",
+    "Complete upstream RA/HQ jobs"
+  ],
+  "retrieval": "Databricks Jobs get-run-output on child task; all 164 unique identities, literal expected fields, complete golden row and 11 source receipts independently rechecked",
+  "quality": {
+    "command": "uv run python scripts/check.py --check-format",
+    "status": "pass",
+    "scope": "Repository Go/retained Python gates and file lengths; notebook behavior validated remotely"
+  },
+  "mcp_restart": {
+    "dry_run": "pass",
+    "initial_attempt": "Docker daemon unavailable",
+    "recovery": "Started Docker Desktop and reran restart utility",
+    "status": "rebuilt_recreated_healthy",
+    "services": [
+      "cortex-mcp",
+      "prod-support-mcp",
+      "warehouse-mcp"
+    ],
+    "verified_environment": {
+      "PROD_SUPPORT_SOURCE": "production",
+      "Q2_MCP_DEBUG": "1"
+    }
+  },
+  "attempts": [
+    {
+      "run_id": 1009180947854865,
+      "task_run_id": 285984894150846,
+      "status": "import_failure",
+      "reason": "Missing OpenSSL import dependency; installed fixed dependencies from pinned uv.lock."
+    },
+    {
+      "run_id": 347879074531936,
+      "task_run_id": 1056500064212748,
+      "status": "imports_ready",
+      "selected_modules": 11,
+      "source_sha256": "ebfccb4dcbd7431d8456a2d61879a1e26abf72d344b1562191f8498612fb8a33"
+    },
+    {
+      "run_id": 199015981901315,
+      "task_run_id": 627668758982311,
+      "status": "harness_failure",
+      "passed": 163,
+      "failed": 1,
+      "evidence": "modules-attempt-01.json",
+      "reason": "Adapter omitted Pandas empty-read-to-None normalization; corrected without changing fixtures or production source."
+    },
+    {
+      "run_id": 428085213765815,
+      "task_run_id": 250519062813738,
+      "status": "harness_initialization_failure",
+      "reason": "Assumed optional fixture carried an evidence_tier expectation; removed assumption. No literal oracle changed."
+    },
+    {
+      "run_id": 758296926270663,
+      "task_run_id": 782191507149780,
+      "status": "canceled_incomplete",
+      "source_sha256": "2292aaabbb839ec6b8ab12dcf421e477dcd7cafa97ffc0609c6f31edacec057f",
+      "reason": "Full History output attempt superseded after prolonged execution; no complete pass claimed."
+    },
+    {
+      "run_id": 947397618867223,
+      "task_run_id": 566341280114196,
+      "status": "pass",
+      "scope": "6 reporting cases after empty-read correction",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "run_id": 446104676666975,
+      "task_run_id": 810266085347118,
+      "status": "pass",
+      "scope": "157 non-optional scenarios and complete report comparison",
+      "passed": 158,
+      "failed": 0
+    },
+    {
+      "run_id": 349161940105804,
+      "task_run_id": 165775832386360,
+      "status": "pass",
+      "scope": "3 distinctness cases with original exception type retained",
+      "passed": 3,
+      "failed": 0
+    },
+    {
+      "run_id": 259338766662224,
+      "task_run_id": 781669593078530,
+      "status": "canceled_incomplete",
+      "source_sha256": "eab076d58789333ab7da40305594fe222ced67c2767b2b053ec4d6b781422bba",
+      "reason": "Pruned-input full History attempt superseded by account identity boundary probes; no complete pass claimed."
+    },
+    {
+      "run_id": 546702365826487,
+      "task_run_id": 880290983333600,
+      "status": "pass",
+      "scope": "6 original History account construction and projected union cases",
+      "passed": 6,
+      "failed": 0
+    },
+    {
+      "run_id": 61721601275456,
+      "task_run_id": 400260749213415,
+      "status": "pass",
+      "scope": "Combined final suite",
+      "passed": 164,
+      "failed": 0
+    }
+  ]
+}

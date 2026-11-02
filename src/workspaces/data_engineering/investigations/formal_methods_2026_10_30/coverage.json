@@ -1,0 +1,12 @@
+{
+  "source_commit": "fd9d9b74b53946150a01ed68fb87e4ffa4b7bc1e",
+  "python_files": 731,
+  "parsed_methods": 2203,
+  "compiled_methods": 13,
+  "unknown_methods": 2190,
+  "job_units": 439,
+  "implementation_classes": 253,
+  "declared_inputs": 157,
+  "declared_outputs": 65,
+  "prediction_ready": false
+}

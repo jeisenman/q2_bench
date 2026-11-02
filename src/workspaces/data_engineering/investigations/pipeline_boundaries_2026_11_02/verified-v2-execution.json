@@ -1,0 +1,85 @@
+{
+  "format": "q2-boundary-execution-receipt/v2",
+  "date": "2026-11-02",
+  "source_commit": "20822fe0d10e812d9858d4ec6d550cce1340cac9",
+  "graph_sha256": "cb53b2a7bd14bb51d00eef8f8c1fd82450bf7b0dee55b07cf046e2b6aca93360",
+  "semantic_generation": "d1b48f99-bd32-44b6-91b3-d2aa145de867",
+  "target": "pl-databricks-us-prod-01",
+  "cluster_id": "0901-134744-3vwa15kr",
+  "spark_version": "4.1.0",
+  "profile": {
+    "timezone": "UTC",
+    "ansi_enabled": false,
+    "shuffle_partitions": 2,
+    "concurrent_cases": 4,
+    "data": "synthetic_in_memory_only",
+    "application_writes": false
+  },
+  "runs": [
+    {
+      "parent_run_id": 790576207263299,
+      "child_run_id": 309145710151736,
+      "source_sha256": "3df0cb339047874acceda5e407a7f314caaa3b25562cec8acefdc6e5dd5be2f4",
+      "cases": 600,
+      "passed": 598,
+      "failed": 2,
+      "results": "fresh-v2-0-results.json",
+      "results_sha256": "982488bcd0ce7869d77ae7436e9ff471e0c3f15aadf12b28d3aa845855c94a20"
+    },
+    {
+      "parent_run_id": 751942071308270,
+      "child_run_id": 40965651016357,
+      "source_sha256": "c690d62b45b0c4d8f94cdac2198b26d4527b3bedf86764b60242af6631c7cb2d",
+      "cases": 600,
+      "passed": 600,
+      "failed": 0,
+      "results": "fresh-v2-1-results.json",
+      "results_sha256": "69a37388d9346a31711579ffcbfe7418102b8281b77a762e2dc195db6fea01b2"
+    },
+    {
+      "parent_run_id": 262470610337621,
+      "child_run_id": 495037989795821,
+      "source_sha256": "5a94e7521b06d6613d8305beb4ded708e778b6616cb44cc6b85e456dd049bdb8",
+      "cases": 638,
+      "passed": 638,
+      "failed": 0,
+      "results": "fresh-v2-2-results.json",
+      "results_sha256": "c58c0e161d51cdaec5d96e2a0a6960b9aa214fd6cd860c2b2de560e0c1332975"
+    },
+    {
+      "parent_run_id": 990467896337164,
+      "child_run_id": 177925953768130,
+      "source_sha256": "e1f9916d6b0b84c6f0633abc6ac2c82f4dcbcfc119a59a87d34896b499399f4f",
+      "cases": 60,
+      "passed": 60,
+      "failed": 0,
+      "results": "selection-v2-results.json",
+      "results_sha256": "ff0b3c58457a13a138f9e38160ee06c434dffdea222c6ca1be00cc3f38c4758e"
+    }
+  ],
+  "observation_selection": {
+    "rule": "One exact source/method/input/prediction observation per current case; superseded failures remain in the original result file.",
+    "first_run_selected": "reusable-v2-0-results.json",
+    "first_run_selected_sha256": "1c55d3a0d37dc7d4b0885416a5fc817c19d9c7c0440d428edef96f6f73daad5e",
+    "first_run_excluded": [
+      "clause:2b518b28f9106aaa24c2104d3a797756e681e8cbe4264e355199f904918f372a:0",
+      "clause:2b518b28f9106aaa24c2104d3a797756e681e8cbe4264e355199f904918f372a:1"
+    ],
+    "other_runs_selected": [
+      "fresh-v2-1-results.json",
+      "fresh-v2-2-results.json",
+      "selection-v2-results.json"
+    ]
+  },
+  "current_profile": {
+    "cases": 1896,
+    "passed": 1896,
+    "failed": 0,
+    "unobserved": 0,
+    "isolated_clauses": 801,
+    "whole_job_passes": 0
+  },
+  "coverage": "verified-v2-coverage.json",
+  "coverage_sha256": "4a73bb3e0e8360714561d6cce01e946f9137c588844b1869eadf4020e6d3911e",
+  "status": "blocked_whole_job_coverage"
+}

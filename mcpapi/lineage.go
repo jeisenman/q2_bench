@@ -3,6 +3,8 @@ package mcpapi
 import (
 	"context"
 	"maps"
+	"os"
+	"strings"
 
 	lineageworkflow "github.com/jeisenman/q2_bench/workflows/lineage"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -40,6 +42,10 @@ type lineageAPI struct {
 }
 
 func registerLineage(server *mcp.Server) error {
+	if strings.TrimSpace(os.Getenv("LINEAGE_STORE_PATH")) != "" {
+		registerLineageWithSource(server, localLineageStore())
+		return nil
+	}
 	source, err := lineageworkflow.JSONSourceFromEnvironment()
 	if err != nil {
 		return err
@@ -53,6 +59,7 @@ func registerLineageWithSource(
 	source lineageworkflow.QuerySource,
 ) {
 	api := &lineageAPI{source: source}
+	registerLineageChecks(server, localLineageStore())
 	annotations := lineageReadOnlyAnnotations()
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "search_lineage_datasets",

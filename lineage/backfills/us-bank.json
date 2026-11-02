@@ -1,0 +1,135 @@
+{
+  "snapshot_id": "b94738a02ab6d0973e143a20c89d31ca0046051e8370aca427f042a616145f48",
+  "client_id": "385c35bf-29c4-48a7-9527-a91963b7af69",
+  "dataset": "dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts",
+  "columns": [
+    "FtpDepositAverageBalance"
+  ],
+  "from": "2026-01-15",
+  "until": "2026-02-10",
+  "runs": [
+    {
+      "job": "job:q2://data-engineering/airflow/l3_main_graph/high_quality_core_deposit_accounts_copy_client",
+      "client_id": "385c35bf-29c4-48a7-9527-a91963b7af69",
+      "enabled": true,
+      "from": "2026-01-15",
+      "until": "2026-02-10",
+      "after": [],
+      "replay": {
+        "bypass_schedule": false,
+        "mode": "partition",
+        "hour_utc": 5,
+        "write_mode": "replace",
+        "force": false,
+        "client_scope": "single_client"
+      },
+      "evidence": [
+        {
+          "repository": "di-pipelines",
+          "path": "dags/precisionlender/dags/task_groups/derived/high_quality_core_deposit_accounts.py",
+          "sha256": "c1904feaf03bfcaf2e0dbfbf90f6060bc19cab26845dd48f83ab560b145317fe"
+        },
+        {
+          "repository": "di-pipelines",
+          "path": "dags/precisionlender/dags/us_bank_corrected_ra_run_replay.py",
+          "sha256": "8ef48235b4fa3260b1061e2dba183e97077efb19feef72ea66038566d9f0aaa4"
+        }
+      ]
+    },
+    {
+      "job": "job:q2://data-engineering/airflow/l3_main_graph/high_quality_core_deposit_accounts_copy_internal",
+      "client_id": "385c35bf-29c4-48a7-9527-a91963b7af69",
+      "enabled": true,
+      "from": "2026-01-15",
+      "until": "2026-02-10",
+      "after": [],
+      "replay": {
+        "bypass_schedule": false,
+        "mode": "partition",
+        "hour_utc": 5,
+        "write_mode": "replace",
+        "force": false,
+        "client_scope": "single_client"
+      },
+      "evidence": [
+        {
+          "repository": "di-pipelines",
+          "path": "dags/precisionlender/dags/task_groups/derived/high_quality_core_deposit_accounts.py",
+          "sha256": "c1904feaf03bfcaf2e0dbfbf90f6060bc19cab26845dd48f83ab560b145317fe"
+        },
+        {
+          "repository": "di-pipelines",
+          "path": "dags/precisionlender/dags/us_bank_corrected_ra_run_replay.py",
+          "sha256": "8ef48235b4fa3260b1061e2dba183e97077efb19feef72ea66038566d9f0aaa4"
+        }
+      ]
+    },
+    {
+      "job": "job:q2://data-engineering/airflow/l3_main_graph/tg_monthly_core_deposit_accounts",
+      "client_id": "385c35bf-29c4-48a7-9527-a91963b7af69",
+      "enabled": true,
+      "from": "2026-01-31",
+      "until": "2026-02-28",
+      "after": [],
+      "replay": {
+        "bypass_schedule": true,
+        "mode": "month_end",
+        "hour_utc": 5,
+        "write_mode": "replace",
+        "force": false,
+        "client_scope": "single_client"
+      },
+      "evidence": [
+        {
+          "repository": "di-pipelines",
+          "path": "dags/precisionlender/dags/task_groups/derived/monthly_core_deposit_accounts.py",
+          "sha256": "ea350ec36f264af2fc68e8ee5370f2a38010d9efe0e8911622df7a532aaddee5"
+        },
+        {
+          "repository": "di-pipelines",
+          "path": "dags/precisionlender/dags/us_bank_corrected_ra_run_monthly_replay.py",
+          "sha256": "149233ce8d739e5df052e2200b4d1a80e80f06d7595a2c275ebd638d89a3b5c3"
+        },
+        {
+          "repository": "di-pipelines",
+          "path": "dags/precisionlender/dags/us_bank_corrected_ra_run_replay.py",
+          "sha256": "8ef48235b4fa3260b1061e2dba183e97077efb19feef72ea66038566d9f0aaa4"
+        }
+      ]
+    },
+    {
+      "job": "job:q2://data-engineering/airflow/loc_utilization_dag/loc_utilization_with_relationship",
+      "client_id": "385c35bf-29c4-48a7-9527-a91963b7af69",
+      "enabled": false,
+      "reason": "Deferred in the reviewed replay design while the production LOC DAG is paused.",
+      "from": "2026-01-15",
+      "until": "2026-02-10",
+      "after": [],
+      "replay": {
+        "bypass_schedule": false,
+        "mode": "cross_client",
+        "hour_utc": 5,
+        "write_mode": "replace",
+        "force": false,
+        "client_scope": "cross_client"
+      },
+      "evidence": [
+        {
+          "repository": "di-pipelines",
+          "path": "dags/precisionlender/dags/l3_main_graph.py",
+          "sha256": "6f2d679e7fd57519a9ee8276403bbb4a6ee2ebf7cedf9d312cb2718a76b3deca"
+        },
+        {
+          "repository": "di-pipelines",
+          "path": "dags/precisionlender/dags/us_bank_corrected_ra_run_replay.py",
+          "sha256": "8ef48235b4fa3260b1061e2dba183e97077efb19feef72ea66038566d9f0aaa4"
+        },
+        {
+          "repository": "di-pipelines",
+          "path": "ds-jobs/src/datascience_jobs/jobs/modeling/loc_utilization/locu_with_relationship_training_data.py",
+          "sha256": "d54f5ef995ef4453549d6e92d49f22eaf47f1ee1f19e650f8d5873085ecf0d5d"
+        }
+      ]
+    }
+  ]
+}

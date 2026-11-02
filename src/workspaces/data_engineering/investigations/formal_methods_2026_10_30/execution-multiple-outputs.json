@@ -1,0 +1,41 @@
+{
+  "format": "q2-formal-comparison-execution/v1",
+  "status": "pass_scoped",
+  "platform": "data_engineering",
+  "workspace": "pl-databricks-us-prod-01",
+  "cluster_id": "0901-134744-3vwa15kr",
+  "run_id": 1053920971026055,
+  "task_run_id": 661349052163510,
+  "source_sha256": "1e0b9ed264d780225a47ef647e4cba9e1e312b8533b4976b033118d0de6ab2de",
+  "source_commit": "fd9d9b74b53946150a01ed68fb87e4ffa4b7bc1e",
+  "parser": "tree-sitter-python/v0.25.0",
+  "cases": 54,
+  "compiled_methods": 13,
+  "source_files": 8,
+  "passed": 54,
+  "failed": 0,
+  "spark_version": "4.1.0",
+  "comparison": "complete row bags; no numeric rounding",
+  "predictions": "independent Go interpreter of mechanically lowered methods",
+  "observations": "original source functions selected with CPython AST in Databricks",
+  "whole_job_coverage": false,
+  "production_data_read": false,
+  "application_uploads": false,
+  "all_job_units_ready": false,
+  "inventory": {
+    "python_files": 731,
+    "functions_and_methods": 2203,
+    "job_unit_declarations": 439,
+    "attached_copies": 227
+  },
+  "quality": {
+    "command": "uv run python scripts/check.py",
+    "status": "pass"
+  },
+  "runtime_restart": {
+    "status": "rebuilt_recreated_healthy",
+    "PROD_SUPPORT_SOURCE": "production",
+    "Q2_MCP_DEBUG": "1"
+  },
+  "result_file": "comparison-multiple-outputs-results.json"
+}

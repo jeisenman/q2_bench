@@ -45,8 +45,11 @@ func TestLineageToolRegistrationAndSearch(t *testing.T) {
 	}
 	sort.Strings(names)
 	want := []string{
+		"compare_lineage_backfill",
+		"compare_lineage_versions",
 		"get_lineage_change_history",
 		"get_lineage_downstream",
+		"get_lineage_manifest",
 		"get_lineage_transformation",
 		"get_lineage_upstream",
 		"search_lineage_datasets",
@@ -78,6 +81,22 @@ func TestLineageToolRegistrationAndSearch(t *testing.T) {
 	}
 	if output.Count != 1 || len(output.Datasets) != 1 {
 		t.Fatalf("output = %#v", output)
+	}
+	for _, name := range []string{"get_lineage_manifest", "compare_lineage_versions", "compare_lineage_backfill"} {
+		arguments := map[string]any{"snapshot_id": "../../unapproved"}
+		if name == "compare_lineage_versions" {
+			arguments = map[string]any{"base_id": "../../unapproved", "head_id": "../../unapproved", "policy": map[string]any{"mode": "additive", "replacements": []any{}}}
+		}
+		if name == "compare_lineage_backfill" {
+			arguments = map[string]any{"snapshot_id": "../../unapproved", "plan": map[string]any{}}
+		}
+		call, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: arguments})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !call.IsError {
+			t.Fatalf("%s accepted an invalid snapshot ID", name)
+		}
 	}
 }
 

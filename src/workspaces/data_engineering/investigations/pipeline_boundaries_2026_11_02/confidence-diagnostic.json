@@ -1,0 +1,247 @@
+[
+  {
+    "id": "diagnostic:treasury-confidence-cutoffs",
+    "method": {
+      "format": "q2-formal-method/v1",
+      "id": "03c3caca2645cf7a696e9bceee492bf9acde36b665d7f8738a52d10b66f556f6",
+      "semantic_profile": "bag-sql-null-utc-float64-ansi-off/v1",
+      "function": "boundary_clause",
+      "source": {
+        "commit": "20822fe0d10e812d9858d4ec6d550cce1340cac9",
+        "path": "__boundary__/6e44eb678722cc03ce5d80e67ba74b22badb3c314ad1fa4f4351b1e4c8669f23.py",
+        "sha256": "51b1d7677a6851b41816223c9eb2e0542e809cfdc8360d3d8ceddbfd5cae8eda"
+      },
+      "parameters": [
+        {
+          "name": "matched2",
+          "kind": "table"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output_1",
+          "kind": "table"
+        }
+      ],
+      "status": "compiled",
+      "steps": [
+        {
+          "line": 4,
+          "return": true,
+          "expression": {
+            "op": "withColumn",
+            "kind": "table",
+            "args": [
+              {
+                "op": "ref",
+                "kind": "table",
+                "name": "matched2"
+              },
+              {
+                "op": "literal",
+                "kind": "scalar",
+                "value": "Confidence"
+              },
+              {
+                "op": "otherwise",
+                "kind": "column",
+                "args": [
+                  {
+                    "op": "when_next",
+                    "kind": "column",
+                    "args": [
+                      {
+                        "op": "when",
+                        "kind": "column",
+                        "args": [
+                          {
+                            "op": "and",
+                            "kind": "column",
+                            "args": [
+                              {
+                                "op": "lt",
+                                "kind": "column",
+                                "args": [
+                                  {
+                                    "op": "col",
+                                    "kind": "column",
+                                    "args": [
+                                      {
+                                        "op": "literal",
+                                        "kind": "scalar",
+                                        "value": "FirstRefreshMinusCloseDate"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "op": "neg",
+                                    "kind": "scalar",
+                                    "args": [
+                                      {
+                                        "op": "literal",
+                                        "kind": "scalar",
+                                        "value": 10
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "op": "gt",
+                                "kind": "column",
+                                "args": [
+                                  {
+                                    "op": "col",
+                                    "kind": "column",
+                                    "args": [
+                                      {
+                                        "op": "literal",
+                                        "kind": "scalar",
+                                        "value": "FirstRefreshMinusCloseDate"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "op": "literal",
+                                    "kind": "scalar",
+                                    "value": 120
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "op": "lit",
+                            "kind": "column",
+                            "args": [
+                              {
+                                "op": "literal",
+                                "kind": "scalar",
+                                "value": "Unlikely"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "op": "isNull",
+                        "kind": "column",
+                        "args": [
+                          {
+                            "op": "col",
+                            "kind": "column",
+                            "args": [
+                              {
+                                "op": "literal",
+                                "kind": "scalar",
+                                "value": "CoreAccountId"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "op": "lit",
+                        "kind": "column",
+                        "args": [
+                          {
+                            "op": "literal",
+                            "kind": "scalar",
+                            "value": "No Core Account Match Found"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "op": "lit",
+                    "kind": "column",
+                    "args": [
+                      {
+                        "op": "literal",
+                        "kind": "scalar",
+                        "value": "Likely"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "diagnostics": []
+    },
+    "bindings": {
+      "tables": {
+        "matched2": [
+          {
+            "FirstRefreshMinusCloseDate": -11,
+            "CoreAccountId": "MATCH",
+            "__boundary_retained": "retained"
+          },
+          {
+            "FirstRefreshMinusCloseDate": -10,
+            "CoreAccountId": "MATCH",
+            "__boundary_retained": "retained"
+          },
+          {
+            "FirstRefreshMinusCloseDate": -9,
+            "CoreAccountId": "MATCH",
+            "__boundary_retained": "retained"
+          },
+          {
+            "FirstRefreshMinusCloseDate": 0,
+            "CoreAccountId": "MATCH",
+            "__boundary_retained": "retained"
+          },
+          {
+            "FirstRefreshMinusCloseDate": 119,
+            "CoreAccountId": "MATCH",
+            "__boundary_retained": "retained"
+          },
+          {
+            "FirstRefreshMinusCloseDate": 120,
+            "CoreAccountId": "MATCH",
+            "__boundary_retained": "retained"
+          },
+          {
+            "FirstRefreshMinusCloseDate": 121,
+            "CoreAccountId": "MATCH",
+            "__boundary_retained": "retained"
+          },
+          {
+            "FirstRefreshMinusCloseDate": null,
+            "CoreAccountId": "MATCH",
+            "__boundary_retained": "retained"
+          },
+          {
+            "FirstRefreshMinusCloseDate": 121,
+            "CoreAccountId": null,
+            "__boundary_retained": "retained"
+          }
+        ]
+      },
+      "scalars": null
+    },
+    "spark_schemas": {
+      "matched2": "`CoreAccountId` string, `FirstRefreshMinusCloseDate` double, `__boundary_retained` string"
+    },
+    "clause": {
+      "source": {
+        "commit": "20822fe0d10e812d9858d4ec6d550cce1340cac9",
+        "path": "ds-jobs/src/datascience_jobs/jobs/data/delivery_to_promise/delivery_to_promise_treasury_data.py",
+        "sha256": "ff5b68d64b914c5ed499bfdf29d670c83ea423b1589f3ee3f0f158129a87d0d3"
+      },
+      "start_byte": 9061,
+      "end_byte": 9376,
+      "adapter": "from pyspark.sql import functions as F\nfrom pyspark.sql.types import StringType\ndef boundary_clause(matched2):\n    return matched2.withColumn(\n                \"Confidence\",\n                F.when((F.col(\"FirstRefreshMinusCloseDate\") < -10) & (F.col(\"FirstRefreshMinusCloseDate\") > 120), F.lit(\"Unlikely\"))\n                .when(F.col(\"CoreAccountId\").isNull(), F.lit(\"No Core Account Match Found\"))\n                .otherwise(F.lit(\"Likely\")),\n            )\n"
+    },
+    "observe_columns": [
+      "FirstRefreshMinusCloseDate",
+      "CoreAccountId",
+      "Confidence"
+    ],
+    "observe_rows": true
+  }
+]

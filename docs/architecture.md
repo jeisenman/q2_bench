@@ -15,6 +15,7 @@ agentmemory/         Go durable-memory policy
 workflowharness/     Go deterministic workflow runner
 workflows/           Go workflow packages
   lineage/            Read-only staged lineage query workflow
+  lineagecheck/       Local structural manifests, snapshots, PR/backfill audits
   semanticsync/        Researcher Semantic Layer ingestion workflow
 adapters/            Go infrastructure adapters
 kpomonitor/           Pure pod-correlation, profile summary, and graph values
@@ -42,6 +43,12 @@ commands and MCP APIs
 
 Provider SDKs and network clients stay in adapters. Domain packages remain
 independent of process configuration and external services.
+
+`workflows/lineagecheck` owns local structural lineage independently of
+Researcher: reviewed source-pinned manifests, literal schema extraction,
+immutable versions, additive/replacement PR policies, and replay coverage.
+It projects local versions through the existing lineage query/MCP surface.
+`LINEAGE_STORE_PATH` selects that source; the imported JSON remains the default.
 
 `workflows/semanticsync` is the typed boundary for Researcher's published
 Semantic Layer artifacts. It discovers or accepts one complete generation,

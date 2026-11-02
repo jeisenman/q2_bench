@@ -1,0 +1,261 @@
+{
+  "format": "q2-lineage-contract/v1",
+  "scope": "US Bank deposit-balance projection through copies, monthly output, and LOC; reviewed slice",
+  "profile": "production/us-bank",
+  "repositories": [
+    {"name":"di-pipelines","commit":"d4f60a45472ccaa022b137a97380afecf1a8f9e7"}
+  ],
+  "datasets": [
+    {
+      "id": "dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts",
+      "major": 3,
+      "minor": 6,
+      "fields": [
+        {"name":"RelationshipId","type":"StringType","nullable":true},
+        {"name":"RaRunId","type":"StringType","nullable":true},
+        {"name":"DatePartition","type":"IntegerType","nullable":true},
+        {"name":"FtpDepositAverageBalance","type":"DoubleType","nullable":true}
+      ],
+      "keys": [],
+      "partition": "DatePartition",
+      "evidence": [
+        {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/meta_data/datasets/derived/pl_relationship_awareness/core.py","sha256":"6192c8324d8bc2cddcd12538e479099b45e85a672ff0b82a816667ad6f7d57f6"}
+      ]
+    },
+    {
+      "id": "dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccountsmonthly",
+      "major": 3,
+      "minor": 6,
+      "fields": [
+        {"name":"RelationshipId","type":"StringType","nullable":true},
+        {"name":"RaRunId","type":"StringType","nullable":true},
+        {"name":"DatePartition","type":"IntegerType","nullable":true},
+        {"name":"FtpDepositAverageBalance","type":"DoubleType","nullable":true}
+      ],
+      "keys": [],
+      "partition": "DatePartition",
+      "evidence": [
+        {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/meta_data/datasets/derived/pl_relationship_awareness/core.py","sha256":"6192c8324d8bc2cddcd12538e479099b45e85a672ff0b82a816667ad6f7d57f6"},
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/task_groups/derived/monthly_core_deposit_accounts.py","sha256":"ea350ec36f264af2fc68e8ee5370f2a38010d9efe0e8911622df7a532aaddee5"}
+      ]
+    },
+    {
+      "id": "dataset:q2://data-engineering/internal/pl_relationshipawareness/core/coredepositaccounts",
+      "major": 3,
+      "minor": 6,
+      "fields": [
+        {"name":"RelationshipId","type":"StringType","nullable":true},
+        {"name":"RaRunId","type":"StringType","nullable":true},
+        {"name":"DatePartition","type":"IntegerType","nullable":true},
+        {"name":"FtpDepositAverageBalance","type":"DoubleType","nullable":true}
+      ],
+      "keys": [],
+      "partition": "DatePartition",
+      "evidence": [
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/task_groups/derived/high_quality_core_deposit_accounts.py","sha256":"c1904feaf03bfcaf2e0dbfbf90f6060bc19cab26845dd48f83ab560b145317fe"}
+      ]
+    },
+    {
+      "id": "dataset:q2://data-engineering/client/pl_relationshipawareness/core/coredepositaccounts",
+      "major": 3,
+      "minor": 6,
+      "fields": [
+        {"name":"RelationshipId","type":"StringType","nullable":true},
+        {"name":"RaRunId","type":"StringType","nullable":true},
+        {"name":"DatePartition","type":"IntegerType","nullable":true},
+        {"name":"FtpDepositAverageBalance","type":"DoubleType","nullable":true}
+      ],
+      "keys": [],
+      "partition": "DatePartition",
+      "evidence": [
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/task_groups/derived/high_quality_core_deposit_accounts.py","sha256":"c1904feaf03bfcaf2e0dbfbf90f6060bc19cab26845dd48f83ab560b145317fe"}
+      ]
+    },
+    {
+      "id": "dataset:q2://data-engineering/models_historical/lineofcreditutilization/trainingdata/locutilizationwithrelationship",
+      "major": 1,
+      "minor": 0,
+      "fields": [
+        {"name":"RelationshipDepositAverageBalance","type":"DoubleType","nullable":true}
+      ],
+      "keys": [],
+      "partition": "",
+      "evidence": [
+        {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/jobs/modeling/loc_utilization/locu_with_relationship_training_data.py","sha256":"d54f5ef995ef4453549d6e92d49f22eaf47f1ee1f19e650f8d5873085ecf0d5d"}
+      ]
+    }
+  ],
+  "jobs": [
+    {
+      "id": "job:q2://data-engineering/airflow/l3_main_graph/high_quality_core_deposit_accounts_copy_internal",
+      "dag": "l3_main_graph",
+      "inputs": [
+        {
+          "dataset": "dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts",
+          "major": 3,
+          "fields": ["RelationshipId","RaRunId","DatePartition","FtpDepositAverageBalance"],
+          "keys": []
+        }
+      ],
+      "outputs": ["dataset:q2://data-engineering/internal/pl_relationshipawareness/core/coredepositaccounts"],
+      "after": [],
+      "dependencies": [
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/internal/pl_relationshipawareness/core/coredepositaccounts","field":"RelationshipId"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"RelationshipId"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/internal/pl_relationshipawareness/core/coredepositaccounts","field":"RaRunId"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"RaRunId"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/internal/pl_relationshipawareness/core/coredepositaccounts","field":"DatePartition"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"DatePartition"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/internal/pl_relationshipawareness/core/coredepositaccounts","field":"FtpDepositAverageBalance"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"FtpDepositAverageBalance"}
+          ]
+        }
+      ],
+      "columns_complete": true,
+      "replay": {"mode":"partition","hour_utc":5,"write_mode":"replace","force":false,"client_scope":"single_client","bypass_schedule":false},
+      "evidence": [
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/us_bank_corrected_ra_run_replay.py","sha256":"8ef48235b4fa3260b1061e2dba183e97077efb19feef72ea66038566d9f0aaa4"},
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/task_groups/derived/high_quality_core_deposit_accounts.py","sha256":"c1904feaf03bfcaf2e0dbfbf90f6060bc19cab26845dd48f83ab560b145317fe"}
+      ]
+    },
+    {
+      "id": "job:q2://data-engineering/airflow/l3_main_graph/high_quality_core_deposit_accounts_copy_client",
+      "dag": "l3_main_graph",
+      "inputs": [
+        {
+          "dataset": "dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts",
+          "major": 3,
+          "fields": ["RelationshipId","RaRunId","DatePartition","FtpDepositAverageBalance"],
+          "keys": []
+        }
+      ],
+      "outputs": ["dataset:q2://data-engineering/client/pl_relationshipawareness/core/coredepositaccounts"],
+      "after": [],
+      "dependencies": [
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/client/pl_relationshipawareness/core/coredepositaccounts","field":"RelationshipId"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"RelationshipId"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/client/pl_relationshipawareness/core/coredepositaccounts","field":"RaRunId"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"RaRunId"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/client/pl_relationshipawareness/core/coredepositaccounts","field":"DatePartition"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"DatePartition"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/client/pl_relationshipawareness/core/coredepositaccounts","field":"FtpDepositAverageBalance"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"FtpDepositAverageBalance"}
+          ]
+        }
+      ],
+      "columns_complete": true,
+      "replay": {"mode":"partition","hour_utc":5,"write_mode":"replace","force":false,"client_scope":"single_client","bypass_schedule":false},
+      "evidence": [
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/us_bank_corrected_ra_run_replay.py","sha256":"8ef48235b4fa3260b1061e2dba183e97077efb19feef72ea66038566d9f0aaa4"},
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/task_groups/derived/high_quality_core_deposit_accounts.py","sha256":"c1904feaf03bfcaf2e0dbfbf90f6060bc19cab26845dd48f83ab560b145317fe"}
+      ]
+    },
+    {
+      "id": "job:q2://data-engineering/airflow/l3_main_graph/tg_monthly_core_deposit_accounts",
+      "dag": "l3_main_graph",
+      "inputs": [
+        {
+          "dataset": "dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts",
+          "major": 3,
+          "fields": ["RelationshipId","RaRunId","DatePartition","FtpDepositAverageBalance"],
+          "keys": []
+        }
+      ],
+      "outputs": ["dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccountsmonthly"],
+      "after": [],
+      "dependencies": [
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccountsmonthly","field":"RelationshipId"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"RelationshipId"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccountsmonthly","field":"RaRunId"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"RaRunId"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccountsmonthly","field":"DatePartition"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"DatePartition"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccountsmonthly","field":"FtpDepositAverageBalance"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"FtpDepositAverageBalance"}
+          ]
+        }
+      ],
+      "columns_complete": true,
+      "replay": {"mode":"month_end","hour_utc":5,"write_mode":"replace","force":false,"client_scope":"single_client","bypass_schedule":true},
+      "evidence": [
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/us_bank_corrected_ra_run_replay.py","sha256":"8ef48235b4fa3260b1061e2dba183e97077efb19feef72ea66038566d9f0aaa4"},
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/us_bank_corrected_ra_run_monthly_replay.py","sha256":"149233ce8d739e5df052e2200b4d1a80e80f06d7595a2c275ebd638d89a3b5c3"},
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/task_groups/derived/monthly_core_deposit_accounts.py","sha256":"ea350ec36f264af2fc68e8ee5370f2a38010d9efe0e8911622df7a532aaddee5"}
+      ]
+    },
+    {
+      "id": "job:q2://data-engineering/airflow/loc_utilization_dag/loc_utilization_with_relationship",
+      "dag": "loc_utilization_dag",
+      "inputs": [
+        {
+          "dataset": "dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts",
+          "major": 3,
+          "fields": ["RelationshipId","RaRunId","FtpDepositAverageBalance"],
+          "keys": ["RelationshipId","RaRunId"]
+        }
+      ],
+      "outputs": ["dataset:q2://data-engineering/models_historical/lineofcreditutilization/trainingdata/locutilizationwithrelationship"],
+      "after": [],
+      "dependencies": [
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/models_historical/lineofcreditutilization/trainingdata/locutilizationwithrelationship","field":"RelationshipDepositAverageBalance"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"RelationshipId"},
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"RaRunId"},
+            {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"FtpDepositAverageBalance"}
+          ]
+        }
+      ],
+      "columns_complete": true,
+      "replay": {"mode":"cross_client","hour_utc":5,"write_mode":"replace","force":false,"client_scope":"cross_client","bypass_schedule":false},
+      "evidence": [
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/us_bank_corrected_ra_run_replay.py","sha256":"8ef48235b4fa3260b1061e2dba183e97077efb19feef72ea66038566d9f0aaa4"},
+        {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/jobs/modeling/loc_utilization/locu_with_relationship_training_data.py","sha256":"d54f5ef995ef4453549d6e92d49f22eaf47f1ee1f19e650f8d5873085ecf0d5d"},
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/l3_main_graph.py","sha256":"6f2d679e7fd57519a9ee8276403bbb4a6ee2ebf7cedf9d312cb2718a76b3deca"}
+      ]
+    }
+  ],
+  "unresolved": ["This reviewed projection does not establish the complete US Bank remediation closure; remaining reporting and cross-client products require contracts.","Copy invocation historical write scope needs runner validation; modeled ranges describe required coverage."]
+}

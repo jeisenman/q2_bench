@@ -1,0 +1,1 @@
+{"format":"q2-projection-mismatch-triage/v1","cases":638,"passed":590,"failed":48,"schema_expansion_failures":6,"numeric_transport_representation_failures":42,"other_failures":0,"diagnostic_only":"Numeric normalization is used here only to classify historical failures, never to pass an A/B test."}

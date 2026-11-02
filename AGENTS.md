@@ -45,14 +45,21 @@ Keep pure domain logic independent from network and provider SDKs.
 Public APIs must be exported deliberately from Go packages and retained Python package __init__.py files.
 Prefer immutable values and dependency injection over global state.
 
-Researcher Semantic Layer
-Treat the sibling Researcher repository's latest complete published Semantic
-Layer generation as the upstream source of truth for PrecisionLender lineage
-and generated business meaning. qtwo_bench owns the ingestion boundary in
-`workflows/semanticsync`; do not import Researcher Python, read its protected
-semantic implementation trees, or create a competing semantic service.
+Local lineage and Researcher enrichment
+qtwo_bench owns independently reviewed structural lineage manifests under
+`lineage/` and their Go build, version, PR, and backfill checks in
+`workflows/lineagecheck`. Extract supported literal schemas from pinned source
+commits; maintain explicit evidence-backed column and replay contracts for
+behavior the extractor cannot prove. A passing scoped report is not proof of
+whole-repository coverage or runtime data equivalence. Unknowns block passing.
 
-Before lineage analysis, validate and synchronize the snapshot:
+Researcher remains the optional upstream source for generated business
+meaning and its published legacy structural snapshot. qtwo_bench owns that
+ingestion boundary in `workflows/semanticsync`; do not import Researcher
+Python, read its protected semantic implementation trees, or create a
+competing semantic service. Local structural builds do not require Researcher.
+
+Before analysis using the Researcher snapshot, validate and synchronize it:
 
 go run ./cmd/agentbench semantic-sync --dry-run
 go run ./cmd/agentbench semantic-sync
@@ -63,9 +70,9 @@ output is the ignored runtime artifact `var/lineage/di-pipelines.json`. Use
 published generation must be pinned. The sync must remain fail-closed: accept
 only supported versioned contracts, verify the published request digest,
 require exact graph/request/response node coverage, retain provenance, and
-publish atomically. The existing read-only lineage MCP is the serving boundary
-and must expose synchronized `q2_semanticMeaning`; do not add a second MCP
-surface for the same data.
+publish atomically. The existing read-only lineage MCP is the serving boundary.
+Its imported graph retains synchronized `q2_semanticMeaning`; local snapshots
+carry source-derived structural contracts. Do not add a second MCP surface.
 
 Code rules
 No tracked source or documentation file may exceed 400 lines.

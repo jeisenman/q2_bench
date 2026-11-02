@@ -22,7 +22,7 @@ func main() {
 	}
 }
 
-func run(_ context.Context, arguments []string) error {
+func run(ctx context.Context, arguments []string) error {
 	if len(arguments) == 0 {
 		printHelp()
 		return nil
@@ -38,6 +38,10 @@ func run(_ context.Context, arguments []string) error {
 		return listAgents()
 	case "semantic-sync":
 		return semanticSync(arguments[1:])
+	case "lineage":
+		return lineageCommand(ctx, arguments[1:])
+	case "formal-method":
+		return formalMethodCommand(ctx, arguments[1:])
 	default:
 		return fmt.Errorf("unsupported agentbench command %q", arguments[0])
 	}
@@ -126,6 +130,8 @@ func printHelp() {
 
 Usage:
   agentbench agents
+  agentbench formal-method compile|evaluate|inventory [options]
+  agentbench lineage build|compare|check-pr|backfill|show [options]
   agentbench semantic-sync [--researcher-root PATH] [--generation PATH]
                            [--output PATH] [--dry-run]
   agentbench version

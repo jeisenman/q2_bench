@@ -1,0 +1,21 @@
+[
+  {
+    "id": "6e44eb678722cc03ce5d80e67ba74b22badb3c314ad1fa4f4351b1e4c8669f23",
+    "line": 183,
+    "function": "DeliveryToPromiseTreasuryData._run",
+    "source": {
+      "commit": "20822fe0d10e812d9858d4ec6d550cce1340cac9",
+      "path": "ds-jobs/src/datascience_jobs/jobs/data/delivery_to_promise/delivery_to_promise_treasury_data.py",
+      "sha256": "ff5b68d64b914c5ed499bfdf29d670c83ea423b1589f3ee3f0f158129a87d0d3"
+    },
+    "expression": "matched2.withColumn(\n            \"Confidence\",\n            F.when((F.col(\"FirstRefreshMinusCloseDate\") < -10) & (F.col(\"FirstRefreshMinusCloseDate\") > 120), F.lit(\"Unlikely\"))\n            .when(F.col(\"CoreAccountId\").isNull(), F.lit(\"No Core Account Match Found\"))\n            .otherwise(F.lit(\"Likely\")),\n        )",
+    "findings": [
+      {
+        "code": "contradictory_numeric_bounds",
+        "field": "FirstRefreshMinusCloseDate",
+        "message": "FirstRefreshMinusCloseDate > 120 AND FirstRefreshMinusCloseDate < -10 has no finite numeric solution. Null comparisons yield UNKNOWN, so this predicate cannot be TRUE within the primitive numeric profile.",
+        "operator_path": "[2 0 0]"
+      }
+    ]
+  }
+]

@@ -1,0 +1,135 @@
+{
+  "format": "q2-property-execution-receipt/v1",
+  "date": "2026-11-02",
+  "source_commit": "20822fe0d10e812d9858d4ec6d550cce1340cac9",
+  "graph_sha256": "cb53b2a7bd14bb51d00eef8f8c1fd82450bf7b0dee55b07cf046e2b6aca93360",
+  "generator": "q2-seeded-relations/v1",
+  "toolchain": "go1.26.6 darwin/arm64",
+  "generator_sources": {
+    "workflows/formalmethod/property_generate.go": "1ef79feb0efc70b0461a346d11fb10dafcd3d7435c54d1d9e79dcc77ea49e7e1",
+    "workflows/formalmethod/property_models.go": "00844836ad4e301faca808fdeba8eb79e1546d661cf4c0595b926f69673cc099",
+    "workflows/formalmethod/property_replay.go": "69acd8f7b638d32e4eaf6d15da9da505f412814732de6fc07753c136bc507645",
+    "workflows/formalmethod/property_values.go": "eb20a7fcc9ad64dc2786b891941df6f8bd3c60757635a1ddaed011ad890c0fa4"
+  },
+  "config": {
+    "seeds": [
+      1,
+      42,
+      20261102
+    ],
+    "samples_per_table": 32,
+    "exact_boundaries_retained": true
+  },
+  "property": "go_spark_output_bag_and_columns_equivalence",
+  "target": "pl-databricks-us-prod-01",
+  "cluster_id": "0901-134744-3vwa15kr",
+  "spark_version": "4.1.0",
+  "profile": {
+    "timezone": "UTC",
+    "ansi_enabled": false,
+    "shuffle_partitions": 2,
+    "concurrent_cases_per_notebook": 4,
+    "data": "synthetic_only",
+    "application_writes": false
+  },
+  "runtime_suite": "var/lineage/property-suite-20261102",
+  "suite_sha256": "11c2fc66995e8f25f05db3bf78ecb75ea2f6d3d75790cd61ae2033c4e4bbff6f",
+  "runs": [
+    {
+      "batch": "0",
+      "parent_run_id": 633195250803377,
+      "child_run_id": 1109733018140649,
+      "job_id": 849642768811492,
+      "source_sha256": "6bd0d3e847227922c14b68992cea720fe167b231e4e574e61a17decc6a52b7e8",
+      "input_cases_sha256": "66bf18488d4bc8005a3c0643a666279953421a384af88a5724c3e4e14ada790b",
+      "results": "property-0-results.json",
+      "results_sha256": "1c65257d58b81aa64853b2f6546e858ad9e7323ca152dab08694ae2b8217be9e",
+      "cases": 480,
+      "passed": 480,
+      "failed": 0
+    },
+    {
+      "batch": "1a",
+      "parent_run_id": 932555145808441,
+      "child_run_id": 544919479140654,
+      "job_id": 394978045243949,
+      "source_sha256": "5511aa743cda28eb72ca330aab0a6f0060460eb1a14225eedda4770fbe9b473c",
+      "input_cases_sha256": "1c3597ef4992063a0a528a12597160285db3739bf26f39d59ea5d17a7c2343a9",
+      "results": "property-1a-results.json",
+      "results_sha256": "b58d57d505014e4dd23a798d1a5f6d89821ced94c2354ceebcb5921ec82d292e",
+      "cases": 240,
+      "passed": 240,
+      "failed": 0
+    },
+    {
+      "batch": "1b",
+      "parent_run_id": 783979914118782,
+      "child_run_id": 557478617697465,
+      "job_id": 35695950998380,
+      "source_sha256": "325355bae91291109075d9f26bab5846985e4bcfee48518f15fb12f1702d22f9",
+      "input_cases_sha256": "552de39458ac3484d702e33b12580d6c701a6878b9324067ee8566e6677cfef8",
+      "results": "property-1b-results.json",
+      "results_sha256": "3e7f6b04e49bd9c57d55ac74a4eacbd2aefd1895206b873d89c4bf132a96f126",
+      "cases": 240,
+      "passed": 240,
+      "failed": 0
+    },
+    {
+      "batch": "2",
+      "parent_run_id": 667731328920245,
+      "child_run_id": 828099242792697,
+      "job_id": 775260581714699,
+      "source_sha256": "d85be5caf4f18bd8d15fa5154a46615073555ebaafc7992ca65030441820a45c",
+      "input_cases_sha256": "84cfbeedde4f1f2073c4033a3ea5a261aab4f44187e50375075e324d6bf3ee20",
+      "results": "property-2-results.json",
+      "results_sha256": "e26b3b29668984e88c3a4fec01b0a8028a6cf873442be53140438c133155300b",
+      "cases": 480,
+      "passed": 480,
+      "failed": 0
+    },
+    {
+      "batch": "3",
+      "parent_run_id": 359258212491416,
+      "child_run_id": 207317222538327,
+      "job_id": 685964664758795,
+      "source_sha256": "64845237f236b6a9a538fdb99bbdd9d47d2adb798e035ca24d5a4c551e1609c2",
+      "input_cases_sha256": "83b974a7b682d3e3837686e4574604139904559f690add13002994b81f3637aa",
+      "results": "property-3-results.json",
+      "results_sha256": "f28b812445e381ebd7bd0dbb240a77f5fce586c8da5abf91cc1003adf8e6d19d",
+      "cases": 480,
+      "passed": 480,
+      "failed": 0
+    },
+    {
+      "batch": "4",
+      "parent_run_id": 103396589744217,
+      "child_run_id": 1105563306988490,
+      "job_id": 1047229448702687,
+      "source_sha256": "b5147e59e10056a0f163ace3452230e10ebe496e99b95ed1cecec6983a0921b7",
+      "input_cases_sha256": "e9f6586f5a01c6ec47fe02f7090ea1dbdd3b7f877116a78f146c219c46af8235",
+      "results": "property-4-results.json",
+      "results_sha256": "ad6b5c7747668f4c572ef1df105579c5a35f997944304c7a2132e948049126cf",
+      "cases": 483,
+      "passed": 483,
+      "failed": 0
+    }
+  ],
+  "boundary_observations_reused": [
+    "../pipeline_boundaries_2026_11_02/reusable-v2-0-results.json",
+    "../pipeline_boundaries_2026_11_02/fresh-v2-1-results.json",
+    "../pipeline_boundaries_2026_11_02/fresh-v2-2-results.json",
+    "../pipeline_boundaries_2026_11_02/selection-v2-results.json"
+  ],
+  "coverage": "ab-coverage.json",
+  "coverage_sha256": "8d27037aa01c87921380ab8648022657ed540929425839fc404a551cf0de29de",
+  "totals": {
+    "supported_clauses": 801,
+    "exact_examples": 1896,
+    "seeded_instances": 2403,
+    "passed_comparisons": 4299,
+    "failed_comparisons": 0,
+    "unobserved_comparisons": 0,
+    "whole_job_passes": 0
+  },
+  "status": "blocked_whole_job_coverage"
+}

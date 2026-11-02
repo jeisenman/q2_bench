@@ -1,0 +1,218 @@
+{
+  "manifest": {
+    "format": "q2-lineage-investigation/v1",
+    "graphId": "delivery-to-promise-standard-source-scope-2026-10-29",
+    "scope": "standard DeliveryToPromise report, historical and dispatch targets",
+    "authority": "reviewed_source_inventory",
+    "sourceRepositories": [
+      {
+        "name": "di-pipelines",
+        "commit": "fd9d9b74b53946150a01ed68fb87e4ffa4b7bc1e"
+      },
+      {
+        "name": "di-pyjobs",
+        "commit": "32fbfc493d7f039def61c157e579caf24288db48"
+      }
+    ],
+    "sourceEvidence": "delivery-to-promise-sources.json",
+    "status": "unknown",
+    "coverage": "Direct D2P/report interfaces plus History, Snapshot, Relationships, CAFS and Treasury Assumptions producer interfaces; primary acquisition and runtime execution not validated",
+    "runtimeValidated": false,
+    "predictionReady": false,
+    "excludedVariants": [
+      "DeliveryToPromiseOtherProducts",
+      "DeliveryToPromiseTreasury"
+    ],
+    "snapshot": {
+      "status": "synthetic_cases_pinned",
+      "client_id": "99b9412b-70fd-4221-8431-d1b3934889ec",
+      "client_name": "First Example Bank",
+      "environment": "synthetic_in_memory",
+      "window_start_utc": "2026-10-29T05:00:00Z",
+      "run_id": "SYNTHETIC_FIXED_20261029",
+      "input_snapshots": [
+        {
+          "path": "synthetic/cases.json",
+          "sha256": "036cbb27df11b655bc4324974ac810082092aea5d06cb124dde868658e2ce1b9",
+          "kind": "synthetic_case_matrix"
+        },
+        {
+          "path": "synthetic/golden-report.json",
+          "sha256": "d4c6d720d38d884523960d2faab453164110811d557b69367845e07ef8974739",
+          "kind": "literal_expected_reporting_row"
+        }
+      ],
+      "prior_state_snapshots": [
+        {
+          "selection": "per-case literal prior-state fixtures",
+          "source": "synthetic/cases.json"
+        }
+      ],
+      "effective_context": {
+        "timezone": "UTC",
+        "ansi_default": false,
+        "engine_versions": {
+          "spark": "4.1.0",
+          "pandas": "2.2.3"
+        },
+        "real_client_data": false,
+        "generated_source_sha256": "3b765518c2d0309d26608b85cdc0f22fd0946c74f8068ee4f69ba5888be30e3a"
+      }
+    },
+    "stateRepresentation": "Prior state is referenced by job.state_dependencies and must be version-bound separately; ordinary data edges do not model same-dataset feedback.",
+    "unresolved": [
+      {
+        "id": "upstream_closure_incomplete",
+        "detail": "Declared producer interfaces are expanded through opportunity History/Snapshot, Relationships, CAFS and Treasury Product Assumptions. Nested helpers, inherited loaders/writers, complete schemas, runtime branch presence and version selection remain unresolved. Primary acquisition and original RA computation are external boundaries."
+      },
+      {
+        "id": "formal_methods_not_compiled",
+        "detail": "Every formal_method is a status declaration; no executable prediction program is implemented."
+      },
+      {
+        "id": "runtime_unbound",
+        "detail": "Deployment code/build versions, engine/library/session settings, timezones and numeric semantics are unbound; source HEAD is not a deployment claim."
+      },
+      {
+        "id": "control_expansion_incomplete",
+        "detail": "Task-group edges record source declarations; leaf barriers, runtime branches, schedules and trigger rules require invocation-specific resolution."
+      },
+      {
+        "id": "ranking_ties_unchecked",
+        "detail": "row_number selections have no universal tie-break beyond their specified sort expressions; pinned data must establish relevant uniqueness or equal projected values."
+      },
+      {
+        "id": "copy_and_writer_semantics_incomplete",
+        "detail": "Output uploader, copy implementation, CSV coercion, write effects and target initial state require complete executable rules."
+      }
+    ],
+    "primaryBoundary": "Primary datasets are pinned-input boundaries; their original ingestion and RA computation are outside the first prediction scope unless explicitly expanded.",
+    "syntheticValidation": {
+      "status": "pass_scoped",
+      "scenario_count": 163,
+      "checks_passed": 164,
+      "checks_failed": 0,
+      "predicate_only_checks": 6,
+      "full_report_columns": 50,
+      "evidence": "synthetic/execution.json",
+      "results": "synthetic/results.json",
+      "generated_source_sha256": "3b765518c2d0309d26608b85cdc0f22fd0946c74f8068ee4f69ba5888be30e3a",
+      "full_graph_validated": false
+    },
+    "importedModuleSyntheticValidation": {
+      "status": "pass_scoped",
+      "scenario_count": 163,
+      "checks_passed": 164,
+      "checks_failed": 0,
+      "history_account_union_projection_checks": 6,
+      "full_history_output_validated": false,
+      "full_report_columns": 50,
+      "evidence": "synthetic/modules-execution.json",
+      "results": "synthetic/modules-results.json",
+      "generated_source_sha256": "709429f5b2783b715ac6f36c0e3f29ff1284aaff67418cd0ad1eb707b09ad4e9",
+      "full_graph_validated": false
+    }
+  },
+  "nodes": [
+    {"id":"dataset:opportunity_history","kind":"dataset","name":"AccountLevelOpportunitiesHistory","stage":"Derived","path":"PL_Application/Opportunities/AccountLevelOpportunitiesHistory","major":1,"code_latest_minor":20,"evidence":["opportunity_schema"],"coverage":"producer_source_interface_inspected; transformation_not_compiled","formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:history","output_port":"dataset:opportunity_history"}]}},
+    {"id":"dataset:opportunity_snapshot","kind":"dataset","name":"AccountLevelOpportunitiesSnapshot","stage":"Derived","path":"PL_Application/Opportunities/AccountLevelOpportunitiesSnapshot","major":1,"code_latest_minor":20,"format":"parquet","date_column":"WriteTimePartition","metadata_id_columns":["OpportunityId","ScenarioId","AccountId","WriteTimePartition"],"read_policy":"RUN_DATE","evidence":["opportunity_schema","derived_job"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:snapshot","output_port":"dataset:opportunity_snapshot"}]}},
+    {"id":"dataset:primary_relationships","kind":"dataset","name":"Relationships","stage":"Primary","path":"PL_RelationshipAwareness/Relationships/Relationships","evidence":["relationship_job","primary_ra_schema"],"coverage":"upstream_producer_unexpanded","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:relationship_financial_statements","kind":"dataset","name":"RelationshipFinancialStatements","stage":"Primary","major":1,"read_policy":"ALL_DATES","evidence":["relationship_job"],"coverage":"upstream_producer_unexpanded","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:treasury_accounts","kind":"dataset","name":"CoreTreasuryAccounts","stage":"Primary","major":1,"required":false,"evidence":["relationship_job"],"coverage":"upstream_producer_unexpanded","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:core_financial_statements","kind":"dataset","name":"CoreAccountFinancialStatements","stage":"Derived","major":1,"required":false,"evidence":["relationship_job"],"coverage":"producer_source_interface_inspected; transformation_not_compiled","formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:cafs","output_port":"dataset:core_financial_statements"}]}},
+    {"id":"dataset:aggregate_export","kind":"dataset","name":"dbStagingDeliveryToPromiseAggregates.csv","stage":"OperationalRA","path":"DatabaseOutput/dbStagingDeliveryToPromiseAggregates.csv","evidence":["ra_group"],"coverage":"external_ra_computation_boundary","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:aggregate_balances","kind":"dataset","name":"RelationshipAggregateBalances","stage":"Primary","path":"PL_RelationshipAwareness/Relationships/RelationshipAggregateBalances","major":1,"code_latest_minor":3,"format":"csv","date_column":"DatePartition","metadata_id_columns":["RelationshipNewId","RaRunId"],"read_policy":"ALL_DATES","evidence":["primary_ra_schema","derived_job"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:aggregate_ingest","output_port":"dataset:aggregate_balances"}]}},
+    {"id":"dataset:users","kind":"dataset","name":"Users","stage":"Primary","path":"PL_Application/Users/Users","major":2,"code_latest_minor":1,"format":"csv","date_column":"DatePartition","metadata_id_columns":["UserId","DatePartition"],"read_policy":"ALL_DATES","evidence":["users_schema","derived_job"],"coverage":"upstream_producer_unexpanded","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:regions","kind":"dataset","name":"Regions","stage":"Primary","path":"PL_Application/Regions/Regions","major":1,"code_latest_minor":0,"format":"csv","date_column":"DatePartition","metadata_id_columns":["RegionId","DatePartition"],"read_policy":"ALL_DATES","evidence":["regions_schema","derived_job"],"coverage":"upstream_producer_unexpanded","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:relationships","kind":"dataset","name":"Relationships","stage":"Derived","path":"PL_RelationshipAwareness/Relationships/Relationships","major":3,"code_latest_minor":6,"format":"parquet","date_column":"DatePartition","metadata_id_columns":["RelationshipExternalId","DatePartition"],"read_policy":"ALL_DATES","evidence":["relationship_schema","derived_job"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:hq_relationships","output_port":"dataset:relationships"}]}},
+    {"id":"dataset:d2p_data","kind":"dataset","name":"DeliveryToPromiseData","stage":"Derived","path":"PL_Analytics/PortfolioInsights/DeliveryToPromiseData","resource":"HistoricalDataMartADLS","major":1,"code_latest_minor":3,"format":"csv","date_column":"DatePartition","metadata_id_columns":["OpportunityId","OpportunityLastModified","DepositType","DatePartition"],"read_policy":"RUN_DATE","evidence":["derived_schema","derived_job"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:derived","output_port":"dataset:d2p_data"}]}},
+    {"id":"dataset:d2p_data_internal","kind":"dataset","name":"DeliveryToPromiseData","resource":"InternalDataMartADLS","version":"v1.3","path_convention":"DataStudioInternal","format":"csv","evidence":["derived_group"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:derived_copy_internal","output_port":"dataset:d2p_data_internal"}]}},
+    {"id":"dataset:d2p_data_client","kind":"dataset","name":"DeliveryToPromiseData","resource":"ClientDataMartADLS","version":"v1.3","path_convention":"DataStudioClient","format":"csv","evidence":["derived_group"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:derived_copy_client","output_port":"dataset:d2p_data_client"}]}},
+    {"id":"dataset:report","kind":"dataset","name":"DeliveryToPromise","resource":"HistoricalDataMartADLS","version":"v2.2","path_convention":"DataStudioLibraryHistoricalV2","format":"csv","evidence":["report_group","report_schema","dispatch_job"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:report","output_port":"dataset:report"}]}},
+    {"id":"dataset:report_internal","kind":"dataset","name":"DeliveryToPromise","resource":"InternalDataMartADLS","version":"v2.2","path_convention":"DataStudioLibraryInternalV2","format":"csv","evidence":["report_group","report_schema","dispatch_job"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:report_copy_internal","output_port":"dataset:report_internal"}]}},
+    {"id":"dataset:report_client_history","kind":"dataset","name":"DeliveryToPromise","resource":"ClientDataMartADLS","version":"v2.2","path_convention":"DataStudioLibraryClientV2","format":"csv","evidence":["report_group","report_schema","dispatch_job"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:dispatch","output_port":"dataset:report_client_history"}]}},
+    {"id":"dataset:report_client_latest","kind":"dataset","name":"DeliveryToPromise","resource":"ClientDataMartADLS","version":"v2.2","path_convention":"DataStudioLibraryClientLatestV2","format":"csv","evidence":["report_group","report_schema","dispatch_job"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:dispatch","output_port":"dataset:report_client_latest"}]}},
+    {"id":"job:snapshot","kind":"job","name":"account_level_opportunities_snapshot","entrypoint":"datascience_jobs.jobs.data.account_level_opportunities.account_level_opportunities_snapshot.AccountLevelOpportunitiesSnapshot","evidence":["opportunity_group","opportunity_snapshot_job","snapshot_runner"],"state_dependencies":[{"dataset":"dataset:opportunity_snapshot","selector":"LATEST_DATE_EXCLUSIVE","role":"prior_snapshot"}],"coverage":"shared_runner_not_compiled","formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:hq_relationships","kind":"job","name":"high_quality_relationships","entrypoint":"datascience_jobs.jobs.data.ra.high_quality_relationships_data.Relationships","compute":"spark","evidence":["relationship_group","relationship_job","ra_runner"],"state_dependencies":[{"dataset":"dataset:relationships","role":"prior_sink_and_partition_selection"}],"coverage":"shared_runner_and_auxiliary_producers_not_compiled","formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:aggregate_ingest","kind":"job","name":"get_relationship_aggregate_balances","entrypoint":"datamart.jobs.ra.relationship_aggregate_balances.to_datamart.RelationshipAggregateBalances","compute":"batch","evidence":["ra_group","aggregate_ingest"],"coverage":"CsvMoveWithSchemaHandling_not_compiled","formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:derived","kind":"job","name":"delivery_to_promise_data","entrypoint":"datascience_jobs.jobs.data.delivery_to_promise.delivery_to_promise_data.DeliveryToPromise","compute":"spark","evidence":["derived_group","derived_job","base_runner","spark_uploader"],"parameters":{"lookback_days":1096,"delivery_windows_months":[6,12,24,36],"days_per_delivery_month":30},"operator_requirements":["read_as_of","minor_version_selection","filter","project","rename","cast","row_number","rank","stack","lag","inner_join","left_join","group_sum","group_min","group_max","add_months","date_add","datediff","create_map","coalesce","fill_null","regexp_replace","driver_scalar_collect","empty_and_stale_input_exits"],"formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:report","kind":"job","name":"delivery_to_promise","entrypoint":"datascience_jobs.jobs.reports.delivery_to_promise.delivery_to_promise_report.DeliveryToPromise","compute":"batch","evidence":["report_group","report_job","pandas_runner","chunk","formats"],"parameters":{"dataset":"DeliveryToPromise","dataset_version":"v2.2","chunk_size":-1},"report_projection":[{"input":"RelationshipName","output":"Relationship Name"},{"input":"RelationshipOwner","output":"Relationship Owner"},{"input":"RelationshipOwnerRegion","output":"Relationship Owner Region"},{"input":"DepositType","output":"Deposit Type"},{"input":"LastRaRunDate","output":"Last RA Run Date"},{"input":"LastCoreBalancePerDepositType","output":"Last Core Balance Per Deposit Type"},{"input":"LastCoreBalanceAllDeposits","output":"Last Core Balance All Deposits"},{"input":"OpportunityName","output":"Opportunity Name"},{"input":"OpportunityOwner","output":"Opportunity Owner"},{"input":"OpportunityOwnerRegion","output":"Opportunity Owner Region"},{"input":"OpportunityLastModified","output":"Opportunity Last Modified"},{"input":"OpportunityCloseDate","output":"Opportunity Close Date"},{"input":"OppLoanCommitment","output":"Opportunity Loan Commitment"},{"input":"OppDepositsPromised","output":"Opportunity Deposits Promised"},{"input":"OppOtherIncomePromised","output":"Opportunity Other Income Promised"},{"input":"OppDepositsPromisedAllTypes","output":"Opportunity Deposits Promised All Types"},{"input":"OpportunityRoe","output":"Opportunity ROE"},{"input":"OpportunityTargetRoe","output":"Opportunity Target ROE"},{"input":"OpportunityAverageEquity","output":"Opportunity Average Equity"},{"input":"OpportunityLoanOnlyRoe","output":"Opportunity Loan Only ROE"},{"input":"OpportunityLoanOnlyTargetRoe","output":"Opportunity Loan Only Target ROE"},{"input":"OpportunityLoanOnlyAverageEquity","output":"Opportunity Loan Only Average Equity"},{"input":"RelationshipGuid","output":"Relationship Id"},{"input":"OpportunityId","output":"Opportunity Id"},{"input":"DeliveryWindowStart","output":"Delivery Window Start"},{"input":"StartingBalance","output":"Starting Balance"},{"input":"AvgBalance6","output":"Average Balance 6"},{"input":"MaxBalance6","output":"Max Balance 6"},{"input":"EndingBalance6","output":"Ending Balance 6"},{"input":"DeliveryWindowEnd6","output":"Delivery Window End 6"},{"input":"AvgBalance12","output":"Average Balance 12"},{"input":"MaxBalance12","output":"Max Balance 12"},{"input":"EndingBalance12","output":"Ending Balance 12"},{"input":"DeliveryWindowEnd12","output":"Delivery Window End 12"},{"input":"AvgBalance24","output":"Average Balance 24"},{"input":"MaxBalance24","output":"Max Balance 24"},{"input":"EndingBalance24","output":"Ending Balance 24"},{"input":"DeliveryWindowEnd24","output":"Delivery Window End 24"},{"input":"AvgBalance36","output":"Average Balance 36"},{"input":"MaxBalance36","output":"Max Balance 36"},{"input":"EndingBalance36","output":"Ending Balance 36"},{"input":"DeliveryWindowEnd36","output":"Delivery Window End 36"},{"input":"RelationshipStrategicRoeIfWeWin","output":"Relationship Strategic ROE If We Win"},{"input":"RelationshipFtpRoeIfWeWin","output":"Relationship FTP ROE If We Win"},{"input":"RelationshipStrategicAverageEquityIfWeWin","output":"Relationship Strategic Average Equity If We Win"},{"input":"RelationshipFtpAverageEquityIfWeWin","output":"Relationship FTP Average Equity If We Win"},{"input":"RelationshipStrategicRoe","output":"Relationship Strategic Roe"},{"input":"RelationshipFtpRoe","output":"Relationship Ftp Roe"},{"input":"OpportunityOwnerEmail","output":"Opportunity Owner Email"},{"input":"RelationshipOwnerEmail","output":"Relationship Owner Email"}],"formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:derived_copy_internal","kind":"job","name":"cp_internal_delivery_to_promise","entrypoint":"datamart.core.standard_jobs.adls_to_adls.AdlsToAdlsCopyApi","compute":"batch","evidence":["derived_group"],"coverage":"copy_implementation_unexpanded","formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:derived_copy_client","kind":"job","name":"cp_client_delivery_to_promise","entrypoint":"di_pyjobs.job.standard.batch.AdlsToAdlsCopy","compute":"batch","evidence":["derived_group"],"coverage":"copy_implementation_unexpanded","formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:report_copy_internal","kind":"job","name":"delivery_to_promise_cp_to_internal","entrypoint":"datamart.core.standard_jobs.adls_to_adls.AdlsToAdlsCopyApi","compute":"batch","evidence":["report_group"],"coverage":"copy_implementation_unexpanded","formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:dispatch","kind":"job","name":"dispatch_delivery_to_promise","entrypoint":"datascience_jobs.jobs.dispatch.library_datafeeds_v2.DispatchL3LibraryDatafeedsV2","compute":"batch","evidence":["report_group","dispatch_job"],"conditions":{"source_csv_count":1,"client_history":"requires_output_resource","client_latest":"requires_output_resource AND NOT backfill AND clock_utc - window_start <= 48 hours"},"coverage":"clock_and_client_resource_state_unbound","formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:cafs","kind":"job","name":"high_quality_core_account_financial_statements","entrypoint":"datascience_jobs.jobs.data.ra.high_quality_core_account_financial_statements_data.CoreAccountFinancialStatements","role":"transformation","evidence":["dag","cafs_job","ra_runner"],"coverage":"source_interface_inspected; shared_runner_not_compiled","formal_method":{"status":"not_compiled","role":"transformation_program"},"compute":"spark","state_dependencies":[{"dataset":"dataset:core_financial_statements","role":"prior_sink_and_partition_selection"}]},
+    {"id":"job:opportunity_group_boundary","kind":"job","name":"tg_account_level_opportunities","entrypoint":null,"role":"control_boundary","evidence":["dag","opportunity_group"],"coverage":"history_and_group_leaf_trigger_semantics_not_expanded","formal_method":{"status":"not_compiled","role":"control_contract"}},
+    {"id":"dataset:primary_opportunities","kind":"dataset","name":"Opportunities","metadata_class":"OpportunitiesMetaData","stage":"Primary","major":2,"required":true,"read_policy":"RUN_DATE","evidence":["history_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:deposit_products","kind":"dataset","name":"DepositProducts","metadata_class":"DepositProductsMetaData","stage":"Primary","major":1,"required":false,"read_policy":"RUN_DATE","evidence":["history_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:commercial_products","kind":"dataset","name":"CommercialLoanProducts","metadata_class":"CommercialLoanProductsMetaData","stage":"Primary","major":1,"required":false,"read_policy":"RUN_DATE","evidence":["history_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:commitment_products","kind":"dataset","name":"MasterCommitmentProducts","metadata_class":"MasterCommitmentProductsMetaData","stage":"Primary","major":1,"required":false,"read_policy":"RUN_DATE","evidence":["history_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:enumerations","kind":"dataset","name":"Enumerations","metadata_class":"EnumerationsMetaData","stage":"Primary","major":1,"required":true,"read_policy":"LATEST_DATE","evidence":["history_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:treasury_product_assumptions","kind":"dataset","name":"CoreTreasuryProductAssumptionsData","metadata_class":"CoreTreasuryProductAssumptionsDataMetaData","stage":"Derived","major":1,"read_policy":"RUN_DATE","evidence":["history_job","treasury_assumptions_job"],"formal_method":{"status":"not_compiled","role":"output_contract","producers":[{"job":"job:treasury_assumptions","output_port":"dataset:treasury_product_assumptions"}]}},
+    {"id":"dataset:primary_treasury_assumptions","kind":"dataset","name":"TreasuryAssumptions","metadata_class":"TreasuryAssumptionsMetaData","stage":"Primary","major":1,"read_policy":"LATEST_DATE","evidence":["treasury_assumptions_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:primary_cafs","kind":"dataset","name":"CoreAccountFinancialStatements","metadata_class":"PrimaryCoreAccountFinancialStatementsMetaData","stage":"Primary","major_selector":"metadata LATEST_MAJOR_VERSION at pinned commit","required":true,"read_policy":"ALL_DATES","evidence":["cafs_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:deposit_fs_breakdown","kind":"dataset","name":"DepositFinancialStatementBreakdown","metadata_class":"DepositFinancialStatementBreakdownMetaData","stage":"Primary","major_selector":"metadata LATEST_MAJOR_VERSION at pinned commit","required":false,"read_policy":"ALL_DATES","evidence":["cafs_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:loan_fs_breakdown","kind":"dataset","name":"LoanFinancialStatementBreakdown","metadata_class":"LoanFinancialStatementBreakdownMetaData","stage":"Primary","major_selector":"metadata LATEST_MAJOR_VERSION at pinned commit","required":true,"read_policy":"ALL_DATES","evidence":["cafs_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:other_fs_breakdown","kind":"dataset","name":"OtherFinancialStatementBreakdown","metadata_class":"OtherFinancialStatementBreakdownMetaData","stage":"Primary","major_selector":"metadata LATEST_MAJOR_VERSION at pinned commit","required":false,"read_policy":"ALL_DATES","evidence":["cafs_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"dataset:treasury_fs_breakdown","kind":"dataset","name":"TreasuryFinancialStatementBreakdown","metadata_class":"TreasuryFinancialStatementBreakdownMetaData","stage":"Primary","major_selector":"metadata LATEST_MAJOR_VERSION at pinned commit","required":false,"read_policy":"ALL_DATES","evidence":["cafs_job"],"coverage":"primary_snapshot_boundary; schema_not_extracted","formal_method":{"status":"not_compiled","role":"boundary_contract"}},
+    {"id":"job:history","kind":"job","name":"account_level_opportunities_history","entrypoint":"datascience_jobs.jobs.data.account_level_opportunities.account_level_opportunities_history_event_bus.AccountLevelOpportunitiesHistory","compute":"spark","evidence":["history_job","opportunity_group","snapshot_runner"],"coverage":"source_interface_inspected; nested_scenario_helpers_and_writes_not_compiled","read_policy_override":"Backfill changes non-enumeration inputs to ALL_DATES","parameters":{"overwrite_minor_version_mode":false},"formal_method":{"status":"not_compiled","role":"transformation_program"}},
+    {"id":"job:treasury_assumptions","kind":"job","name":"core_treasury_product_assumptions_data","entrypoint":"datascience_jobs.jobs.data.products.core_treasury_product_assumptions_data.CoreTreasuryProductAssumptionsData","compute":"spark","evidence":["treasury_assumptions_job","treasury_assumptions_group","dag"],"coverage":"source_interface_inspected; invocation_branch_and_program_not_resolved","operator_requirements":["latest_effective_date","filter","row_number","nested_field_projection","explode","distinct"],"formal_method":{"status":"not_compiled","role":"transformation_program"}}
+  ],
+  "edges": [
+    {"id":"consumes:dataset:opportunity_history->job:snapshot","kind":"consumes","source":"dataset:opportunity_history","target":"job:snapshot","evidence":["opportunity_snapshot_job","snapshot_runner"]},
+    {"id":"produces:job:snapshot->dataset:opportunity_snapshot","kind":"produces","source":"job:snapshot","target":"dataset:opportunity_snapshot","evidence":["opportunity_snapshot_job","opportunity_group"]},
+    {"id":"consumes:dataset:primary_relationships->job:hq_relationships","kind":"consumes","source":"dataset:primary_relationships","target":"job:hq_relationships","evidence":["relationship_job"]},
+    {"id":"consumes:dataset:relationship_financial_statements->job:hq_relationships","kind":"consumes","source":"dataset:relationship_financial_statements","target":"job:hq_relationships","evidence":["relationship_job"]},
+    {"id":"consumes:dataset:treasury_accounts->job:hq_relationships","kind":"consumes","source":"dataset:treasury_accounts","target":"job:hq_relationships","evidence":["relationship_job"]},
+    {"id":"consumes:dataset:core_financial_statements->job:hq_relationships","kind":"consumes","source":"dataset:core_financial_statements","target":"job:hq_relationships","evidence":["relationship_job"]},
+    {"id":"consumes:dataset:aggregate_balances->job:hq_relationships","kind":"consumes","source":"dataset:aggregate_balances","target":"job:hq_relationships","evidence":["relationship_job"]},
+    {"id":"consumes:dataset:users->job:hq_relationships","kind":"consumes","source":"dataset:users","target":"job:hq_relationships","evidence":["relationship_job"]},
+    {"id":"consumes:dataset:regions->job:hq_relationships","kind":"consumes","source":"dataset:regions","target":"job:hq_relationships","evidence":["relationship_job"]},
+    {"id":"produces:job:hq_relationships->dataset:relationships","kind":"produces","source":"job:hq_relationships","target":"dataset:relationships","evidence":["relationship_job","relationship_group"]},
+    {"id":"consumes:dataset:aggregate_export->job:aggregate_ingest","kind":"consumes","source":"dataset:aggregate_export","target":"job:aggregate_ingest","evidence":["ra_group"]},
+    {"id":"produces:job:aggregate_ingest->dataset:aggregate_balances","kind":"produces","source":"job:aggregate_ingest","target":"dataset:aggregate_balances","evidence":["ra_group","aggregate_ingest"]},
+    {"id":"consumes:dataset:opportunity_snapshot->job:derived","kind":"consumes","source":"dataset:opportunity_snapshot","target":"job:derived","evidence":["derived_job"]},
+    {"id":"consumes:dataset:aggregate_balances->job:derived","kind":"consumes","source":"dataset:aggregate_balances","target":"job:derived","evidence":["derived_job"]},
+    {"id":"consumes:dataset:relationships->job:derived","kind":"consumes","source":"dataset:relationships","target":"job:derived","evidence":["derived_job"]},
+    {"id":"consumes:dataset:users->job:derived","kind":"consumes","source":"dataset:users","target":"job:derived","evidence":["derived_job"]},
+    {"id":"consumes:dataset:regions->job:derived","kind":"consumes","source":"dataset:regions","target":"job:derived","evidence":["derived_job"]},
+    {"id":"produces:job:derived->dataset:d2p_data","kind":"produces","source":"job:derived","target":"dataset:d2p_data","evidence":["derived_job","derived_schema"]},
+    {"id":"consumes:dataset:d2p_data->job:report","kind":"consumes","source":"dataset:d2p_data","target":"job:report","evidence":["report_job"]},
+    {"id":"produces:job:report->dataset:report","kind":"produces","source":"job:report","target":"dataset:report","evidence":["report_job","report_schema","report_group"]},
+    {"id":"consumes:dataset:d2p_data->job:derived_copy_internal","kind":"consumes","source":"dataset:d2p_data","target":"job:derived_copy_internal","evidence":["derived_group"]},
+    {"id":"produces:job:derived_copy_internal->dataset:d2p_data_internal","kind":"produces","source":"job:derived_copy_internal","target":"dataset:d2p_data_internal","evidence":["derived_group"]},
+    {"id":"consumes:dataset:d2p_data->job:derived_copy_client","kind":"consumes","source":"dataset:d2p_data","target":"job:derived_copy_client","evidence":["derived_group"]},
+    {"id":"produces:job:derived_copy_client->dataset:d2p_data_client","kind":"produces","source":"job:derived_copy_client","target":"dataset:d2p_data_client","evidence":["derived_group"]},
+    {"id":"consumes:dataset:report->job:report_copy_internal","kind":"consumes","source":"dataset:report","target":"job:report_copy_internal","evidence":["report_group"]},
+    {"id":"produces:job:report_copy_internal->dataset:report_internal","kind":"produces","source":"job:report_copy_internal","target":"dataset:report_internal","evidence":["report_group"]},
+    {"id":"consumes:dataset:report->job:dispatch","kind":"consumes","source":"dataset:report","target":"job:dispatch","evidence":["dispatch_job","report_group"]},
+    {"id":"produces:job:dispatch->dataset:report_client_history","kind":"produces","source":"job:dispatch","target":"dataset:report_client_history","evidence":["dispatch_job"],"condition":"output_resource_provisioned"},
+    {"id":"produces:job:dispatch->dataset:report_client_latest","kind":"produces","source":"job:dispatch","target":"dataset:report_client_latest","evidence":["dispatch_job"],"condition":"output_resource_provisioned AND NOT backfill AND window_age_hours <= 48"},
+    {"id":"depends_on:job:cafs->job:hq_relationships","kind":"depends_on","source":"job:cafs","target":"job:hq_relationships","evidence":["dag"],"declaration_level":"task_group","coverage":"group_to_leaf_expansion_pending"},
+    {"id":"depends_on:job:hq_relationships->job:derived","kind":"depends_on","source":"job:hq_relationships","target":"job:derived","evidence":["dag"],"declaration_level":"task_group","coverage":"group_to_leaf_expansion_pending"},
+    {"id":"depends_on:job:opportunity_group_boundary->job:derived","kind":"depends_on","source":"job:opportunity_group_boundary","target":"job:derived","evidence":["dag"],"declaration_level":"task_group","coverage":"group_to_leaf_expansion_pending"},
+    {"id":"depends_on:job:derived->job:report","kind":"depends_on","source":"job:derived","target":"job:report","evidence":["dag"],"declaration_level":"task_group","coverage":"group_to_leaf_expansion_pending"},
+    {"id":"depends_on:job:derived->job:derived_copy_internal","kind":"depends_on","source":"job:derived","target":"job:derived_copy_internal","evidence":["derived_group"],"declaration_level":"task","coverage":"direct"},
+    {"id":"depends_on:job:derived->job:derived_copy_client","kind":"depends_on","source":"job:derived","target":"job:derived_copy_client","evidence":["derived_group"],"declaration_level":"task","coverage":"direct"},
+    {"id":"depends_on:job:report->job:report_copy_internal","kind":"depends_on","source":"job:report","target":"job:report_copy_internal","evidence":["report_group"],"declaration_level":"task","coverage":"direct"},
+    {"id":"depends_on:job:report->job:dispatch","kind":"depends_on","source":"job:report","target":"job:dispatch","evidence":["report_group"],"declaration_level":"task","coverage":"direct"},
+    {"id":"consumes:dataset:primary_opportunities->job:history","kind":"consumes","source":"dataset:primary_opportunities","target":"job:history","evidence":["history_job"],"required":true,"read_policy":"RUN_DATE or ALL_DATES on backfill"},
+    {"id":"consumes:dataset:users->job:history","kind":"consumes","source":"dataset:users","target":"job:history","evidence":["history_job"],"required":true,"read_policy":"RUN_DATE or ALL_DATES on backfill"},
+    {"id":"consumes:dataset:deposit_products->job:history","kind":"consumes","source":"dataset:deposit_products","target":"job:history","evidence":["history_job"],"required":false,"read_policy":"RUN_DATE or ALL_DATES on backfill"},
+    {"id":"consumes:dataset:commercial_products->job:history","kind":"consumes","source":"dataset:commercial_products","target":"job:history","evidence":["history_job"],"required":false,"read_policy":"RUN_DATE or ALL_DATES on backfill"},
+    {"id":"consumes:dataset:commitment_products->job:history","kind":"consumes","source":"dataset:commitment_products","target":"job:history","evidence":["history_job"],"required":false,"read_policy":"RUN_DATE or ALL_DATES on backfill"},
+    {"id":"consumes:dataset:enumerations->job:history","kind":"consumes","source":"dataset:enumerations","target":"job:history","evidence":["history_job"],"required":true,"read_policy":"LATEST_DATE"},
+    {"id":"consumes:dataset:treasury_product_assumptions->job:history","kind":"consumes","source":"dataset:treasury_product_assumptions","target":"job:history","evidence":["history_job"],"required":false,"read_policy":"RUN_DATE or ALL_DATES on backfill"},
+    {"id":"produces:job:history->dataset:opportunity_history","kind":"produces","source":"job:history","target":"dataset:opportunity_history","evidence":["history_job","opportunity_schema"]},
+    {"id":"depends_on:job:history->job:snapshot","kind":"depends_on","source":"job:history","target":"job:snapshot","evidence":["opportunity_group"],"declaration_level":"task_group","coverage":"group_roots_leaves_and_trigger_rules_pending"},
+    {"id":"consumes:dataset:primary_cafs->job:cafs","kind":"consumes","source":"dataset:primary_cafs","target":"job:cafs","evidence":["cafs_job"],"required":true,"read_policy":"ALL_DATES"},
+    {"id":"consumes:dataset:enumerations->job:cafs","kind":"consumes","source":"dataset:enumerations","target":"job:cafs","evidence":["cafs_job"],"required":true,"read_policy":"LATEST_DATE"},
+    {"id":"consumes:dataset:deposit_fs_breakdown->job:cafs","kind":"consumes","source":"dataset:deposit_fs_breakdown","target":"job:cafs","evidence":["cafs_job"],"required":false,"read_policy":"ALL_DATES"},
+    {"id":"consumes:dataset:loan_fs_breakdown->job:cafs","kind":"consumes","source":"dataset:loan_fs_breakdown","target":"job:cafs","evidence":["cafs_job"],"required":true,"read_policy":"ALL_DATES"},
+    {"id":"consumes:dataset:other_fs_breakdown->job:cafs","kind":"consumes","source":"dataset:other_fs_breakdown","target":"job:cafs","evidence":["cafs_job"],"required":false,"read_policy":"ALL_DATES"},
+    {"id":"consumes:dataset:treasury_fs_breakdown->job:cafs","kind":"consumes","source":"dataset:treasury_fs_breakdown","target":"job:cafs","evidence":["cafs_job"],"required":false,"read_policy":"ALL_DATES"},
+    {"id":"produces:job:cafs->dataset:core_financial_statements","kind":"produces","source":"job:cafs","target":"dataset:core_financial_statements","evidence":["cafs_job"]},
+    {"id":"consumes:dataset:primary_treasury_assumptions->job:treasury_assumptions","kind":"consumes","source":"dataset:primary_treasury_assumptions","target":"job:treasury_assumptions","evidence":["treasury_assumptions_job"]},
+    {"id":"produces:job:treasury_assumptions->dataset:treasury_product_assumptions","kind":"produces","source":"job:treasury_assumptions","target":"dataset:treasury_product_assumptions","evidence":["treasury_assumptions_job"],"condition":"invocation exists for resolved client/resource branch"}
+  ]
+}

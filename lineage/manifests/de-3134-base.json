@@ -1,0 +1,122 @@
+{
+  "format": "q2-lineage-contract/v1",
+  "scope": "DE-3134 deposit metadata projection; reviewed consumer slice",
+  "profile": "all_clients",
+  "repositories": [
+    {"name":"di-pipelines","commit":"6f6a4183ba3fb7955c64f9b102267633cded4cce"}
+  ],
+  "datasets": [
+    {
+      "id": "dataset:q2://data-engineering/primary/pl_relationshipawareness/core/coreaccountsupplementaldata",
+      "major": 1,
+      "minor": 1,
+      "fields": [
+        {"name":"DatePartition","type":"IntegerType","nullable":true}
+      ],
+      "keys": ["CoreAccountId","DatePartition"],
+      "partition": "DatePartition",
+      "schema": {
+        "evidence": {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/meta_data/datasets/primary/pl_relationship_awareness/core.py","sha256":"fcd51c095304f50631ded0163c933a5391ae88e325d4a3e7fc1219d26dd52ab5"},
+        "class": "CoreAccountSupplementalDataMetaData",
+        "major": 1
+      },
+      "evidence": [
+        {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/meta_data/datasets/primary/pl_relationship_awareness/core.py","sha256":"fcd51c095304f50631ded0163c933a5391ae88e325d4a3e7fc1219d26dd52ab5"}
+      ]
+    },
+    {
+      "id": "dataset:q2://data-engineering/primary/pl_relationshipawareness/core/coredepositaccounts",
+      "major": 2,
+      "minor": 0,
+      "fields": [
+        {"name":"Id","type":"StringType","nullable":true},
+        {"name":"DatePartition","type":"IntegerType","nullable":true}
+      ],
+      "keys": ["Id","DatePartition"],
+      "partition": "DatePartition",
+      "evidence": [
+        {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/meta_data/datasets/primary/pl_relationship_awareness/core.py","sha256":"fcd51c095304f50631ded0163c933a5391ae88e325d4a3e7fc1219d26dd52ab5"}
+      ]
+    },
+    {
+      "id": "dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts",
+      "major": 3,
+      "minor": 6,
+      "fields": [
+        {"name":"CoreAccountId","type":"StringType","nullable":true},
+        {"name":"DatePartition","type":"IntegerType","nullable":true},
+        {"name":"NaicsCode","type":"StringType","nullable":true},
+        {"name":"PostalCode","type":"StringType","nullable":true},
+        {"name":"RelationshipAnnualGrossRevenues","type":"DoubleType","nullable":true}
+      ],
+      "keys": ["CoreAccountId","DatePartition"],
+      "partition": "DatePartition",
+      "evidence": [
+        {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/meta_data/datasets/derived/pl_relationship_awareness/core.py","sha256":"6192c8324d8bc2cddcd12538e479099b45e85a672ff0b82a816667ad6f7d57f6"},
+        {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/jobs/data/ra/high_quality_core_deposit_accounts_data.py","sha256":"93bff4bd0d32517068a0f7081deac92e323f6bd543c51a263c00d93fda2b2e75"},
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/task_groups/derived/high_quality_core_deposit_accounts.py","sha256":"c1904feaf03bfcaf2e0dbfbf90f6060bc19cab26845dd48f83ab560b145317fe"}
+      ]
+    }
+  ],
+  "jobs": [
+    {
+      "id": "job:q2://data-engineering/airflow/l3_main_graph/tg_high_quality_core_deposit_accounts",
+      "dag": "l3_main_graph",
+      "inputs": [
+        {
+          "dataset": "dataset:q2://data-engineering/primary/pl_relationshipawareness/core/coreaccountsupplementaldata",
+          "major": 1,
+          "fields": ["CoreAccountId","DatePartition","IndustryCode","PostalCode","AnnualGrossRevenues"],
+          "keys": ["CoreAccountId","DatePartition"]
+        },
+        {
+          "dataset": "dataset:q2://data-engineering/primary/pl_relationshipawareness/core/coredepositaccounts",
+          "major": 2,
+          "fields": ["Id","DatePartition"],
+          "keys": ["Id","DatePartition"]
+        }
+      ],
+      "outputs": ["dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts"],
+      "after": [],
+      "dependencies": [
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"CoreAccountId"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/primary/pl_relationshipawareness/core/coredepositaccounts","field":"Id"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"DatePartition"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/primary/pl_relationshipawareness/core/coredepositaccounts","field":"DatePartition"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"NaicsCode"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/primary/pl_relationshipawareness/core/coreaccountsupplementaldata","field":"IndustryCode"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"PostalCode"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/primary/pl_relationshipawareness/core/coreaccountsupplementaldata","field":"PostalCode"}
+          ]
+        },
+        {
+          "output": {"dataset":"dataset:q2://data-engineering/derived/pl_relationshipawareness/core/coredepositaccounts","field":"RelationshipAnnualGrossRevenues"},
+          "inputs": [
+            {"dataset":"dataset:q2://data-engineering/primary/pl_relationshipawareness/core/coreaccountsupplementaldata","field":"AnnualGrossRevenues"}
+          ]
+        }
+      ],
+      "columns_complete": true,
+      "replay": {"mode":"partition","hour_utc":5,"write_mode":"replace","force":true,"client_scope":"single_client","bypass_schedule":false},
+      "evidence": [
+        {"repository":"di-pipelines","path":"ds-jobs/src/datascience_jobs/jobs/data/ra/high_quality_core_deposit_accounts_data.py","sha256":"93bff4bd0d32517068a0f7081deac92e323f6bd543c51a263c00d93fda2b2e75"},
+        {"repository":"di-pipelines","path":"dags/precisionlender/dags/task_groups/derived/high_quality_core_deposit_accounts.py","sha256":"c1904feaf03bfcaf2e0dbfbf90f6060bc19cab26845dd48f83ab560b145317fe"}
+      ]
+    }
+  ],
+  "unresolved": []
+}

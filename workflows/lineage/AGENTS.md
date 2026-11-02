@@ -3,8 +3,9 @@
 ## Purpose
 
 This package provides deterministic, read-only queries over the generated
-OpenLineage-compatible repository graph. Graph extraction remains an external
-workflow; this package only loads the staged JSON artifact and serves bounded
+OpenLineage-compatible repository graph. Structural extraction and versioning
+live in `workflows/lineagecheck`; optional Researcher ingestion lives in
+`workflows/semanticsync`. This package serves bounded
 search, traversal, node-detail, and history operations.
 
 ## Architecture
@@ -27,6 +28,9 @@ dependencies into the workflow.
   newest complete Researcher Semantic Layer snapshot at that path.
 - The package does not execute source repositories, call external services, or
   mutate graph state.
+- `LINEAGE_STORE_PATH` selects the independently maintained local snapshot
+  source at the MCP composition boundary. With no store selected, existing
+  `LINEAGE_GRAPH_PATH` behavior is preserved.
 
 ## Workflow
 
@@ -38,6 +42,7 @@ dependencies into the workflow.
 Local artifacts contain one graph version, so local history reports the
 current node as `created` when present. A multi-version source can implement
 the same `QuerySource` interface to provide changed and removed revisions.
+`lineagecheck.Store` implements that interface for local published versions.
 
 ## Verification
 

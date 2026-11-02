@@ -1,0 +1,73 @@
+{
+  "format": "q2-contradiction-execution-receipt/v1",
+  "date": "2026-11-02",
+  "source": {
+    "commit": "20822fe0d10e812d9858d4ec6d550cce1340cac9",
+    "path": "ds-jobs/src/datascience_jobs/jobs/data/market_insights/comparable_loans_training_data.py",
+    "sha256": "69f53c4af196064a0abcc7fe2915bc0e440e26908f1b842d3cca48c3f9773ea0"
+  },
+  "function": "handle_missing",
+  "target": "pl-databricks-us-prod-01",
+  "cluster_id": "0901-134744-3vwa15kr",
+  "spark_version": "4.1.0",
+  "parent_run_id": 298836884447837,
+  "child_run_id": 17110296947742,
+  "job_id": 522124915654227,
+  "job_result_state": "SUCCESS",
+  "notebook_source_sha256": "f96f097ca1a4a0f88a34d924103c67e3a2eca578f1d877dc6790cf6b1d760c83",
+  "prepared_source": "comparable_contradictions.py",
+  "prepared_source_sha256": "a69eb59ab18a3dd5b4e088fdcf3a46e71d98b62d64b404f0bb25a02e7fa4581e",
+  "results": "comparable-results.json",
+  "results_sha256": "811d20b8a6e843e6f5410723318506d313ad522ae7ebdc044165085db88338fd",
+  "profile": {
+    "timezone": "UTC",
+    "ansi_enabled": false,
+    "data": "synthetic_only",
+    "application_writes": false,
+    "source_modified": false
+  },
+  "confirmed_defect_classes": [
+    {
+      "code": "scalar_guard_eager_zero_division",
+      "lines": [
+        476,
+        489
+      ],
+      "observations": [
+        "no_variable_rows",
+        "no_loc_rows"
+      ],
+      "outcome": "ZeroDivisionError at both original scalar guards"
+    },
+    {
+      "code": "aliased_iteration_mutation",
+      "lines": [
+        465,
+        466,
+        472,
+        478,
+        483,
+        486,
+        491
+      ],
+      "observations": [
+        "adjacent_all_missing_actual_order",
+        "adjacent_all_missing_reversed_order"
+      ],
+      "outcome": "All-null features differ by order and reuse of the caller list"
+    }
+  ],
+  "rejected_candidate": {
+    "name": "missing_counter_negative_control",
+    "observed_missing": 2,
+    "expected_missing": 2
+  },
+  "diagnostic_subcases": 9,
+  "diagnostic_assertions": "comparable-checks.jq",
+  "diagnostic_assertions_verified": true,
+  "combined_inventory_entrypoint": "datascience_jobs.jobs.data.market_insights.comparable_loans_training_data.ComparableLoansTrainingData",
+  "published_graph_job_ids": [],
+  "whole_job_coverage": false,
+  "go_formal_equivalence_cases_added": 0,
+  "deployed_revision_verified": false
+}
