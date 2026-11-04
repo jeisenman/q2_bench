@@ -42,6 +42,8 @@ func run(ctx context.Context, arguments []string) error {
 		return lineageCommand(ctx, arguments[1:])
 	case "formal-method":
 		return formalMethodCommand(ctx, arguments[1:])
+	case "formal-lineage":
+		return formalLineageCommand(ctx, arguments[1:])
 	default:
 		return fmt.Errorf("unsupported agentbench command %q", arguments[0])
 	}
@@ -131,6 +133,8 @@ func printHelp() {
 Usage:
   agentbench agents
   agentbench formal-method compile|evaluate|inventory [options]
+  agentbench formal-lineage projects|parse|dependencies|di-pipelines [options]
+  agentbench formal-lineage environments|check-environments [options]
   agentbench lineage build|compare|check-pr|backfill|show [options]
   agentbench semantic-sync [--researcher-root PATH] [--generation PATH]
                            [--output PATH] [--dry-run]

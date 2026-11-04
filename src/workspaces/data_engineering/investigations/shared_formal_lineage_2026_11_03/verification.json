@@ -1,0 +1,31 @@
+{
+  "format": "q2-formal-scaffold-verification/v1",
+  "date": "2026-11-03",
+  "quality_command": "uv run python scripts/check.py",
+  "quality_exit_code": 0,
+  "python_bridge_tests_passed": 10,
+  "representative_source_files": 7,
+  "discovered_declarations": 190,
+  "discovered_operations": 3798,
+  "new_adapter_prediction_ready": false,
+  "whole_job_passes": 0,
+  "mcp_restart": {
+    "dry_run_exit_code": 0,
+    "rebuild_recreate_exit_code": 0,
+    "services": [
+      "prod-support-mcp",
+      "warehouse-mcp",
+      "cortex-mcp"
+    ],
+    "source": "production",
+    "debug": true
+  },
+  "ra": {
+    "workspace_id": "7628572648057993",
+    "run_id": 119994231425418,
+    "synthetic_probe_passed": true,
+    "python": "3.10.12",
+    "minimum_python": "3.11",
+    "runtime_qualified": false
+  }
+}

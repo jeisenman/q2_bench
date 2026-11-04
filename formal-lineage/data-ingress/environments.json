@@ -1,0 +1,26 @@
+[
+  {
+    "id": "data-ingress-dotnet10",
+    "project": "data-ingress",
+    "platform": "native-dotnet",
+    "isolation": "separate-process-and-filesystem",
+    "versions": {
+      "dotnet_sdk": "10.0.100+"
+    },
+    "evidence": [
+      {
+        "commit": "2b38cb46ac952e26556cd5f82676434247b5577c",
+        "path": "global.json",
+        "sha256": "eebc22778af9e2da192b0cd9b8e3e963a80ffba043904702598b0a928de4a708"
+      },
+      {
+        "commit": "2b38cb46ac952e26556cd5f82676434247b5577c",
+        "path": "PrecisionLender.DataIngress.Calculations/PrecisionLender.DataIngress.Calculations.csproj",
+        "sha256": "5447bc290a4d5aad08eb6e5b482b4ba0e8a0469aaa2823f716ae3192224edd03"
+      }
+    ],
+    "unresolved": [
+      "Native target net10.0; restore/configuration and application proxy dependency closure remain unresolved."
+    ]
+  }
+]

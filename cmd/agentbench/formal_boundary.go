@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jeisenman/q2_bench/workflows/formalmethod"
+	formalmethod "github.com/jeisenman/q2_bench/workflows/formallineage/dipipelines"
 )
 
 func boundaryCommand(ctx context.Context, args []string) error {

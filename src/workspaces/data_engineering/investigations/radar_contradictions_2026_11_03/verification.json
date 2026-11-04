@@ -1,0 +1,25 @@
+{
+  "format": "q2-radar-contradiction-verification/v1",
+  "date": "2026-11-03",
+  "quality_command": "uv run python scripts/check.py",
+  "quality_exit_code": 0,
+  "python_bridge_tests_passed": 10,
+  "library_case_matches": 110,
+  "library_joint_true_cases": 0,
+  "notebook_cases": 8,
+  "notebook_initial_errors": 8,
+  "notebook_errors_after_reset": 0,
+  "whole_job_passes": 0,
+  "original_source_unchanged": true,
+  "mcp_restart": {
+    "dry_run_exit_code": 0,
+    "rebuild_recreate_exit_code": 0,
+    "healthy_services": [
+      "prod-support-mcp",
+      "warehouse-mcp",
+      "cortex-mcp"
+    ],
+    "debug": true,
+    "production_support_source": "production"
+  }
+}

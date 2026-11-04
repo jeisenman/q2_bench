@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jeisenman/q2_bench/workflows/formalmethod"
+	formalmethod "github.com/jeisenman/q2_bench/workflows/formallineage/dipipelines"
 )
 
 func formalMethodCommand(ctx context.Context, args []string) error {

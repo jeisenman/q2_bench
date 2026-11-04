@@ -1,0 +1,32 @@
+{
+  "id": "radar",
+  "repositories": [
+    {
+      "name": "radar-notebooks",
+      "commit": "60beb1ccd9bb2074f440de27e0e8f8956acab884",
+      "scope": "Notebook Python and retained notebook magic."
+    },
+    {
+      "name": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "scope": "Shared Python libraries."
+    },
+    {
+      "name": "radar-adf-pipeline",
+      "commit": "99102279764c67b34d8eb054d754e6bdf4a1c6bc",
+      "scope": "ADF orchestration and nested activity declarations."
+    }
+  ],
+  "runtimes": [
+    "pandas",
+    "pyspark",
+    "adf"
+  ],
+  "validation_platform": "ra",
+  "workspace_id": "7628572648057993",
+  "minimum_python": "3.10",
+  "environment_ids": [
+    "radar-python310"
+  ],
+  "prediction_ready": false
+}

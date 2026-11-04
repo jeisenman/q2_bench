@@ -1,0 +1,11 @@
+{
+  "notebook_path": "/Shared/remote-data-mcp/ra/11176d5f6aa5cffbf939a4da36f3c0fcef43fd90f1651e97249b49520b6dcb8d",
+  "run_id": 119994231425418,
+  "source_sha256": "11176d5f6aa5cffbf939a4da36f3c0fcef43fd90f1651e97249b49520b6dcb8d",
+  "status": "submitted",
+  "target": "pl-databricks-us-rapreprod-01",
+  "platform": "ra",
+  "workspace_id": "7628572648057993",
+  "cluster_id": "0715-200455-2cdaolnz",
+  "synthetic_only": true
+}

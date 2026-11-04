@@ -1,0 +1,12 @@
+{
+  "format": "q2-formal-migration-evidence/v1",
+  "expected_clause_cases": 4299,
+  "passed_clause_cases": 4299,
+  "failed_clause_cases": 0,
+  "unobserved_clause_cases": 0,
+  "status": "blocked",
+  "whole_job_passes": 0,
+  "full_report": "var/lineage/shared-scaffold-20261103/migrated-di-coverage.json",
+  "sha256": "8d27037aa01c87921380ab8648022657ed540929425839fc404a551cf0de29de",
+  "note": "Existing observations rechecked with migrated Go code; no remote rerun or historical source/evidence edit."
+}

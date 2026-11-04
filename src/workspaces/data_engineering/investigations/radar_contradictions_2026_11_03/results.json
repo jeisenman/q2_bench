@@ -1,0 +1,1368 @@
+{
+  "format": "q2-radar-contradiction-observation/v1",
+  "runtime": {
+    "python": "3.10.12",
+    "pandas": "1.5.3",
+    "spark": "3.5.0"
+  },
+  "synthetic_only": true,
+  "whole_job_coverage": false,
+  "source_modified": false,
+  "sources": {
+    "dataframe": {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/mapping/dataframe_helper.py",
+      "sha256": "eec29f61ab7be00fb705f45cd4b0b63ddbc5a71bd5325536c5dbe046c693d61d"
+    },
+    "loan": {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/transform/loan_transform_helper.py",
+      "sha256": "397b457eac1f4a054059f38cba585c22576d5d8b4b05f404bc2d1d1cdf59f483"
+    },
+    "mapping": {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/mapping/mapping_helper.py",
+      "sha256": "13738ff1cee143072ce1c3772f761546bbc3811be14bc5fcafa298390ca41f72"
+    },
+    "notebook": {
+      "repository": "radar-notebooks",
+      "commit": "60beb1ccd9bb2074f440de27e0e8f8956acab884",
+      "path": "notebooks/Shared/Clients/BOTW/Map_Others_BOTW.py",
+      "sha256": "063b07a1340875849fd1f5ea8cb83f64943e80eba3fc6bb941bf8e246ab1b12d"
+    },
+    "transform": {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/transform/transform_helper.py",
+      "sha256": "592d0db65d3bfac402ced09941dfa4f03c61349ec48383ae9b67d7907d3e61f5"
+    }
+  },
+  "seeds": [
+    1,
+    42,
+    20261103
+  ],
+  "samples_per_seed": 32,
+  "library": {
+    "function": "_get_adj_rate_index_scaling_factor",
+    "checked_rows": 110,
+    "joint_true_rows": 0,
+    "go_prediction_matches": 110,
+    "observations": [
+      {
+        "id": "presence-000",
+        "family": "exhaustive_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "presence-001",
+        "family": "exhaustive_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "presence-010",
+        "family": "exhaustive_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "presence-011",
+        "family": "exhaustive_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "presence-100",
+        "family": "exhaustive_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.75,ScalingFactorImportType=<NULL>}",
+        "matches_go": true
+      },
+      {
+        "id": "presence-101",
+        "family": "exhaustive_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.75,ScalingFactorImportType=<NULL>}",
+        "matches_go": true
+      },
+      {
+        "id": "presence-110",
+        "family": "exhaustive_null_presence",
+        "bad_pair": false,
+        "bad_spread": true,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": true,
+        "error": "AdjustableRateSpread is a required field when using the Scaling Factor feature. {AdjustableRateSpread=<NULL>,ScalingFactor=0.75,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "presence-111",
+        "family": "exhaustive_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "boundary-0",
+        "family": "scaling_boundaries",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": -1,
+        "has_error": true,
+        "error": "ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=-1.0}",
+        "matches_go": true
+      },
+      {
+        "id": "boundary-1",
+        "family": "scaling_boundaries",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "boundary-2",
+        "family": "scaling_boundaries",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 5e-324,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "boundary-3",
+        "family": "scaling_boundaries",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "boundary-4",
+        "family": "scaling_boundaries",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "boundary-5",
+        "family": "scaling_boundaries",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1.0000000000000002,
+        "has_error": true,
+        "error": "ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=1.0000000000000002}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-0",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-1",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-2",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-3",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-4",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": true,
+        "joint": false,
+        "output_factor": 0.25,
+        "has_error": true,
+        "error": "AdjustableRateSpread is a required field when using the Scaling Factor feature. {AdjustableRateSpread=<NULL>,ScalingFactor=0.25,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-5",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-6",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.0,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-7",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-8",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1.25,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=1.25,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=1.25}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-9",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-10",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-11",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-12",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-13",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-14",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.25,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-15",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1.25,
+        "has_error": true,
+        "error": "ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=1.25}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-16",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1.25,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=1.25,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=1.25}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-17",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-18",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-19",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-20",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.0,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-21",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-22",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-23",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": true,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "AdjustableRateSpread is a required field when using the Scaling Factor feature. {AdjustableRateSpread=<NULL>,ScalingFactor=1.0,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-24",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-25",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-26",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-27",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1.25,
+        "has_error": true,
+        "error": "ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=1.25}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-28",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-29",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": true,
+        "joint": false,
+        "output_factor": 1.25,
+        "has_error": true,
+        "error": "AdjustableRateSpread is a required field when using the Scaling Factor feature. {AdjustableRateSpread=<NULL>,ScalingFactor=1.25,ScalingFactorImportType=0.0}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=1.25}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-30",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": true,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": true,
+        "error": "AdjustableRateSpread is a required field when using the Scaling Factor feature. {AdjustableRateSpread=<NULL>,ScalingFactor=0.75,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-1-31",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-0",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-1",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-2",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-3",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": true,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": true,
+        "error": "AdjustableRateSpread is a required field when using the Scaling Factor feature. {AdjustableRateSpread=<NULL>,ScalingFactor=0.75,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-4",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-5",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-6",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.0,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-7",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-8",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.25,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-9",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-10",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-11",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-12",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-13",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.0,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-14",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-15",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.0,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-16",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-17",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.75,ScalingFactorImportType=<NULL>}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-18",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-19",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-20",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": true,
+        "joint": false,
+        "output_factor": 0.25,
+        "has_error": true,
+        "error": "AdjustableRateSpread is a required field when using the Scaling Factor feature. {AdjustableRateSpread=<NULL>,ScalingFactor=0.25,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-21",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1.25,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=1.25,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=1.25}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-22",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1.25,
+        "has_error": true,
+        "error": "ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=1.25}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-23",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-24",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-25",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": true,
+        "joint": false,
+        "output_factor": 0.25,
+        "has_error": true,
+        "error": "AdjustableRateSpread is a required field when using the Scaling Factor feature. {AdjustableRateSpread=<NULL>,ScalingFactor=0.25,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-26",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1.25,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=1.25,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=1.25}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-27",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-28",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-29",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-30",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-42-31",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-0",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.25,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.25,ScalingFactorImportType=<NULL>}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-1",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-2",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.0,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-3",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.0,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-4",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-5",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-6",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-7",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-8",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.0,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-9",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-10",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=1.0,ScalingFactorImportType=<NULL>}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-11",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.0,ScalingFactorImportType=<NULL>}|ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-12",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-13",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-14",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=1.0,ScalingFactorImportType=<NULL>}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-15",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-16",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-17",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-18",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0,
+        "has_error": true,
+        "error": "ScalingFactor is out of bounds. Must be greater than 0.0 and less than or equal to 1.0. {ScalingFactor=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-19",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-20",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-21",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.75,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-22",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-23",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-24",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-25",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-26",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.25,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-27",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": true,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "AdjustableRateSpread is a required field when using the Scaling Factor feature. {AdjustableRateSpread=<NULL>,ScalingFactor=1.0,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-28",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=<NULL>,ScalingFactorImportType=0.0}",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-29",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.25,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-30",
+        "family": "seeded_null_presence",
+        "bad_pair": false,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 1,
+        "has_error": false,
+        "error": "",
+        "matches_go": true
+      },
+      {
+        "id": "seed-20261103-31",
+        "family": "seeded_null_presence",
+        "bad_pair": true,
+        "bad_spread": false,
+        "joint": false,
+        "output_factor": 0.25,
+        "has_error": true,
+        "error": "ScalingFactor and ScalingFactorImportType are both required if one is set. {ScalingFactor=0.25,ScalingFactorImportType=<NULL>}",
+        "matches_go": true
+      }
+    ]
+  },
+  "notebook": {
+    "ignore_mask": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "errors_after_line_64": [
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type"
+    ],
+    "errors_after_line_70": [
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type|Ignored - Active indicator set to N",
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type|Ignored - Active indicator set to N",
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type|Ignored - Active indicator set to N",
+      "Ignored - do not recognize Portfolio Type",
+      "Ignored - do not recognize Portfolio Type|Ignored - Active indicator set to N"
+    ],
+    "errors_after_line_75": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "ordinary_string_classes": [
+      "commcard",
+      "deposit",
+      "all other strings"
+    ],
+    "rows": [
+      {
+        "CaseId": "commcard-y",
+        "NotMapped_portfolio_type": "commcard",
+        "NotMapped_active_ind": "y",
+        "ErrorMessage": ""
+      },
+      {
+        "CaseId": "commcard-n",
+        "NotMapped_portfolio_type": "commcard",
+        "NotMapped_active_ind": "n",
+        "ErrorMessage": ""
+      },
+      {
+        "CaseId": "deposit-y",
+        "NotMapped_portfolio_type": "deposit",
+        "NotMapped_active_ind": "y",
+        "ErrorMessage": ""
+      },
+      {
+        "CaseId": "deposit-n",
+        "NotMapped_portfolio_type": "deposit",
+        "NotMapped_active_ind": "n",
+        "ErrorMessage": ""
+      },
+      {
+        "CaseId": "unknown-y",
+        "NotMapped_portfolio_type": "unknown",
+        "NotMapped_active_ind": "y",
+        "ErrorMessage": ""
+      },
+      {
+        "CaseId": "unknown-n",
+        "NotMapped_portfolio_type": "unknown",
+        "NotMapped_active_ind": "n",
+        "ErrorMessage": ""
+      },
+      {
+        "CaseId": "empty-y",
+        "NotMapped_portfolio_type": "",
+        "NotMapped_active_ind": "y",
+        "ErrorMessage": ""
+      },
+      {
+        "CaseId": "empty-n",
+        "NotMapped_portfolio_type": "",
+        "NotMapped_active_ind": "n",
+        "ErrorMessage": ""
+      }
+    ],
+    "without_error_message_column": {
+      "error_type": "KeyError",
+      "error": "'ErrorMessage'"
+    }
+  }
+}

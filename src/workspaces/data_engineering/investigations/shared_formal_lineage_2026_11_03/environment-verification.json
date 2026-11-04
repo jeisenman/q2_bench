@@ -1,0 +1,32 @@
+{
+  "format": "q2-formal-environment-verification/v1",
+  "date": "2026-11-03",
+  "quality": {
+    "command": "uv run python scripts/check.py",
+    "exit_code": 0,
+    "python_bridge_tests_passed": 10
+  },
+  "native_probe": {
+    "receipt": "native-environment-probe.json",
+    "isolated_sdk_processes": 2,
+    "application_executed": false
+  },
+  "profile_source_receipts_verified": true,
+  "isolation_rejection_tests_passed": true,
+  "mcp": {
+    "dry_run_exit_code": 0,
+    "rebuild_recreate_exit_code": 0,
+    "healthy_services": [
+      "prod-support-mcp",
+      "warehouse-mcp",
+      "cortex-mcp"
+    ],
+    "debug": true,
+    "production_support_source": "production"
+  },
+  "remaining": [
+    "DI-compatible separate RA compute not bound.",
+    "Full native dependency/configuration closure and whole-job executable lowering remain unresolved.",
+    "Calculation-engine Node version unresolved."
+  ]
+}

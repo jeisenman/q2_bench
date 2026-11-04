@@ -1,0 +1,211 @@
+{
+  "format": "q2-radar-isolated-boolean-proof/v1",
+  "runtime_status": "confirmed_in_ra_preproduction",
+  "whole_job_prediction_ready": false,
+  "proofs": [
+    {
+      "id": "radar-library-disjoint-validation-masks",
+      "source": {
+        "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+        "path": "radar_libraries/transform/loan_transform_helper.py",
+        "sha256": "397b457eac1f4a054059f38cba585c22576d5d8b4b05f404bc2d1d1cdf59f483"
+      },
+      "lines": [
+        2063,
+        2070,
+        2093
+      ],
+      "domain": "Boolean null-presence indicators: F=factor present, T=import type present, S=spread present",
+      "bad_pair": "(!F && T) || (F && !T)",
+      "bad_spread": "F && T && !S",
+      "unreachable_conjunction": "bad_pair && bad_spread",
+      "simplified_default_condition": "!F",
+      "truth_table": [
+        {
+          "factor_present": false,
+          "type_present": false,
+          "spread_present": false,
+          "bad_pair": false,
+          "bad_spread": false,
+          "conjunction": false,
+          "default_applies": true
+        },
+        {
+          "factor_present": false,
+          "type_present": false,
+          "spread_present": true,
+          "bad_pair": false,
+          "bad_spread": false,
+          "conjunction": false,
+          "default_applies": true
+        },
+        {
+          "factor_present": false,
+          "type_present": true,
+          "spread_present": false,
+          "bad_pair": true,
+          "bad_spread": false,
+          "conjunction": false,
+          "default_applies": true
+        },
+        {
+          "factor_present": false,
+          "type_present": true,
+          "spread_present": true,
+          "bad_pair": true,
+          "bad_spread": false,
+          "conjunction": false,
+          "default_applies": true
+        },
+        {
+          "factor_present": true,
+          "type_present": false,
+          "spread_present": false,
+          "bad_pair": true,
+          "bad_spread": false,
+          "conjunction": false,
+          "default_applies": false
+        },
+        {
+          "factor_present": true,
+          "type_present": false,
+          "spread_present": true,
+          "bad_pair": true,
+          "bad_spread": false,
+          "conjunction": false,
+          "default_applies": false
+        },
+        {
+          "factor_present": true,
+          "type_present": true,
+          "spread_present": false,
+          "bad_pair": false,
+          "bad_spread": true,
+          "conjunction": false,
+          "default_applies": false
+        },
+        {
+          "factor_present": true,
+          "type_present": true,
+          "spread_present": true,
+          "bad_pair": false,
+          "bad_spread": false,
+          "conjunction": false,
+          "default_applies": false
+        }
+      ]
+    },
+    {
+      "id": "radar-notebook-tautological-ignore",
+      "source": {
+        "commit": "60beb1ccd9bb2074f440de27e0e8f8956acab884",
+        "path": "notebooks/Shared/Clients/BOTW/Map_Others_BOTW.py",
+        "sha256": "063b07a1340875849fd1f5ea8cb83f64943e80eba3fc6bb941bf8e246ab1b12d"
+      },
+      "lines": [
+        63,
+        64,
+        69,
+        70,
+        75
+      ],
+      "domain": "Ordinary normalized strings",
+      "predicate": "x != \"commcard\" || x != \"deposit\"",
+      "impossible_state": "ignore_condition == false",
+      "partition_classes": [
+        "commcard",
+        "deposit",
+        "all other strings"
+      ],
+      "predicate_values": [
+        true,
+        true,
+        true
+      ],
+      "downstream_statement": "Line 75 resets ErrorMessage after line 64 and line 70 append to it.",
+      "precondition": "The standard raw outputter retains ErrorMessage (ADDITIONAL_REQUIRED_COLUMNS includes it). The synthetic fragment seeds that column; missing-column control is an additional helper-precondition test. Actual client deployment/data not checked."
+    }
+  ],
+  "case_campaign": {
+    "library_rows": 110,
+    "seeds": [
+      1,
+      42,
+      20261103
+    ],
+    "samples_per_seed": 32,
+    "library_scenario_families": 3,
+    "notebook_scenario_families": 1
+  },
+  "sources": {
+    "dataframe": {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/mapping/dataframe_helper.py",
+      "sha256": "eec29f61ab7be00fb705f45cd4b0b63ddbc5a71bd5325536c5dbe046c693d61d"
+    },
+    "loan": {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/transform/loan_transform_helper.py",
+      "sha256": "397b457eac1f4a054059f38cba585c22576d5d8b4b05f404bc2d1d1cdf59f483"
+    },
+    "mapping": {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/mapping/mapping_helper.py",
+      "sha256": "13738ff1cee143072ce1c3772f761546bbc3811be14bc5fcafa298390ca41f72"
+    },
+    "notebook": {
+      "repository": "radar-notebooks",
+      "commit": "60beb1ccd9bb2074f440de27e0e8f8956acab884",
+      "path": "notebooks/Shared/Clients/BOTW/Map_Others_BOTW.py",
+      "sha256": "063b07a1340875849fd1f5ea8cb83f64943e80eba3fc6bb941bf8e246ab1b12d"
+    },
+    "transform": {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/transform/transform_helper.py",
+      "sha256": "592d0db65d3bfac402ced09941dfa4f03c61349ec48383ae9b67d7907d3e61f5"
+    }
+  },
+  "payload.json_sha256": "73cf4267958acd012ae7637e7ca521f6affea58826a0219abf8cc793ada95243",
+  "prepared.py_sha256": "76cf71fe8cbac212ccbe434020adedb7202d6afd712d4d96c43eea59e4236bbc",
+  "wrapped.py_sha256": "c0e40793590b1dd33282994540e27965d91a7ce1cf5a9aff92b4c612af8949bd",
+  "library-catalog.json_sha256": "4aae667bf00b6b52bf6bdec06c114f724d8a8dff7d08c48a68b9f42cc8b5a311",
+  "notebook-catalog.json_sha256": "182c2286ee8c3eb29dc53feae31e920616c1f1376c92517059b7888e887705e2",
+  "supporting_sources": [
+    {
+      "repository": "radar-notebooks",
+      "commit": "60beb1ccd9bb2074f440de27e0e8f8956acab884",
+      "path": "notebooks/Shared/Clients/BOTW/Extract_OtherFees_BOTW.py",
+      "sha256": "33be95aaa38b4ea53ba6d4e2e45f1e9ce45e0920256f37468cc304591f6b8ea0"
+    },
+    {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/fileio/outputter.py",
+      "sha256": "20078aac8e5048cc62ca4a7fbe4d11be641093e87841d10df6e40cf1714f8cc4"
+    },
+    {
+      "repository": "radar-libraries",
+      "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+      "path": "radar_libraries/fileio/loader.py",
+      "sha256": "f281546f5fff47330cec80a4381c21bc17b618cc3edac0994c7e5119c142176f"
+    }
+  ],
+  "preparation_sources": {
+    "prepare.go": "e60ad5a9be78cac87b891823d5c6af88ae9269b449ee3d3d9d0e222c8ec45ad4",
+    "compare.py": "8b5ea6ed0dd62b68c52ae89187d52fcbbc1c2986c2fb50c4778923eb2968c819",
+    "cases.json": "37805afa96a9730f89c195471256bd119c804fcf18005e6cafb4ff2a35636604"
+  },
+  "runtime": {
+    "python": "3.10.12",
+    "pandas": "1.5.3",
+    "spark": "3.5.0"
+  },
+  "run_id": 724838931862226,
+  "child_run_id": 907465500955608,
+  "run_page_url": "https://adb-7628572648057993.13.azuredatabricks.net/?o=7628572648057993#job/194334207777204/run/724838931862226",
+  "results_sha256": "4dc1f77d3dd511cddc940a8e05caf5f26169782a47ed3434687a373504d42351"
+}
