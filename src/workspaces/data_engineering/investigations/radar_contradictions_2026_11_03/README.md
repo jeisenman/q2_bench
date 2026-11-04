@@ -1,7 +1,7 @@
 # RADAR impossible-condition evidence
 
 See the [findings](../../../../../formal-lineage/radar/contradictions.md).
-This is an existence check for two source-level contradictions, not an
+This checks one contradictory subexpression and one tautological predicate, not an
 exhaustive audit of every RADAR transform or a complete executable formal model.
 
 Reproduce the immutable source payload, Go predictions and reviewed SOURCE:
