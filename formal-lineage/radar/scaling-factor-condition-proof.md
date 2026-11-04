@@ -10,9 +10,9 @@ policy: incomplete settings should receive the default factor.
 
 ## Pinned source
 
-Repository: `precisionlender/radar-libraries`  
-Commit: `6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9`  
-Function: `_get_adj_rate_index_scaling_factor`  
+- Repository: `precisionlender/radar-libraries`
+- Commit: `6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9`
+- Function: `_get_adj_rate_index_scaling_factor`
 [Original conditions and fallback](https://github.com/precisionlender/radar-libraries/blob/6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9/radar_libraries/transform/loan_transform_helper.py#L2063-L2097)
 
 Let:
@@ -66,10 +66,10 @@ For factor `0.75`, a present import type and a missing spread, the original
 function flags an error but retains `0.75`; it does not select the `1.0`
 default. For a missing factor, the outer `!F` arm selects `1.0` as before.
 
-[Machine-readable truth table and source hashes](../../src/workspaces/data_engineering/investigations/radar_contradictions_2026_11_03/proofs.json)  
-[Observed values and error messages](../../src/workspaces/data_engineering/investigations/radar_contradictions_2026_11_03/results.json)  
-[Jobs API child output](../../src/workspaces/data_engineering/investigations/radar_contradictions_2026_11_03/run-output.json)  
-[Reproducible source preparation and notebook](../../src/workspaces/data_engineering/investigations/radar_contradictions_2026_11_03/README.md)
+- [Machine-readable truth table and source hashes](../../src/workspaces/data_engineering/investigations/radar_contradictions_2026_11_03/proofs.json)
+- [Observed values and error messages](../../src/workspaces/data_engineering/investigations/radar_contradictions_2026_11_03/results.json)
+- [Jobs API child output](../../src/workspaces/data_engineering/investigations/radar_contradictions_2026_11_03/run-output.json)
+- [Reproducible source preparation and notebook](../../src/workspaces/data_engineering/investigations/radar_contradictions_2026_11_03/README.md)
 
 The proof establishes the unreachable intersection and the observed fallback
 behavior. It does not independently establish the intended business policy,
