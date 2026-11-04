@@ -1,0 +1,25 @@
+{
+  "format": "q2-native-environment-probe/v1",
+  "scope": "Separate native processes and private directory/cache settings verified with dotnet --version only; no restore, build or application tests.",
+  "bindings": [
+    {
+      "profile_id": "data-ingress-dotnet10",
+      "platform": "native-dotnet",
+      "isolation_id": "host-pid:18977",
+      "root": "/Users/jeisenman/ra/qtwo_bench/var/formal-lineage/environments/data-ingress-dotnet10",
+      "versions": {
+        "dotnet_sdk": "10.0.103"
+      }
+    },
+    {
+      "profile_id": "calculation-engine-dotnet10",
+      "platform": "native-dotnet",
+      "isolation_id": "host-pid:18979",
+      "root": "/Users/jeisenman/ra/qtwo_bench/var/formal-lineage/environments/calculation-engine-dotnet10",
+      "versions": {
+        "dotnet_sdk": "10.0.103"
+      }
+    }
+  ],
+  "application_executed": false
+}

@@ -2,6 +2,7 @@
 
 - [Architecture](architecture.md)
 - [Local lineage, backfill coverage, and PR checks](lineage.md)
+- [Shared formal lineage: DI Pipelines, RADAR, Data Ingress and calculation engine](../formal-lineage/README.md)
 - [Mechanistic formal methods and Databricks comparison](formal-methods.md)
 - [Pipeline boundary scenarios and A/B tests](pipeline-boundary-tests.md)
 - [Seeded pipeline property tests](property-pipeline-tests.md)

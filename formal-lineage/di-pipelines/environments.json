@@ -1,0 +1,24 @@
+[
+  {
+    "id": "di-pipelines-python312",
+    "project": "di-pipelines",
+    "platform": "ra",
+    "isolation": "dedicated-compute",
+    "workspace_id": "7628572648057993",
+    "versions": {
+      "pandas": "2.2.3",
+      "python": "3.12.x",
+      "spark": "4.1.0"
+    },
+    "evidence": [
+      {
+        "commit": "20822fe0d10e812d9858d4ec6d550cce1340cac9",
+        "path": "pyproject.toml",
+        "sha256": "28048ddfd402724389be0ef28a7bdb7c7bb2b5b2ddea19ec79cb9d047674d533"
+      }
+    ],
+    "unresolved": [
+      "Bind a separate RA compute resource and verify its complete package inventory before job execution."
+    ]
+  }
+]

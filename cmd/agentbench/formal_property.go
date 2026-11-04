@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jeisenman/q2_bench/workflows/formalmethod"
+	formalmethod "github.com/jeisenman/q2_bench/workflows/formallineage/dipipelines"
 )
 
 func propertySuiteCommand(ctx context.Context, args []string) error {

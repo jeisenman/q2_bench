@@ -1,0 +1,35 @@
+[
+  {
+    "id": "calculation-engine-dotnet10",
+    "project": "pl-calculation-engine",
+    "platform": "native-dotnet",
+    "isolation": "separate-process-and-filesystem",
+    "versions": {
+      "dotnet_sdk": "10.0.100+"
+    },
+    "evidence": [
+      {
+        "commit": "41616184ea208c601b37918bf942230d6921a7ea",
+        "path": "PrecisionLender.CalculationEngine.Tests/PrecisionLender.CalculationEngine.Tests.csproj",
+        "sha256": "48cc3a976b7379a2fe9f87618a7ea00f81ce80ea53dbb4e274aa652773fd0362"
+      }
+    ],
+    "unresolved": [
+      "Test target net10.0; core library netstandard2.1. Native configuration and restored dependency closure remain unresolved."
+    ]
+  },
+  {
+    "id": "calculation-engine-typescript",
+    "project": "pl-calculation-engine",
+    "platform": "native-node",
+    "isolation": "separate-process-and-filesystem",
+    "versions": {
+      "node": "unresolved",
+      "typescript": "4.9.4"
+    },
+    "evidence": [],
+    "unresolved": [
+      "An engine-supported Node runtime must be bound before execution; the host Node installation is not an implicit default."
+    ]
+  }
+]

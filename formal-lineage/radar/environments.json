@@ -1,0 +1,24 @@
+[
+  {
+    "id": "radar-python310",
+    "project": "radar",
+    "platform": "ra",
+    "isolation": "dedicated-compute",
+    "workspace_id": "7628572648057993",
+    "versions": {
+      "pandas": "1.5.3",
+      "python": "3.10.12",
+      "spark": "3.5.0"
+    },
+    "evidence": [
+      {
+        "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+        "path": "cluster_definitions/cluster.json",
+        "sha256": "9618458ea9817acdcc5fa963033c06acf3609b52b2dd3cbf74c50daa669c987f"
+      }
+    ],
+    "unresolved": [
+      "Versions observed in RA run 119994231425418; reserve separate compute and verify complete notebook/library dependencies."
+    ]
+  }
+]

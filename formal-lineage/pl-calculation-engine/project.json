@@ -1,0 +1,20 @@
+{
+  "id": "pl-calculation-engine",
+  "repositories": [
+    {
+      "name": "pl-calculation-engine",
+      "commit": "41616184ea208c601b37918bf942230d6921a7ea",
+      "scope": "C#/TypeScript implementations, build manifests and package locks."
+    }
+  ],
+  "runtimes": [
+    "dotnet",
+    "typescript"
+  ],
+  "validation_platform": "native-runtime",
+  "environment_ids": [
+    "calculation-engine-dotnet10",
+    "calculation-engine-typescript"
+  ],
+  "prediction_ready": false
+}

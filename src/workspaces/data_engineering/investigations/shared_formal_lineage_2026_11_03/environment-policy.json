@@ -1,0 +1,111 @@
+{
+  "format": "q2-formal-runtime-isolation-policy/v1",
+  "date": "2026-11-03",
+  "policy": "Separate implementation reference environments, as requested by the user; host SDK Python remains 3.11+.",
+  "profiles_sha256": "dfa6833fbd9abcb63fe081c86059d99468e169e309d05d25623a8b8badd9d729",
+  "profiles": [
+    {
+      "id": "di-pipelines-python312",
+      "project": "di-pipelines",
+      "platform": "ra",
+      "isolation": "dedicated-compute",
+      "workspace_id": "7628572648057993",
+      "versions": {
+        "pandas": "2.2.3",
+        "python": "3.12.x",
+        "spark": "4.1.0"
+      },
+      "evidence": [
+        {
+          "commit": "20822fe0d10e812d9858d4ec6d550cce1340cac9",
+          "path": "pyproject.toml",
+          "sha256": "28048ddfd402724389be0ef28a7bdb7c7bb2b5b2ddea19ec79cb9d047674d533"
+        }
+      ],
+      "unresolved": [
+        "Bind a separate RA compute resource and verify its complete package inventory before job execution."
+      ]
+    },
+    {
+      "id": "radar-python310",
+      "project": "radar",
+      "platform": "ra",
+      "isolation": "dedicated-compute",
+      "workspace_id": "7628572648057993",
+      "versions": {
+        "pandas": "1.5.3",
+        "python": "3.10.12",
+        "spark": "3.5.0"
+      },
+      "evidence": [
+        {
+          "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+          "path": "cluster_definitions/cluster.json",
+          "sha256": "9618458ea9817acdcc5fa963033c06acf3609b52b2dd3cbf74c50daa669c987f"
+        }
+      ],
+      "unresolved": [
+        "Versions observed in RA run 119994231425418; reserve separate compute and verify complete notebook/library dependencies."
+      ]
+    },
+    {
+      "id": "data-ingress-dotnet10",
+      "project": "data-ingress",
+      "platform": "native-dotnet",
+      "isolation": "separate-process-and-filesystem",
+      "versions": {
+        "dotnet_sdk": "10.0.100+"
+      },
+      "evidence": [
+        {
+          "commit": "2b38cb46ac952e26556cd5f82676434247b5577c",
+          "path": "global.json",
+          "sha256": "eebc22778af9e2da192b0cd9b8e3e963a80ffba043904702598b0a928de4a708"
+        },
+        {
+          "commit": "2b38cb46ac952e26556cd5f82676434247b5577c",
+          "path": "PrecisionLender.DataIngress.Calculations/PrecisionLender.DataIngress.Calculations.csproj",
+          "sha256": "5447bc290a4d5aad08eb6e5b482b4ba0e8a0469aaa2823f716ae3192224edd03"
+        }
+      ],
+      "unresolved": [
+        "Native target net10.0; restore/configuration and application proxy dependency closure remain unresolved."
+      ]
+    },
+    {
+      "id": "calculation-engine-dotnet10",
+      "project": "pl-calculation-engine",
+      "platform": "native-dotnet",
+      "isolation": "separate-process-and-filesystem",
+      "versions": {
+        "dotnet_sdk": "10.0.100+"
+      },
+      "evidence": [
+        {
+          "commit": "41616184ea208c601b37918bf942230d6921a7ea",
+          "path": "PrecisionLender.CalculationEngine.Tests/PrecisionLender.CalculationEngine.Tests.csproj",
+          "sha256": "48cc3a976b7379a2fe9f87618a7ea00f81ce80ea53dbb4e274aa652773fd0362"
+        }
+      ],
+      "unresolved": [
+        "Test target net10.0; core library netstandard2.1. Native configuration and restored dependency closure remain unresolved."
+      ]
+    },
+    {
+      "id": "calculation-engine-typescript",
+      "project": "pl-calculation-engine",
+      "platform": "native-node",
+      "isolation": "separate-process-and-filesystem",
+      "versions": {
+        "node": "unresolved",
+        "typescript": "4.9.4"
+      },
+      "evidence": [],
+      "unresolved": [
+        "An engine-supported Node runtime must be bound before execution; the host Node installation is not an implicit default."
+      ]
+    }
+  ],
+  "prior_probe": "ra-probe-output.json",
+  "scope": "RADAR legacy version observation retained; DI reference compute unbound; original whole-job execution still blocked. Native probe checks SDK/process/directory settings only."
+}

@@ -1,0 +1,118 @@
+{
+  "format": "q2-formal-scaffold-source-evidence/v1",
+  "scope": "Representative files only; no complete repository coverage claim.",
+  "files": [
+    {
+      "artifact": "var/lineage/shared-scaffold-20261103/radar-loans.json",
+      "sha256": "9ebbc70cec2f51e81089a5f766ffc4d5afbacbada91b44587afcc88da669c0aa",
+      "project": "radar",
+      "repository": "radar-notebooks",
+      "source": {
+        "commit": "60beb1ccd9bb2074f440de27e0e8f8956acab884",
+        "path": "notebooks/Shared/Universal/Transform_Loans.py",
+        "sha256": "02a66f4c98d140878ed93dca2ea7f2c200f5427b60b70244f58c0c6ecefa5590"
+      },
+      "runtime": "pandas",
+      "declarations": 1,
+      "operations": 355,
+      "status": "unknown",
+      "prediction_ready": false
+    },
+    {
+      "artifact": "var/lineage/shared-scaffold-20261103/radar-loan-helper.json",
+      "sha256": "4aae667bf00b6b52bf6bdec06c114f724d8a8dff7d08c48a68b9f42cc8b5a311",
+      "project": "radar",
+      "repository": "radar-libraries",
+      "source": {
+        "commit": "6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9",
+        "path": "radar_libraries/transform/loan_transform_helper.py",
+        "sha256": "397b457eac1f4a054059f38cba585c22576d5d8b4b05f404bc2d1d1cdf59f483"
+      },
+      "runtime": "pandas",
+      "declarations": 76,
+      "operations": 2548,
+      "status": "unknown",
+      "prediction_ready": false
+    },
+    {
+      "artifact": "var/lineage/shared-scaffold-20261103/radar-adf.json",
+      "sha256": "a4122c9d5089e50f0f8277b119e4e146bb4871a000cbbe96717470e374244920",
+      "project": "radar",
+      "repository": "radar-adf-pipeline",
+      "source": {
+        "commit": "99102279764c67b34d8eb054d754e6bdf4a1c6bc",
+        "path": "pipeline/transform-calculation-batch.json",
+        "sha256": "1e152e6c1cfe445f39dcf69ecb7bb7dc164eab1f24d5547be350c3917549ada0"
+      },
+      "runtime": "adf",
+      "declarations": 26,
+      "operations": 26,
+      "status": "unknown",
+      "prediction_ready": false
+    },
+    {
+      "artifact": "var/lineage/shared-scaffold-20261103/ingress-engine-calls.json",
+      "sha256": "2df3e9598b5e16c837b948b6cf8d7133442c0e42a46d0cffd17fce85584f4cf3",
+      "project": "data-ingress",
+      "repository": "pl-dataingress",
+      "source": {
+        "commit": "2b38cb46ac952e26556cd5f82676434247b5577c",
+        "path": "PrecisionLender.DataIngress.Calculations/EngineWrapper/EngineCalls.cs",
+        "sha256": "18cfd7595a42b0bd62f9e05bf539e432d96169b137fa060820807788cbe2a24f"
+      },
+      "runtime": "dotnet",
+      "declarations": 11,
+      "operations": 22,
+      "status": "unknown",
+      "prediction_ready": false
+    },
+    {
+      "artifact": "var/lineage/shared-scaffold-20261103/application-engine-wrapper.json",
+      "sha256": "e0a60f423145cfff49bf85e1fac7b4d4998d0ec4ba13a3b398c0684618f39eab",
+      "project": "data-ingress",
+      "repository": "pl-application",
+      "source": {
+        "commit": "5af19e313f0012911d695abb6cf1690650a24874",
+        "path": "PrecisionLender.Common.Engine.Proxy/ServiceWrappers/RAEngineServiceWrapper.cs",
+        "sha256": "adb07eb9dd97f50a17e20301c9cf0ffaab44071a72647b52d96ffb774b49beab"
+      },
+      "runtime": "dotnet",
+      "declarations": 29,
+      "operations": 336,
+      "status": "unknown",
+      "prediction_ready": false
+    },
+    {
+      "artifact": "var/lineage/shared-scaffold-20261103/engine-ra-loans.json",
+      "sha256": "d6b8b8f0eb351f04f7f673554cc6b102844009f8ca3665fee3b53b9831cc42e2",
+      "project": "pl-calculation-engine",
+      "repository": "pl-calculation-engine",
+      "source": {
+        "commit": "41616184ea208c601b37918bf942230d6921a7ea",
+        "path": "PrecisionLender.Common.Engine.EngineService/RACoreLoanAccountEngineService.cs",
+        "sha256": "596a42d5d70ed332e4c9ce6bd137fc2e222b220764250a7a706f24c66ac3e494"
+      },
+      "runtime": "dotnet",
+      "declarations": 16,
+      "operations": 131,
+      "status": "unknown",
+      "prediction_ready": false
+    },
+    {
+      "artifact": "var/lineage/shared-scaffold-20261103/engine-typescript.json",
+      "sha256": "0e9526e93669ffa731a3724de51ed1305ba93bc0d3f5e8bb9b3e1d199e258a86",
+      "project": "pl-calculation-engine",
+      "repository": "pl-calculation-engine",
+      "source": {
+        "commit": "41616184ea208c601b37918bf942230d6921a7ea",
+        "path": "PrecisionLender.CalculationEngine.TypeScript/engine/otherfees/engines/StandardOtherFeesCalculationEngine.ts",
+        "sha256": "6241a0f00fb2bdfd2d36c1ae5e5c647af45d6578cf13d225ad561b217fc4ce4f"
+      },
+      "runtime": "typescript",
+      "declarations": 31,
+      "operations": 380,
+      "status": "unknown",
+      "prediction_ready": false
+    }
+  ]
+}

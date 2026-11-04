@@ -1,0 +1,23 @@
+{
+  "id": "data-ingress",
+  "repositories": [
+    {
+      "name": "pl-dataingress",
+      "commit": "2b38cb46ac952e26556cd5f82676434247b5577c",
+      "scope": "C# ingestion and engine calls."
+    },
+    {
+      "name": "pl-application",
+      "commit": "5af19e313f0012911d695abb6cf1690650a24874",
+      "scope": "PrecisionLender.Common.Engine.Proxy/ServiceWrappers/ only."
+    }
+  ],
+  "runtimes": [
+    "dotnet"
+  ],
+  "validation_platform": "native-dotnet",
+  "environment_ids": [
+    "data-ingress-dotnet10"
+  ],
+  "prediction_ready": false
+}

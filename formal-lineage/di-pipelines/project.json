@@ -1,0 +1,20 @@
+{
+  "id": "di-pipelines",
+  "repositories": [
+    {
+      "name": "di-pipelines",
+      "commit": "20822fe0d10e812d9858d4ec6d550cce1340cac9",
+      "scope": "All jobs; basic copy/dispatch steps remain part of their transformation unit."
+    }
+  ],
+  "runtimes": [
+    "pyspark"
+  ],
+  "validation_platform": "ra",
+  "workspace_id": "7628572648057993",
+  "minimum_python": "3.12",
+  "environment_ids": [
+    "di-pipelines-python312"
+  ],
+  "prediction_ready": false
+}
