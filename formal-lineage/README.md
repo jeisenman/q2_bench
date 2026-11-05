@@ -13,6 +13,12 @@ not rewritten. The Go workflow lives in `workflows/formallineage/`.
 Runtime dependencies and interpreter versions are isolated per implementation;
 see [separate validation environments](environments.md).
 
+The proposed [function and equivalence contract](function-equivalence.md)
+explains how parsed statements can become functions with assigned inputs and
+outputs, and what would justify a proof that two implementations behave alike.
+The [equivalence execution plan](equivalence-execution-plan.md) defines the
+implementation milestones, dependencies and measurable acceptance criteria.
+
 ## Contract and readiness
 
 `model.Method` owns the common executable contract, parameters, source receipt,
