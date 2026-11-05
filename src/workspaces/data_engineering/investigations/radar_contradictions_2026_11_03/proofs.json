@@ -93,7 +93,8 @@
           "conjunction": false,
           "default_applies": false
         }
-      ]
+      ],
+      "classification": "unsatisfiable_conjunction_arm"
     },
     {
       "id": "radar-notebook-tautological-ignore",
@@ -123,7 +124,10 @@
         true
       ],
       "downstream_statement": "Line 75 resets ErrorMessage after line 64 and line 70 append to it.",
-      "precondition": "The standard raw outputter retains ErrorMessage (ADDITIONAL_REQUIRED_COLUMNS includes it). The synthetic fragment seeds that column; missing-column control is an additional helper-precondition test. Actual client deployment/data not checked."
+      "precondition": "The standard raw outputter retains ErrorMessage (ADDITIONAL_REQUIRED_COLUMNS includes it). The synthetic fragment seeds that column; missing-column control is an additional helper-precondition test. Actual client deployment/data not checked.",
+      "classification": "tautology",
+      "predicate_is_unsatisfiable": false,
+      "negated_predicate_is_unsatisfiable": true
     }
   ],
   "case_campaign": {

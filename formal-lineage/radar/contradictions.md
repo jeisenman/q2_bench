@@ -1,6 +1,7 @@
-# Confirmed source-level RADAR contradictions
+# Confirmed RADAR logic findings
 
-Two isolated Boolean contradictions exist at the reviewed repository pins.
+The reviewed source contains a contradictory library subexpression and a
+tautological notebook predicate. These are different logical findings.
 RA preproduction confirmed both by executing the pinned original source:
 110/110 library cases matched independent Go predictions; the eight notebook
 cases all raised the portfolio error and then lost their errors at line 75.
@@ -9,6 +10,8 @@ The shared source catalogs still report unknown methods and
 all-notebook coverage, deployed client reachability or whole-job equivalence.
 
 ## Library: an impossible conjunction in the scaling-factor fallback
+
+[Read the condition proof and exhaustive truth table](scaling-factor-condition-proof.md).
 
 Source: `radar_libraries/transform/loan_transform_helper.py`, commit
 `6f72bfb32c447e92cf641a1dd4bcb2b94fac27f9`, lines 2063–2097.
@@ -42,7 +45,7 @@ The first two rows retain 0.75 and receive error messages; they do not reach the
 Changing AND to OR is a repair candidate that needs the intended fallback
 contract reviewed; no source repair is included here.
 
-## Notebook: every portfolio is “unrecognized,” then its errors are erased
+## Notebook: a tautology flags every portfolio, then its errors are erased
 
 Source: `notebooks/Shared/Clients/BOTW/Map_Others_BOTW.py`, commit
 `60beb1ccd9bb2074f440de27e0e8f8956acab884`.
@@ -55,13 +58,15 @@ The normalized portfolio condition at line 63 is:
 For ordinary normalized strings, false would require x to equal both distinct
 strings simultaneously. That state is impossible. The exhaustive comparison
 partition is `commcard`, `deposit`, and every other string; the predicate is
-true in all three classes. Thus even both recognized portfolio types receive
+true in all three classes. The predicate itself is a tautology, not a logical
+contradiction; its negation is unsatisfiable. It conflicts with the stated
+rule to ignore only unrecognized types. Both recognized portfolio types receive
 “Ignored - do not recognize Portfolio Type” at line 64.
 
 Line 70 also appends an inactive-account error, but line 75 then executes
 `mapped_others["ErrorMessage"] = ""`, erasing both sets of errors. Do not
 interpret the tautology as evidence that the final notebook rejects every row.
-The contradictory sequence is “flag everything, then clear the flags.”
+The validation defect is the sequence “flag everything, then clear the flags.”
 
 The standard raw-file output contract includes ErrorMessage, so the reproduction
 seeds it as an empty column. The BOTW extractor uses that standard outputter for
