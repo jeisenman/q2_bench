@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 GO_EXCLUDED_PARTS = frozenset(
-    {".git", ".claude", ".codex", ".venv", "vendor"},
+    {".git", ".claude", ".codex", ".venv", "vendor", "node_modules", "target"},
 )
 PYTHON_PATHS = [
     "scripts/check.py",

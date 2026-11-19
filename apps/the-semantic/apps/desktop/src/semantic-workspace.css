@@ -1,0 +1,54 @@
+.semantic-workspace .semantic-section{max-width:1100px;padding:18px 0}
+.semantic-workspace .semantic-section>h2{font-size:38px}
+.semantic-workspace .semantic-notice{border-block:1px solid var(--line);padding:22px 0;margin-bottom:24px}
+.semantic-workspace .semantic-notice h3{margin-bottom:12px}
+.semantic-workspace .semantic-source-row{display:block;width:100%;text-align:left;padding:22px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.semantic-workspace .semantic-source-row h3{margin-bottom:10px}
+.semantic-workspace .semantic-source-row .caption{margin:8px 0 0}
+.semantic-workspace button.semantic-source-row:hover h3{color:var(--rust)}
+.semantic-workspace .semantic-section select{max-width:100%;padding:10px;border:1px solid var(--line);background:transparent}
+.semantic-workspace .sme-detail-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.semantic-workspace .sme-edit-actions{margin-left:auto}
+.semantic-workspace .sme-definition{padding:0 12px 12px;border:2px solid transparent;scroll-margin:20px}
+.semantic-workspace .sme-definition.document-editing,.semantic-workspace .lineage-detail:has(.sme-edit-actions button:first-child:is(:hover,:focus-visible)) .sme-definition{border-color:var(--rust);background:color-mix(in srgb,var(--rust) 5%,var(--paper))}
+.semantic-workspace .sme-definition.document-editing .sme-source-text,.semantic-workspace .sme-definition.document-editing .sme-local-draft{display:none}
+.semantic-workspace .sme-definition .document-editor{border-top:0;margin:0;padding:0}
+.semantic-workspace .sme-definition textarea{font:16px/1.7 Georgia,serif;padding:12px;background:var(--paper);color:var(--ink);border:1px solid var(--rust)}
+.semantic-workspace .sme-definition form>button{justify-self:end}
+/* Knowledge navigation is confined to the Semantic Layer mount. */
+.semantic-workspace .semantic-heading{margin-bottom:24px;max-width:none;border-bottom:1px solid var(--ink);padding-bottom:20px}
+.semantic-workspace .semantic-heading h1{font-size:38px;letter-spacing:-1px;margin:0}
+.semantic-workspace .semantic-heading .eyebrow{margin-bottom:8px}
+.semantic-workspace .semantic-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:26px;align-items:start}
+.semantic-workspace .semantic-sidebar{border-right:1px solid var(--line);padding-right:16px;min-width:0}
+.semantic-workspace .semantic-sidebar>.eyebrow{margin:0 0 4px}
+.semantic-workspace .semantic-side-description{font-size:12px;color:var(--muted);margin-bottom:17px}
+.semantic-workspace .semantic-bases{display:grid;gap:3px}
+.semantic-workspace .semantic-base{display:flex;align-items:center;gap:10px;text-align:left;width:100%;padding:7px 10px;border-radius:11px;font:13px Arial,sans-serif}
+.semantic-workspace .semantic-base:hover{background:#eae5d9}
+.semantic-workspace .semantic-base[aria-current]{background:var(--rust);color:var(--paper)}
+.semantic-workspace .semantic-monogram{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:50%;background:#e6dfce;color:var(--rust);font:13px Georgia,serif}
+.semantic-workspace .semantic-side-copy{display:grid;gap:2px;min-width:0}
+.semantic-workspace .semantic-side-title{font-size:13px}
+.semantic-workspace .semantic-side-subtitle{font-size:11px;line-height:1.4;color:var(--muted)}
+.semantic-workspace .semantic-base[aria-current] .semantic-monogram{background:var(--paper)}
+.semantic-workspace .semantic-base[aria-current] .semantic-side-subtitle{color:var(--paper);opacity:.8}
+.semantic-workspace .semantic-main{min-width:0}
+.semantic-workspace .semantic-view-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:20px;padding-bottom:14px}
+.semantic-workspace .semantic-view-heading h2{font-size:28px;margin:0}
+.semantic-workspace .semantic-lineage-views{display:flex;gap:16px}
+.semantic-workspace .semantic-lineage-views[hidden]{display:none}
+.semantic-workspace .semantic-lineage-views button{padding:8px 0;border-bottom:2px solid transparent}
+.semantic-workspace .semantic-lineage-views button[aria-pressed=true]{border-color:var(--rust);color:var(--rust)}
+.semantic-workspace .lineage-grid{grid-template-columns:minmax(0,1fr);gap:24px}
+.semantic-workspace .lineage-grid:not(.lineage-graph-grid)>.lineage-display{height:auto;min-height:0;max-height:52vh;overflow:auto;padding:0}
+.semantic-workspace .lineage-grid>.lineage-detail{height:auto;min-height:0;border-left:0;border-top:1px solid var(--line);padding:24px 0 0;overflow:visible}
+.semantic-workspace .semantic-catalog{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.semantic-workspace .semantic-catalog th{text-align:left;font:10px Arial,sans-serif;color:var(--muted);padding:12px 10px;border-bottom:1px solid var(--ink)}
+.semantic-workspace .semantic-catalog th:first-child{width:49%}
+.semantic-workspace .semantic-catalog th:nth-child(2){width:16%}
+.semantic-workspace .semantic-catalog td{padding:12px 10px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.semantic-workspace .semantic-catalog tr.selected{background:#eee9dc}
+.semantic-workspace .semantic-catalog .lineage-row{font:17px/1.4 Georgia,serif;padding:0;border:0;background:none}
+.semantic-workspace .semantic-catalog .lineage-row:hover{color:var(--rust)}
+@media(max-width:700px){.semantic-workspace .semantic-layout{grid-template-columns:minmax(0,1fr);gap:22px}.semantic-workspace .semantic-sidebar{border-right:0;border-bottom:1px solid var(--line);padding:0 0 18px}.semantic-workspace .semantic-bases{grid-template-columns:repeat(2,minmax(0,1fr))}.semantic-workspace .semantic-catalog th:first-child{width:44%}.semantic-workspace .semantic-catalog th:nth-child(2){width:19%}}

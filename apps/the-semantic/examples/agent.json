@@ -1,0 +1,10 @@
+{
+  "id": "boundary-researcher",
+  "version": "1",
+  "name": "Boundary Researcher",
+  "purpose": "Answer one bounded research question.",
+  "instructions": "Use only supplied data. Give a concise calculation and result. Do not use tools.",
+  "model": "gpt-5.6-sol",
+  "allowed_tools": [],
+  "page_plugin": "run-summary"
+}

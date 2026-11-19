@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {JSDOM} from 'jsdom';
+import {articleText,readHelpCenter} from '../src/help-client.js';
+import {PublicArticleURLSchema,HelpArticleSchema,helpPath,helpRequestFromPath,knowledgePath,knowledgeRequestFromPath} from '../src/help-contracts.js';
+import {mountHelp} from '../src/help-view.js';
+const raw={id:123,title:'Synthetic help fixture',html_url:'https://support.precisionlender.com/hc/en-us/articles/123-Fixture',updated_at:'2026-09-02T12:00:00Z',locale:'en-us',body:'<p>Safe &amp; useful.</p><script>private script</script><img src="https://evil.invalid"><p>Second line.</p>'};
+const normalized={id:123,title:raw.title,url:raw.html_url,updated_at:raw.updated_at,locale:'en-us',text:'Safe & useful.\nSecond line.'};
+const settle=()=>new Promise<void>(resolve=>setImmediate(resolve));
+test('public API normalization emits plain text with trusted URLs and bounded canonical routes',async()=>{
+ assert.equal(articleText(raw.body),'Safe & useful.\nSecond line.');
+ let requested='';const result=await readHelpCenter({operation:'help.article',id:123},async url=>{requested=url;return new Response(JSON.stringify({article:raw}));});assert.deepEqual(result,normalized);assert.equal(requested,'https://support.precisionlender.com/api/v2/help_center/en-us/articles/123.json');
+ assert.deepEqual(await readHelpCenter({operation:'help.list'},async()=>new Response(JSON.stringify({articles:[raw],count:26,next_page:'next'}))),{articles:[normalized],count:26,has_more:true});
+ for(const req of [{operation:'help.list'}as const,{operation:'help.search',query:'scenario & pricing'}as const,{operation:'help.article',id:123}as const])assert.deepEqual(helpRequestFromPath(helpPath(req)),req);
+ for(const req of [{operation:'knowledge.list'}as const,{operation:'knowledge.search',query:'scenario'}as const,{operation:'knowledge.article',id:123}as const])assert.deepEqual(knowledgeRequestFromPath(knowledgePath(req)),req);
+ for(const path of ['/api/v2/tickets.json','https://evil.invalid','/api/v2/help_center/en-us/articles/123.json?url=evil'])assert.throws(()=>helpRequestFromPath(path));
+ for(const url of ['file:///etc/passwd','javascript:alert(1)','https://support.precisionlender.com/api/v2/tickets','https://evil.invalid/hc/en-us/articles/123','https://user:secret@support.precisionlender.com/hc/en-us/articles/123'])assert.equal(PublicArticleURLSchema.safeParse(url).success,false);
+ assert.equal(HelpArticleSchema.safeParse({...normalized,url:'https://evil.invalid/hc/en-us/articles/123'}).success,false);
+ await assert.rejects(readHelpCenter({operation:'help.article',id:456},async()=>new Response(JSON.stringify({article:raw}))),/different article/);
+});
+test('knowledge source selection, dated snapshot and safe article rendering remain explicit',async()=>{
+ const dom=new JSDOM('<main></main>');Object.assign(globalThis,{document:dom.window.document});const host=document.querySelector('main')!;const requests:unknown[]=[];
+ const snapshot={run_id:'fixture-export',completed_at:'2026-09-02T21:01:37Z',article_count:396,chunk_count:3404};
+ const cleanup=mountHelp(host,{query:'fixture',source:'snapshot'},async r=>{requests.push(r);return r.operation.endsWith('.article')?{...normalized,text:'<img src=x> literal',snapshot}:{articles:[normalized],count:396,has_more:true,snapshot};});await settle();
+ assert.match(host.textContent!,/396 total retained articles/);assert.match(host.textContent!,/not SME-approved/);
+ (host.querySelector('.question-row')as HTMLButtonElement).click();await settle();assert.ok(host.textContent!.includes('<img src=x> literal'));assert.equal(host.querySelectorAll('img,script').length,0);assert.match(host.textContent!,/Export completed/);assert.equal(host.querySelector('a')!.getAttribute('href'),raw.html_url);
+ assert.deepEqual(requests,[{operation:'knowledge.search',query:'fixture'},{operation:'knowledge.article',id:123}]);
+ const source=host.querySelector('select')as HTMLSelectElement;source.value='public';source.dispatchEvent(new dom.window.Event('change'));await settle();
+ assert.equal((host.querySelector('input')as HTMLInputElement).value,'fixture');assert.deepEqual(requests.at(-1),{operation:'help.search',query:'fixture'});cleanup();
+ host.replaceChildren();const offline=mountHelp(host,{query:'',source:'public'},async()=>{throw new Error('certificate failure');});await settle();assert.match(host.textContent!,/Public Help Center unavailable/);assert.match(host.textContent!,/trusted HTTPS/);offline();dom.window.close();
+});

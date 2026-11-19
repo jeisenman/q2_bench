@@ -1,0 +1,31 @@
+{
+  "name": "@the-semantic/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main.cjs",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "npm run check && vite build && esbuild src/main.ts src/preload.ts --bundle --platform=node --format=cjs --external:electron --outdir=dist-electron --out-extension:.js=.cjs",
+    "start": "npm run build && electron .",
+    "preview": "node --use-system-ca ../../node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4175 --strictPort",
+    "test": "tsx --test tests/*.test.ts",
+    "test:native": "electron tests/native-smoke.cjs",
+    "test:semantic-native": "electron tests/semantic-native.cjs",
+    "test:codex-preview-native": "electron tests/codex-preview-native.cjs"
+  },
+  "dependencies": {
+    "parse5": "8.1.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^24.0.0",
+    "electron": "45.3.1",
+    "esbuild": "0.28.1",
+    "jsdom": "^27.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3",
+    "vite": "8.3.8"
+  }
+}

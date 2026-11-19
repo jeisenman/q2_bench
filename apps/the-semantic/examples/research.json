@@ -1,0 +1,12 @@
+{
+  "title": "Compare supplied monthly totals",
+  "question": "The supplied sales counts are January 18, February 24, March 30. What is their total and arithmetic mean?",
+  "hypothesis": "The total is 72 and the arithmetic mean is 24.",
+  "plan": "Add the three supplied counts, divide by three, and report both values with one calculation.",
+  "agent_id": "boundary-researcher",
+  "agent_version": "1",
+  "accepted": true,
+  "max_runs": 1,
+  "max_seconds": 90,
+  "idempotency_key": "example-monthly-sales-v1"
+}
