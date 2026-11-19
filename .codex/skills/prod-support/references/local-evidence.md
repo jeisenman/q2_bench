@@ -1,8 +1,8 @@
 # Local prod-support evidence
 
-Use immutable local evidence when production tasks have since been rerun, when
-the user asks to reproduce a historical result, or when producing a benchmark
-gold response. Do not mix a local snapshot with current Airflow discovery.
+Use immutable local evidence if production tasks have since rerun, the user
+requests a historical result, or you are preparing a benchmark gold response.
+Do not mix a local snapshot with current Airflow discovery.
 
 ## September 24, 2026 snapshot
 
@@ -12,8 +12,8 @@ The redacted Airflow dataset is:
 ~/projects/agentsdk/var/benchmark_data/prod_support/2026-09-24/steps/02-airflow-capture/2026-09-24/airflow_failures.json
 ```
 
-It contains 17 task-instance records and embedded logs. Seven records are in
-the `2026-09-24T05:00:00Z` reporting window and ten are prior-day distractors.
+The dataset has 17 task-instance records with embedded logs. Seven fall in
+the `2026-09-24T05:00:00Z` reporting window; ten are prior-day distractors.
 
 Set a shell variable before analysis:
 
@@ -40,13 +40,11 @@ jq -r --arg dag_id '<dag-id>' --arg run_id '<run-id>' \
    .log' "$PROD_SUPPORT_DATASET"
 ```
 
-Parse the selected log in the current agent using
+Parse the selected log in the current agent. Follow
 [investigations.md](investigations.md) and
 [classifications.md](classifications.md). Do not call live Airflow, Resource
-Discovery, or OMS connectors while reproducing the snapshot. Preserve
-unresolved identities and unavailable secondary evidence rather than mixing
-current production facts into the historical result.
+Discovery, or OMS connectors for this reproduction. Keep unresolved identities
+and unavailable secondary evidence. Do not mix in current production facts.
 
-The dataset is already redacted. Do not replace it with logs from a later
-rerun, and do not update expected output until a human reviewer explicitly
-approves the new gold response.
+The dataset is already redacted. Do not replace it with later-rerun logs. Do
+not update expected output until a human reviewer approves the new gold response.

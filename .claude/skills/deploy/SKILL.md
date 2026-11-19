@@ -5,8 +5,8 @@ description: Plan, execute, and verify Alpha data-engineering deployments. Use f
 
 # Data Engineering Deploy
 
-Use this skill for Alpha deployments. Production deployment procedures belong
-to the local-only `dep` skill.
+Use this skill for Alpha deployments. Use the local-only `dep` skill for
+production deployments.
 
 ## Alpha Deployments
 
@@ -19,7 +19,7 @@ resolution, path-to-stage mapping, Azure run discovery and triggering,
 
 ## Establish the deployment contract
 
-Before changing external state, identify:
+Before you change external state, identify:
 
 - repository and branch or commit;
 - target environment and deployment system;
@@ -30,13 +30,13 @@ Before changing external state, identify:
 
 Inspect the branch diff and the target repository's deployment configuration.
 Do not infer a target environment from an unset or ambiguous environment
-variable. Fail fast when the target, commit, or deployment mechanism is
-unclear.
+variable. Stop immediately if the target, commit, or deployment mechanism
+is unclear.
 
-Before selecting a pipeline, confirm the workflow that will run from its
-definition and stage conditions. Choose the smallest workflow that deploys
+Before you select a pipeline, read its definition and stage conditions.
+Confirm which workflow will run. Choose the smallest workflow that deploys
 every required component and no unneeded component. A combined pipeline name
-or an existing run is not evidence that every contained deployment is needed.
+or an existing run does not prove that you need every contained deployment.
 Do not trigger, approve, or retry unrelated Helm, image, DAG, or job stages.
 
 For `di-pipelines` changes, this skill owns the deployment contract,
@@ -59,9 +59,9 @@ is the one named in the request. Check required approvals, credentials, and
 service health before submitting a deployment.
 
 Record both selected and excluded components with a reason. Documentation,
-tests, or metadata-only changes may require no deployment. A stage may be
-excluded only when the selected workflow's evaluated conditions prove it will
-be skipped; intent or naming alone is insufficient.
+tests, or metadata-only changes may require no deployment. Exclude a stage
+only when the selected workflow's evaluated conditions prove it will be
+skipped. Intent or naming alone is insufficient.
 
 Record the plan in `deployment.md` when the target repository uses that
 convention. Keep credentials, customer names, raw rows, and unbounded logs out
@@ -69,7 +69,7 @@ of the record.
 
 ### Databricks cluster startup
 
-When a Databricks deployment or one-time validation uses an existing cluster:
+If a Databricks deployment or one-time validation uses an existing cluster:
 
 1. Resolve the cluster ID from the selected workspace. Never substitute a
    cluster from another Databricks environment.
@@ -79,8 +79,8 @@ When a Databricks deployment or one-time validation uses an existing cluster:
 4. Continue only after the state is `RUNNING`. Stop and report immediately for
    `ERROR` or `UNKNOWN`, or when the 12-minute deadline expires.
 
-The 12-minute window is a bounded operational default, not evidence that a
-cluster will become healthy. Record the observed warm-up duration and any
+Use 12 minutes as the default limit. This limit does not prove that a cluster
+will become healthy. Record the observed warm-up duration and any
 startup error in the deployment evidence.
 
 ## Approval and execution
@@ -97,19 +97,19 @@ Deployment is an external mutation. Before execution, present the exact:
 
 Do not treat a dry run, queued pipeline, artifact publication, or approval
 request as a completed deployment. If the user has authorized the exact
-deployment, execute it through the repository's documented deployment
-interface and wait for every required stage to reach a terminal state.
+deployment, use the repository's documented deployment interface. Wait for
+every required stage to reach a terminal state.
 
-If approval is required by the deployment system, use the repository's
-documented approval command and record the approval reference. Never broaden
+If the deployment system requires approval, use the repository's documented
+approval command. Record the approval reference. Never broaden
 the target environment, include additional stages, or rerun unrelated jobs
 without renewed authorization.
 
 When a pipeline task reports critically low agent disk space, classify the
 failure as infrastructure-related. Inspect the failed task log, retry only the
 failed stage with `state=retry` and `forceRetryAllJobs=false`, and poll the
-same run. Allow one retry of that stage; if it fails again, stop and report
-the disk evidence instead of retrying the whole pipeline. A `Bash exited with
+same run. Allow one retry of that stage. If it fails again, stop and report
+the disk evidence. Do not retry the whole pipeline. A `Bash exited with
 code '1'` alongside the low-space warning is still host infrastructure
 evidence, not a code failure.
 
@@ -125,6 +125,6 @@ After deployment:
 5. Stop and report the first failed verification; do not automatically retry a
    mutating operation.
 
-The Alpha deployment is complete only when all required stages succeeded and
+Complete the Alpha deployment only when all required stages succeeded and
 the post-deployment checks support the requested outcome. Report the deployed
 version, verification evidence, and any remaining uncertainty.

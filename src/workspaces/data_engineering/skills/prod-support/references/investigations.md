@@ -1,8 +1,8 @@
 # Direct investigation contracts
 
-The current agent investigates every exact failure identity. Connector calls
-may overlap for latency, but evidence remains isolated by region, DAG, run,
-task, and attempt.
+Investigate each exact failure identity. Connector calls may run in parallel
+to reduce latency, but keep evidence separate by region, DAG, run, task, and
+attempt.
 
 ## Evidence record
 
@@ -29,7 +29,7 @@ their task IDs match.
 
 ## Exact Airflow log first
 
-Use `get_task_log` before OMS. Parse the complete returned text for:
+Call `get_task_log` before querying OMS. Review the complete log for:
 
 - explicit application exceptions and terminal causes;
 - `OOMKilled`, Kubernetes OOM reason, or `OutOfMemoryError`;
@@ -39,30 +39,29 @@ Use `get_task_log` before OMS. Parse the complete returned text for:
 - distinctness counts and explicit distinctness exceptions;
 - ordered EventBus `ClientId`, `OpportunityId`, and `Is Recoverable` records.
 
-Do not infer OOM or timeout from duration alone. Apply
-[classifications.md](classifications.md) to the captured markers.
+Do not infer OOM or timeout from duration alone. Use the captured markers
+and [classifications.md](classifications.md).
 
 ## OMS fallback
 
-Use OMS only when the exact Airflow log is unavailable, incomplete, too large
-for the required EventBus aggregation, or the user explicitly requests a
-comparison.
+Use OMS only if the exact Airflow log is unavailable or incomplete, is too
+large for the required EventBus aggregation, or the user requests a comparison.
 
-Before `query_job_evidence`, use `get_task_metadata` when necessary. Branch,
+If needed, call `get_task_metadata` before `query_job_evidence`. Branch,
 trigger, short-circuit, and other Airflow-control operators may not emit a
 `DI_Scheduling_CL` stream.
 
-For an exact job query, preserve:
+For an exact-job query, keep these filters:
 
 ```text
 client_id_g + run_id_s + task_id_s + try_number_d + operational window
 ```
 
-Use `query_oms` for a bounded cross-attempt aggregation only. Include a row
-limit of at most 1,000 and an explicit timespan. A zero-row response is
-`no matching OMS evidence`.
+Use `query_oms` only for bounded aggregation across attempts. Set an explicit
+timespan and a row limit of 1,000 or less. Label a zero-row response `no
+matching OMS evidence`.
 
-Keep source conclusions separate:
+Report source conclusions separately:
 
 - `OMS confirmed timeout` requires an explicit OMS timeout marker.
 - `Airflow confirmed timeout` requires exact Airflow log or metadata evidence.
@@ -115,11 +114,18 @@ Generate only proven underlying `ra_group.get_*` targets. Never map a passing
 dataset because another dataset in the same task failed. A timeout-only or
 OOM-only high-quality failure has no distinctness rerun target.
 
+A distinctness failure can result from the upstream job writing data twice,
+even when that job reports success. For the proven mismatched dataset, plan
+to rerun its exact upstream producer regardless of its current success state,
+then validate the output and rerun affected downstream tasks. Use the guarded
+dependency-rerun procedure in [retries.md](retries.md); do not treat success
+as proof that the output is distinct or bypass its execution guards.
+
 ## D2P and subscriber history
 
-If a D2P or subscriber failure is discovered, retrieve one additional 30-day
-failure inventory and filter locally by exact task and affected client. Use
-bounded success checks where needed. Compare:
+For a D2P or subscriber failure, retrieve one additional 30-day failure
+inventory. Filter it locally by exact task and affected client. Use bounded
+success checks when needed. Compare:
 
 - affected client set;
 - prior failure presence;
@@ -127,12 +133,11 @@ bounded success checks where needed. Compare:
 - root-cause class;
 - new OOM, timeout, distinctness, or production-impact signals.
 
-Return one of the statuses defined in
-[classifications.md](classifications.md). Do not query OMS solely to prove an
-omission or recurrence.
+Use a status from [classifications.md](classifications.md). Do not query OMS
+only to confirm an omission or recurrence.
 
 ## Unsupported and other failures
 
-For an unrecognized `l3-main-*` task, keep the exact Airflow identity and the
-narrowest supported terminal cause under `Other`. An unavailable secondary
-source does not remove it from the report.
+For an unrecognized `l3-main-*` task, report its exact Airflow identity and
+narrowest supported terminal cause under `Other`. Keep it in the report even
+if a secondary source is unavailable.

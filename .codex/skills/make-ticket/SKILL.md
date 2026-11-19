@@ -11,7 +11,7 @@ Use this skill when the user asks to create, make, or file a Jira ticket.
 
 ## Destination is required
 
-Before any Jira write, require an explicit destination board:
+Get an explicit destination board before any Jira write:
 
 - Accept a board URL such as `https://site.atlassian.net/jira/software/c/projects/RA/boards/5705`.
 - Also accept explicit site hostname, project key, and board ID when no URL is provided.
@@ -19,9 +19,13 @@ Before any Jira write, require an explicit destination board:
 - Do not infer a board from the current browser tab, a prior issue, an accessible sandbox, or the user's team.
 - If the board is missing or ambiguous, ask for the board URL and stop before creating anything.
 
-Verify the exact destination site with `getAccessibleAtlassianResources`. If it is not authorized, stop and tell the user which site must be connected. Never create the ticket on another accessible site as a fallback.
+Verify the exact destination site with `getAccessibleAtlassianResources`.
+If it is not authorized, stop. Tell the user which site must be connected.
+Never create the ticket on another accessible site as a fallback.
 
-Use `getVisibleJiraProjects` with the destination site and project key to verify that the project exists and is writable. Inspect the project's issue types and fields before choosing a ticket type or setting custom fields.
+Use `getVisibleJiraProjects` with the destination site and project key. Verify
+that the project exists and is writable. Inspect its issue types and fields
+before you choose a ticket type or set custom fields.
 
 ## Match the board's conventions
 
@@ -32,11 +36,16 @@ After destination verification:
 3. A board is not itself a Jira issue field. If the user asks for the current sprint or placement on the board, resolve the board's active sprint and set the sprint field explicitly.
 4. Do not claim that a ticket is on the requested board unless a post-create readback confirms the destination project and the board/sprint relationship.
 
-Use Rovo Teamwork Graph context for relationships among issues, people, sprints, repositories, and pull requests when needed. Use ordinary Jira tools for issue search, creation, field updates, assignment, comments, and transitions.
+Use Rovo Teamwork Graph context when necessary to find relationships among
+issues, people, sprints, repositories, and pull requests. Use ordinary Jira
+tools for issue search, creation, field updates, assignment, comments, and
+transitions.
 
 ## Create and verify
 
-Create exactly one issue unless the user explicitly requests multiple tickets. Preserve the user's scope and wording while adding concise acceptance criteria when useful.
+Create exactly one issue unless the user explicitly requests multiple
+tickets. Preserve the user's scope and wording. Add concise acceptance
+criteria when useful.
 
 Apply requested values for:
 
@@ -48,10 +57,16 @@ Apply requested values for:
 - labels and project-specific fields;
 - workflow status.
 
-After creation, read the issue back and verify the summary, project key, board/sprint placement, parent, assignee, points, and status. If a workflow requires intermediate transitions, use the available transitions in order and verify the final status.
+After creation, read the issue back. Verify the summary, project key,
+board/sprint placement, parent, assignee, points, and status. If the workflow
+requires intermediate transitions, use the available transitions in order.
+Verify the final status.
 
-If creation succeeds on the wrong site or project, do not delete or silently recreate it. Report the mismatch and ask before taking corrective action.
+If creation succeeds on the wrong site or project, do not delete or silently
+recreate the issue. Report the mismatch. Ask before you take corrective action.
 
 ## Final response
 
-Return the issue key and a link to the issue, followed by the verified destination board, project, sprint, assignee, points, and status. If anything could not be verified, state that explicitly.
+Return the issue key and link. Then give the verified destination board,
+project, sprint, assignee, points, and status. State which values you could
+not verify.

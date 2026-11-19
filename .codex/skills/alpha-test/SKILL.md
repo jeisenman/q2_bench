@@ -1,6 +1,6 @@
 ---
 name: alpha-test
-description: Plan and execute evidence-backed Alpha validation for data-engineering branch changes. Use when testing new or changed di-pipelines fields, deciding which DAG/de-jobs/ds-jobs artifacts must deploy, recording deployment evidence, or approval-gating recursive downstream Airflow reruns.
+description: Plan and execute evidence-backed Alpha validation for data-engineering branch changes. Use when testing new or changed di-pipelines fields, deciding which DAG/de-jobs/ds-jobs artifacts must deploy, recording deployment evidence, or planning and executing scoped recursive downstream Airflow reruns.
 ---
 
 # Alpha Test
@@ -8,9 +8,12 @@ description: Plan and execute evidence-backed Alpha validation for data-engineer
 Use Alpha to validate branch behavior with a documented deployment scope,
 bounded source-data evidence, and an exact downstream rerun plan.
 
-Do not trigger a deployment or clear Airflow tasks unless the user has
-authorized that external mutation. Every Airflow clear requires a reviewed
-dry-run selection and explicit approval for the exact DAG, run, and tasks.
+You are authorized to run any Alpha job within the test scope. In production,
+you are authorized to use any job within the deployment scope or the scope of
+failed jobs in production support.
+
+Review the dry-run selection for each Airflow clear. Keep execution within the
+authorized scope. Do not request additional approval for jobs within that scope.
 
 ## Testing new fields in di-pipelines
 
@@ -66,7 +69,7 @@ Record the intended test before collecting results:
 - DAG run ID:
 - Starting task ID:
 - Dry-run selection:
-- Approval reference:
+- Authorization context:
 - Final task states:
 ```
 
@@ -116,7 +119,7 @@ running task can retain previously loaded code or configuration.
 Load and follow the `remote-data` skill for the approved, read-only Databricks
 workflow.
 
-Trace the source from declarations rather than guessing its path:
+Use declarations to trace the source. Do not guess its path:
 
 1. Find the active DAG task and follow its `job_reference`.
 2. Read the resource, path convention, file name, format, and dataset version.
@@ -135,7 +138,7 @@ Aggregate by run date and return:
 - source file count;
 - Databricks parent and task run IDs.
 
-Use this aggregation pattern after deriving the exact input frame:
+After you derive the exact input frame, use this aggregation pattern:
 
 ```python
 from pyspark.sql import functions as F
@@ -156,7 +159,7 @@ daily = frame.groupBy("_run_date").agg(*aggregates).orderBy("_run_date")
 ```
 
 Choose a date where every required field has at least one non-null row. If no
-date qualifies, stop and distinguish:
+date qualifies, stop and identify which condition applies:
 
 - no run files in the window;
 - missing client directory;
@@ -184,9 +187,9 @@ Also record:
 - whether every row or only some rows populated each field;
 - schema drift between run files.
 
-The evidence must support the rerun decision without exposing raw rows.
+The evidence must support the rerun decision without raw rows.
 
-### 5. Plan and approve the recursive downstream rerun
+### 5. Plan and execute the recursive downstream rerun
 
 Identify the exact producer task in the post-deployment Alpha DAG run.
 Preserve task-group prefixes, for example:
@@ -222,12 +225,13 @@ Before execution:
 2. Review every task returned by the dry run.
 3. Exclude unrelated report, delivery, or client tasks.
 4. Record the selection in `deployment.md`.
-5. Request explicit approval for the exact DAG, run, starting task, and
-   downstream selection.
+5. Confirm that the selected DAG, run, starting task, and downstream tasks
+   remain within the authorized testing scope.
 
-After approval, repeat the identical request with `dry_run=false`. Never add
-upstream, past, or future runs. Monitor all selected tasks to terminal states
-and record their outcomes and relevant failed-task logs in `deployment.md`.
+After you review the selection, repeat the same request with
+`dry_run=false`. Never add upstream, past, or future runs. Monitor all selected
+tasks to terminal states. Record their outcomes and relevant failed-task logs
+in `deployment.md`.
 
 ## Completion criteria
 
@@ -237,7 +241,7 @@ The test is complete when:
 - every required Alpha deployment succeeded;
 - the selected DAG run started after deployment;
 - remote-data evidence proves the fields are present and non-null;
-- the recursive downstream selection was reviewed and approved;
+- the recursive downstream selection was reviewed and within the authorized scope;
 - rerun outcomes are recorded.
 
 ## PR Comment

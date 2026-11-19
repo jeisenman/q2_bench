@@ -1,8 +1,8 @@
 # OMS and Airflow task translation
 
-Use OMS for raw, bounded Log Analytics evidence when the exact Airflow task log
-is unavailable, incomplete, too large, or the user explicitly requests an OMS
-comparison. Production-support classification remains outside the
+Use OMS for raw, bounded Log Analytics evidence if the exact Airflow task log
+is unavailable, incomplete, or too large. Also use it if the user explicitly
+requests an OMS comparison. Production-support classification is outside the
 `remote-data` skill.
 
 ## Airflow identity maps directly to OMS
@@ -19,7 +19,7 @@ comparison. Production-support classification remains outside the
 | data interval start | `window_start_t` |
 
 The operator builder uses `job_name` as the Airflow `task_id`, then injects
-Airflow's rendered task ID into the job activity. Therefore:
+Airflow's rendered task ID into the job activity. Follow these rules:
 
 - use the exact task instance ID returned by Airflow;
 - retain TaskGroup prefixes such as `ra_group.` or
@@ -36,7 +36,7 @@ Airflow's rendered task ID into the job activity. Therefore:
 | `CA-02` | `ca` | `pl-oms-ca-primary` |
 
 Only use `environment: production` for these production Airflow regions.
-Before direct Log Analytics work, verify the active Azure subscription is
+Before direct Log Analytics work, verify that the active Azure subscription is
 `71aa0ec0-8411-43a2-9908-ddd2add764eb`.
 
 ## Preferred exact-job query
@@ -57,8 +57,8 @@ For a client-scoped Spark task, call `query_job_evidence`:
 }
 ```
 
-`start_at` must include a timezone. The tool derives the operational window as
-05:00 UTC on that date through 05:00 UTC the next day and projects the raw
+`start_at` must include a timezone. The tool uses an operational window from
+05:00 UTC on that date through 05:00 UTC the next day. It returns the raw
 timestamp, message, level, and pod fields in chronological order.
 
 Use the complete client UUID. A three-character client code is report
@@ -66,14 +66,14 @@ formatting only and is never a valid OMS filter.
 
 ## When exact-job parameters are unavailable
 
-First read Airflow task metadata. OMS routing is supported for Spark-backed
-jobs. Branch, trigger, short-circuit, and other Airflow-control operators may
-not emit a corresponding `DI_Scheduling_CL` stream; use their exact Airflow
-task log instead of fabricating an OMS query.
+Read Airflow task metadata first. OMS routing supports Spark-backed jobs.
+Branch, trigger, short-circuit, and other Airflow-control operators might not
+emit a corresponding `DI_Scheduling_CL` stream. Use their exact Airflow task
+log. Do not invent an OMS query.
 
-For a Spark task without a client identity, or for a domain-specific summary
-that intentionally spans attempts, call `query_oms` with narrow KQL and an
-explicit timespan:
+For a Spark task without a client identity, call `query_oms` with narrow KQL
+and an explicit timespan. Also use this for a domain-specific summary that
+intentionally spans attempts:
 
 ```kusto
 DI_Scheduling_CL
@@ -86,24 +86,23 @@ DI_Scheduling_CL
 | limit 1000
 ```
 
-Add `client_id_g` and `try_number_d` filters whenever they are known. Do not
-drop exact identity filters merely to obtain rows.
+Add `client_id_g` and `try_number_d` filters when known. Do not remove exact
+identity filters to get rows.
 
 ## Domain-specific exceptions
 
-- EventBus opportunity summaries may intentionally span attempts; omit
+- EventBus opportunity summaries can intentionally span attempts. Omit
   `try_number_d` only for that explicit aggregation.
 - For pipeline or activity investigations, derive `pipeline_name_s` from the
   DAG ID and `activity_name_s` from the job's activity arguments in
   `<repositories.root>/di-pipelines`. Do not guess either value.
 - A successful query with zero rows means `no matching OMS evidence`; it does
   not disprove the Airflow failure.
-- Keep OMS and Airflow conclusions source-qualified. An Airflow execution
+- State the source of OMS and Airflow conclusions. An Airflow execution
   timeout is not an OMS timeout unless OMS contains an explicit timeout
   marker.
 
 Use the production-support reference
-[`classifications.md`](../../prod-support/references/classifications.md) when
-the raw evidence must be
-classified as OOM, timeout, EventBus validation, or another supported failure
-type.
+[`classifications.md`](../../prod-support/references/classifications.md) to
+classify raw evidence as OOM, timeout, EventBus validation, or another supported
+failure type.

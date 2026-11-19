@@ -5,8 +5,8 @@ description: Test data-engineering changes by finding qualifying source data, ru
 
 # Code Testing
 
-Use when implementation is ready for test-data selection and behavioral
-validation.
+Use this skill when the implementation is ready for test-data selection and
+behavior validation.
 
 This skill does not plan, trigger, approve, poll, retry, or verify deployments.
 When testing requires deployed DAG or job code, load and follow the `deploy`
@@ -15,8 +15,8 @@ only after `deploy` reports that every required stage succeeded.
 
 ## Finding Testing Data
 
-Use this workflow to find Alpha source data that can be brought downstream for
-the job or fields being changed:
+Use this workflow to find Alpha source data for downstream tests of the
+changed job or fields:
 
 1. Run the static candidate index first:
 
@@ -30,13 +30,12 @@ the job or fields being changed:
    It reads Git and Python source only, follows extracted `job_reference`
    values, reports likely datasets, versions, formats and paths, checks field
    occurrences, auto-detects `main` or `master`, and shortlists safe Alpha
-   Contx storage metadata. Review its JSON before making any remote call.
+   Contx storage metadata. Review its JSON before you make a remote call.
 2. Trace each changed DAG task through its `job_reference` to the job's primary
    input dataset, version, format, and required new fields. Do not substitute a
    downstream copy or data from another system for the primary dataset.
 3. Use `lookup_contx_resources` to confirm the script's Alpha Contx shortlist
-   for
-   the client and shortlist only storage or DataLake resources that can contain
+   for the client. Select only storage or DataLake resources that can contain
    those primary datasets.
 4. Use `lookup_azure_resources` for the relevant Alpha resource group. If it
    returns `login_required` or `subscription_access_required`, run the exact
@@ -46,8 +45,8 @@ the job or fields being changed:
    `99b9412b-70fd-4221-8431-d1b3934889ec` because its test data is consistent
    across environments.
 6. Use the remote-data MCP to generate a bounded read-only notebook, or run the
-   repository's approved read-only discovery script. Temporarily download only
-   the smallest relevant file or partition into an ignored temporary directory.
+   repository's approved read-only discovery script. Download only the
+   smallest relevant file or partition into an ignored temporary directory.
 7. Inspect its schema and bounded counts. A candidate qualifies only when the
    primary dataset contains every new field and each new field has at least one
    non-null value. An absent or all-null field fails the data standard.
@@ -55,11 +54,11 @@ the job or fields being changed:
    field names, row count, and non-null counts. Delete temporary downloads
    after recording the evidence.
 
-If no Alpha candidate qualifies, record the negative Alpha evidence, then run
-the same bounded candidate search in staging. Re-run the static index with the
+If no Alpha candidate qualifies, record the negative Alpha evidence. Then
+run the same bounded candidate search in staging. Re-run the static index with the
 staging Contx metadata and `--environment staging`, then repeat the Contx,
-Azure, and bounded schema/non-null checks. Report staging results separately;
-staging data is a proposed test candidate, not Alpha evidence. Do not silently
+Azure, and bounded schema/non-null checks. Report staging results separately.
+Staging data is a proposed test candidate. It is not Alpha evidence. Do not silently
 switch environments.
 
 ```bash
@@ -86,17 +85,17 @@ Use the remote-data MCP to generate and run the reviewed
 - follow the changed DAG task through `job_reference` and dataset declarations
   before choosing either target.
 
-After finding a representative production candidate, call
+After you find a representative production candidate, call
 `upload_databricks_integration_branch` for `master` and the selected
 `RA-####` branch. Run identical bounded inputs through both versions and
 compare row/key counts, schemas, dropped or duplicate rows, and per-field
 non-null counts.
 
-When natural integration data cannot exercise the field, monkey patch only the
+If natural integration data cannot exercise the field, monkey patch only the
 notebook-local input DataFrame using bounded production-derived values. Assert
-that row and distinct-key counts are unchanged, never persist the patched
-input, and report the result as synthetic flow evidence rather than natural
-Alpha or staging evidence.
+that row and distinct-key counts are unchanged. Never persist the patched
+input. Report the result as synthetic flow evidence, not natural Alpha or
+staging evidence.
 
 ## Deployment handoff
 
@@ -158,8 +157,8 @@ For every commit that is ready to compare:
 Do not invoke `deploy` for a notebook-only Databricks comparison unless the
 test also requires an environment deployment.
 
-Keep each iteration tied to its commit, environment, input partition, and run
-ID. Do not reuse evidence from an earlier commit as proof for a later one.
+Record the commit, environment, input partition, and run ID for each
+iteration. Do not reuse evidence from an earlier commit as proof for a later one.
 Stop when the expected downstream result passes, the user declines another
 external mutation, or progress requires a new decision or credential.
 
@@ -174,8 +173,12 @@ component stages, deploy the exact branch commit, and record successful stage
 completion times. Continue only with an Airflow run that started after every
 required deployment stage completed.
 
-Every Airflow clear requires a reviewed dry-run selection and explicit
-approval for the exact DAG, run, and tasks.
+You are authorized to run any Alpha job within the test scope. In production,
+you are authorized to use any job within the deployment scope or the scope of
+failed jobs in production support.
+
+Review the dry-run selection for each Airflow clear. Keep execution within the
+authorized scope. Do not request additional approval for jobs within that scope.
 
 ## Testing new fields in di-pipelines
 
@@ -186,7 +189,7 @@ Use this workflow when a `di-pipelines` branch adds or changes dataset fields.
 Load and follow the `remote-data` skill for the approved, read-only Databricks
 workflow.
 
-Trace the source from declarations rather than guessing its path:
+Use declarations to trace the source. Do not guess its path:
 
 1. Find the active DAG task and follow its `job_reference`.
 2. Read the resource, path convention, file name, format, and dataset version.
@@ -205,7 +208,7 @@ Aggregate by run date and return:
 - source file count;
 - Databricks parent and task run IDs.
 
-Use this aggregation pattern after deriving the exact input frame:
+After you derive the exact input frame, use this aggregation pattern:
 
 ```python
 from pyspark.sql import functions as F
@@ -226,7 +229,7 @@ daily = frame.groupBy("_run_date").agg(*aggregates).orderBy("_run_date")
 ```
 
 Choose a date where every required field has at least one non-null row. If no
-date qualifies, stop and distinguish:
+date qualifies, stop and identify which condition applies:
 
 - no run files in the window;
 - missing client directory;
@@ -254,9 +257,9 @@ Also record:
 - whether every row or only some rows populated each field;
 - schema drift between run files.
 
-The evidence must support the rerun decision without exposing raw rows.
+The evidence must support the rerun decision without raw rows.
 
-### 3. Plan and approve the recursive downstream rerun
+### 3. Plan and execute the recursive downstream rerun
 
 Identify the exact producer task in the post-deployment Alpha DAG run.
 Preserve task-group prefixes, for example:
@@ -292,12 +295,13 @@ Before execution:
 2. Review every task returned by the dry run.
 3. Exclude unrelated report, delivery, or client tasks.
 4. Record the selection in `deployment.md`.
-5. Request explicit approval for the exact DAG, run, starting task, and
-   downstream selection.
+5. Confirm that the selected DAG, run, starting task, and downstream tasks
+   remain within the authorized testing scope.
 
-After approval, repeat the identical request with `dry_run=false`. Never add
-upstream, past, or future runs. Monitor all selected tasks to terminal states
-and record their outcomes and relevant failed-task logs in `deployment.md`.
+After you review the selection, repeat the same request with
+`dry_run=false`. Never add upstream, past, or future runs. Monitor all selected
+tasks to terminal states. Record their outcomes and relevant failed-task logs
+in `deployment.md`.
 
 ## Completion criteria
 
@@ -306,7 +310,7 @@ The test is complete when:
 - the `deploy` skill recorded the exact commit and successful required stages;
 - the selected DAG run started after deployment;
 - remote-data evidence proves the fields are present and non-null;
-- the recursive downstream selection was reviewed and approved;
+- the recursive downstream selection was reviewed and within the authorized scope;
 - rerun outcomes are recorded.
 
 ## PR Comment

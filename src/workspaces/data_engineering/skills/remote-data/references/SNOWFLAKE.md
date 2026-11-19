@@ -13,9 +13,8 @@ Use this guide to generate a bounded, read-only Snowflake notebook through the
 | `staging` | Preproduction validation |
 | `prod_us` | US production; this is the tool default |
 
-Always pass the environment explicitly when the request is not for US
-production. Treat `prod_us` as production access even when the statement is
-read-only.
+Pass the environment explicitly unless the request is for US production.
+Treat `prod_us` as production access, including for read-only statements.
 
 The generated notebook uses environment-prefixed variables such as
 `SNOWFLAKE_PROD_US_ACCOUNT`, `SNOWFLAKE_PROD_US_USER`, and
@@ -30,7 +29,7 @@ Resolve the configured repository root from:
 workspaces.data_engineering.repositories.root
 ```
 
-Then inspect `<repositories.root>/di-pipelines` before writing SQL. Useful
+Inspect `<repositories.root>/di-pipelines` before you write SQL. Useful
 locations include:
 
 - `de-jobs/src/datamart/jobs/snowflake/evolutions/` for versioned DDL;
@@ -39,7 +38,7 @@ locations include:
 - `de-jobs/src/datamart/jobs/data_explorer/` for Data Studio queries;
 - `dags/precisionlender/dags/snowflake_*.py` for Airflow orchestration.
 
-Use source inspection to identify the database, schema, table, join keys, and
+Inspect the source to identify the database, schema, table, join keys, and
 date fields. Do not guess object names from an Airflow task name.
 
 ## Generate the notebook
@@ -56,15 +55,15 @@ Call `make_snowflake_notebook` with a read-only statement and a bounded result:
 
 Allowed leading statements are `SELECT`, `WITH`, `SHOW`, and `DESCRIBE`.
 The limit must be between 1 and 10,000. The generator rejects obvious
-mutations, but the caller must still review the complete statement before
-running the notebook.
+mutations. The caller must still review the complete statement before
+execution.
 
-Prefer this investigation order:
+Use this investigation order where possible:
 
-1. `SHOW` or `DESCRIBE` the object when its shape is uncertain.
+1. `SHOW` or `DESCRIBE` the object if its structure is uncertain.
 2. Select only the columns needed for the question.
 3. Filter by client and a bounded date or run window when available.
-4. Add deterministic ordering before applying the result limit.
+4. Add deterministic ordering before you apply the result limit.
 5. Review the generated source, target, and environment before execution.
 
 For portable application queries and deterministic benchmark fixtures, use

@@ -4,8 +4,8 @@ Use the operational anchor's UTC date in the channel heading.
 
 ## Mandatory rendering contract
 
-The Data Internal message is a paste-ready operational artifact, not a prose
-summary. Render the template below exactly after substituting evidence:
+Prepare the Data Internal message for direct use in the channel. Insert the
+evidence into the template below. Keep its exact format:
 
 - Keep the `:bangbang: PROD SUPPORT YYYY-MM-DD :bangbang:` heading.
 - Keep plain `US` and `CA` region labels in that order.
@@ -32,14 +32,13 @@ US
 Never render `:bangbang: PROD SUPPORT YYYY-MM-DD :bangbang:US` or place `CA`
 on the heading line.
 
-Before returning the report, perform a line-by-line format check against this
-template. If any required heading, region, status, indentation, or `Follow Up:`
-line is missing, rewrite the report before sending it.
+Before you return the report, compare each line with this template. If any required heading, region, status, indentation, or `Follow Up:`
+line is missing, rewrite the report before you send it.
 
 ## Rewrite preservation
 
-When rewriting a Slack report that already exists in the conversation, use the
-previous report as the formatting source of truth. Preserve its exact heading,
+When you rewrite a Slack report that is already in the conversation, use the
+previous report as the format authority. Preserve its exact heading,
 section order, blank lines, region labels, status-bullet structure, bullet
 characters, indentation, link syntax, and `Follow Up:` placement. Change only
 the requested scope, dates, findings, evidence, or follow-up content. Do not
@@ -113,12 +112,13 @@ Rules:
   Validation` → `Scotiabank DV`, Wells Fargo → `WF`, City National Bank → `CNB`,
   Bank of America → `BoFA`, and CIBC Canada → `CIBC CA`. Keep full names in
   developer and follow-up messages.
-- End no Data Internal bullet with a period.
-- Retain every job identifier exactly, including underscores, in internal
-  evidence and retry state. In channel messages, if a job identifier contains
-  a period, split at the first period and display everything after it. For
-  example, display `opportunity_save_history_data.opportunity_save_history` as
-  `opportunity_save_history`. Keep any later periods and preserve underscores.
+- Do not end a Data Internal bullet with a period.
+- Retain every task identifier exactly, including task-group prefixes, in
+  internal evidence and retry state. In channel messages, display only the
+  final dot-separated component of a task identifier: the job name. Omit all
+  task-group names. For example,
+  `pipeline_scenarios_opportunities.pipeline_scenarios_opportunities_history_history.pipeline_scenarios_opportunities_history`
+  displays as `pipeline_scenarios_opportunities_history`. Preserve underscores.
 - When one client fails multiple remaining jobs, list only the display job
   identifiers. Do not append failure causes, classifications, or evidence to
   that row. When a job is already represented by a shared-job row, omit it
@@ -139,7 +139,7 @@ Rules:
   `check_for_subscriber_client_errors`, and
   `event_bus_to_payloads_historical`; do not silently drop any configured
   category or expand omitted failures into client bullets.
-- Enforce this canonical code mapping when rendering that line:
+- Use this exact code mapping for that line:
   `d2p` → `D2P`, `mi3` → `MI3`, `subscriber` →
   `check_for_subscriber_client_errors`, and
   `event_bus_to_payloads_historical` → the exact literal
@@ -157,9 +157,9 @@ Rules:
   candidates. Include the display client label, full `l3-main-*` DAG ID, and
   comma-separated display job identifiers. Unresolved clients use the explicit
   `Unidentified client (<first-three UUID characters>)` label.
-- Preserve this Markdown hierarchy exactly: region labels are plain text;
-  insert a blank line after each region label; regional status is a top-level
-  bullet; omission summaries and client findings are two-space nested bullets.
+- Keep this exact Markdown hierarchy. Use plain text for region labels.
+  Insert a blank line after each region label. Use a top-level bullet for
+  regional status. Indent omission summaries and client findings by two spaces.
   Follow Up actions are top-level bullets, with rerun candidates indented by
   two spaces beneath `Would you like to re-run:`.
 
@@ -188,7 +188,7 @@ Bank (910) failed on active_deposit_accounts
 The non-compliant first row repeats a job and uses a prose cause instead of
 the normalized grouping form. The second row is code-only and omits the
 resolved bank name. Channel rows contain only the resolved display names,
-codes, and display job identifiers; exact IDs remain in internal state.
+codes, and display job identifiers. Keep exact IDs in internal state.
 
 Non-compliant patterns include claiming a rerun is active without a confirmed
 Airflow mutation, repeating a bank/job pair, using a code-only client label,

@@ -13,7 +13,7 @@ job execution or writes.
 3. Search one declared dataset path and recent partition at a time. Return only
    client UUID, environment, dataset, partition, row count, field presence, and
    non-null count.
-4. Stop after finding a small representative set of clients with non-null
+4. Stop when you find a small representative set of clients with non-null
    upstream values. Never download broad production payloads locally.
 
 ## 2. Upload baseline and feature code
@@ -34,8 +34,8 @@ to:
 
 It requires `DE_DATABRICKS_HOST`, `DE_DATABRICKS_TOKEN`, the Databricks CLI,
 and the `dsint` function. The tool reports variable names and setup guidance,
-never credential values. Uploading overwrites that branch's integration
-notebook path, so invoke it only for the explicitly selected branches.
+never credential values. An upload overwrites that branch's integration
+notebook path. Call it only for the explicitly selected branches.
 
 Restart the remote-data MCP after changing this tool or its environment.
 
@@ -55,13 +55,13 @@ Compare:
 - a bounded set of keys showing expected field values.
 
 The new-field standard passes only when every new downstream field is
-non-null for the rows expected to populate. Explain legitimate row exclusions
-with counts; do not hide them inside aggregate percentages.
+non-null in the rows expected to populate. Explain legitimate row exclusions
+with counts. Do not hide exclusions in aggregate percentages.
 
 ## 4. Patch the input dataset when needed
 
-If production proves that upstream values exist but a reproducible integration
-input does not, patch only the notebook-local DataFrame:
+If production proves that upstream values exist, but no reproducible
+integration input exists, patch only the notebook-local DataFrame:
 
 1. Read the normal input with the production job's format and options.
 2. Select a bounded set of representative keys and values from read-only
@@ -71,11 +71,12 @@ input does not, patch only the notebook-local DataFrame:
    with `coalesce(patch[field], input[field])`.
 5. Assert unchanged row count, unchanged key distinct count, no duplicate
    keys, and at least one non-null patched value per field.
-6. Pass the patched DataFrame to the same transformation entry point used by
-   the job. Do not write the patch to ADLS or modify shared tables.
+6. Pass the patched DataFrame to the job's transformation entry point. Do not
+   write the patch to ADLS or modify shared tables.
 
 Label patched results as synthetic flow evidence. They prove transformation
-behavior, not that Alpha or staging naturally contains qualifying data.
+behavior. They do not prove that Alpha or staging naturally contains
+qualifying data.
 
 ## 5. Evidence
 

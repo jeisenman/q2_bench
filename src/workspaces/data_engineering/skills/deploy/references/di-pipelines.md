@@ -2,15 +2,15 @@
 
 Use this procedure for an Alpha deployment through the Azure DevOps
 `di-pipelines-unified` pipeline. Read the target checkout's `CONTRIBUTING.md`,
-`azure-pipelines.yml`, and referenced stage templates before acting because
-pipeline stages and environments can change.
+`azure-pipelines.yml`, and referenced stage templates before you act. Pipeline
+stages and environments can change.
 
 ## Resolve the deployment target
 
-Use the exact feature-branch commit requested by the user. Never substitute a
-newer branch commit after authorization.
+Use the exact feature-branch commit requested by the user. Do not substitute
+a newer branch commit after authorization.
 
-Resolve the PR before querying Azure:
+Resolve the PR before you query Azure:
 
 ```bash
 gh pr view <pr-number-or-url> \
@@ -29,8 +29,8 @@ git diff --name-status origin/<base-branch>...origin/<head-branch>
 
 Inspect the Azure definition's YAML at the exact source commit, including
 templates, parameters, conditions, dependencies, environments, and approval
-gates. Do this before finding or creating a run. Pipeline names are not a
-reliable statement of side effects.
+gates. Do this before you find or create a run. Pipeline names do not reliably
+identify side effects.
 
 Build a component matrix from the PR diff:
 
@@ -43,16 +43,16 @@ Build a component matrix from the PR diff:
 | `Deployment/images/**`, image-build templates, or dependency/version changes that alter runtime images | Container images | Only required image builds and explicitly required image rollout stages |
 | Pipeline definitions or templates outside the component mappings above | Azure workflow definition | Validate the affected workflow; do not infer a runtime deployment |
 
-Test-only and documentation-only changes require their applicable validation
-but do not select a runtime deployment component unless another changed path
-changes the packaged runtime artifact.
+Run the applicable validation for test-only and documentation-only changes.
+Select a runtime deployment component only if another changed path changes
+the packaged runtime artifact.
 
 For each component, record `required` or `excluded`, the changed paths that
-justify the decision, and the exact stages that would execute. In particular:
+justify the decision, and the exact stages that would execute. Apply these
+rules:
 
 - DAG, `de-jobs`, or `ds-jobs` changes do not require Helm.
-- Do not redeploy Helm merely because a combined definition contains Helm
-  stages.
+- Do not redeploy Helm because a combined definition contains Helm stages.
 - Select Helm only when the chart or a Helm-consumed configuration/template
   changed, or when the user explicitly requested a verified image rollout
   that requires a Helm update.
@@ -64,19 +64,19 @@ justify the decision, and the exact stages that would execute. In particular:
 `di-pipelines-unified` combines image, Helm, DAG, and jobs workflows. It is
 acceptable only when its evaluated stage conditions skip every excluded
 deployment component. If a code-only run would execute Helm, do not trigger or
-approve that run. Use a narrower verified workflow when one exists. If no
-workflow can deploy only the required components, stop and report the workflow
-gap instead of broadening the deployment.
+approve it. Use a narrower verified workflow if one exists. If no workflow can
+deploy only the required components, stop. Report the workflow gap. Do not
+broaden the deployment.
 
 Apply the same rule to an automatically triggered or already-running build.
-Do not approve an unrelated environment gate just because the build also
-contains a required code stage. Do not cancel the run without separate
-authorization; report the unintended stages and wait for direction.
+Do not approve an unrelated environment gate because the build also contains
+a required code stage. Do not cancel the run without separate authorization.
+Report the unintended stages and wait for direction.
 
 ## Record the deployment plan
 
 Before an Alpha deployment, create or update `deployment.md` at the root of
-the feature branch. Record the intended deployment before changing Azure:
+the feature branch. Record the intended deployment before you change Azure:
 
 ```markdown
 # Alpha deployment
@@ -173,18 +173,19 @@ az pipelines runs list \
   --top 100
 ```
 
-For a request referring to "yesterday," calculate and report the exact UTC
-window represented by that phrase. Do not select a run by date alone. Require
-the exact authorized feature-branch commit.
+If the request refers to "yesterday," calculate and report the exact UTC
+window. Do not select a run by date alone. Require the exact authorized
+feature-branch commit.
 
-When several runs qualify, record every candidate and use the newest
-non-superseded run. The run ID, not the YAML build number, is the stable
-identifier.
+If several runs qualify, record every candidate. Use the newest run that has
+not been superseded. Use the run ID as the stable identifier. The YAML build
+number is not a stable identifier.
 
 Handle its state explicitly:
 
 - `inProgress`, `notStarted`, or approval-waiting: continue polling it;
-- `completed/succeeded`: verify every required stage before taking no action;
+- `completed/succeeded`: verify every required stage before you decide that
+  no action is necessary;
 - `completed/failed` or `completed/canceled`: inspect the timeline and decide
   whether a bounded stage retry is safe;
 - no qualifying run: queue one only after the deployment contract is
@@ -201,16 +202,16 @@ not request an image build. Supply image parameters only when the diff and
 deployment contract require them.
 
 Record the returned pipeline ID, run ID, source branch, source commit,
-parameters, queue time, and web URL. A queued run is not a completed
+parameters, queue time, and web URL. Do not report a queued run as a completed
 deployment.
 
 ## Poll, approve, and retry
 
 Poll the run and its stage timeline every 30 seconds until all required stages
-reach terminal states. Use a background terminal session or parallel agent
-when an independent read-only validation can proceed simultaneously. Do not
-start a dependent post-deployment validation before its producing deployment
-and Airflow task succeed.
+reach terminal states. Use a background terminal session or parallel agent if
+independent read-only validation can proceed at the same time. Start dependent
+post-deployment validation only after its producing deployment and Airflow task
+succeed.
 
 At each poll, report only changes in:
 
@@ -219,11 +220,11 @@ At each poll, report only changes in:
 - pending approval IDs and environments;
 - newly failed or canceled jobs.
 
-Approval gates are external mutations. Before approving, map each approval to
-the exact environment, stage, and jobs it will release. Present the approval
+Approval gates are external mutations. Before you approve, map each approval
+to the exact environment, stage, and jobs it will release. Present the approval
 ID, environment, run ID, stage, jobs, commit, and audit comment. Do not approve
-an approval merely because it belongs to the correct build. When the user has
-authorized that exact approval, use:
+a gate because it belongs to the correct build. After the user authorizes that
+exact approval, use:
 
 ```bash
 uv run agentbench approve-deployment <approval-id> \
@@ -232,12 +233,12 @@ uv run agentbench approve-deployment <approval-id> \
   --comment "Approved <environment> for <commit> in run <run-id>."
 ```
 
-For a failed, canceled, or stalled stage, inspect its jobs and logs before
-retrying. Retry only the exact stage when the cause is transient or
-infrastructure-related and the retry is authorized. Do not retry a code or
-test failure without a supported fix. Use the Azure DevOps stage-update
-operation with `state=retry`; leave `forceRetryAllJobs=false` unless the user
-explicitly authorizes rerunning successful jobs in that stage.
+For a failed, canceled, or stalled stage, inspect its jobs and logs before you
+retry. Retry only the exact stage, with authorization, when the cause is
+transient or infrastructure-related. Do not retry a code or test failure
+without a supported fix. Use the Azure DevOps stage-update operation with
+`state=retry`. Leave `forceRetryAllJobs=false` unless the user explicitly
+authorizes a rerun of successful jobs in that stage.
 
 Treat an agent disk-pressure failure such as
 `Free disk space on / is lower than 5%` as infrastructure-related after the
@@ -247,8 +248,7 @@ the deployment and report the repeated disk-pressure evidence.
 
 After one unsuccessful retry of the same stage, stop and report the evidence
 unless the user explicitly authorizes another attempt. Never queue a second
-whole pipeline merely to bypass a pending approval or an unexplained failed
-stage.
+whole pipeline to bypass a pending approval or an unexplained failed stage.
 
 ## Verify and notify
 
@@ -256,8 +256,8 @@ Deployment is complete only when the run and every required Alpha stage
 succeeded for the recorded source commit. Confirm the deployed Alpha
 environment and the first relevant Airflow run loaded after deployment.
 Record each required stage's status and completion time in `deployment.md`.
-An Airflow run that started before deployment completed is not
-post-deployment evidence because it can retain previously loaded code or
+Do not use an Airflow run that started before deployment completed as
+post-deployment evidence. It can retain previously loaded code or
 configuration.
 
 If the user requested a Slack notification and a Slack destination is
@@ -273,8 +273,8 @@ available, send one completion message after verification:
 ```
 
 Use Slack mrkdwn links when URLs are available. If no Slack destination or
-send capability is available, return the paste-ready message and state clearly
-that it was not sent.
+send capability is available, return the paste-ready message. State that it
+was not sent.
 
 Do not expose customer names, credentials, raw rows, or unbounded logs in
 deployment records or Slack messages.

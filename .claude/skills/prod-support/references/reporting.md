@@ -4,8 +4,8 @@ Use the operational anchor's UTC date in the channel heading.
 
 ## Mandatory rendering contract
 
-The Data Internal message is a paste-ready operational artifact, not a prose
-summary. Render the template below exactly after substituting evidence:
+Prepare the Data Internal message for direct use in the channel. Insert the
+evidence into the template below. Keep its exact format:
 
 - Keep the `:bangbang: PROD SUPPORT YYYY-MM-DD :bangbang:` heading.
 - Keep plain `US` and `CA` region labels in that order.
@@ -18,9 +18,8 @@ summary. Render the template below exactly after substituting evidence:
 - Emit `:bangbang:` literally for Slack; do not replace it with an emoji asset
   URL.
 
-Before returning the report, perform a line-by-line format check against this
-template. If any required heading, region, status, indentation, or `Follow Up:`
-line is missing, rewrite the report before sending it.
+Before you return the report, compare each line with this template. If any required heading, region, status, indentation, or `Follow Up:`
+line is missing, rewrite the report before you send it.
 
 ```text
 URLs to validate
@@ -78,14 +77,14 @@ Rules:
   Validation` → `Scotiabank DV`, Wells Fargo → `WF`, City National Bank → `CNB`,
   Bank of America → `BoFA`, and CIBC Canada → `CIBC CA`. Keep full names in
   developer and follow-up messages.
-- End no Data Internal bullet with a period.
+- Do not end a Data Internal bullet with a period.
 - Retain every job identifier exactly, including underscores, in internal
   evidence and retry state. In channel messages, if a job identifier contains
   a period, split at the first period and display everything after it. For
   example, display `opportunity_save_history_data.opportunity_save_history` as
   `opportunity_save_history`. Keep any later periods and preserve underscores.
-- When one client fails multiple jobs, list only the display job identifiers. Do not
-  append failure causes, classifications, or evidence to that row.
+- When one client fails multiple jobs, list only the display job identifiers.
+  Do not append failure causes, classifications, or evidence to that row.
 - Render a confirmed distinctness-validation finding as
   `<client> (<code>) failed DV`.
 - Say `suggest re-run` only for validated distinctness targets.
@@ -102,7 +101,7 @@ Rules:
   `check_for_subscriber_client_errors`, and
   `event_bus_to_payloads_historical`; do not silently drop any configured
   category or expand omitted failures into client bullets.
-- Enforce this canonical code mapping when rendering that line:
+- Use this exact code mapping for that line:
   `d2p` → `D2P`, `mi3` → `MI3`, `subscriber` →
   `check_for_subscriber_client_errors`, and
   `event_bus_to_payloads_historical` → the exact literal
@@ -119,9 +118,9 @@ Rules:
   display client label, full `l3-main-*` DAG ID, and comma-separated display
   job identifiers. Unresolved clients use the explicit
   `Unidentified client (<first-three UUID characters>)` label.
-- Preserve this Markdown hierarchy exactly: region labels are plain text;
-  insert a blank line after each region label; regional status is a top-level
-  bullet; omission summaries and client findings are two-space nested bullets.
+- Keep this exact Markdown hierarchy. Use plain text for region labels.
+  Insert a blank line after each region label. Use a top-level bullet for
+  regional status. Indent omission summaries and client findings by two spaces.
   Follow Up actions are top-level bullets, with rerun candidates indented by
   two spaces beneath `Would you like to re-run:`.
 
@@ -151,7 +150,7 @@ The non-compliant Scotiabank row omits the client code, uses prose job names,
 includes root-cause details, and ends with a period. The Renasant row omits
 the client code, hyphenates the job, and removes the underscore from
 `active_deposit_accounts`. Data Internal rows contain only the display client
-label and display job identifiers; exact IDs remain in internal state.
+label and display job identifiers. Keep exact IDs in internal state.
 
 Non-compliant patterns include claiming a rerun is active without a confirmed
 Airflow mutation, combining clients in one bullet, guessing a client identity,

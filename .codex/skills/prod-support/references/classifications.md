@@ -11,8 +11,8 @@ Use the narrowest supported classification:
 | `unknown_resource_termination` | SIGKILL or exit `-9` without corroborating evidence |
 | `not_oom` | A different explicit terminal cause |
 
-Do not report plain `OOM` for probable or unknown cases. Include the evidence
-that determined the confidence.
+For probable or unknown cases, do not report plain `OOM`. State the evidence
+that supports the confidence level.
 
 ## Timeout evidence
 
@@ -24,14 +24,14 @@ Use source-qualified timeout classifications:
 | `airflow_confirmed_timeout` | Airflow task-instance metadata identifies execution timeout or records duration exceeding the configured execution timeout |
 | `unknown` | Neither source contains an explicit timeout signal |
 
-An OMS stream that stops early without a terminal error is not itself timeout
-evidence. Preserve `OMS: unknown` alongside `Airflow: confirmed timeout` when
-the sources differ.
+An OMS stream that ends without a terminal error does not prove a timeout.
+When sources differ, report both `OMS: unknown` and
+`Airflow: confirmed timeout`.
 
 ## Delivery-to-Promise and subscriber failures
 
-Always query the prior 30 days for the same task and each affected client.
-Assign one status:
+For the same task and each affected client, query the prior 30 days. Assign
+one status:
 
 - `new`: no matching prior failure.
 - `known_recurring_unchanged`: affected clients and root cause are unchanged.
@@ -39,30 +39,27 @@ Assign one status:
   cause changed.
 - `recovered`: the current operational run succeeded after prior failures.
 
-Put `new` and `known_recurring_changed` findings in the primary report.
-Summarize `known_recurring_unchanged` only in the developer message under
-`Known recurring`; omit it from the Data Internal Channel message unless it
-contains a new OOM, distinctness, timeout, or production-impact signal.
+Include `new` and `known_recurring_changed` findings in the primary report.
+Put `known_recurring_unchanged` only in the developer message under `Known
+recurring`. Omit it from the Data Internal Channel message unless it has a new
+OOM, distinctness, timeout, or production-impact signal.
 
 ## Airflow failure to OMS classification
 
-Use this sequence when an Airflow failure requires `DI_Scheduling_CL` evidence:
+Use these steps when an Airflow failure needs `DI_Scheduling_CL` evidence:
 
-1. Parse the exact Airflow task attempt first. Capture the region, complete
-   client UUID, DAG ID, task ID, run ID, attempt number, and the operational
-   `window_start_t`.
-2. Prefer the exact Airflow log for root cause and detailed messages. Do not
-   query OMS merely to obtain details already present in the Airflow log.
-3. Select the narrowest query below based on the failure class. Keep the client,
-   task, run, job status, and target-window filters whenever they are available.
-4. Do not filter by `try_number_d` for the EventBus opportunity summary unless
-   the investigation specifically needs one attempt; omitting it is more
-   reliable for that use case.
-5. Use the production workspace matching the Airflow region:
-   `pl-oms-us-primary` for US-01 and `pl-oms-ca-primary` for CA-02.
-6. Use Kusto UTC literals in the form
-   `datetime('YYYY-MM-DDT05:00Z')`. For a broad day query, prefer
-   `startofday(window_start_t)` and a bounded `TimeGenerated` range.
+1. Parse the exact Airflow attempt. Record the region, full client UUID,
+   DAG ID, task ID, run ID, attempt number, and operational `window_start_t`.
+2. Use the exact Airflow log for root cause and details. Do not query OMS
+   for information already in that log.
+3. Choose the narrowest query for the failure class. Keep available client,
+   task, run, job-status, and target-window filters.
+4. For the EventBus opportunity summary, omit `try_number_d` unless you
+   need one attempt. Omitting it is more reliable for this query.
+5. Match the OMS production workspace to the Airflow region: `pl-oms-us-primary`
+   for US-01 and `pl-oms-ca-primary` for CA-02.
+6. Use Kusto UTC literals like `datetime('YYYY-MM-DDT05:00Z')`. For a full
+   day, use `startofday(window_start_t)` and a bounded `TimeGenerated` range.
 
 ### Recoverable v2 EventBus opportunity snapshots
 
@@ -167,6 +164,5 @@ DI_Scheduling_CL
 | order by ra_file_s, MissingColumn
 ```
 
-Do not treat a successful OMS query with no matching rows as proof that the
-Airflow failure did not occur. Report the Airflow failure and classify the OMS
-result as `no matching OMS evidence`.
+An OMS query with no matching rows does not disprove the Airflow failure.
+Report the failure and label the OMS result `no matching OMS evidence`.
