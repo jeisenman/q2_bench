@@ -39,6 +39,11 @@
 .semantic-workspace .semantic-catalog th:first-child{width:49%}
 .semantic-workspace .semantic-catalog th:nth-child(2){width:16%}
 .semantic-workspace .semantic-catalog td{padding:10px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.semantic-workspace .lineage-detail { overflow-wrap:anywhere; }
+.semantic-workspace .lineage-display { scrollbar-width:thin; scrollbar-color:var(--rust) var(--paper); }
+.semantic-workspace .lineage-display::-webkit-scrollbar { width:8px; height:8px; }
+.semantic-workspace .lineage-display::-webkit-scrollbar-track { background:var(--paper); }
+.semantic-workspace .lineage-display::-webkit-scrollbar-thumb { background:var(--rust); border:2px solid var(--paper); border-radius:8px; }
 .semantic-workspace .semantic-catalog tr.selected{background:#eee9dc}
 .semantic-workspace .semantic-catalog .lineage-row{font:17px/1.4 Georgia,serif;padding:0;border:0;background:none}
 .semantic-workspace .semantic-catalog .lineage-row:hover{color:var(--rust)}
