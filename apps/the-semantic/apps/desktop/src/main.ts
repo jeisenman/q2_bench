@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, session, net, shell } from 'electron';
 import path from 'node:path';
-import { ReadSchema, readAPI, chatAPI, saveProposalAPI, saveDocumentAPI } from './api.js';
+import { ReadSchema, readAPI, chatAPI, saveProposalAPI, saveDocumentAPI, createAgentAPI } from './api.js';
 import { researchSessionArgument, forwardedResearchSession } from './launch.js';
 
 import { lineageOrigin, readLineage } from './lineage-client.js';
@@ -44,6 +44,11 @@ function createWindow(): void {
     return readAPI(validated, 'http://127.0.0.1:5056');
   });
   ipcMain.removeHandler('semantic:proposals.save');
+  ipcMain.removeHandler('semantic:agents.create');
+  ipcMain.handle('semantic:agents.create', async (event, payload: unknown) => {
+    if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) throw new Error('Untrusted IPC sender.');
+    return createAgentAPI(payload, 'http://127.0.0.1:5056');
+  });
   ipcMain.handle('semantic:proposals.save', async (event, payload: unknown) => {
     if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) throw new Error('Untrusted IPC sender.');
     return saveProposalAPI(payload, 'http://127.0.0.1:5056');

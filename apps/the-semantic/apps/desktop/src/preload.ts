@@ -3,8 +3,12 @@ import { DocumentSchema, DocumentSaveSchema } from '../../../packages/runtime/sr
 import { contextBridge, ipcRenderer } from 'electron';
 import { ProposalInputSchema, ProposalRecordSchema } from '../../../packages/runtime/src/proposals.js';
 import { ReadSchema, validateResponse } from './api.js';
+import { AgentDefinitionSchema, AgentRecordSchema } from '../../../packages/runtime/src/contracts.js';
 
 contextBridge.exposeInMainWorld('semantic', Object.freeze({
+  async createAgent(raw: unknown): Promise<unknown> {
+    return AgentRecordSchema.parse(await ipcRenderer.invoke('semantic:agents.create', AgentDefinitionSchema.parse(raw)));
+  },
   async chat(raw: unknown): Promise<unknown> {
     return ChatRecordSchema.parse(await ipcRenderer.invoke('semantic:chat', ChatRequestSchema.parse(raw)));
   },

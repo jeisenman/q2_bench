@@ -38,3 +38,4 @@
 .document-editor pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .agent-list{display:block}.agent-row{border-bottom:1px solid var(--line)}.agent-summary{display:flex;align-items:center;gap:24px;padding:24px 0;cursor:pointer;list-style:none}.agent-summary::-webkit-details-marker{display:none}.agent-summary:focus-visible{outline:2px solid var(--rust);outline-offset:4px}.agent-summary:after{content:'+';margin-left:auto;color:var(--rust);font-size:22px}.agent-row[open]>.agent-summary:after{content:'−'}.agent-name{font:30px Georgia,'Times New Roman',serif}.agent-version{font-size:10px;letter-spacing:1px;color:var(--rust);white-space:nowrap}.agent{padding:0 0 28px;border:0}.agent:nth-child(odd){border:0}
+.new-agent-row>.agent-summary:after,.new-agent-row[open]>.agent-summary:after{content:none}

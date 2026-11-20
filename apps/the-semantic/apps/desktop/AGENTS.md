@@ -15,6 +15,10 @@ loads the packaged run-summary manifest only and transfers selected evidence
 through a MessageChannel. Iframes have allow-scripts only; no same-origin,
 preload, Node, generic IPC or direct API access. Close old ports on view changes.
 
+The Agent Catalog's new-agent form registers a validated immutable definition
+through a fixed research API route. It retains input on failure, protects unsaved
+input, and uses the shared edit boxes. It does not start research.
+
 Build with npm run build; test with npm test. Keep service strings in textContent
 and use explicit unavailable states. Never create fake live data.
 

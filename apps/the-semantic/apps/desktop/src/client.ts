@@ -1,7 +1,14 @@
-import { validateResponse, route, readAPI, chatAPI, saveProposalAPI, saveDocumentAPI, type ReadRequest } from './api.js';
+import { validateResponse, route, readAPI, chatAPI, saveProposalAPI, saveDocumentAPI, createAgentAPI, type ReadRequest } from './api.js';
 import { boundedJSON } from './bounded-json.js';
 import { readLineage } from './lineage-client.js';
-declare global { interface Window { semantic?: { read(request: ReadRequest): Promise<unknown>; chat?(request: unknown): Promise<unknown>; saveDocument(payload: unknown): Promise<unknown>; saveProposal(payload: unknown): Promise<unknown> } } }
+declare global { interface Window { semantic?: { read(request: ReadRequest): Promise<unknown>; chat?(request: unknown): Promise<unknown>; createAgent?(payload: unknown): Promise<unknown>; saveDocument(payload: unknown): Promise<unknown>; saveProposal(payload: unknown): Promise<unknown> } } }
+/** Registers a new agent through the finite desktop bridge. */
+export async function createAgent(payload: unknown): Promise<unknown> {
+  if (window.semantic?.createAgent) return window.semantic.createAgent(payload);
+  if (window.semantic) throw new Error('Restart The Semantic to load the agent registration bridge.');
+  if (import.meta.env.DEV && location.origin === 'http://127.0.0.1:4175') return createAgentAPI(payload, '/preview-api');
+  throw new Error('The agent registration bridge is unavailable.');
+}
 /** Reads service evidence through preload, or the explicit Vite preview proxy. */
 export async function read(request: ReadRequest): Promise<unknown> {
   if (window.semantic) return window.semantic.read(request);

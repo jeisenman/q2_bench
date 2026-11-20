@@ -16,6 +16,7 @@ import { mountSemantic, type SemanticState } from './semantic-view.js';
 import { mountSessions } from './session-view.js';
 import { researchChatFixture } from './research-chat-fixture.js';
 import { chatDisplayText } from './chat-display.js';
+import { mountNewAgent } from './new-agent.js';
 
 const codexView = createCodexView();
 const semanticState:SemanticState={mode:'Lineage',query:'',help:{query:'',source:'snapshot'}};
@@ -141,7 +142,7 @@ function renderAgents(): void {
   intro('02 / AGENT CATALOG', 'Every result has\nan author.', 'Immutable agent definitions establish the instructions, model and tool scope used by each experiment. Research records retain the agent definition version.');
   main.append(button('Refresh catalog ↻', () => { void load(); }, 'refresh'));
   const list = el('div', '', 'agent-list');
-  if (!agents.length) list.append(el('p', 'No registered agents. Use researcher-codex agent put <agent.json>, then refresh.', 'empty'));
+  if (!agents.length) list.append(el('p', 'No registered agents.', 'empty'));
   for (const agent of agents) {
     const row = el('details', '', 'agent-row');
     const summary = el('summary', '', 'agent-summary');
@@ -158,6 +159,11 @@ function renderAgents(): void {
     row.append(summary, section);
     list.append(row);
   }
+  const addRow = el('details', '', 'agent-row new-agent-row');
+  addRow.append(el('summary', '+ New Agent', 'agent-summary agent-name'));
+  const stopNewAgent = mountNewAgent(addRow, () => { void load(); });
+  const previous = disposePlugin; disposePlugin = () => { previous(); stopNewAgent(); };
+  list.append(addRow);
   main.append(list);
 }
 async function load(): Promise<void> {

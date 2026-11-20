@@ -2,7 +2,7 @@ import {TranscriptListSchema,TranscriptRecordSchema} from '../../../packages/run
 import { ChatActivitySchema, ChatListSchema, ChatRecordSchema, ChatRequestSchema } from '../../../packages/runtime/src/chats.js';
 import { z } from 'zod';
 import { DocumentIdentitySchema, DocumentSchema, DocumentSaveSchema, DocumentHistorySchema } from '../../../packages/runtime/src/documents.js';
-import { AgentRecordSchema, PluginManifestSchema, ResearchRecordSchema } from '../../../packages/runtime/src/contracts.js';
+import { AgentDefinitionSchema, AgentRecordSchema, PluginManifestSchema, ResearchRecordSchema } from '../../../packages/runtime/src/contracts.js';
 import { ProposalInputSchema, ProposalRecordSchema, ProposalListSchema } from '../../../packages/runtime/src/proposals.js';
 import { SessionSummarySchema, SessionRecordSchema } from '../../../packages/runtime/src/sessions.js';
 import { NodeIDSchema, LineageGraphSchema, ExplanationSchema, nodePath } from './lineage-contracts.js';
@@ -56,8 +56,9 @@ export function route(raw: unknown): string {
   }
 }
 /** Validates all service evidence before it enters the renderer. */
-export function validateResponse(operation: Operation, value: unknown): unknown {
+export function validateResponse(operation: Operation | 'agent.created', value: unknown): unknown {
   switch (operation) {
+    case 'agent.created': return AgentRecordSchema.parse(value);
     case 'gherkin.capabilities': return GherkinCapabilitiesSchema.parse(value);
     case 'gherkin.list': case 'gherkin.search': return GherkinListSchema.parse(value);
     case 'gherkin.feature': return GherkinFeatureSchema.parse(value);
@@ -96,7 +97,16 @@ export async function saveProposalAPI(raw: unknown, base: string): Promise<unkno
 export async function saveDocumentAPI(raw: unknown, base: string): Promise<unknown> {
   return requestAPI(base + '/api/research/v1/documents', 'documents.get', DocumentSaveSchema.parse(raw));
 }
-async function requestAPI(url: string, operation: Operation, payload?: unknown, timeout = 10000): Promise<unknown> {
+/** Registers one validated immutable agent definition. */
+export async function createAgentAPI(raw: unknown, base: string): Promise<unknown> {
+  const definition = AgentDefinitionSchema.parse(raw);
+  const result = AgentRecordSchema.parse(await requestAPI(base + '/api/research/v1/agents', 'agent.created', definition));
+  for (const key of Object.keys(definition) as (keyof typeof definition)[]) {
+    if (JSON.stringify(result[key]) !== JSON.stringify(definition[key])) throw new Error('Agent response does not match the submitted definition.');
+  }
+  return result;
+}
+async function requestAPI(url: string, operation: Operation | 'agent.created', payload?: unknown, timeout = 10000): Promise<unknown> {
   const response = await fetch(url, { method: payload ? 'POST' : 'GET', ...(payload ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) } : {}), signal: AbortSignal.timeout(timeout), credentials: 'omit', redirect: 'error' });
   if (!response.ok) throw new Error(`Research service returned HTTP ${response.status}.`);
   const reader = response.body?.getReader();
