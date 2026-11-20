@@ -61,3 +61,22 @@ After building, run npm run test:semantic-native --workspace
 @the-semantic/desktop for explicit read-only integration with the current lineage
 service, configured snapshot and live public articles. This check makes no model
 call. Unit tests use clearly synthetic source fixtures.
+
+PL-App Behavior is the sixth independent Semantic Layer knowledge base. It lists and
+searches tracked regular *.feature files in ~/ra/pl-application by default. Set
+SEMANTIC_GHERKIN_ROOT to an absolute checkout path in the trusted host environment
+to use a relocated checkout. Restart Electron or Vite after configuration changes.
+Renderer requests cannot select roots or origins. The preview uses the same reader.
+
+Search matches literal feature text without case sensitivity. Each page shows at
+most 25 results and pins navigation and detail to the displayed immutable Git
+commit. The results list has a bounded scroll area; selecting a row marks it
+clearly and shows its source in a panel below the list. A new search clears the
+selection. Refresh source or submit a new search to read current HEAD. Detail
+shows the repository, full repository-relative path and verbatim source,
+including tags, Background, Scenario Outline and Examples. Uncommitted edits
+are excluded.
+The reader has a 10000-feature cap, 8 MB inventory/search limits, a 1 MB feature
+limit and a 10-second timeout for each Git read. Missing or oversized sources
+remain unavailable. This source browser runs no models or specifications and
+makes no test-result, generated-meaning or lineage-link claims.

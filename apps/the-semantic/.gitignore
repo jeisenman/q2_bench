@@ -11,3 +11,4 @@
 /.codex/config.toml
 *.pyc
 .DS_Store
+/dist-host/

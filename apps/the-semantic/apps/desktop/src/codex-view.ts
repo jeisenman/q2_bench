@@ -1,3 +1,7 @@
+import {TranscriptListSchema,TranscriptRecordSchema,type TranscriptRecord,type TranscriptSummary} from '../../../packages/runtime/src/transcripts.js';
+import {historicalTranscript} from './transcript-view.js';
+import {renderChatMarkdown} from './chat-markdown.js';
+import {chatDisplayText} from './chat-display.js';
 import { type ChatActivity, ChatListSchema, ChatRecordSchema, type ChatRecord, type ChatRequest } from '../../../packages/runtime/src/chats.js';
 import { ProposalRecordSchema } from '../../../packages/runtime/src/proposals.js';
 import { read, chat } from './client.js';
@@ -14,6 +18,7 @@ export function createCodexView(deps: Dependencies = {}): { mount(host: HTMLElem
   const openProposal = deps.openProposal ?? openProposalModal; const animate = deps.animate ?? revealReply;
   const root = el('section', '', 'codex-workspace');
   let record: ChatRecord | undefined; let summaries: SidebarChat[] = [];
+  let historical:TranscriptRecord|undefined;let transcripts:TranscriptSummary[]=[];
   const previews=new Map<string,string>();
   let sidebarQuery='';
   let draft = ''; let pending = false; let optimistic = ''; let error = ''; let mounted = false;
@@ -28,26 +33,33 @@ export function createCodexView(deps: Dependencies = {}): { mount(host: HTMLElem
     heading.append(el('p','06 / CODEX','eyebrow'), el('h1','Work the question.'),
       el('p','Shape a question, review saved research, and prepare a proposal with Codex.','lead'));
     const layout=el('div','','codex-chat-layout');
+    const activeID=historical?'history:'+historical.transcript_id:record?.chat_id;
     const chats=record&&!summaries.some(item=>item.chat_id===record!.chat_id)?[{chat_id:record.chat_id,title:record.title},...summaries]:summaries;
     const sidebarChats=chats.map(item=>({...item,preview:previews.get(item.chat_id),...(item.chat_id===record?.chat_id?{updated_at:record.updated_at,message_count:record.messages.length}:{} )}));
-    layout.append(chatSidebar({chats:sidebarChats,currentID:record?.chat_id,pending,query:sidebarQuery,
+    sidebarChats.push(...transcripts.map(item=>({chat_id:'history:'+item.transcript_id,title:item.title,updated_at:item.updated_at,message_count:item.message_count,preview:`Historical · ${item.message_count} messages · ${item.tool_call_count} tool calls`})));
+    layout.append(chatSidebar({chats:sidebarChats,currentID:activeID,pending,query:sidebarQuery,
       onQuery:value=>{sidebarQuery=value;},onOpen:id=>{void open(id);},onNew:startNew,onRefresh:()=>{void load();}}));
     root.append(heading,layout);
     const thread = el('section','','codex-thread');thread.setAttribute('aria-label','Codex conversation');
-    const top=el('div','','codex-thread-heading');top.append(el('h2',record?.title??'A new question.'),el('span','Codex · gpt-6.1-sol','caption'));thread.append(top);
+    const top=el('div','','codex-thread-heading');top.append(el('h2',chatDisplayText(historical?.transcript.title??record?.title??'A new question.')),el('span',historical?'Historical evidence':'Codex · gpt-6.1-sol','caption'));thread.append(top);
+    if(historical){
+      const status=el('p',error,error?'error':'caption');status.setAttribute('role','status');thread.append(status);
+      thread.append(historicalTranscript(historical,(id,trigger)=>{void showProposal(id,trigger);}));layout.append(thread);return;
+    }
+    const messages=el('div','','codex-message-list');messages.setAttribute('aria-label','Chat messages');thread.append(messages);
     if(!record?.messages.length&&!optimistic)thread.append(el('p','Ask a research question. Codex can ask for a missing detail or prepare a draft when the scope is clear.','codex-empty'));
     for(const message of record?.messages??[]){
       const row=el('article','',`codex-message ${message.role==='user'?'codex-message-user':'codex-message-assistant'}`);
       row.dataset.messageId=message.id;
       row.append(el('span',message.role==='user'?'You':'Codex','codex-message-label'));
-      const bubble=el('p',message.text,'codex-bubble');row.append(bubble);
+      const bubble=el('div','','codex-bubble');renderChatMarkdown(bubble,message.text);row.append(bubble);
       const attach=()=>{if(message.proposal_id)row.append(attachment(message.proposal_id));};
-      if(message.id===animateID && message.role==='assistant') beginAnimation=()=>{stopAnimation=animate(bubble,message.text,()=>{if(mounted&&row.isConnected)attach();});}; else attach();
+      if(message.id===animateID && message.role==='assistant') beginAnimation=()=>{stopAnimation=animate(bubble,chatDisplayText(message.text),()=>{if(mounted&&row.isConnected){renderChatMarkdown(bubble,message.text);attach();}});}; else attach();
       const evidence=el('details','','codex-message-evidence');evidence.append(el('summary',message.tool?'Prepared proposal · Tool evidence':'Message details'),el('p',utc(message.created_at),'caption'));
       if(message.tool)evidence.append(el('code',`${message.tool.name} · ${message.tool.status}`),el('p','A draft was saved. No research run was accepted.','caption'));
-      row.append(evidence);if(message.activity?.length)row.append(activityPanel({events:message.activity,done:true}));thread.append(row);
+      row.append(evidence);if(message.activity?.length)row.append(activityPanel({events:message.activity,done:true}));messages.append(row);
     }
-    if(optimistic){const user=el('article','','codex-message codex-message-user');user.append(el('span','You · Sending','codex-message-label'),el('p',optimistic,'codex-bubble'));thread.append(user);}
+    if(optimistic){const user=el('article','','codex-message codex-message-user');user.append(el('span','You · Sending','codex-message-label'),el('p',chatDisplayText(optimistic),'codex-bubble'));thread.append(user);}
     if(pending){const typing=el('p','Codex is responding…','codex-typing');typing.setAttribute('role','status');thread.append(typing);activityHost=el('div','','codex-live-activity');activityHost.setAttribute('role','status');thread.append(activityHost);renderActivity();}
     const status=el('p',error,error?'error':'caption');status.setAttribute('role','status');thread.append(status);
     const form=el('form','','codex-message-composer');const input=el('textarea');input.value=draft;input.maxLength=16000;input.required=true;input.placeholder='Message Codex…';input.disabled=pending;input.rows=2;input.setAttribute('aria-label','Message Codex');
@@ -59,7 +71,7 @@ export function createCodexView(deps: Dependencies = {}): { mount(host: HTMLElem
     layout.append(thread);beginAnimation?.();
   }
   function remember(chat:ChatRecord):void{
-    const preview=chat.messages.at(-1)?.text.replace(/\s+/g,' ').trim().slice(0,160);
+    const last=chat.messages.at(-1);const preview=last?chatDisplayText(last.text).replace(/\s+/g,' ').trim().slice(0,160):undefined;
     if(preview)previews.set(chat.chat_id,preview);
   }
   function renderActivity():void{
@@ -79,25 +91,29 @@ export function createCodexView(deps: Dependencies = {}): { mount(host: HTMLElem
     file.append(icon,text,el('span','↗','codex-file-arrow'));return file;
   }
   async function showProposal(id:string, trigger:HTMLButtonElement):Promise<void>{
-    trigger.disabled=true;
-    try{const proposal=ProposalRecordSchema.parse(await reader({operation:'proposals.get',id}));if(proposal.proposal_id!==id)throw Error('Proposal identity mismatch.');if(!mounted)return;
-      closeModal();closeModal=openProposal(proposal,saved=>{trigger.querySelector('strong')!.textContent=saved.title;},{reader});
+    const current=generation;trigger.disabled=true;
+    try{const proposal=ProposalRecordSchema.parse(await reader({operation:'proposals.get',id}));if(proposal.proposal_id!==id)throw Error('Proposal identity mismatch.');if(!mounted||current!==generation)return;
+      closeModal();closeModal=openProposal(proposal,saved=>{trigger.querySelector('strong')!.textContent=chatDisplayText(saved.title);},{reader});
     }catch{if(mounted){error='Cannot open the saved proposal. Refresh and try again.';render();}}
     finally{trigger.disabled=false;}
   }
   function startNew():void{
     if(pending)return;if(draft.trim()&&!root.ownerDocument.defaultView!.confirm('Discard the unsent message?'))return;
-    generation++;record=undefined;draft='';request=undefined;createKey=undefined;error='';render();
+    generation++;initialized=true;record=undefined;historical=undefined;draft='';request=undefined;createKey=undefined;error='';render();
   }
   async function open(id:string):Promise<void>{
-    if(pending||record?.chat_id===id)return;if(draft.trim()&&!root.ownerDocument.defaultView!.confirm('Discard the unsent message?'))return;
+    if(pending||record?.chat_id===id||historical&&'history:'+historical.transcript_id===id)return;if(draft.trim()&&!root.ownerDocument.defaultView!.confirm('Discard the unsent message?'))return;
     const current=++generation;
-    try{const next=ChatRecordSchema.parse(await reader({operation:'chats.get',id}));if(next.chat_id!==id)throw Error('Chat identity mismatch.');if(current!==generation)return;record=next;remember(next);draft='';request=undefined;createKey=undefined;error='';render();}
+    try{if(id.startsWith('history:')){const identity=id.slice(8);const next=TranscriptRecordSchema.parse(await reader({operation:'transcripts.get',id:identity}));if(next.transcript_id!==identity)throw Error('Transcript identity mismatch.');if(current!==generation)return;historical=next;initialized=true;record=undefined;draft='';request=undefined;createKey=undefined;error='';render();return;}
+      const next=ChatRecordSchema.parse(await reader({operation:'chats.get',id}));if(next.chat_id!==id)throw Error('Chat identity mismatch.');if(current!==generation)return;record=next;initialized=true;historical=undefined;remember(next);draft='';request=undefined;createKey=undefined;error='';render();}
     catch{if(current===generation){error='Cannot read this conversation. Your current text is retained.';render();}}
   }
   async function load():Promise<void>{
     if(pending)return;const current=++generation;
-    try{const list=ChatListSchema.parse(await reader({operation:'chats.list',order:'newest'}));if(current!==generation)return;summaries=list.chats;previews.clear();
+    try{const [rawChats,rawTranscripts]=await Promise.all([reader({operation:'chats.list',order:'newest'}),reader({operation:'transcripts.list'})]);const list=ChatListSchema.parse(rawChats);const catalog=TranscriptListSchema.parse(rawTranscripts);if(current!==generation)return;summaries=list.chats;transcripts=catalog.transcripts;previews.clear();
+      if(historical){const next=TranscriptRecordSchema.parse(await reader({operation:'transcripts.get',id:historical.transcript_id}));if(next.transcript_id!==historical.transcript_id)throw Error('Transcript identity mismatch.');if(current!==generation)return;historical=next;error='';render();return;}
+      const requested=!initialized?new URL(root.ownerDocument.defaultView!.location.href).searchParams.get('transcript'):null;
+      if(requested){await open('history:'+requested);return;}
       const id=record?.chat_id??(!initialized?list.chats[0]?.chat_id:undefined);initialized=true;
       if(id){const next=ChatRecordSchema.parse(await reader({operation:'chats.get',id}));if(next.chat_id!==id)throw Error('Chat identity mismatch.');if(current!==generation)return;record=next;remember(next);}
       error='';render();

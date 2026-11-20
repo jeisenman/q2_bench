@@ -84,3 +84,29 @@ publication. chat_save elapsed_ms excludes this metadata write and head
 publication; live
 publication failures mark chat_save failed. No prompt or result payload enters
 the activity registry. Restart the API process after changing this code.
+
+`transcripts.py` is an explicitly imported immutable historical evidence catalog,
+separate from live chats, sessions and model context. `transcript_validation.py`
+requires exact public user/assistant text shapes and paired inert tool calls and
+outputs. Output text blocks retain their original array shape. Analysis, system,
+developer, media and unknown fields are rejected. The import source is already
+sanitized; the API preserves accepted source data instead of rewriting content.
+Limits are 1 MiB of compact UTF-8 source JSON, 1000 items, 256 Ki characters per
+text field, 100 blocks per message/output, and 100 imports including pending runs.
+
+POST transcripts requires source JSON, an explicit nullable saved proposal ID and
+an idempotency UUID. The proposal must exist. An artifact and native FINISHED
+status precede one kind-tag publication. Pending imports are hidden. Exact UUID
+replay resumes failed writes or reads the published immutable record; conflicting
+content returns 409. No import/read route invokes a provider, executes captured
+arguments, injects historical context, or changes the proposal. Public MLflow
+artifacts retain the authorized conversation/tool evidence, not raw rollout logs.
+
+`gherkin.py` adds finite source reads to this same API via a Blueprint. It invokes
+only the built app-local `dist-host/gherkin-read.cjs`, which reuses the desktop's
+strict committed-Git reader. The host alone selects SEMANTIC_GHERKIN_ROOT. Each
+child has an 8-second deadline, 2 MiB output cap, discarded stderr and an owned
+process group. Build with npm run build:host before keyword reads. No source
+execution, database, embedding provider, or model is added. Vector mode returns
+409 gherkin_vector_disabled before child creation or checkout reads; capabilities
+are static and require no child. Tests use temporary committed Git fixtures.

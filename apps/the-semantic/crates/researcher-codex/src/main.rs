@@ -1,6 +1,7 @@
 mod bridge;
 mod chat;
 mod client;
+mod gherkin;
 mod installed_codex;
 mod mcp;
 mod process;

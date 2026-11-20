@@ -2,14 +2,15 @@ import { z } from 'zod';
 import { SessionSummarySchema, SessionRecordSchema, type SessionSummary, type SessionRecord } from '../../../packages/runtime/src/sessions.js';
 import { read } from './client.js';
 import { el, button, utc } from './dom.js';
+import { chatDisplayText } from './chat-display.js';
 
 /** Applies a display-only credential filter as a second boundary after API normalization. */
 export function safeSessionText(value: string): string {
-  return value.replace(/\bBearer\s+[^\s,;]+/gi, 'Bearer [REDACTED]')
+  return chatDisplayText(value.replace(/\bBearer\s+[^\s,;]+/gi, 'Bearer [REDACTED]')
     .replace(/\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g, '[REDACTED]')
     .replace(/\b(https?:\/\/)[^\s/@:]+:[^\s/@]+@/gi, '$1[REDACTED]@')
     .replace(/\b(?:sk|ghp|gho|github_pat)[-_][A-Za-z0-9_-]{12,}\b/g, '[REDACTED]')
-    .replace(/\b((?:api[_-]?key|access[_-]?token|refresh[_-]?token|password|secret|token|client[_-]?secret|aws[_-]?secret[_-]?access[_-]?key|authorization)["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi, '$1[REDACTED]');
+    .replace(/\b((?:api[_-]?key|access[_-]?token|refresh[_-]?token|password|secret|token|client[_-]?secret|aws[_-]?secret[_-]?access[_-]?key|authorization)["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi, '$1[REDACTED]'));
 }
 interface Options { selectedID?: string; onSelect?: (id: string | undefined) => void; onConnection?: (message: string) => void }
 /** Mounts read-only native session snapshots. Disposing invalidates pending reads. */
@@ -59,7 +60,7 @@ export function mountSessions(host: HTMLElement, options: Options = {}, reader: 
     detail.append(el('p', `${r.status} · SNAPSHOT`, 'eyebrow'), el('h2', safeSessionText(r.title || 'Native research session')),
       el('p', `${r.message_count} saved messages · ${r.event_count} retained events`, 'session-counts'));
     if (r.status === 'ACTIVE') detail.append(el('p', 'The native session is active. Refresh to read new events. No model call is made by this view.', 'session-notice'));
-    if (r.error || r.status === 'FAILED') detail.append(el('p', safeSessionText(r.error ?? 'The native session failed without a saved diagnostic.'), 'error'));
+    if (r.error || r.status === 'FAILED') detail.append(el('p', chatDisplayText(safeSessionText(r.error ?? 'The native session failed without a saved diagnostic.')), 'error'));
     const info = el('div', '', 'session-metadata');
     for (const [label, value] of [['Coordinator model', r.model], ['Created', utc(r.created_at)], ['Updated', utc(r.updated_at)],
       ['Working directory', r.cwd], ['Codex home', r.codex_home], ['Codex executable', r.codex_binary], ['Trace evidence', r.trace_id ? 'Retained' : 'Not retained'],
@@ -71,8 +72,8 @@ export function mountSessions(host: HTMLElement, options: Options = {}, reader: 
       const article = el('article', '', `session-event ${event.kind}`);
       article.append(el('p', `${event.kind.replaceAll('_', ' ').toUpperCase()} · ${utc(event.at)}`, 'eyebrow'));
       if (event.kind === 'tool') article.append(el('p', `${safeSessionText(event.tool_name ?? 'Unnamed tool')} · ${safeSessionText(event.status ?? 'Status not retained')}`, 'pre-line'));
-      else if (event.text !== null) article.append(el('p', safeSessionText(event.text), 'pre-line'));
-      else article.append(el('p', safeSessionText(event.status ?? 'Metadata event; no message text retained.'), 'caption'));
+      else if (event.text !== null) article.append(el('p', chatDisplayText(safeSessionText(event.text)), 'pre-line'));
+      else article.append(el('p', chatDisplayText(safeSessionText(event.status ?? 'Metadata event; no message text retained.')), 'caption'));
       timeline.append(article);
     }
     detail.append(timeline, el('p', 'This view shows normalized saved evidence. Private reasoning, tool arguments and tool results are not available. Agent delegation is not implemented.', 'caption'));

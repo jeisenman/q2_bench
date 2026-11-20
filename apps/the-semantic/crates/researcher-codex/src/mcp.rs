@@ -59,6 +59,30 @@ impl ResearchServer {
         Self
     }
     #[tool(
+        description = "Report Gherkin keyword search enabled and vector search disabled; no model calls"
+    )]
+    async fn gherkin_capabilities(&self) -> CallToolResult {
+        operation(|client| client.gherkin_capabilities()).await
+    }
+    #[tool(
+        description = "Search committed Gherkin by literal keyword with bounded paging and source commit; vector mode is explicitly disabled"
+    )]
+    async fn gherkin_search(
+        &self,
+        Parameters(args): Parameters<crate::gherkin::SearchArgs>,
+    ) -> CallToolResult {
+        operation(move |client| client.gherkin_search(args)).await
+    }
+    #[tool(
+        description = "Read one tracked Gherkin feature at its exact source commit; never executes specifications"
+    )]
+    async fn gherkin_feature(
+        &self,
+        Parameters(args): Parameters<crate::gherkin::FeatureArgs>,
+    ) -> CallToolResult {
+        operation(move |client| client.gherkin_feature(args)).await
+    }
+    #[tool(
         description = "Save an unaccepted DRAFT proposal; does not execute research or call a model"
     )]
     async fn proposal_save(
@@ -163,7 +187,7 @@ pub async fn serve() -> Result<()> {
 mod tests {
     use super::*;
     #[test]
-    fn exposes_only_nine_finite_tools() {
+    fn exposes_only_twelve_finite_tools() {
         let tools = ResearchServer::tool_router().list_all();
         let mut names: Vec<_> = tools.iter().map(|tool| tool.name.as_ref()).collect();
         names.sort();
@@ -172,6 +196,9 @@ mod tests {
             [
                 "agent_get",
                 "agent_list",
+                "gherkin_capabilities",
+                "gherkin_feature",
+                "gherkin_search",
                 "proposal_get",
                 "proposal_list",
                 "proposal_prepare",

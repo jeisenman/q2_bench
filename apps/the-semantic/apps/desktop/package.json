@@ -12,6 +12,8 @@
     "test": "tsx --test tests/*.test.ts",
     "test:native": "electron tests/native-smoke.cjs",
     "test:semantic-native": "electron tests/semantic-native.cjs",
+    "test:gherkin-detail-native": "electron tests/gherkin-detail-native.cjs",
+    "test:knowledge-index-native": "electron tests/knowledge-index-native.cjs",
     "test:codex-preview-native": "electron tests/codex-preview-native.cjs"
   },
   "dependencies": {

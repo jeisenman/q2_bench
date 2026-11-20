@@ -15,13 +15,13 @@ app.on('browser-window-created',(_event,window)=>{
     const wait=(predicate)=>new Promise((resolve,reject)=>{if(predicate())return resolve();const observer=new MutationObserver(()=>{if(predicate()){observer.disconnect();clearTimeout(timer);resolve();}});observer.observe(document.body,{childList:true,subtree:true});const timer=setTimeout(()=>{observer.disconnect();reject(new Error('Expected source view did not appear.'));},20000);});
     const click=(label)=>{const b=[...document.querySelectorAll('button')].find(n=>(n.getAttribute('aria-label')===label||n.textContent===label));if(!b)throw new Error('Missing control '+label);b.click();};
     const graph=await window.semantic.read({operation:'lineage.graph'});
-    click('Semantic Layer');await wait(()=>document.querySelector('.lineage-row'));
+    click('Semantic Layer');await wait(()=>document.querySelector('.semantic-base'));click('Lineage');await wait(()=>document.querySelector('.lineage-row'));
     const first=document.querySelector('.lineage-row');const firstTitle=first.textContent;first.click();
     await wait(()=>document.querySelector('.lineage-detail h2')?.textContent===firstTitle);
     click('Graph');await wait(()=>document.querySelector('.lineage-canvas svg'));
     const graphNodes=document.querySelectorAll('.lineage-svg-node').length;const graphEdges=document.querySelectorAll('.lineage-canvas line').length;
     const graphCaption=document.querySelector('.lineage-display').textContent;
-    click('Zendesk');await wait(()=>document.querySelector('.help-content .question-row'));
+    click('All knowledge bases');click('Zendesk');await wait(()=>document.querySelector('.help-content .question-row'));
     const snapshot=await window.semantic.read({operation:'knowledge.list'});
     const snapshotCaption=document.querySelector('main').textContent;
     document.querySelector('.help-content .question-row').click();await wait(()=>document.querySelector('.help-article'));

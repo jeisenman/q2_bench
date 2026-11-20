@@ -42,3 +42,10 @@ test('draft form retries with the same key and shows saved detail', async () => 
   assert.equal(keys.length, 2); assert.equal(keys[0], keys[1]); assert.match(host.textContent!, /Draft saved/); assert.match(host.textContent!, /NOT ACCEPTED/);
   dispose(); dom.window.close();
 });
+test('saved proposal lists and detail hide embedded execution metadata and internal proposal references',async()=>{
+  const dom=new JSDOM('<main></main>');Object.assign(globalThis,{document:dom.window.document});
+  const source={...record,title:'Question\nresearch_id: private-run',question:'Public question\ntrace_id: private-trace',proposal_id:'native-reference'};const snapshot=JSON.stringify(source);
+  const host=document.querySelector('main')!;const dispose=mountProposals(host,async request=>request.operation==='proposals.list'?{proposals:[source]}:source);
+  await tick();host.querySelector<HTMLButtonElement>('.session-row')!.click();await tick();
+  assert.match(host.textContent!,/Public question/);assert.doesNotMatch(host.textContent!,/private-run|private-trace|native-reference|Proposal ID/);assert.equal(JSON.stringify(source),snapshot);dispose();dom.window.close();
+});

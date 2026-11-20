@@ -2,6 +2,7 @@
 
 - [Architecture](architecture.md)
 - [The Semantic desktop research app](../apps/the-semantic/README.md)
+- [Gherkin behavior knowledge base](gherkin-knowledge-base.md)
 - [Local lineage, backfill coverage, and PR checks](lineage.md)
 - [Shared formal lineage: DI Pipelines, RADAR, Data Ingress and calculation engine](../formal-lineage/README.md)
 - [Mechanistic formal methods and Databricks comparison](formal-methods.md)

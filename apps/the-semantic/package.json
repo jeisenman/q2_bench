@@ -10,9 +10,10 @@
   "scripts": {
     "build:runtime": "npm run build --workspace @the-semantic/runtime",
     "build:desktop": "npm run build --workspace @the-semantic/desktop",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build:host && npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "check": "npm run check --workspaces --if-present",
-    "desktop": "npm run start --workspace @the-semantic/desktop"
+    "desktop": "npm run start --workspace @the-semantic/desktop",
+    "build:host": "esbuild host/gherkin-read.ts --bundle --platform=node --format=cjs --outfile=dist-host/gherkin-read.cjs"
   }
 }

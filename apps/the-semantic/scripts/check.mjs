@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const checks = [
+  ['npm', ['run', 'build:host']],
   ['cargo', ['fmt', '--all', '--', '--check']],
   ['cargo', ['clippy', '--workspace', '--all-targets', '--', '-D', 'warnings']],
   ['cargo', ['test', '--workspace']],

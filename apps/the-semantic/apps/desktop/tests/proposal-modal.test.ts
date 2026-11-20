@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { openProposalModal } from '../src/proposal-modal.js';
+import { DocumentSaveSchema } from '../../../packages/runtime/src/documents.js';
 
 const proposal = {
   proposal_id: 'p1', title: 'Source title', question: 'Source question',
@@ -28,6 +29,19 @@ function setup() {
   const click = (label: string) => [...dialog().querySelectorAll('button')].find(item => item.textContent === label)!.click();
   return { dom, trigger, dialog, click };
 }
+test('masked proposal fields retain original source values when another field changes and history stays projected',async()=>{
+  const {dom,dialog,click}=setup();let payload:any;
+  const record={...source,content:{...source.content,title:'Title\nresearch_id: private-run',question:'Question\ntrace_id: private-trace',hypothesis:'{"finding":"Unverified","metrics":{"duration_seconds":12}}'}};const snapshot=JSON.stringify(record);
+  const dispose=openProposalModal(proposal,undefined,{reader:async request=>request.operation==='documents.history'?{versions:[record]}:record,saver:async value=>{payload=DocumentSaveSchema.parse(value);return {...record,version:3,updated_at:'2026-11-20T12:00:00Z',content:payload.content};}});
+  await tick();
+  const assertHidden=()=>{assert.doesNotMatch(dialog().textContent!,/private-run|private-trace|duration_seconds/);for(const field of dialog().querySelectorAll<HTMLTextAreaElement>('textarea'))assert.doesNotMatch(field.value,/private-run|private-trace|duration_seconds/);};
+  assertHidden();click('🖊️');assertHidden();
+  const plan=dialog().querySelector<HTMLTextAreaElement>('[name=plan]')!;plan.value='Changed plan';plan.dispatchEvent(new dom.window.Event('input'));
+  dialog().querySelector('form')!.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await tick();
+  assert.deepEqual(payload.content,{...record.content,plan:'Changed plan'});assert.equal(JSON.stringify(record),snapshot);assertHidden();
+  click('Version history');await tick();assertHidden();
+  click('🖊️');assert.equal(dialog().querySelector<HTMLTextAreaElement>('[name=plan]')!.value,'Changed plan');click('Cancel');assertHidden();dispose();dom.window.close();
+});
 
 test('reads latest document before enabling edit; tabs retain one set of read-only fields', async () => {
   const { dom, dialog, click } = setup(); let reads = 0;
@@ -43,8 +57,34 @@ test('reads latest document before enabling edit; tabs retain one set of read-on
   click('Plan'); assert.equal(modal.querySelector<HTMLElement>('.proposal-modal-field-question')?.hidden, true);
   click('Question & hypothesis'); assert.equal(modal.querySelector<HTMLElement>('.proposal-modal-field-plan')?.hidden, true);
   click('🖊️');
+  assert.equal(modal.querySelector<HTMLButtonElement>('[aria-label="Edit proposal"]')!.getAttribute('aria-pressed'), 'true');
+  click('🖊️');
   assert.equal([...modal.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input,textarea')].every(field => !field.readOnly), true);
   assert.equal(dom.window.document.activeElement?.getAttribute('aria-label'), 'Edit proposal');
+  dispose(); dom.window.close();
+});
+
+test('read mode renders safe Markdown and Cancel restores exact source text', async () => {
+  const { dom, dialog, click } = setup();
+  const questionText = '- **Agent:** Hypothesis v1, Sol 6.1.\n<img src=x onerror=alert(1)>';
+  const record = { ...source, content: { ...source.content, question: questionText } };
+  const dispose = openProposalModal(proposal, undefined, { reader: async () => record });
+  await tick();
+  const modal = dialog();
+  const preview = modal.querySelector<HTMLElement>('[aria-label="Question preview"]')!;
+  assert.equal(preview.querySelector('ul li strong')?.textContent, 'Agent:');
+  assert.equal(preview.querySelector('img'), null);
+  assert.ok(preview.textContent!.includes('<img src=x onerror=alert(1)>'));
+  const field = modal.querySelector<HTMLTextAreaElement>('[name=question]')!;
+  assert.equal(field.value, questionText);
+  click('🖊️');
+  assert.equal(modal.querySelector<HTMLButtonElement>('[aria-label="Edit proposal"]')!.hidden, false);
+  assert.equal(modal.querySelector<HTMLButtonElement>('[aria-label="Edit proposal"]')!.getAttribute('aria-pressed'), 'true');
+  field.value = 'Temporary edit'; field.dispatchEvent(new dom.window.Event('input'));
+  click('🖊️'); assert.equal(field.value, 'Temporary edit');
+  click('Cancel');
+  assert.equal(field.value, questionText);
+  assert.equal(modal.querySelector<HTMLButtonElement>('[aria-label="Edit proposal"]')!.getAttribute('aria-pressed'), 'false');
   dispose(); dom.window.close();
 });
 
@@ -70,6 +110,18 @@ test('cancel resets all fields without writing; save uses exact versioned payloa
   assert.equal(result.status, proposal.status); assert.equal(result.created_at, proposal.created_at);
   assert.equal(result.updated_at, '2026-11-19T13:00:00Z');
   assert.equal((dialog().querySelector('[name=title]') as HTMLInputElement).readOnly, true);
+  dispose(); dom.window.close();
+});
+
+test('footer Save click submits once through the associated form', async () => {
+  const { dom, dialog, click } = setup(); let writes = 0; let saved: any;
+  const dispose = openProposalModal(proposal, value => { saved = value; }, {
+    reader: async () => source,
+    saver: async payload => { const request = payload as any; writes++; return { ...source, version: request.base_version + 1, content: request.content, updated_at: '2026-11-19T13:00:00Z' }; },
+  });
+  await tick(); click('🖊️'); click('Save'); await tick();
+  assert.equal(writes, 1); assert.equal(saved.title, 'Latest title'); assert.equal(saved.updated_at, '2026-11-19T13:00:00Z');
+  assert.equal(dialog().querySelector<HTMLTextAreaElement>('[name=title]')!.readOnly, true);
   dispose(); dom.window.close();
 });
 
@@ -110,6 +162,56 @@ test('dirty and busy close guards block X, Escape and backdrop; clean close rest
   dialog().dispatchEvent(new dom.window.Event('cancel', { cancelable: true })); assert.equal(dialog().open, true);
   finish({ ...source, version: 3, updated_at: '2026-11-19T13:00:00Z' }); await tick();
   click('×'); assert.equal(dom.window.document.querySelector('dialog'), null); assert.equal(dom.window.document.activeElement, trigger);
+  dispose(); dom.window.close();
+});
+
+test('outside dismissal requires a matching primary pointer down and up fully outside the panel', async () => {
+  const { dom, dialog } = setup();
+  const dispose = openProposalModal(proposal, undefined, { reader: async () => source });
+  await tick();
+  const modal = dialog(); const panel = modal.querySelector<HTMLElement>('.proposal-modal-panel')!;
+  panel.getBoundingClientRect = () => ({ left: 20, right: 480, top: 20, bottom: 480, width: 460, height: 460, x: 20, y: 20, toJSON() {} });
+  const pointer = (target: EventTarget, type: string, x: number, y: number, id = 7) => {
+    const event = new dom.window.Event(type, { bubbles: true, cancelable: true });
+    Object.assign(event, { clientX: x, clientY: y, pointerId: id, isPrimary: true, button: 0 }); target.dispatchEvent(event);
+  };
+  pointer(modal, 'pointerdown', 10, 10); pointer(panel, 'pointerup', 10, 10);
+  assert.equal(modal.open, true, 'up inside does not close');
+  pointer(panel, 'pointerdown', 30, 30); pointer(modal, 'pointerup', 10, 10);
+  assert.equal(modal.open, true, 'down inside does not close');
+  pointer(modal, 'pointerdown', 10, 10); pointer(modal, 'pointerup', 10, 10, 8);
+  assert.equal(modal.open, true, 'a different pointer does not close');
+  pointer(modal, 'pointerdown', 10, 10); pointer(modal, 'pointercancel', 10, 10); pointer(modal, 'pointerup', 10, 10);
+  assert.equal(modal.open, true, 'cancelled sequences do not close');
+  pointer(modal, 'pointerdown', 10, 10); pointer(modal, 'pointerup', 10, 10);
+  assert.equal(dom.window.document.querySelector('dialog'), null);
+  dispose(); dom.window.close();
+});
+
+test('outside dismissal invokes dirty and busy close guards without losing fields', async () => {
+  const { dom, dialog, click } = setup(); let finish!: (value: unknown) => void;
+  const dispose = openProposalModal(proposal, undefined, {
+    reader: async () => source,
+    saver: async () => new Promise(resolve => { finish = resolve; }),
+  });
+  await tick();
+  const modal = dialog(); const panel = modal.querySelector<HTMLElement>('.proposal-modal-panel')!;
+  panel.getBoundingClientRect = () => ({ left: 20, right: 480, top: 20, bottom: 480, width: 460, height: 460, x: 20, y: 20, toJSON() {} });
+  const outsideClick = () => {
+    for (const type of ['pointerdown', 'pointerup']) {
+      const event = new dom.window.Event(type, { bubbles: true });
+      Object.assign(event, { clientX: 10, clientY: 10, pointerId: 9, isPrimary: true, button: 0 }); modal.dispatchEvent(event);
+    }
+  };
+  click('🖊️');
+  const title = modal.querySelector<HTMLTextAreaElement>('[name=title]')!;
+  title.value = 'Keep this edit'; title.dispatchEvent(new dom.window.Event('input'));
+  outsideClick(); assert.equal(modal.open, true); assert.equal(title.value, 'Keep this edit');
+  assert.match(modal.textContent!, /Choose Save or Cancel/);
+  click('Cancel'); click('🖊️');
+  modal.querySelector('form')!.dispatchEvent(new dom.window.Event('submit', { cancelable: true })); await tick();
+  outsideClick(); assert.equal(modal.open, true); assert.match(modal.textContent!, /save is in progress/i);
+  finish({ ...source, version: 3, updated_at: '2026-11-19T13:00:00Z' }); await tick();
   dispose(); dom.window.close();
 });
 

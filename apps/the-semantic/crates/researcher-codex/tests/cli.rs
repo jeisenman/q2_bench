@@ -239,7 +239,7 @@ fn sdk_mcp_stdio_lists_tools_and_reads_same_api() {
         &mut stdout,
         json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}),
     );
-    assert_eq!(listed["result"]["tools"].as_array().unwrap().len(), 9);
+    assert_eq!(listed["result"]["tools"].as_array().unwrap().len(), 12);
     let result = exchange(
         &mut stdin,
         &mut stdout,

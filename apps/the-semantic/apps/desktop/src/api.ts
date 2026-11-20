@@ -1,3 +1,4 @@
+import {TranscriptListSchema,TranscriptRecordSchema} from '../../../packages/runtime/src/transcripts.js';
 import { ChatActivitySchema, ChatListSchema, ChatRecordSchema, ChatRequestSchema } from '../../../packages/runtime/src/chats.js';
 import { z } from 'zod';
 import { DocumentIdentitySchema, DocumentSchema, DocumentSaveSchema, DocumentHistorySchema } from '../../../packages/runtime/src/documents.js';
@@ -6,13 +7,16 @@ import { ProposalInputSchema, ProposalRecordSchema, ProposalListSchema } from '.
 import { SessionSummarySchema, SessionRecordSchema } from '../../../packages/runtime/src/sessions.js';
 import { NodeIDSchema, LineageGraphSchema, ExplanationSchema, nodePath } from './lineage-contracts.js';
 import { HelpRequestSchema, KnowledgeRequestSchema, knowledgePath, HelpArticleSchema, HelpListSchema, helpPath } from './help-contracts.js';
+import { GherkinRequestSchema, GherkinCapabilitiesSchema, GherkinListSchema, GherkinFeatureSchema, gherkinPath } from './gherkin-contracts.js';
 export const ReadSchema = z.discriminatedUnion('operation', [
+  z.object({operation:z.literal('transcripts.list')}).strict(),
+  z.object({operation:z.literal('transcripts.get'),id:z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/)}).strict(),
   z.object({operation:z.literal('chats.activity'),id:z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/),key:z.uuid()}).strict(),
   z.object({operation:z.literal('chats.list'),order:z.enum(['newest','oldest'])}).strict(),
   z.object({operation:z.literal('chats.get'),id:z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/)}).strict(),
   DocumentIdentitySchema.extend({operation:z.literal('documents.get')}).strict(),
   DocumentIdentitySchema.extend({operation:z.literal('documents.history')}).strict(),
-  ...HelpRequestSchema.options, ...KnowledgeRequestSchema.options,
+  ...GherkinRequestSchema.options, ...HelpRequestSchema.options, ...KnowledgeRequestSchema.options,
   z.object({operation:z.literal('lineage.graph')}).strict(),
   z.object({operation:z.literal('lineage.node'),id:NodeIDSchema}).strict(),
   z.object({ operation: z.literal('proposals.list'), order: z.enum(['newest', 'oldest']) }).strict(),
@@ -30,6 +34,9 @@ export type Operation = ReadRequest['operation'];
 export function route(raw: unknown): string {
   const r = ReadSchema.parse(raw);
   switch (r.operation) {
+    case 'gherkin.capabilities': case 'gherkin.list': case 'gherkin.search': case 'gherkin.feature': return gherkinPath(r);
+    case 'transcripts.list': return '/api/research/v1/transcripts';
+    case 'transcripts.get': return `/api/research/v1/transcripts/${encodeURIComponent(r.id)}`;
     case 'chats.activity': return `/api/research/v1/chats/${encodeURIComponent(r.id)}/activity?key=${encodeURIComponent(r.key)}`;
     case 'chats.list': return `/api/research/v1/chats?order=${r.order}`;
     case 'chats.get': return `/api/research/v1/chats/${encodeURIComponent(r.id)}`;
@@ -51,6 +58,11 @@ export function route(raw: unknown): string {
 /** Validates all service evidence before it enters the renderer. */
 export function validateResponse(operation: Operation, value: unknown): unknown {
   switch (operation) {
+    case 'gherkin.capabilities': return GherkinCapabilitiesSchema.parse(value);
+    case 'gherkin.list': case 'gherkin.search': return GherkinListSchema.parse(value);
+    case 'gherkin.feature': return GherkinFeatureSchema.parse(value);
+    case 'transcripts.list': return TranscriptListSchema.parse(value);
+    case 'transcripts.get': return TranscriptRecordSchema.parse(value);
     case 'chats.activity': return ChatActivitySchema.parse(value);
     case 'chats.list': return ChatListSchema.parse(value);
     case 'chats.get': return ChatRecordSchema.parse(value);

@@ -13,10 +13,12 @@ from . import validation as valid
 from .chat_model import Runner
 from .chats import ChatStore, _key
 from .documents import DocumentStore
+from .gherkin import gherkin_blueprint
 from .proposals import ProposalStore
 from .session_events import otel_events
 from .sessions import SessionStore
 from .store import Store
+from .transcripts import TranscriptStore
 
 
 def create_app(
@@ -44,7 +46,9 @@ def create_app(
     proposals = ProposalStore(store)
     documents = DocumentStore(store)
     chats = ChatStore(store, chat_runner)
+    transcripts = TranscriptStore(store)
     app = Flask(__name__)
+    app.register_blueprint(gherkin_blueprint())
     app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
     lock = threading.RLock()
 
@@ -90,8 +94,39 @@ def create_app(
             "experiment_name": experiment_name,
             "experiment_id": str(store.experiment_id),
             "project_root": str(Path(__file__).resolve().parents[2]),
-            "capabilities": ["research", "sessions", "proposals", "documents", "chats"],
+            "capabilities": [
+                "research",
+                "sessions",
+                "proposals",
+                "documents",
+                "chats",
+                "transcripts",
+            ],
         }
+
+    @app.route("/api/research/v1/transcripts", methods=["GET", "POST"])
+    def transcript_catalog() -> Any:
+        """Import explicit historical evidence or read its immutable catalog."""
+        if request.method == "POST":
+            record, created = transcripts.save(request.get_json())
+            return (
+                jsonify(record),
+                201 if created else 200,
+                {} if created else {"Idempotent-Replayed": "true"},
+            )
+        if set(request.args) - {"order"} or len(request.args.getlist("order")) > 1:
+            raise valid.APIError("invalid_query", "Specify one optional order.")
+        order = request.args.get("order", "newest")
+        if order not in ("newest", "oldest"):
+            raise valid.APIError("invalid_order", "Order must be newest or oldest.")
+        return {"transcripts": transcripts.list(order)}
+
+    @app.get("/api/research/v1/transcripts/<transcript_id>")
+    def transcript_get(transcript_id: str) -> dict:
+        """Read captured historical content without invoking a model or tool."""
+        if request.args:
+            raise valid.APIError("invalid_query", "Transcript reads accept no query.")
+        return transcripts.get(transcript_id)
 
     @app.route("/api/research/v1/chats", methods=["GET", "POST"])
     def chat_catalog() -> Any:

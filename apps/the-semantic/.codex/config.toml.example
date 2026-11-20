@@ -1,7 +1,7 @@
 # Copy to .codex/config.toml in this worktree after building the Rust binary.
 # Update the absolute path if this worktree moves. No credentials belong here.
 [mcp_servers.semantic_research]
-command = "/Users/jeisenman/ra/worktrees/the-semantic/scaffold-mvp/target/debug/researcher-codex"
+command = "/Users/jeisenman/ra/qtwo_bench/apps/the-semantic/target/debug/researcher-codex"
 args = ["mcp"]
 startup_timeout_sec = 15
 tool_timeout_sec = 320

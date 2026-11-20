@@ -1,7 +1,9 @@
 import './styles.css';
 import './semantic-workspace.css';
+import './gherkin-workspace.css';
 import './codex.css';
 import './proposal-modal.css';
+import './research-chat-fixture.css';
 import { createCodexView } from './codex-view.js';
 import { AgentRecordSchema, ResearchRecordSchema, PluginManifestSchema, type ResearchRecord, type AgentRecord, type PluginManifest } from '../../../packages/runtime/src/contracts.js';
 import { z } from 'zod';
@@ -12,6 +14,8 @@ import { mountPlugin } from './plugin.js';
 import { mountProposals } from './proposal-view.js';
 import { mountSemantic, type SemanticState } from './semantic-view.js';
 import { mountSessions } from './session-view.js';
+import { researchChatFixture } from './research-chat-fixture.js';
+import { chatDisplayText } from './chat-display.js';
 
 const codexView = createCodexView();
 const semanticState:SemanticState={mode:'Lineage',query:'',help:{query:'',source:'snapshot'}};
@@ -36,8 +40,9 @@ const navButtons = ['Research', 'Proposals', 'Agent Catalog', 'Research Sessions
 });
 function reset(): void { revision++; disposePlugin(); disposePlugin = () => {}; main.replaceChildren(); }
 function intro(kicker: string, title: string, copy: string): void {
-  const section = el('section', '', 'intro'); section.append(el('p', kicker, 'eyebrow'), el('h1', title), el('p', copy, 'lead')); main.append(section);
+  const section = el('section', '', 'intro'); section.append(el('p', kicker, 'eyebrow'), el('h1', chatDisplayText(title)), el('p', chatDisplayText(copy), 'lead')); main.append(section);
 }
+function agentName(id: string): string { return chatDisplayText(agents.find(agent => agent.id === id)?.name ?? 'Agent definition unavailable'); }
 function render(): void {
   reset(); navButtons.forEach(b => b.classList.toggle('active', b.textContent === view));
   if (view === 'Research') renderResearch();
@@ -51,7 +56,7 @@ function render(): void {
 function renderResearch(): void {
   intro('01 / RESEARCH', 'A question worth\nfollowing.', 'A live ledger of accepted questions, bounded experiments and retained results. Open a record to follow its evidence from question to conclusion.');
   const toolbar = el('div', '', 'toolbar');
-  const search = el('input'); search.type = 'search'; search.placeholder = 'Search titles, questions, agents, or run IDs'; search.value = query;
+  const search = el('input'); search.type = 'search'; search.placeholder = 'Search titles, questions, or agents'; search.value = query;
   search.setAttribute('aria-label', 'Search research');
   const select = el('select'); select.setAttribute('aria-label', 'Sort by date');
   for (const [value, label] of [['newest', 'Newest first'], ['oldest', 'Oldest first']]) {
@@ -60,14 +65,14 @@ function renderResearch(): void {
   select.value = order;
   const list = el('div', '', 'question-list');
   const drawList = () => {
-    const filtered = records.filter(r => [r.title, r.question, r.agent_id, r.research_id].join(' ').toLowerCase().includes(query.toLowerCase()))
+    const filtered = records.filter(r => [r.title, r.question, agentName(r.agent_id)].join(' ').toLowerCase().includes(query.toLowerCase()))
       .sort((a, b) => (Date.parse(b.created_at) - Date.parse(a.created_at)) * (order === 'newest' ? 1 : -1));
     list.replaceChildren();
     if (!filtered.length) list.append(el('p', records.length ? 'No records match this search.' : 'No research records are available. Register an agent and run an accepted plan with the CLI, then refresh.', 'empty'));
     for (const record of filtered) {
       const row = button('', () => { void detail(record.research_id); }, 'question-row');
-      const meta = el('div', '', 'row-meta'); meta.append(el('span', `${record.status} · ${record.agent_id} / ${record.agent_version}`, 'eyebrow'), el('span', utc(record.created_at)));
-      row.append(meta, el('h2', record.title), el('p', record.question), el('span', 'Open evidence →', 'record-id'));
+      const meta = el('div', '', 'row-meta'); meta.append(el('span', `${record.status} · ${agentName(record.agent_id)} · Version ${chatDisplayText(record.agent_version)}`, 'eyebrow'), el('span', utc(record.created_at)));
+      row.append(meta, el('h2', chatDisplayText(record.title)), el('p', chatDisplayText(record.question)), el('span', 'Open evidence →', 'record-id'));
       list.append(row);
     }
     count.textContent = `${filtered.length} OF ${records.length} RECORDS`;
@@ -80,7 +85,7 @@ function renderResearch(): void {
   feature.append(el('div', 'THE RESEARCH LEDGER', 'rule-title'), toolbar, count, list);
   const aside = el('aside', '', 'desk-aside');
   aside.append(el('p', 'FROM QUESTION TO EVIDENCE', 'eyebrow'), el('h2', 'Keep the\nwhole chain.'),
-    el('p', 'Each accepted plan pins an agent definition and one attempt. MLflow retains the output, metrics and trace.'),
+    el('p', 'Each accepted plan uses a versioned agent definition. The service keeps its evidence for future lookups.'),
     el('div', '01   Question\n02   Hypothesis\n03   Experiment\n04   Runs\n05   Graphs', 'chain-note'),
     el('p', 'Dates use UTC. Missing measurements remain missing. Refresh reads the current service record.', 'caption'));
   grid.append(feature, aside); main.append(grid); drawList();
@@ -94,63 +99,64 @@ async function detail(id: string): Promise<void> {
     main.replaceChildren(button('← Research ledger', () => render(), 'back'));
     intro(`RESEARCH / ${r.status}`, r.title, r.question);
     const meta = el('div', '', 'run-bar');
-    meta.append(el('strong', `${r.agent_id} / ${r.agent_version}`), el('span', r.model), el('span', utc(r.created_at)));
+    meta.append(el('strong', `${agentName(r.agent_id)} · Version ${chatDisplayText(r.agent_version)}`), el('span', chatDisplayText(r.model)), el('span', utc(r.created_at)));
     main.append(meta);
     const editorHost = el('div'); main.append(editorHost);
     const fieldTargets: Record<string, HTMLElement> = { title: main.querySelector('h1')! };
     const disposeEditor = mountDocumentEditor(editorHost, { kind:'research', id:r.research_id, eager:true, fieldTargets, onSaved: () => { void detail(id); } });
     disposePlugin = disposeEditor;
     const steps = el('div', '', 'provenance');
+    const chatStep = el('a', '00  Chat thread'); chatStep.href = '#stage-chat'; steps.append(chatStep);
     for (const [i, label] of ['Question', 'Hypothesis', 'Experiment', 'Runs', 'Graphs'].entries()) {
       const a = el('a', `0${i + 1}  ${label}`); a.href = `#stage-${i}`; steps.append(a);
     }
     main.append(steps);
     const content = el('div', '', 'detail-grid'); const body = el('div'); const aside = el('aside', '', 'evidence');
+    body.append(researchChatFixture());
     const stage = (number: number, title: string, value: string) => {
       const section = el('section', '', 'stage'); section.id = `stage-${number}`;
-      section.append(el('p', `0${number + 1} / ${title.toUpperCase()}`, 'eyebrow'), el('h2', title), el('p', value, 'pre-line')); body.append(section); return section;
+      section.append(el('p', `0${number + 1} / ${title.toUpperCase()}`, 'eyebrow'), el('h2', title), el('p', chatDisplayText(value), 'pre-line')); body.append(section); return section;
     };
     for (const [index, name, label] of [[0, 'question', 'Question'], [1, 'hypothesis', 'Hypothesis'], [2, 'plan', 'Experiment']] as const) {
       fieldTargets[name] = stage(index, label, r[name]).querySelector('.pre-line')!;
     }
-    const runs = stage(3, 'Runs', `One accepted attempt · ${r.status}`);
-    runs.append(el('h3', 'Retained output'), el('pre', r.output ?? 'No output is retained.', 'output'));
+    const runs = stage(3, 'Runs', `Selected result · ${r.status}`);
+    runs.append(el('h3', 'Retained output'), el('pre', chatDisplayText(r.output ?? 'No output is retained.'), 'output'));
     fieldTargets.output = runs.querySelector('.output')!;
-    if (r.error) runs.append(el('p', r.error, 'error'));
-    const graphs = stage(4, 'Graphs', 'Measurements and output from the selected retained attempt.');
+    const graphs = stage(4, 'Graphs', 'The results panel shows the selected result.');
     const pluginHost = el('div', '', 'plugin-host'); graphs.append(pluginHost);
     const manifest = plugins.find(p => p.id === r.page_plugin);
     if (manifest) { const closePlugin = mountPlugin(pluginHost, manifest, r); disposePlugin = () => { disposeEditor(); closePlugin(); }; }
-    else pluginHost.append(el('p', `Page plugin unavailable: ${r.page_plugin}.`, 'error'));
-    aside.append(el('p', 'PINNED EVIDENCE', 'eyebrow'), el('p', 'The document can contain saved edits. Metrics, trace and execution identifiers refer to the original run. Version history retains the original document.', 'caption'));
+    else pluginHost.append(el('p', 'The results panel is unavailable.', 'error'));
+    aside.append(el('p', 'PINNED EVIDENCE', 'eyebrow'), el('p', 'The document can contain saved edits. The service retains source references for lookups. Version history retains the original document.', 'caption'));
     const technical = el('details', '', 'technical-evidence'); technical.append(el('summary', 'Technical evidence'));
-    for (const [label, value] of [['Research run', r.research_id], ['Experiment run', r.experiment_id], ['Attempt run', r.attempt_id],
-      ['Agent digest', r.agent_definition_digest], ['Trace ID', r.trace_id ?? 'No trace retained']]) {
-      technical.append(el('h4', label), el('code', value));
-    }
-    aside.append(el('h4', 'Updated'), el('p', utc(r.updated_at), 'metric'), el('h4', 'Time limit'),
-      el('p', `${r.max_seconds} seconds`, 'metric'), technical, el('h4', 'Retained metrics'));
-    if (!Object.keys(r.metrics).length) aside.append(el('p', 'No metrics retained.'));
-    for (const [key, value] of Object.entries(r.metrics)) aside.append(el('p', `${key}: ${value}`, 'metric'));
+    technical.append(el('h4', 'Run references'), el('p', 'Source references are retained for service lookups.'));
+    technical.append(el('h4', 'Agent definition'), el('p', 'The agent definition version is pinned to this record.'));
+    technical.append(el('h4', 'Execution trace'), el('p', r.trace_id ? 'Retained.' : 'Not retained.'));
+    aside.append(el('h4', 'Updated'), el('p', utc(r.updated_at), 'metric'), technical);
     content.append(body, aside); main.append(content);
   } catch { if (revision === current) main.replaceChildren(button('← Research ledger', render, 'back'), el('p', 'The selected record could not be read. Refresh the service connection.', 'error')); }
 }
 function renderAgents(): void {
-  intro('02 / AGENT CATALOG', 'Every result has\nan author.', 'Immutable agent definitions establish the instructions, model and tool scope used by each experiment. Research records pin the definition digest.');
+  intro('02 / AGENT CATALOG', 'Every result has\nan author.', 'Immutable agent definitions establish the instructions, model and tool scope used by each experiment. Research records retain the agent definition version.');
   main.append(button('Refresh catalog ↻', () => { void load(); }, 'refresh'));
   const list = el('div', '', 'agent-list');
   if (!agents.length) list.append(el('p', 'No registered agents. Use researcher-codex agent put <agent.json>, then refresh.', 'empty'));
   for (const agent of agents) {
+    const row = el('details', '', 'agent-row');
+    const summary = el('summary', '', 'agent-summary');
+    summary.append(el('span', chatDisplayText(agent.name), 'agent-name'), el('span', `Version ${chatDisplayText(agent.version)}`, 'agent-version'));
     const section = el('article', '', 'agent');
-    section.append(el('p', `${agent.id} / VERSION ${agent.version}`, 'eyebrow'), el('h2', agent.name), el('p', agent.purpose),
-      el('h4', 'Model'), el('code', agent.model), el('h4', 'Instructions'), el('p', agent.instructions, 'pre-line'),
-      el('h4', 'Tool scope'), el('p', 'No tools · one text-only model call'), el('h4', 'Page plugin'), el('code', agent.page_plugin),
-      el('h4', 'Definition digest'), el('code', agent.definition_digest), el('h4', 'MLflow agent run'), el('code', agent.mlflow_run_id));
+    section.append(el('p', `Version ${chatDisplayText(agent.version)}`, 'eyebrow'), el('h2', chatDisplayText(agent.name)), el('p', chatDisplayText(agent.purpose)),
+      el('h4', 'Model'), el('code', chatDisplayText(agent.model)), el('h4', 'Instructions'), el('p', chatDisplayText(agent.instructions), 'pre-line'),
+      el('h4', 'Tool scope'), el('p', 'No tools · one text-only model call'), el('h4', 'Results panel'), el('p', 'Run summary'),
+      el('h4', 'Stored definition'), el('p', 'Versioned and retained for future lookups.'));
     const fieldTargets: Record<string, HTMLElement> = { name: section.querySelector('h2')!, purpose: section.querySelector('h2 + p')!, instructions: section.querySelector('.pre-line')!, model: section.querySelector('code')! };
-    const version = el('span', agent.version); section.querySelector('.eyebrow')!.replaceChildren(document.createTextNode(`${agent.id} / VERSION `), version); fieldTargets.version = version;
+    const version = el('span', chatDisplayText(agent.version)); section.querySelector('.eyebrow')!.replaceChildren(document.createTextNode('Version '), version); fieldTargets.version = version;
     const stopEditor = mountDocumentEditor(section, {kind:'agent', id:agent.mlflow_run_id, fieldTargets, onSaved: () => { void load(); }});
     const previous = disposePlugin; disposePlugin = () => { previous(); stopEditor(); };
-    list.append(section);
+    row.append(summary, section);
+    list.append(row);
   }
   main.append(list);
 }

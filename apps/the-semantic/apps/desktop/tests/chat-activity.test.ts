@@ -13,9 +13,9 @@ test('activity uses a finite read route and rejects payloads or invented operati
  assert.deepEqual(validateResponse('chats.activity',activity),activity);
  for(const value of [{...activity,reasoning:'private'},{events:[{...activity.events[0],name:'shell'}],done:true},{events:[{...activity.events[0],elapsed_ms:-1}],done:true},{events:[{...activity.events[0],output:'private'}],done:true}])assert.throws(()=>ChatActivitySchema.parse(value));
 });
-test('activity shows observed status, operation name and time in a collapsible list',()=>{
+test('activity shows observed status and operation name without retained timings',()=>{
  const dom=new JSDOM('<main></main>');Object.assign(globalThis,{document:dom.window.document});
- const panel=activityPanel(activity,true);assert.equal(panel.open,true);assert.match(panel.textContent!,/Request Codex reply/);assert.match(panel.textContent!,/running · 0.3s/);assert.match(panel.textContent!,/codex_complete/);
+ const panel=activityPanel(activity,true);assert.equal(panel.open,false);assert.match(panel.textContent!,/Request Codex reply/);assert.match(panel.textContent!,/running/);assert.doesNotMatch(panel.textContent!,/0\.3s|250|elapsed_ms/);assert.match(panel.textContent!,/codex_complete/);assert.equal(activity.events[0]!.elapsed_ms,250);
  assert.equal(activityPanel({...activity,done:true}).open,false);dom.window.close();
 });
 test('cancelled live reads cannot update an unmounted conversation',async()=>{

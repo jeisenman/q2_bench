@@ -14,6 +14,12 @@ const record: SessionRecord = { session_id:'session-1',title:'Native fixture',mo
 const { events: _events, ...summary } = record;
 const settle = () => new Promise<void>(resolve=>setImmediate(resolve));
 function setup() { const dom=new JSDOM('<main></main>');Object.assign(globalThis,{document:dom.window.document});return {dom,host:dom.window.document.querySelector('main')!}; }
+test('session titles and tool labels hide execution metadata without changing saved evidence',async()=>{
+  const {dom,host}=setup();const source=structuredClone(record);source.title='Review question\ntrace_id: private-trace';source.events[2]!.tool_name='research_id: private-run';source.events[2]!.status='elapsed_ms: 12345';const snapshot=JSON.stringify(source);
+  const {events:ignored,...listing}=source;
+  const dispose=mountSessions(host,{selectedID:source.session_id},async request=>request.operation==='sessions.list'?{sessions:[listing]}:source);await settle();
+  assert.match(host.textContent!,/Review question/);assert.doesNotMatch(host.textContent!,/private-trace|private-run|12345/);assert.equal(JSON.stringify(source),snapshot);dispose();dom.window.close();
+});
 test('session routes are finite and launch flag accepts only one bounded ID', () => {
   assert.equal(route({operation:'sessions.list',order:'newest'}),'/api/research/v1/sessions?order=newest');
   assert.equal(route({operation:'sessions.get',id:'session-1'}),'/api/research/v1/sessions/session-1');

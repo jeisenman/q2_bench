@@ -1,0 +1,35 @@
+.semantic-workspace .gherkin-workspace{min-width:0}
+.semantic-workspace .gherkin-intro{max-width:760px;color:var(--muted);font-size:13px}
+.semantic-workspace .gherkin-workspace>.toolbar{gap:18px;flex-wrap:wrap}
+.semantic-workspace .gherkin-workspace>.toolbar label{font-size:12px;color:var(--muted)}
+.semantic-workspace .gherkin-workspace>.toolbar input{min-width:min(100%,220px)}
+.semantic-workspace .gherkin-workspace>.toolbar select{max-width:100%;font-size:12px}
+.semantic-workspace .gherkin-workspace>.caption{color:var(--muted)}
+.semantic-workspace .gherkin-results{max-height:min(360px,52vh);min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;border-bottom:1px solid var(--line)}
+.semantic-workspace .gherkin-feature-row{display:block;width:100%;min-width:0;text-align:left;padding:15px 12px;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.semantic-workspace .gherkin-feature-row h3{font-size:19px;line-height:1.35;margin:0;overflow-wrap:anywhere}
+.semantic-workspace .gherkin-feature-row .caption{margin:5px 0 0;line-height:1.5;overflow-wrap:anywhere}
+.semantic-workspace .gherkin-feature-row:hover h3,.semantic-workspace .gherkin-feature-row:focus-visible h3{color:var(--rust)}
+.semantic-workspace .gherkin-feature-row[aria-pressed=true]{background:color-mix(in srgb,var(--rust) 8%,var(--paper));border-left:3px solid var(--rust);padding-left:9px}
+.semantic-workspace .gherkin-detail{min-width:0;padding-top:28px;scroll-margin-top:20px}
+.semantic-workspace .gherkin-detail h3{font-size:27px;overflow-wrap:anywhere}
+.semantic-workspace .gherkin-detail>.caption{overflow-wrap:anywhere;color:var(--muted)}
+.semantic-workspace .gherkin-source{max-height:65vh;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;margin:22px 0 0;padding:18px;border:1px solid var(--line);background:color-mix(in srgb,var(--paper) 94%,var(--ink));font:12px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre;overflow-wrap:normal}
+@media(max-width:700px){.semantic-workspace .gherkin-results{max-height:360px}.semantic-workspace .gherkin-source{max-height:60vh;padding:12px;font-size:11px}}
+.semantic-workspace .gherkin-browser{display:grid;grid-template-columns:minmax(210px,38fr) minmax(0,62fr);gap:26px;align-items:start;border-top:1px solid var(--line);padding-top:20px}
+.semantic-workspace .gherkin-list-panel{min-width:0}
+.semantic-workspace .gherkin-list-panel>.eyebrow{margin-bottom:12px}
+.semantic-workspace .gherkin-list-panel>.toolbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0 0}
+.semantic-workspace .gherkin-results{max-height:65vh}
+.semantic-workspace .gherkin-detail{padding:0 0 0 24px;border-left:1px solid var(--line)}
+.semantic-workspace .gherkin-detail:focus-visible{outline:2px solid var(--rust);outline-offset:5px}
+.semantic-workspace .gherkin-detail>.eyebrow{margin-bottom:10px}
+.semantic-workspace .gherkin-detail h3{margin-bottom:12px}
+.semantic-workspace .gherkin-detail>.caption{margin:0;font-size:10px;line-height:1.6}
+.semantic-workspace .gherkin-read-hint{display:block;margin-top:9px;color:var(--rust);font-size:10px}
+.semantic-workspace .gherkin-source{font-size:13px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2;max-height:70vh;margin-top:16px}
+.semantic-workspace .gherkin-source-heading{font-weight:700;color:var(--rust);scroll-margin:20px}
+.semantic-workspace .gherkin-outline{margin-top:12px;border-block:1px solid var(--line)}
+.semantic-workspace .gherkin-outline>div{display:grid;max-height:180px;overflow:auto;padding-bottom:12px}
+.semantic-workspace .gherkin-outline button{text-align:left;padding:5px 0;font-size:11px;color:var(--rust);overflow-wrap:anywhere}
+@media(max-width:1100px){.semantic-workspace .gherkin-browser{grid-template-columns:minmax(0,1fr)}.semantic-workspace .gherkin-results{max-height:280px}.semantic-workspace .gherkin-detail{border-left:0;border-top:1px solid var(--line);padding:22px 0 0}.semantic-workspace .gherkin-source{max-height:70vh}}

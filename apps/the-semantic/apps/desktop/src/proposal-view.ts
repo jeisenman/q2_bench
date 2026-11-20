@@ -3,6 +3,7 @@ import { read, saveProposal } from './client.js';
 import { mountDocumentEditor } from './document-editor.js';
 import { el, button, utc } from './dom.js';
 import { createEditBox } from './edit-box.js';
+import { chatDisplayText } from './chat-display.js';
 
 /** Displays and saves drafts without accepting or executing research. */
 export function mountProposals(host: HTMLElement, reader: typeof read = read, saver: typeof saveProposal = saveProposal): () => void {
@@ -26,29 +27,28 @@ export function mountProposals(host: HTMLElement, reader: typeof read = read, sa
     if (!filtered.length) list.append(el('p', records.length ? 'No proposals match this search.' : 'No draft proposals are saved.', 'empty'));
     for (const record of filtered) {
       const row = button('', () => { void open(record.proposal_id); }, `session-row${selected?.proposal_id === record.proposal_id ? ' selected' : ''}`);
-      row.append(el('p', 'DRAFT', 'eyebrow'), el('h3', record.title), el('p', utc(record.created_at), 'caption')); list.append(row);
+      row.append(el('p', 'DRAFT', 'eyebrow'), el('h3', chatDisplayText(record.title)), el('p', utc(record.created_at), 'caption')); list.append(row);
     }
   }
   function drawDetail(): void {
     disposeEditor(); detail.replaceChildren();
     if (creating) { form(); return; }
     if (!selected) { detail.append(el('h2', 'Select a proposal.'), el('p', 'Open a draft or create one for review.')); return; }
-    detail.append(el('p', 'DRAFT · NOT ACCEPTED', 'eyebrow'), el('h2', selected.title), el('p', `Created ${utc(selected.created_at)}`, 'caption'));
+    detail.append(el('p', 'DRAFT · NOT ACCEPTED', 'eyebrow'), el('h2', chatDisplayText(selected.title)), el('p', `Created ${utc(selected.created_at)}`, 'caption'));
     const text = el('div');
     const fieldTargets: Record<string, HTMLElement> = { title: detail.querySelector('h2')! };
     for (const name of ['question', 'hypothesis', 'plan'] as const) {
-      fieldTargets[name] = el('p', selected[name], 'pre-line');
+      fieldTargets[name] = el('p', chatDisplayText(selected[name]), 'pre-line');
       text.append(el('h3', name[0]!.toUpperCase() + name.slice(1)), fieldTargets[name]!);
     }
-    const drawText = () => { for (const name of ['question', 'hypothesis', 'plan'] as const) fieldTargets[name]!.textContent = selected![name]; };
+    const drawText = () => { for (const name of ['question', 'hypothesis', 'plan'] as const) fieldTargets[name]!.textContent = chatDisplayText(selected![name]); };
     const heading = detail.querySelector('h2')!;
     const actionsHost = el('div'); const editorHost = el('div'); detail.append(actionsHost, text, editorHost);
     disposeEditor = mountDocumentEditor(editorHost, {kind:'proposal', id:selected.proposal_id, eager:true, actionsHost, fieldTargets, onSaved: record => {
-      if (!selected) return; Object.assign(selected, record.content); heading.textContent = selected.title; drawText();
+      if (!selected) return; Object.assign(selected, record.content); heading.textContent = chatDisplayText(selected.title); drawText();
       const row = records.find(r => r.proposal_id === selected!.proposal_id); if(row) Object.assign(row, record.content); drawList();
     }});
     drawText();
-    detail.append(el('p', `Proposal ID: ${selected.proposal_id}`, 'caption'));
   }
   function form(): void {
     const formElement = el('form'); const fields = {} as Record<'title' | 'question' | 'hypothesis' | 'plan', HTMLInputElement | HTMLTextAreaElement>;

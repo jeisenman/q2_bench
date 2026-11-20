@@ -11,6 +11,10 @@ Question -> hypothesis -> accepted experiment -> one model run -> research page.
 
 ## Workspace
 
+Research detail starts with `00 Chat thread`, before `01 Question`. Open chat
+thread opens the labelled sample in a read-only dialog; Expand chat shows its
+initially collapsed messages inline. Neither control calls a model or saves data.
+
 This app is owned by qtwo_bench under `apps/the-semantic/`. Run the commands
 below from that directory. Its Rust CLI/MCP, TypeScript desktop/runtime, and small
 Python MLflow API keep their own manifests and checks. Plans are in [plans/](plans/001-system-design.md). The shared wire contract is
@@ -111,15 +115,21 @@ The local-mlflow skill's run_project.py wrapper can set the tracking URI and a
 worktree-specific experiment name when starting the API. This wrapper supplies
 configuration only; the application performs the instrumentation.
 
-## Semantic Layer and Zendesk
+## Semantic Layer knowledge bases
 
-The Semantic Layer has five peer knowledge bases: Lineage, Zendesk, Definitions,
-Repositories, and Research. Compact sidebar rows keep each source visible. The
-main navigation and other tabs retain their existing behavior.
+The Semantic Layer has six peer knowledge bases: Lineage, Zendesk, Definitions,
+Repositories, Research, and PL-App Behavior. Editorial rows open each knowledge
+base. All knowledge bases returns to the index; records inside use compact rows.
+The main navigation and the editorial Research tab retain their existing behavior.
 Repositories lists supplied references; optional source search is off and disconnected.
 Definitions lists supplied SME meaning and opens the existing source-backed editor.
 Research lists completed records newest first and opens the exact retained item
 in the original editorial Research tab, without invoking a model.
+PL-App Behavior searches committed application `.feature` files and shows their verbatim
+source with the exact commit and path. Set `SEMANTIC_GHERKIN_ROOT` in the host
+environment to select a checkout; the default is `~/ra/pl-application`. See the
+[Gherkin read contract](apps/desktop/README.md). Specifications describe expected
+behavior and do not establish test results or inferred lineage links.
 
 Lineage contains Catalog and Graph views. Both use one scoped source graph and
 retain selection and search. Catalog has a Name / Kind / System or scope table
@@ -130,8 +140,10 @@ canvas arrow keys to pan; Escape restores an expanded graph. The 40-node / 80-ed
 remain explicit. Source commits, generated meaning, absent SME definitions
 and coverage gaps stay explicit. An unavailable source is an error, not fake data.
 Readable titles and supplied business context form the main definition view.
-Technical evidence starts closed and retains exact identifiers, source commits,
-and machine descriptions for inspection.
+Technical evidence starts closed and retains exact lineage identifiers and
+source details for source review. Agent and Research views use human-readable
+labels; raw agent IDs, page-plugin keys, definition digests, and MLflow run IDs
+remain internal to service records.
 
 The selected item's header contains Edit and Version history. Hover or keyboard
 focus on Edit identifies the SME definition area. Edit opens the form there and
@@ -197,7 +209,8 @@ Q2_MCP_DEBUG=1 ./target/debug/researcher-codex mcp
 ```
 
 It exposes research_list, research_get, agent_list, agent_get, research_run,
-proposal_save, proposal_prepare, proposal_list and proposal_get.
+proposal_save, proposal_prepare, proposal_list, proposal_get, gherkin_capabilities,
+gherkin_search and gherkin_feature.
 The read tools return the same records as the CLI and HTTP API. research_run is
 an explicit model-execution operation and requires an accepted specification.
 The harness chooses the next action. The MCP process has no hidden retry loop.
@@ -243,8 +256,9 @@ meaning remains visible and separate. No save runs a model or an experiment.
 
 The run-summary page is a trusted packaged plugin. It runs in an iframe with
 scripts enabled but without same-origin access, Node, preload or credentials.
-The host sends only the selected record through a MessageChannel. The plugin
-renders actual output and available metrics; missing metrics are not invented.
+The host sends only the result title, model, status, and output through a
+MessageChannel. Internal references, errors, and numeric measurements remain
+in service records. The plugin does not receive or render them.
 
 For a browser development preview:
 
@@ -308,7 +322,7 @@ Each provider turn reserves a durable request before invocation. Replays do not
 invoke Codex again. An interrupted request becomes an explicit failed reply;
 review any saved drafts and send a new message to request another turn.
 While a turn runs, its activity list shows the observed context reads, Codex
-request, and any proposal save with status and elapsed time. Expand View activity
+request, and any proposal save with plain-language status. Expand View activity
 under a completed reply to inspect its retained operations. Activity polls cannot
 start model calls. Missing live activity is reported explicitly.
 The UI animates completed replies; it does not claim token-level provider
@@ -321,3 +335,41 @@ cannot call research_run. No private model reasoning is displayed or retained.
 Verify the native UI with `npm run test:codex-preview-native --workspace
 @the-semantic/desktop` after building. This check injects isolated API fixtures,
 exercises the real preload and modal, and makes no model call.
+
+### Historical conversation evidence
+
+The Codex sidebar can open explicitly imported, read-only native chat transcripts.
+The imported ROE study retains all 41 public messages, 79 tool calls and 79
+outputs from its original record. Tool groups, including single calls, start
+collapsed; expand each call or output to inspect its exact captured text.
+Original truncation notices remain visible. These records do not start a model,
+execute commands, or become live chat turns. Source title/ID and import time stay
+visible. A linked proposal opens its current version in the existing editor.
+
+Live and historical messages render inert Markdown: bold, bullets, numbered
+lists, headings, quotations and fenced code. HTML and executable links stay text.
+The proposal modal uses a bounded, nearly full-width layout with a scrolling
+body and stable controls. The pen highlights all fields without moving the text
+cursor. A backdrop gesture must start and end outside; dirty or busy documents
+retain the existing Save/Cancel guard.
+
+## Agent retrieval of Gherkin evidence
+
+The existing research MCP exposes `gherkin_capabilities`, `gherkin_search`, and
+`gherkin_feature`. Agents choose bounded literal keyword searches and read
+features at the returned source commit. These read tools never execute Gherkin
+or call a model. The harness decides whether another query is useful.
+
+Run `npm run build:host` before starting the API. Routes under
+`/api/research/v1/gherkin` are GET `/capabilities`, `/features` (offset, optional
+query, commit and mode), and `/feature` (path and commit). The fixed Node host
+reuses the desktop's committed-Git reader. Source selection stays host-only
+through `SEMANTIC_GHERKIN_ROOT`. Rebuild the host and restart the API and MCP
+child after changes.
+
+Keyword retrieval is enabled. Vector retrieval returns `gherkin_vector_disabled`
+before source reads or child creation. There is no active vector backend,
+embedding model, index, fallback, or PostgreSQL dependency. The shared MLflow
+service already uses SQLite for metadata. Existing records use its public API;
+Gherkin uses Git. This feature does not read or write MLflow SQL tables.
+See [Gherkin retrieval](../../docs/gherkin-knowledge-base.md).

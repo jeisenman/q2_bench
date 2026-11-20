@@ -9,13 +9,13 @@ const labels = {
 };
 /** Render only observed public operations, without private reasoning or payloads. */
 export function activityPanel(activity: ChatActivity, live = false): HTMLDetailsElement {
-  const panel = el('details','','codex-activity'); panel.open=live;
-  panel.append(el('summary',live?'Working · Operations':`${activity.events.length} operations · View activity`));
+  const panel = el('details','','codex-activity'); panel.open=false;
+  panel.append(el('summary',live?`Working · ${activity.events.length} operations`:`${activity.events.length} operations · View activity`));
   const list=el('ol');
   for(const event of activity.events){
     const row=el('li');row.dataset.status=event.status;
     const mark=event.status==='completed'?'✓':event.status==='failed'?'!':'◌';
-    row.append(el('span',`${mark} ${labels[event.name]}`),el('span',`${event.status} · ${(event.elapsed_ms/1000).toFixed(1)}s`,'caption'));
+    row.append(el('span',`${mark} ${labels[event.name]}`),el('span',event.status,'caption'));
     const evidence=el('code',event.name);row.append(evidence);list.append(row);
   }
   panel.append(list);return panel;

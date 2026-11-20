@@ -6,6 +6,7 @@ import { researchSessionArgument, forwardedResearchSession } from './launch.js';
 import { lineageOrigin, readLineage } from './lineage-client.js';
 import { readHelpCenter } from './help-client.js';
 import { PublicArticleURLSchema } from './help-contracts.js';
+import { readGherkin } from './gherkin-source.js';
 import { readKnowledgeSnapshot } from './knowledge-snapshot.js';
 const lineageBase=lineageOrigin(process.env.SEMANTIC_LINEAGE_URL);
 app.setName('The Semantic');
@@ -36,6 +37,7 @@ function createWindow(): void {
   ipcMain.handle('semantic:read', async (event, request: unknown) => {
     if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) throw new Error('Untrusted IPC sender.');
     const validated=ReadSchema.parse(request);
+    if(validated.operation==='gherkin.capabilities'||validated.operation==='gherkin.list'||validated.operation==='gherkin.search'||validated.operation==='gherkin.feature')return readGherkin(validated);
     if(validated.operation==='lineage.graph'||validated.operation==='lineage.node')return readLineage(validated,lineageBase,net.fetch);
     if(validated.operation==='knowledge.list'||validated.operation==='knowledge.search'||validated.operation==='knowledge.article')return readKnowledgeSnapshot(validated);
     if(validated.operation==='help.list'||validated.operation==='help.search'||validated.operation==='help.article')return readHelpCenter(validated,net.fetch);

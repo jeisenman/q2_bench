@@ -10,6 +10,12 @@ Run uv run python scripts/check.py before declaring work complete.
 Local MCP visibility
 Run MCP servers with Q2_MCP_DEBUG=1 during local development. Prompts, logs, credentials, and arbitrary production payloads must not be recorded.
 
+Human-facing output
+Hide internal research run IDs, experiment run IDs, attempt run IDs, agent
+digests, trace IDs, and retained metrics (including runtime_duration_seconds)
+from all human-facing views and responses. Keep this metadata in internal
+records only. Use plain-language status and results in human-facing output.
+
 Runtime restart requirement
 After changing an MCP server's Go code, configuration, environment variables, prompts, or dependencies, rebuild and recreate that MCP server before validating behavior. An existing process retains its binary and environment state.
 

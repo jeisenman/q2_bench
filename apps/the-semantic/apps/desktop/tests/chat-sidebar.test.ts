@@ -10,7 +10,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function setup(){
  const dom=new JSDOM('<main></main>',{url:'http://127.0.0.1:4175'});Object.assign(globalThis,{document:dom.window.document});
  const host=document.querySelector('main')!;let calls=0;
- const view=createCodexView({reader:async r=>{calls++;if(r.operation==='chats.list')return {chats:records.map(record=>({chat_id:record.chat_id,title:record.title,created_at:time,updated_at:time,message_count:0}))};if(r.operation==='chats.get')return records.find(record=>record.chat_id===r.id);throw Error('Unexpected read');},sender:async()=>{throw Error('Navigation cannot send');}});
+ const view=createCodexView({reader:async r=>{calls++;if(r.operation==='transcripts.list')return {transcripts:[]};if(r.operation==='chats.list')return {chats:records.map(record=>({chat_id:record.chat_id,title:record.title,created_at:time,updated_at:time,message_count:0}))};if(r.operation==='chats.get')return records.find(record=>record.chat_id===r.id);throw Error('Unexpected read');},sender:async()=>{throw Error('Navigation cannot send');}});
  const dispose=view.mount(host);
  return {dom,host,get calls(){return calls;},close(){dispose();dom.window.close();}};
 }
@@ -37,4 +37,10 @@ test('message-style rows use saved timestamps and loaded previews without invent
  const dom=new JSDOM('<main></main>');Object.assign(globalThis,{document:dom.window.document});
  const sidebar=chatSidebar({chats:[{...records[0]!,updated_at:time,preview:'<img src=x> Saved reply'},{...records[1]!,message_count:4}],currentID:'chat0',pending:false,query:'',onQuery:()=>{},onOpen:()=>{},onNew:()=>{},onRefresh:()=>{}});
  const items=sidebar.querySelectorAll('[data-chat-id]');assert.equal(items[0]!.querySelector('.codex-chat-icon')!.textContent,'LS');assert.equal(items[0]!.querySelector('time')!.dateTime,time);assert.match(items[0]!.querySelector('time')!.title,/UTC/);assert.equal(items[0]!.querySelector('.codex-chat-preview')!.textContent,'<img src=x> Saved reply');assert.equal(sidebar.querySelector('img'),null);assert.match(items[1]!.textContent!,/4 messages · Open conversation/);dom.window.close();
+});
+test('saved title, tooltip and preview omit metadata without altering chat records',()=>{
+ const dom=new JSDOM('<main></main>');Object.assign(globalThis,{document:dom.window.document});
+ const source={chat_id:'chat0',title:'Research question\ntrace_id: private-trace',preview:'Reviewed.\ninput_tokens: 512'};const snapshot=JSON.stringify(source);
+ const sidebar=chatSidebar({chats:[source],pending:false,query:'',onQuery:()=>{},onOpen:()=>{},onNew:()=>{},onRefresh:()=>{}});
+ assert.equal(sidebar.querySelector<HTMLButtonElement>('[data-chat-id]')!.title,'Research question');assert.doesNotMatch(sidebar.textContent!,/private-trace|512/);assert.equal(JSON.stringify(source),snapshot);dom.window.close();
 });

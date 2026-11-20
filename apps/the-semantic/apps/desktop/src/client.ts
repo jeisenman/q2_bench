@@ -6,6 +6,7 @@ declare global { interface Window { semantic?: { read(request: ReadRequest): Pro
 export async function read(request: ReadRequest): Promise<unknown> {
   if (window.semantic) return window.semantic.read(request);
   if (import.meta.env.DEV && location.origin === 'http://127.0.0.1:4175') {
+    if(request.operation==='gherkin.capabilities'||request.operation==='gherkin.list'||request.operation==='gherkin.search'||request.operation==='gherkin.feature')return validateResponse(request.operation,await boundedJSON('/preview-gherkin'+route(request)));
     if(request.operation==='lineage.graph'||request.operation==='lineage.node')return readLineage(request,'/preview-lineage');
     if(request.operation==='knowledge.list'||request.operation==='knowledge.search'||request.operation==='knowledge.article')return validateResponse(request.operation,await boundedJSON('/preview-knowledge'+route(request)));
     if(request.operation==='help.list'||request.operation==='help.search'||request.operation==='help.article')return validateResponse(request.operation,await boundedJSON('/preview-help'+route(request)));

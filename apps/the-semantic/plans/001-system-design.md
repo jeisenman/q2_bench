@@ -17,9 +17,29 @@ Codex completion -> MLflow evidence -> sandboxed research page in Electron.
   API. This avoids patching MLflow internals or restarting other projects.
 - ~/.codex authentication stays in Codex; default gpt-5.6-sol is verified.
   6.1 Sol remains an explicit selection that can fail with an access error.
-- Agent Catalog stores immutable ID/version/digest definitions. Attempts pin them.
+- Agent Catalog stores immutable definitions with stable IDs, versions and
+  content digests. Attempts pin the definition version.
 - Page plugin manifest and sandboxed iframe display selected retained evidence.
   Parent MessageChannel is the only plugin data capability in MVP.
+
+## Human-readable presentation
+
+The app keeps agent IDs, page-plugin keys, definition digests, and MLflow run
+IDs in its service records for lookups and integrity checks. Agent Catalog and
+Research views do not display these raw values. They use the agent name, version,
+and a human-readable results-panel label. Technical evidence may state that a
+run reference or trace is retained, but it does not print its identifier or
+digest. Unavailable-plugin messages describe the missing results panel without
+showing its internal key. Lineage source evidence keeps its separate contract.
+Run-summary plugins receive only the result title, model, status, and output.
+Numeric measurements, execution errors, trace values, and internal references
+remain in service records. The app does not send or render these fields in
+human-facing views.
+
+Success means no Agent Catalog or Research view, including a technical-details
+disclosure, shows a raw page-plugin key, agent-definition digest, MLflow agent
+run ID, or research, experiment, attempt, or trace ID. The service contracts
+and stored evidence retain these values unchanged.
 
 ## Boundaries
 

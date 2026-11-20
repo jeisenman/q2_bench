@@ -1,5 +1,8 @@
+import { chatDisplayText } from './chat-display.js';
+
 /** Reveals a completed reply in bounded steps, without changing its evidence. */
 export function revealReply(host: HTMLElement, text: string, finished: () => void): () => void {
+  text=chatDisplayText(text);
   const win = host.ownerDocument.defaultView!;
   const chunks = Math.min(75, Math.max(1, Math.ceil(text.length / 24)));
   const step = Math.ceil(text.length / chunks);

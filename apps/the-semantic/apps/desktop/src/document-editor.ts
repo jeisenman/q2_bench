@@ -2,6 +2,7 @@ import { DocumentSchema, DocumentHistorySchema, DocumentContents, DocumentSaveSc
 import { read, saveDocument } from './client.js';
 import { el, button, utc } from './dom.js';
 import { createEditBox } from './edit-box.js';
+import { chatDisplayText } from './chat-display.js';
 
 type Options = {
   kind: DocumentKind; id: string; seed?: Record<string, unknown>;
@@ -59,6 +60,7 @@ export function mountDocumentEditor(host: HTMLElement, options: Options, reader:
   function drawForm(content: Record<string, unknown>): void {
     clearForm(); history.replaceChildren();
     const form = el('form'); const fields = new Map<string, HTMLInputElement | HTMLTextAreaElement>();
+    const displayed = new Map<string, string>();
     form.id = `document-edit-${crypto.randomUUID()}`;
     if (options.kind === 'agent') form.append(el('p', 'Use a new agent version. Existing runs keep their pinned definition.', 'caption'));
     if (options.kind === 'research') form.append(el('p', 'Edits revise this research document. Original run evidence remains in version history; saving does not run research.', 'caption'));
@@ -67,8 +69,9 @@ export function mountDocumentEditor(host: HTMLElement, options: Options, reader:
       const value = content[name];
       if (['allowed_tools', 'page_plugin', 'source_commit', 'id'].includes(name)) continue;
       const label = el('label', options.kind === 'sme' && name === 'text' ? 'SME definition' : name.replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()));
-      const field = createEditBox(name, label.textContent!, value === null ? '' : String(value));
-      field.name = name; field.value = value === null ? '' : String(value); field.required = name !== 'output';
+      const visible = value === null || value === '' ? '' : chatDisplayText(String(value));
+      const field = createEditBox(name, label.textContent!, visible);
+      field.name = name; field.required = name !== 'output'; displayed.set(name, field.value);
       field.maxLength = name === 'output' ? 200000 : name === 'title' && options.kind === 'research' ? 16000 : ['title','name','purpose','model'].includes(name) ? 1000 : name === 'version' ? 128 : 16000;
       field.setAttribute('aria-label', label.textContent!); field.oninput = () => { dirty = true; key = undefined; };
       fields.set(name, field);
@@ -84,7 +87,7 @@ export function mountDocumentEditor(host: HTMLElement, options: Options, reader:
     form.append(actions); area.append(form);
     form.onsubmit = event => {
       event.preventDefault(); if (busy || !current) return;
-      const next = { ...content }; for (const [name, field] of fields) next[name] = name === 'output' && content[name] === null && field.value === '' ? null : field.value;
+      const next = { ...content }; for (const [name, field] of fields) next[name] = field.value === displayed.get(name) ? content[name] : field.value;
       const parsed = DocumentSaveSchema.safeParse({ kind: options.kind, id: options.id, base_version: current.version, content: next, idempotency_key: key ??= crypto.randomUUID() });
       if (!parsed.success || !DocumentContents[options.kind].safeParse(next).success) { message.textContent = 'Check required fields and length limits.'; return; }
       busy = true; save.disabled = true; cancel.disabled = true; fields.forEach(field => { field.disabled = true; }); message.textContent = 'Saving version…';
@@ -110,7 +113,7 @@ export function mountDocumentEditor(host: HTMLElement, options: Options, reader:
       history.replaceChildren(el('h3', 'Version history'));
       for (const record of [...result.versions].sort((a,b) => b.version-a.version)) {
         const item = el('details'); item.append(el('summary', `Version ${record.version} · ${record.updated_at ? utc(record.updated_at) : 'Original document'}`));
-        for (const [name,value] of Object.entries(record.content)) item.append(el('h4', name.replaceAll('_',' ')), el('pre', typeof value === 'string' ? value : JSON.stringify(value), 'output'));
+        for (const [name,value] of Object.entries(record.content)) item.append(el('h4', name.replaceAll('_',' ')), el('pre', chatDisplayText(typeof value === 'string' ? value : JSON.stringify(value)), 'output'));
         history.append(item);
       }
     } catch { if (!disposed) message.textContent = 'Version history is unavailable. Refresh and try again.'; }

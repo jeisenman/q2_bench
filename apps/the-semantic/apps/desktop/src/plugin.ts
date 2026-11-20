@@ -1,4 +1,5 @@
 import { ResearchRecordSchema, PluginManifestSchema, type ResearchRecord } from '../../../packages/runtime/src/contracts.js';
+import { chatDisplayText } from './chat-display.js';
 
 /** Mounts one isolated page and releases its previous evidence capability. */
 export function mountPlugin(host: HTMLElement, rawManifest: unknown, rawRecord: ResearchRecord): () => void {
@@ -15,7 +16,10 @@ export function mountPlugin(host: HTMLElement, rawManifest: unknown, rawRecord: 
   iframe.addEventListener('load', () => {
     if (disposed) return;
     iframe.contentWindow?.postMessage({ type: 'semantic.init', version: 1 }, '*', [channel.port2]);
-    channel.port1.postMessage({ type: 'semantic.data', version: 1, research });
+      channel.port1.postMessage({ type: 'semantic.data', version: 1, research: {
+        title: chatDisplayText(research.title), model: research.model, status: research.status,
+        output: research.output === null ? null : chatDisplayText(research.output),
+      } });
   }, { once: true });
   host.replaceChildren(iframe);
   return () => { disposed = true; channel.port1.close(); channel.port2.close(); iframe.remove(); };

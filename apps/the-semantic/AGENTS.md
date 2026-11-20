@@ -55,3 +55,8 @@ authorization. Keep its rubric and source notes with the definition.
 
 See docs/protocol.md for the shared producer/consumer contract. Root owns this
 contract and coordinates changes. Each worker owns only its assigned directories.
+
+Historical desktop conversation imports are separate immutable MLflow evidence.
+They retain explicitly supplied public messages and tool records, source identity
+and truncation notices. They cannot resume a model turn, execute recorded
+commands, or silently inject history into new chat context.

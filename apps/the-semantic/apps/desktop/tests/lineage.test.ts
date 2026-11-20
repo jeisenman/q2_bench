@@ -40,14 +40,14 @@ test('one-hop graph preserves declared direction, excludes indirect nodes, and r
 });
 test('catalog/graph toggles preserve query and selection; offline remains explicit',async()=>{
  const dom=new JSDOM('<main></main>');Object.assign(globalThis,{document:dom.window.document});const host=document.querySelector('main')!;
- const state:SemanticState={mode:'Lineage',query:'selected',help:{query:'',source:'snapshot'}};
+ const state:SemanticState={mode:'Lineage',open:true,query:'selected',help:{query:'',source:'snapshot'}};
  const explanation=ExplanationSchema.parse({node:b,definitions:[],definitions_status:'disabled',unresolved:['Fixture unknown']});
  const cleanup=mountSemantic(host,state,async r=>r.operation==='lineage.graph'?graph:explanation);await settle();
  (host.querySelector('.lineage-display')as HTMLElement).scrollTop=430;(host.querySelector('.lineage-row')as HTMLButtonElement).click();await settle();assert.equal((host.querySelector('.lineage-display')as HTMLElement).scrollTop,430);assert.equal(nodeKey(state.selected!),nodeKey(b.id));assert.match(host.textContent!,/Fixture unknown/);
  assert.ok(!host.querySelector('.lineage-row')!.textContent!.includes('q2://'));assert.ok(host.querySelector('.lineage-row')!.getAttribute('title')!.includes('q2://fixture/data'));
  const graphButton=[...host.querySelectorAll('button')].find(b=>b.textContent==='Graph')!;graphButton.click();assert.ok(host.querySelector('svg'));assert.match(host.textContent!,/Directed one-hop subset/);assert.ok(host.querySelector('.lineage-graph-grid'));assert.equal(host.querySelector('.lineage-graph-grid')!.lastElementChild,host.querySelector('.lineage-detail'));assert.ok(host.classList.contains('semantic-graph-mode'));
  [...host.querySelectorAll('button')].find(b=>b.textContent==='Catalog')!.click();assert.equal((host.querySelector('input')as HTMLInputElement).value,'selected');assert.ok(host.querySelector('.lineage-row.selected'));assert.equal(host.querySelector('.lineage-graph-grid'),null);assert.ok(!host.classList.contains('semantic-graph-mode'));cleanup();
- host.replaceChildren();const offline=mountSemantic(host,{mode:'Lineage',query:'',help:{query:'',source:'snapshot'}},async()=>{throw new Error('offline');});await settle();assert.match(host.textContent!,/Current lineage unavailable/);assert.match(host.textContent!,/No prior staged snapshot/);assert.equal(host.querySelectorAll('.lineage-row').length,0);offline();dom.window.close();
+ host.replaceChildren();const offline=mountSemantic(host,{mode:'Lineage',open:true,query:'',help:{query:'',source:'snapshot'}},async()=>{throw new Error('offline');});await settle();assert.match(host.textContent!,/Current lineage unavailable/);assert.match(host.textContent!,/No prior staged snapshot/);assert.equal(host.querySelectorAll('.lineage-row').length,0);offline();dom.window.close();
 });
 test('exact node mismatch and oversized network response fail before display',async()=>{
  await assert.rejects(readLineage({operation:'lineage.node',id:b.id},'http://127.0.0.1:7420',async()=>new Response(JSON.stringify({node:a,definitions:[],definitions_status:'disabled',unresolved:[]}))),/another node/);
@@ -57,7 +57,7 @@ test('exact node mismatch and oversized network response fail before display',as
 test('failed refresh keeps dated stale evidence and node reads do not leave refresh disabled',async()=>{
  const dom=new JSDOM('<main></main>');Object.assign(globalThis,{document:dom.window.document});const host=document.querySelector('main')!;
  let rejectRefresh:(e:Error)=>void=()=>{};let resolveRefresh:(g:unknown)=>void=()=>{};
- const state:SemanticState={mode:'Lineage',query:'',graph,readAt:'2026-11-18T10:00:00Z',help:{query:'',source:'snapshot'}};
+ const state:SemanticState={mode:'Lineage',open:true,query:'',graph,readAt:'2026-11-18T10:00:00Z',help:{query:'',source:'snapshot'}};
  const explanation={node:a,definitions:[],definitions_status:'disabled',unresolved:[]};
  const cleanup=mountSemantic(host,state,r=>r.operation==='lineage.graph'?new Promise((resolve,reject)=>{resolveRefresh=resolve;rejectRefresh=reject;}):Promise.resolve(explanation));
  const refresh=[...host.querySelectorAll('button')].find(b=>b.textContent==='Refresh source ↻')!;refresh.click();

@@ -8,40 +8,56 @@ import { lineageDetail } from './lineage-detail.js';
 import { lineageTitle } from './lineage-label.js';
 import { mountHelp,type HelpState } from './help-view.js';
 import { semanticModes, repositories, definitions, type SemanticMode } from './semantic-sections.js';
+import { mountGherkin, type GherkinState } from './gherkin-view.js';
 import { mountSemanticArchive } from './semantic-archive.js';
-export interface SemanticState {mode:SemanticMode;lineageView?:'Catalog'|'Graph';query:string;selected?:NodeID;graph?:LineageGraph;explanation?:Explanation;readAt?:string;stale?:boolean;help:HelpState}
+export interface SemanticState {mode:SemanticMode;open?:boolean;lineageView?:'Catalog'|'Graph';query:string;selected?:NodeID;graph?:LineageGraph;explanation?:Explanation;readAt?:string;stale?:boolean;help:HelpState;gherkin?:GherkinState}
 /** One catalog and directed graph share exact selection and search state. */
 export function mountSemantic(host:HTMLElement,state:SemanticState,reader:typeof read=read,openResearch?:(id:string)=>void):()=>void {
   host.classList.add('semantic-workspace');
   let disposeSection=()=>{};
   let catalogScroll=0;let disposeViewport=()=>{};let viewportKey='';let viewport:ViewportState={zoom:1,expanded:false,x:0,y:0};
-  let disposed=false;let graphGeneration=0;let nodeGeneration=0;let disposeHelp=()=>{};let graphError=state.stale??false;
-  const intro=el('section','','intro semantic-heading');intro.append(el('p','THE SEMANTIC / KNOWLEDGE','eyebrow'),el('h1','Knowledge base'));
-  const layout=el('div','','semantic-layout');const sidebar=el('aside','','semantic-sidebar');
-  sidebar.append(el('p','KNOWLEDGE BASES','eyebrow'),el('p','Sources, meaning & evidence','semantic-side-description'));
-  const tabs=el('div','','semantic-bases');tabs.setAttribute('aria-label','Knowledge bases');sidebar.append(tabs);
-  const main=el('section','','semantic-main');const heading=el('div','','semantic-view-heading');const title=el('h2');
+  let disposed=false;let graphGeneration=0;let nodeGeneration=0;let disposeHelp=()=>{};let graphError=state.stale??false;let graphPending=false;
+  const intro=el('section','','intro semantic-heading');intro.append(el('p','THE SEMANTIC / KNOWLEDGE','eyebrow'),el('h1','Knowledge bases'));
+  const bases=el('div','','semantic-bases');bases.setAttribute('aria-label','Knowledge bases');
+  const main=el('section','','semantic-main');const back=button('← All knowledge bases',()=>{
+    if(disposed)return;state.open=false;graphGeneration++;nodeGeneration++;graphPending=false;refresh.disabled=false;render();
+    buttons[semanticModes.indexOf(state.mode)]?.focus();
+  },'back semantic-back');back.setAttribute('aria-label','All knowledge bases');
+  const heading=el('div','','semantic-view-heading');const title=el('h2');
   const views=el('div','','semantic-lineage-views');views.setAttribute('aria-label','Lineage view');
-  const viewButtons=['Catalog','Graph'].map(label=>{const b=button(label,()=>{state.lineageView=label as 'Catalog'|'Graph';render();});views.append(b);return b;});heading.append(title,views);
+  const viewButtons=['Catalog','Graph'].map(label=>{const b=button(label,()=>{if(disposed||!state.open)return;state.lineageView=label as 'Catalog'|'Graph';render();});views.append(b);return b;});heading.append(title,views);
   const controls=el('div','','toolbar');const search=el('input');search.type='search';search.value=state.query;search.placeholder='Search jobs, datasets, columns, or meaning';search.setAttribute('aria-label','Search lineage catalog');
   const status=el('p','','caption');status.setAttribute('aria-live','polite');const content=el('div');
-  const refresh=button('Refresh source ↻',()=>{void loadGraph();},'refresh');controls.append(search,refresh);main.append(heading,controls,status,content);layout.append(sidebar,main);host.append(intro,layout);
-  const subtitles=['Catalog & graph','Articles & documentation','Supplied SME meaning','Source references','Completed work'];
-  const buttons=semanticModes.map((mode,index)=>{const b=button('',()=>{state.mode=mode;render();},'semantic-base');b.setAttribute('aria-label',mode);const copy=el('span','','semantic-side-copy');copy.append(el('span',mode,'semantic-side-title'),el('span',subtitles[index],'semantic-side-subtitle'));b.append(el('span',mode.slice(0,1),'semantic-monogram'),copy);tabs.append(b);return b;});
+  const refresh=button('Refresh source ↻',()=>{void loadGraph();},'refresh');controls.append(search,refresh);main.append(back,heading,controls,status,content);host.append(intro,bases,main);
+  const descriptions=[
+    'Inspect source datasets, jobs, columns and their declared relationships.',
+    'Read articles from the dated Zendesk export or public Help Center.',
+    'Read supplied SME definitions and their source evidence.',
+    'Inspect repository references supplied by the lineage graph.',
+    'Open completed research and its retained evidence.',
+    'Read committed Gherkin descriptions, scenarios and examples.',
+  ];
+  const buttons=semanticModes.map((mode,index)=>{const b=button('',()=>{
+    if(disposed)return;state.mode=mode;state.open=true;render();title.focus({preventScroll:true});
+    if(!state.graph&&!graphPending&&['Lineage','Definitions','Repositories'].includes(mode))void loadGraph();
+  },'semantic-base');b.setAttribute('aria-label',mode);b.append(el('h2',mode),el('p',descriptions[index]),el('span','Open knowledge base →','record-id'));bases.append(b);return b;});title.tabIndex=-1;
   let disposeEditor = () => {};
   function render():void{
+    if(disposed)return;
     disposeEditor(); disposeEditor = () => {};
     disposeSection();disposeSection=()=>{};
     const previousCatalog=content.querySelector<HTMLElement>('.lineage-grid:not(.lineage-graph-grid) .lineage-display');if(previousCatalog)catalogScroll=previousCatalog.scrollTop;
-    disposeHelp();disposeHelp=()=>{};disposeViewport();disposeViewport=()=>{};host.classList.toggle('semantic-graph-mode',state.mode==='Lineage'&&state.lineageView==='Graph');content.replaceChildren();buttons.forEach((b,i)=>{const active=semanticModes[i]===state.mode;b.classList.toggle('active',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});title.textContent=state.mode;views.hidden=state.mode!=='Lineage';viewButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.textContent===(state.lineageView??'Catalog'))));
+    disposeHelp();disposeHelp=()=>{};disposeViewport();disposeViewport=()=>{};host.classList.toggle('semantic-graph-mode',Boolean(state.open)&&state.mode==='Lineage'&&state.lineageView==='Graph');content.replaceChildren();bases.hidden=Boolean(state.open);main.hidden=!state.open;title.textContent=state.mode;views.hidden=state.mode!=='Lineage';viewButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.textContent===(state.lineageView??'Catalog'))));
+    if(!state.open)return;
     controls.hidden=state.mode!=='Lineage';status.hidden=state.mode!=='Lineage'&&state.mode!=='Definitions'&&state.mode!=='Repositories';
     if(state.graph){
     status.textContent=`${graphError?'STALE SNAPSHOT · ':''}${state.graph.nodes.length} nodes · ${state.graph.edges.length} declared directed edges · ${state.graph.unresolved.length} unresolved findings · Read ${state.readAt?utc(state.readAt):'time unavailable'}. Scoped coverage only.`;
     }else status.textContent=graphError?'Current lineage source unavailable. No fallback snapshot is loaded.':'Reading the current source graph…';
     content.className=controls.hidden?'semantic-section':'';
-    const openNode=(id:NodeID):void=>{state.mode='Lineage';state.lineageView='Catalog';void select(id);};
+    const openNode=(id:NodeID):void=>{if(disposed||!state.open)return;state.mode='Lineage';state.lineageView='Catalog';void select(id);};
     if(state.mode==='Repositories'){repositories(content,state.graph);return;}
     if(state.mode==='Definitions'){definitions(content,state.graph,openNode);return;}
+    if(state.mode==='PL-App Behavior'){disposeSection=mountGherkin(content,state.gherkin??=( {query:''} ),reader);return;}
     if(state.mode==='Research'){disposeSection=mountSemanticArchive(content,reader,openResearch);return;}
     if(state.mode==='Zendesk'){disposeHelp=mountHelp(content,state.help,reader);return;}
     if(!state.graph){content.append(el('p',graphError?'Current lineage unavailable. No prior staged snapshot is used. Start the validated current source service, then refresh.':'Reading the current lineage source…',graphError?'error':'empty'));return;}
@@ -65,16 +81,18 @@ export function mountSemantic(host:HTMLElement,state:SemanticState,reader:typeof
     if(state.lineageView!=='Graph')display.scrollTop=catalogScroll;
   }
   async function select(id:NodeID):Promise<void>{
+    if(disposed||!state.open)return;
     state.selected=id;state.explanation=undefined;render();const current=++nodeGeneration;
     try{const explanation=ExplanationSchema.parse(await reader({operation:'lineage.node',id}));if(disposed||current!==nodeGeneration)return;if(nodeKey(explanation.node.id)!==nodeKey(id))throw new Error('Wrong node.');state.explanation=explanation;render();}
     catch{if(!disposed&&current===nodeGeneration){render();content.querySelector('.lineage-detail')?.append(el('p','Exact-node evidence could not be read. Catalog facts remain from the last graph snapshot.','error'));}}
   }
   async function loadGraph():Promise<void>{
+    if(disposed||!state.open||graphPending)return;graphPending=true;
     const current=++graphGeneration;nodeGeneration++;refresh.disabled=true;status.textContent='Reading the current source graph…';
     try{const graph=LineageGraphSchema.parse(await reader({operation:'lineage.graph'}));if(disposed||current!==graphGeneration)return;state.graph=graph;state.readAt=new Date().toISOString();state.explanation=undefined;graphError=false;state.stale=false;if(state.selected&&!graph.nodes.some(n=>nodeKey(n.id)===nodeKey(state.selected!)))state.selected=undefined;render();}
     catch{if(!disposed&&current===graphGeneration){graphError=true;state.stale=true;render();if(!state.graph)status.textContent='Current lineage source unavailable. No fallback snapshot is loaded.';}}
-    finally{if(!disposed&&current===graphGeneration)refresh.disabled=false;}
+    finally{if(!disposed&&current===graphGeneration){refresh.disabled=false;graphPending=false;}}
   }
-  search.oninput=()=>{state.query=search.value;catalogScroll=0;const list=content.querySelector<HTMLElement>('.lineage-display');if(list)list.scrollTop=0;render();};render();if(!state.graph)void loadGraph();
+  search.oninput=()=>{if(disposed||!state.open)return;state.query=search.value;catalogScroll=0;const list=content.querySelector<HTMLElement>('.lineage-display');if(list)list.scrollTop=0;render();};render();if(state.open&&!state.graph&&['Lineage','Definitions','Repositories'].includes(state.mode))void loadGraph();
   return()=>{disposeEditor();disposeSection();disposed=true;graphGeneration++;nodeGeneration++;disposeHelp();disposeViewport();host.classList.remove('semantic-graph-mode','semantic-workspace');};
 }

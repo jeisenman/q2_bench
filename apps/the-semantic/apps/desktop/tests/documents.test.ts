@@ -79,3 +79,19 @@ test('agent aliases resolve to a stable anchor and existing pins are not editabl
   click('Edit');await tick();assert.equal(host.querySelector('[name=id]'),null);host.querySelector<HTMLInputElement>('[name=version]')!.value='3';
   host.querySelector('form')!.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await tick();assert.equal(payload.id,'anchor-run');assert.equal(payload.content.version,'3');assert.deepEqual(payload.content.allowed_tools,[]);stop();dom.window.close();
 });
+test('projected research fields and history hide metadata while unrelated saves retain original text and null output',async()=>{
+  for(const output of [null,'{"answer":"Review required","runtime_duration_seconds":12,"trace_id":"private-trace"}']){
+    const {dom,host,click}=setup();let payload:any;
+    const source={kind:'research' as const,id:'r1',version:0,updated_at:null,content:{title:'Title\nresearch_id: private-run',question:'Question\ntrace_id: private-trace',hypothesis:'Hypothesis',plan:'Plan',output}};
+    const snapshot=JSON.stringify(source);
+    const stop=mountDocumentEditor(host,{kind:'research',id:'r1'},async request=>request.operation==='documents.history'?{versions:[source]}:source,async value=>{payload=DocumentSaveSchema.parse(value);return {...source,version:1,updated_at:'2026-11-20T12:00:00Z',content:payload.content};});
+    click('Edit');await tick();
+    for(const field of host.querySelectorAll<HTMLInputElement|HTMLTextAreaElement>('input,textarea'))assert.doesNotMatch(field.value,/private-run|private-trace|runtime_duration_seconds/);
+    assert.equal(host.querySelector<HTMLTextAreaElement>('[name=output]')!.value,output===null?'':'{\n  "answer": "Review required"\n}');
+    const plan=host.querySelector<HTMLTextAreaElement>('[name=plan]')!;plan.value='Revised plan';plan.dispatchEvent(new dom.window.Event('input'));
+    host.querySelector('form')!.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await tick();
+    assert.deepEqual(payload.content,{...source.content,plan:'Revised plan'});assert.equal(JSON.stringify(source),snapshot);
+    click('Version history');await tick();assert.doesNotMatch(host.textContent!,/private-run|private-trace|runtime_duration_seconds/);
+    stop();dom.window.close();
+  }
+});

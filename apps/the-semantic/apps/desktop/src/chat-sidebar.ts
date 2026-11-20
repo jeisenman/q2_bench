@@ -1,4 +1,5 @@
 import { button, el, utc } from './dom.js';
+import { chatDisplayText } from './chat-display.js';
 
 export type SidebarChat = {chat_id:string;title:string;updated_at?:string;message_count?:number;preview?:string};
 type Options = {
@@ -17,17 +18,18 @@ export function chatSidebar(options:Options):HTMLElement {
   const list=el('div','','codex-chat-list');list.setAttribute('role','navigation');list.setAttribute('aria-label','Saved conversations');
   function filter():void{
     list.replaceChildren();const query=search.value.trim().toLocaleLowerCase();
-    const matches=options.chats.filter(chat=>chat.title.toLocaleLowerCase().includes(query));
+    const matches=options.chats.filter(chat=>chatDisplayText(chat.title).toLocaleLowerCase().includes(query));
     for(const chat of matches){
-      const item=button('',()=>options.onOpen(chat.chat_id),'codex-chat-item');item.disabled=options.pending;item.dataset.chatId=chat.chat_id;item.title=chat.title;
+      const title=chatDisplayText(chat.title);
+      const item=button('',()=>options.onOpen(chat.chat_id),'codex-chat-item');item.disabled=options.pending;item.dataset.chatId=chat.chat_id;item.title=title;
       if(chat.chat_id===options.currentID)item.setAttribute('aria-current','page');
-      const initials=chat.title.trim().split(/\s+/).slice(0,2).map(word=>Array.from(word)[0]).join('').toLocaleUpperCase();
+      const initials=title.trim().split(/\s+/).slice(0,2).map(word=>Array.from(word)[0]).join('').toLocaleUpperCase();
       const icon=el('span',initials,'codex-chat-icon');icon.setAttribute('aria-hidden','true');
       const content=el('span','','codex-chat-content');const top=el('span','','codex-chat-row-heading');
-      top.append(el('span',chat.title,'codex-chat-title'));
+      top.append(el('span',title,'codex-chat-title'));
       if(chat.updated_at){const date=el('time',new Date(chat.updated_at).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'}),'codex-chat-date');date.dateTime=chat.updated_at;date.title=utc(chat.updated_at);top.append(date);}
       const preview=chat.preview??(chat.message_count===0?'Start the conversation':chat.message_count?`${chat.message_count} messages · Open conversation`:'Open conversation');
-      content.append(top,el('span',preview,'codex-chat-preview'));
+      content.append(top,el('span',chatDisplayText(preview),'codex-chat-preview'));
       const arrow=el('span','›','codex-chat-chevron');arrow.setAttribute('aria-hidden','true');
       item.append(icon,content,arrow);list.append(item);
     }

@@ -3,7 +3,7 @@ import { nodeKey, type LineageGraph, type NodeID } from './lineage-contracts.js'
 import { lineageTitle } from './lineage-label.js';
 
 /** Local navigation retains source identities and keeps proposed connections explicit. */
-export const semanticModes = ['Lineage', 'Zendesk', 'Definitions', 'Repositories', 'Research'] as const;
+export const semanticModes = ['Lineage', 'Zendesk', 'Definitions', 'Repositories', 'Research', 'PL-App Behavior'] as const;
 export type SemanticMode = typeof semanticModes[number];
 
 

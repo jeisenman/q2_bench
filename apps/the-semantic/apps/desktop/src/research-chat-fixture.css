@@ -1,0 +1,13 @@
+.research-chat-controls{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.research-chat-controls a{color:var(--rust);font-size:14px;text-underline-offset:3px}
+.research-chat-controls button,.research-chat-dialog>button{border:1px solid var(--line);padding:9px 14px;color:var(--rust);font-size:12px}
+.research-chat-dialog{width:min(900px,calc(100% - 40px));max-height:85vh;overflow:auto;padding:28px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.research-chat-dialog::backdrop{background:rgb(0 0 0 / 35%)}
+.research-chat-dialog h2{font:32px/1.2 Georgia,serif}
+#stage-chat .codex-thread{width:100%;max-width:850px;min-width:0;margin:0}
+#stage-chat .codex-message{display:flex;flex-direction:column;align-items:flex-start;margin:18px 0}
+#stage-chat .codex-message-user{align-items:flex-end}
+#stage-chat .codex-message-label{font-size:11px;color:var(--muted);margin:0 8px 5px}
+#stage-chat .codex-bubble{max-width:84%;background:#eae5d9;padding:12px 17px;border-radius:18px 18px 18px 4px;font:14px/1.7 Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+#stage-chat .codex-message-user .codex-bubble{background:var(--rust);color:var(--paper);border-radius:18px 18px 4px 18px}
+@media(max-width:700px){#stage-chat .codex-bubble{max-width:94%}}

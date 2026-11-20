@@ -5,7 +5,7 @@ boundary and one-attempt execution. `types.rs` owns accepted specifications and
 terminal evidence validation. `bridge.rs` invokes Codex with existing
 CODEX_HOME authentication and accepts text-only final turns. `process.rs` bounds
 child output and lifetime. `mcp.rs` uses the official rmcp SDK stdio transport;
-its nine tools use the same client operations as the CLI.
+its twelve tools use the same client operations as the CLI.
 
 The runtime is the built TypeScript entry at packages/runtime/dist/main.js.
 SEMANTIC_RUNTIME can select another local built entry for fixture tests.
@@ -63,3 +63,10 @@ invokes this binary's existing complete command once per explicit message, with
 gpt-6.1-sol and no retry or model fallback. Restart the MCP executable after
 changes before checking parity; fixture MCP tests launch a fresh process with
 Q2_MCP_DEBUG=1 and never call a paid provider.
+
+`gherkin.rs` adds gherkin_capabilities, gherkin_search and gherkin_feature to this
+same MCP service (12 tools total). They call finite research API GET routes.
+Keyword queries are literal, paged and optionally commit-pinned; feature reads
+require an exact commit and relative feature path. Vector is an advertised but
+disabled mode: return gherkin_vector_disabled before HTTP, with no keyword fallback.
+The harness chooses queries and further reads; no model loop or embedding runs.

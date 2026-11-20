@@ -14,7 +14,7 @@ const tick=()=>new Promise(r=>setImmediate(r));
 function setup(options:{fail?:boolean;result?:ChatRecord}={}){
  const dom=new JSDOM('<main></main>',{url:'http://127.0.0.1:4175'});Object.assign(globalThis,{document:dom.window.document});
  const calls:any[]=[];let modal:any;let stopped=0;const host=document.querySelector('main')!;
- const view=createCodexView({reader:async(r:any)=>r.operation==='chats.list'?{chats:[]}:r.operation==='proposals.get'?proposal:empty,
+ const view=createCodexView({reader:async(r:any)=>r.operation==='transcripts.list'?{transcripts:[]}:r.operation==='chats.list'?{chats:[]}:r.operation==='proposals.get'?proposal:empty,
  sender:async(r:any)=>{calls.push(r);if(r.operation==='chats.create')return empty;if(options.fail)throw Error('offline');const result=structuredClone(options.result??reply);result.messages[result.messages.length-2]!.text=r.message;return result;},
  animate:(host,text,done)=>{host.textContent=text;done();return()=>{};},
  openProposal:(p)=>{modal=p;return()=>{stopped++;};}});
@@ -49,8 +49,15 @@ test('pending chat displays observed operations before the reply and retains sav
  const view=createCodexView({reader:async r=>r.operation==='chats.list'?{chats:[]}:r.operation==='chats.activity'?{events:[event],done:false}:empty,
  sender:async r=>ChatRequestSchema.parse(r).operation==='chats.create'?empty:new Promise(r=>{resolve=r;}),animate:(h,t,done)=>{h.textContent=t;done();return()=>{};}});
  const dispose=view.mount(host);await tick();const field=host.querySelector('textarea')!;field.value='Can scenario experience help?';field.dispatchEvent(new dom.window.Event('input'));host.querySelector('form')!.dispatchEvent(new dom.window.Event('submit',{cancelable:true}));await tick();
- assert.match(host.querySelector('.codex-live-activity')!.textContent!,/Request Codex reply/);assert.equal(host.querySelector('.codex-live-activity details')!.hasAttribute('open'),true);
+ assert.match(host.querySelector('.codex-live-activity')!.textContent!,/Request Codex reply/);assert.equal(host.querySelector('.codex-live-activity details')!.hasAttribute('open'),false);
  const saved=structuredClone(reply);saved.messages[1]!.activity=[{...event,status:'completed'}];resolve(saved);await tick();
- assert.equal(host.querySelector('.codex-live-activity'),null);assert.match(host.querySelector('.codex-message-assistant .codex-activity')!.textContent!,/completed · 1.2s/);
+ assert.equal(host.querySelector('.codex-live-activity'),null);assert.match(host.querySelector('.codex-message-assistant .codex-activity')!.textContent!,/completed/);assert.doesNotMatch(host.querySelector('.codex-message-assistant .codex-activity')!.textContent!,/1\.2s|1200|elapsed_ms/);
  dispose();dom.window.close();
+});
+test('saved headings, reply animations and previews omit metadata while submitted text stays intact',async()=>{
+ const result=structuredClone(reply);result.title='Loan question\nresearch_id: private-run';result.messages[1]!.text='Review required.\ntrace_id: private-trace\noutput_tokens: 512';const original=JSON.stringify(result);
+ const s=setup({result});await tick();s.send('Evaluate the association.\nattempt_id: submitted-reference');await tick();await tick();
+ assert.equal(s.host.querySelector('.codex-thread-heading h2')!.textContent,'Loan question');
+ assert.match(s.host.textContent!,/Review required/);assert.doesNotMatch(s.host.textContent!,/private-run|private-trace|512|submitted-reference/);
+ assert.equal(s.calls[1].message,'Evaluate the association.\nattempt_id: submitted-reference');assert.equal(JSON.stringify(result),original);s.close();
 });

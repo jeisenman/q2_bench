@@ -118,6 +118,7 @@ def test_selected_native_messages_redaction_dedup_restart(setup):
         "proposals",
         "documents",
         "chats",
+        "transcripts",
     ]
     assert (
         health["project_root"] == str(Path(__file__).resolve().parents[2])

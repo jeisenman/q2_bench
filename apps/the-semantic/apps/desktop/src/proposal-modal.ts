@@ -3,10 +3,13 @@ import { ProposalRecordSchema, type ProposalRecord } from '../../../packages/run
 import { read, saveDocument } from './client.js';
 import { el, button, utc } from './dom.js';
 import { styleEditBox } from './edit-box.js';
+import { renderChatMarkdown } from './chat-markdown.js';
+import { chatDisplayText } from './chat-display.js';
 
 type Dependencies = { reader?: typeof read; saver?: typeof saveDocument };
 type FieldName = 'title' | 'question' | 'hypothesis' | 'plan';
 type ProposalContent = Pick<ProposalRecord, FieldName>;
+let modalSequence = 0;
 
 /** Opens an editable, versioned proposal document in a native dialog. */
 export function openProposalModal(
@@ -27,6 +30,7 @@ export function openProposalModal(
   status.setAttribute('role', 'status');
   const edit = button('🖊️', () => { if (current && !busy) setEditing(true); }, 'proposal-modal-edit');
   edit.setAttribute('aria-label', 'Edit proposal');
+  edit.setAttribute('aria-pressed', 'false');
   edit.title = 'Edit proposal';
   const close = button('×', () => requestClose(), 'proposal-modal-close');
   close.setAttribute('aria-label', 'Close proposal');
@@ -45,15 +49,21 @@ export function openProposalModal(
   const hypothesis = field('hypothesis', 'Hypothesis');
   const plan = field('plan', 'Plan');
   const form = el('form', '', 'proposal-modal-form');
+  form.id = `proposal-modal-form-${++modalSequence}`;
   const actions = el('div', '', 'proposal-modal-actions edit-box-actions');
   const save = el('button', 'Save', 'proposal-modal-save'); save.type = 'submit';
+  save.setAttribute('form', form.id);
   const cancel = button('Cancel', () => cancelEdit(), 'proposal-modal-cancel');
   actions.append(save, cancel);
   const historyButton = button('Version history', () => { void showHistory(); }, 'proposal-modal-history-button');
   const history = el('section', '', 'proposal-modal-history');
-  form.append(title, content, actions);
+  form.append(title, content);
   content.append(question.section, hypothesis.section, plan.section);
-  panel.append(header, tabs, form, historyButton, history, status);
+  const scroll = el('div', '', 'proposal-modal-scroll');
+  const footer = el('footer', '', 'proposal-modal-footer');
+  scroll.append(form, history);
+  footer.append(historyButton, actions, status);
+  panel.append(header, tabs, scroll, footer);
   dialog.append(panel);
   doc.body.append(dialog);
 
@@ -65,16 +75,19 @@ export function openProposalModal(
   let dirty = false;
   let key: string | undefined;
   let keyContent: ProposalContent | undefined;
+  const displayed = new Map<FieldName, string>();
   const fields: Record<FieldName, HTMLInputElement | HTMLTextAreaElement> = { title, question: question.input, hypothesis: hypothesis.input, plan: plan.input };
 
-  function field(name: Exclude<FieldName, 'title'>, labelText: string): { section: HTMLElement; input: HTMLTextAreaElement } {
+  function field(name: Exclude<FieldName, 'title'>, labelText: string): { section: HTMLElement; input: HTMLTextAreaElement; preview: HTMLDivElement } {
     const section = el('section', '', `proposal-modal-field proposal-modal-field-${name}`);
     const label = el('label', labelText, 'proposal-modal-label');
     const input = el('textarea'); input.name = name; input.readOnly = true; input.maxLength = 16000;
     styleEditBox(input);
     input.setAttribute('aria-label', labelText); label.htmlFor = `proposal-${name}`; input.id = `proposal-${name}`;
-    section.append(label, input);
-    return { section, input };
+    const preview = el('div', '', 'proposal-modal-preview');
+    preview.setAttribute('aria-label', `${labelText} preview`);
+    section.append(label, preview, input);
+    return { section, input, preview };
   }
 
   function selectTab(tab: 'question' | 'plan'): void {
@@ -91,7 +104,8 @@ export function openProposalModal(
   }
 
   function fieldValues(): ProposalContent {
-    return { title: title.value, question: question.input.value, hypothesis: hypothesis.input.value, plan: plan.input.value };
+    const value = (name: FieldName): string => fields[name].value === displayed.get(name) && original ? original[name] : fields[name].value;
+    return { title: value('title'), question: value('question'), hypothesis: value('hypothesis'), plan: value('plan') };
   }
 
   function markDirty(): void {
@@ -105,8 +119,9 @@ export function openProposalModal(
   function setEditing(value: boolean): void {
     editing = value;
     dialog.classList.toggle('proposal-modal-editing', value);
+    dialog.classList.toggle('proposal-modal-reading', !value);
+    edit.setAttribute('aria-pressed', String(value));
     for (const field of Object.values(fields)) field.readOnly = !value;
-    edit.hidden = value;
     actions.hidden = !value;
     status.textContent = current ? versionLabel(current) : status.textContent;
   }
@@ -117,7 +132,11 @@ export function openProposalModal(
 
   function restore(record: SavedDocument): void {
     const values = record.content as ProposalContent;
-    for (const name of ['title', 'question', 'hypothesis', 'plan'] as const) fields[name].value = values[name];
+    original = values;
+    for (const name of ['title', 'question', 'hypothesis', 'plan'] as const) { fields[name].value = chatDisplayText(values[name]); displayed.set(name, fields[name].value); }
+    renderChatMarkdown(question.preview, values.question);
+    renderChatMarkdown(hypothesis.preview, values.hypothesis);
+    renderChatMarkdown(plan.preview, values.plan);
   }
 
   function requestClose(): void {
@@ -149,7 +168,7 @@ export function openProposalModal(
         const item = el('details');
         item.append(el('summary', versionLabel(record)));
         for (const name of ['title', 'question', 'hypothesis', 'plan'] as const) {
-          item.append(el('h4', name), el('p', String(record.content[name] ?? ''), 'proposal-modal-history-text'));
+          item.append(el('h4', name), el('p', chatDisplayText(String(record.content[name] ?? '')), 'proposal-modal-history-text'));
         }
         history.append(item);
       }
@@ -208,14 +227,32 @@ export function openProposalModal(
     }
   };
   dialog.addEventListener('cancel', cancelDialog);
-  dialog.addEventListener('click', event => {
-    if (event.target === dialog && !busy && !(editing && dirty)) requestClose();
-  });
+  let outsidePointer: { id: number; outside: boolean } | undefined;
+  const outside = (event: PointerEvent): boolean => {
+    const bounds = panel.getBoundingClientRect();
+    return event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom;
+  };
+  const pointerDown = (event: PointerEvent) => {
+    outsidePointer = event.isPrimary && event.button === 0 && event.target === dialog
+      ? { id: event.pointerId, outside: outside(event) } : undefined;
+  };
+  const pointerUp = (event: PointerEvent) => {
+    const start = outsidePointer;
+    outsidePointer = undefined;
+    if (start && event.isPrimary && event.pointerId === start.id && event.target === dialog && start.outside && outside(event)) requestClose();
+  };
+  const pointerCancel = () => { outsidePointer = undefined; };
+  dialog.addEventListener('pointerdown', pointerDown);
+  dialog.addEventListener('pointerup', pointerUp);
+  dialog.addEventListener('pointercancel', pointerCancel);
 
   function dispose(): void {
     if (disposed) return;
     disposed = true;
     dialog.removeEventListener('cancel', cancelDialog);
+    dialog.removeEventListener('pointerdown', pointerDown);
+    dialog.removeEventListener('pointerup', pointerUp);
+    dialog.removeEventListener('pointercancel', pointerCancel);
     win.removeEventListener('beforeunload', beforeUnload);
     dialog.close(); dialog.remove();
     if (returnFocus?.isConnected) returnFocus.focus();

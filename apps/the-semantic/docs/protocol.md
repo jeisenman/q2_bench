@@ -304,3 +304,26 @@ chat_save measures the initial conversation snapshot write; metadata publication
 follows, and publication failures appear as failed in live activity. Only actual
 operations produce events. No arguments, reasoning, or raw output are exposed.
 Desktop reads include chats.activity; all other storage routes remain serialized.
+
+## Historical conversation imports
+
+GET /api/research/v1/transcripts returns {transcripts:[TranscriptSummary]};
+GET /api/research/v1/transcripts/{id} returns
+{transcript_id,imported_at,proposal_id,transcript}. The source object retains
+source, thread_id, title, description, redactions:{}, and chronological items.
+Items are public user/assistant text messages, tool_call records with call IDs,
+names and inert argument strings, or matching tool_output strings/text blocks.
+No analysis, system/developer messages, media or executable options are accepted.
+
+POST /api/research/v1/transcripts takes exactly
+{transcript,proposal_id:string|null,idempotency_key:UUID}. The optional proposal
+must exist. Published imports are immutable; exact replay returns the same record
+and conflicting key reuse returns 409. Pending imports stay hidden until their
+artifact is persisted and one tag publishes the record. Limits: 100 imports,
+1000 items, 1 MiB canonical UTF-8 source JSON, 256 KiB per text field, and one
+matching output per call. No import or read invokes a provider.
+
+The finite desktop read bridge adds transcripts.list/get. It has no import or
+process operation. A Codex-tab transcript query selects one retained historical
+record; its source identity must match the requested record. Live chat contracts
+and versioned document saves retain their existing behavior.

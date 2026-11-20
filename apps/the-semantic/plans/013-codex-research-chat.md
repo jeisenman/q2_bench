@@ -43,3 +43,10 @@ At narrow widths the sidebar stacks above the thread with a bounded chat list.
 Sidebar rows follow a message-list style: round topic initials, compact titles,
 saved UTC dates, two-line loaded-message previews, and rounded rust selection.
 Unopened chats use saved message counts. This is a view-only change.
+
+Approved follow-up: render inert Markdown in chat and proposal read views,
+including bold agent labels, bullets and fenced code. Import the exact original
+ROE study as immutable read-only sidebar evidence with every message/call/output
+preserved, closed tool groups, and a link to its current saved proposal. The
+bounded wide modal scrolls internally, preserves edit-box styles, and requires
+a full backdrop gesture to dismiss. Dirty/busy and version guards remain.

@@ -23,6 +23,9 @@ uses one local editor with its source text hidden during editing.
 Edit starts with the latest validated saved content. Save disables fields and
 actions until it completes. A failed or uncertain save retains entered text and
 the retry key. Navigation and closure protect unsaved text. History is read-only.
+Project internal execution metadata out of displayed text, edit values and
+history. An unchanged projected field saves its exact original source value;
+editing a different field must not replace retained source with display text.
 Keep optimistic version checks and document identity checks. Saving a proposal
 does not accept it or start research. Agent versions and source evidence keep
 their existing persistence rules.

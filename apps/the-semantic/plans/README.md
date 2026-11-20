@@ -1,5 +1,6 @@
 # Plans
 
+- [Research refinement chat example](015-research-chat-fixture.md)
 - [System design](001-system-design.md)
 - [MVP execution and ownership](002-mvp-execution.md)
 - [Validation, evidence and remaining limits](003-validation.md)
@@ -11,3 +12,5 @@
 - [Semantic Layer and Zendesk integration](008-semantic-layer-and-zendesk.md)
 - [Protocol review runtime repair](009-protocol-runtime-fix.md)
 - [Codex tab interaction preview](010-codex-tab-preview.md)
+
+- [Gherkin knowledge base](016-gherkin-knowledge.md)
