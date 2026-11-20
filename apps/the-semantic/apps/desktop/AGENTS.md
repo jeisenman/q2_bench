@@ -1,5 +1,7 @@
 # Desktop
 
+`research-chat-fixture.ts` provides a read-only chat example on research detail pages. Its backdrop closes the dialog; clicks inside the dialog keep it open.
+
 Electron main owns finite fixed-origin research reads and document saves. Preload exposes only
 `semantic.read`, validated `proposals.save`, and `documents.save` mutations; it validates requests and responses. Renderer has no Node or
 production network capability. Browser preview is explicit Vite development

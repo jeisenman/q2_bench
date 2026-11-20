@@ -12,7 +12,7 @@ import { mountPlugin } from './plugin.js';
 import { mountProposals } from './proposal-view.js';
 import { mountSemantic, type SemanticState } from './semantic-view.js';
 import { mountSessions } from './session-view.js';
-
+import { researchChatFixture } from './research-chat-fixture.js';
 const codexView = createCodexView();
 const semanticState:SemanticState={mode:'Lineage',query:'',help:{query:'',source:'snapshot'}};
 const app = document.querySelector<HTMLElement>('#app')!;
@@ -105,6 +105,7 @@ async function detail(id: string): Promise<void> {
     }
     main.append(steps);
     const content = el('div', '', 'detail-grid'); const body = el('div'); const aside = el('aside', '', 'evidence');
+    body.append(researchChatFixture());
     const stage = (number: number, title: string, value: string) => {
       const section = el('section', '', 'stage'); section.id = `stage-${number}`;
       section.append(el('p', `0${number + 1} / ${title.toUpperCase()}`, 'eyebrow'), el('h2', title), el('p', value, 'pre-line')); body.append(section); return section;
