@@ -1,0 +1,23 @@
+.edit-box.edit-box {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #c5a58a;
+  border-radius: 0;
+  padding: 12px;
+  margin: 8px 0 20px;
+  color: var(--ink);
+  background: #f0e0cf;
+  font: 400 15px/1.7 Arial, Helvetica, sans-serif;
+  white-space: pre-wrap;
+}
+textarea.edit-box.edit-box { min-height: 120px; resize: vertical; }
+.edit-box.edit-box-title { font: 400 32px/1.15 Georgia, 'Times New Roman', serif; }
+.edit-box.edit-box:read-only { border-color: transparent; background: transparent; padding-inline: 0; }
+.edit-box.edit-box:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+.edit-box.edit-box:disabled { opacity: .65; }
+.edit-box-actions { display: flex; justify-content: flex-end; gap: 20px; margin: 22px 0; }
+.edit-box-actions button { padding: 10px 16px; color: var(--rust); }
+.edit-box-actions button[type=submit] { background: var(--rust); color: var(--paper); }
+.edit-box-actions button:disabled { opacity: .55; cursor: wait; }
+.proposal-modal [hidden], .session-detail [hidden], .agent [hidden], .intro [hidden], .stage [hidden] { display: none !important; }

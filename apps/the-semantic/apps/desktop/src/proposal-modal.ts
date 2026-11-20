@@ -2,6 +2,7 @@ import { DocumentHistorySchema, DocumentSaveSchema, DocumentSchema, type SavedDo
 import { ProposalRecordSchema, type ProposalRecord } from '../../../packages/runtime/src/proposals.js';
 import { read, saveDocument } from './client.js';
 import { el, button, utc } from './dom.js';
+import { styleEditBox } from './edit-box.js';
 
 type Dependencies = { reader?: typeof read; saver?: typeof saveDocument };
 type FieldName = 'title' | 'question' | 'hypothesis' | 'plan';
@@ -31,6 +32,7 @@ export function openProposalModal(
   close.setAttribute('aria-label', 'Close proposal');
   header.append(edit, close);
   const title = el('textarea', '', 'proposal-modal-title'); title.rows = 2;
+  styleEditBox(title, true);
   title.name = 'title'; title.maxLength = 1000; title.readOnly = true; title.setAttribute('aria-label', 'Title');
   const tabs = el('div', '', 'proposal-modal-tabs');
   tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', 'Proposal sections');
@@ -43,7 +45,7 @@ export function openProposalModal(
   const hypothesis = field('hypothesis', 'Hypothesis');
   const plan = field('plan', 'Plan');
   const form = el('form', '', 'proposal-modal-form');
-  const actions = el('div', '', 'proposal-modal-actions');
+  const actions = el('div', '', 'proposal-modal-actions edit-box-actions');
   const save = el('button', 'Save', 'proposal-modal-save'); save.type = 'submit';
   const cancel = button('Cancel', () => cancelEdit(), 'proposal-modal-cancel');
   actions.append(save, cancel);
@@ -69,6 +71,7 @@ export function openProposalModal(
     const section = el('section', '', `proposal-modal-field proposal-modal-field-${name}`);
     const label = el('label', labelText, 'proposal-modal-label');
     const input = el('textarea'); input.name = name; input.readOnly = true; input.maxLength = 16000;
+    styleEditBox(input);
     input.setAttribute('aria-label', labelText); label.htmlFor = `proposal-${name}`; input.id = `proposal-${name}`;
     section.append(label, input);
     return { section, input };

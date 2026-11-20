@@ -1,17 +1,24 @@
 import { DocumentSchema, DocumentHistorySchema, DocumentContents, DocumentSaveSchema, type SavedDocument, type DocumentKind } from '../../../packages/runtime/src/documents.js';
 import { read, saveDocument } from './client.js';
 import { el, button, utc } from './dom.js';
+import { createEditBox } from './edit-box.js';
 
 type Options = {
   kind: DocumentKind; id: string; seed?: Record<string, unknown>;
   onSaved?: (record: SavedDocument) => void; eager?: boolean;
   actionsHost?: HTMLElement; editableRegion?: HTMLElement;
+  fieldTargets?: Record<string, HTMLElement>;
 };
 /** Edits a source-backed document and retains entered text on save failures. */
 export function mountDocumentEditor(host: HTMLElement, options: Options, reader: typeof read = read, saver: typeof saveDocument = saveDocument): () => void {
   const doc = host.ownerDocument; const win = doc.defaultView!;
   let disposed = false; let current: SavedDocument | undefined; let dirty = false; let busy = false;
   let key: string | undefined; let editing = false;
+  const replacements: { target: HTMLElement; field: HTMLElement; hidden: boolean }[] = [];
+  function clearForm(): void {
+    for (const { target, field, hidden } of replacements) { target.hidden = hidden; field.remove(); }
+    replacements.length = 0; area.replaceChildren();
+  }
   const panel = el('section', '', 'document-editor'); panel.setAttribute('aria-label', `${options.kind} editing`);
   const controls = el('div', '', 'document-actions'); const message = el('p', '', 'caption'); message.setAttribute('role', 'status');
   const area = el('div'); const history = el('div');
@@ -50,23 +57,31 @@ export function mountDocumentEditor(host: HTMLElement, options: Options, reader:
     finally { busy = false; if (!disposed) edit.disabled = editing; }
   }
   function drawForm(content: Record<string, unknown>): void {
-    area.replaceChildren(); history.replaceChildren();
+    clearForm(); history.replaceChildren();
     const form = el('form'); const fields = new Map<string, HTMLInputElement | HTMLTextAreaElement>();
+    form.id = `document-edit-${crypto.randomUUID()}`;
     if (options.kind === 'agent') form.append(el('p', 'Use a new agent version. Existing runs keep their pinned definition.', 'caption'));
     if (options.kind === 'research') form.append(el('p', 'Edits revise this research document. Original run evidence remains in version history; saving does not run research.', 'caption'));
     if (options.kind === 'sme') form.append(el('p', 'Save a local SME draft. Upstream approval and source definitions remain separate.', 'caption'));
-    for (const [name, value] of Object.entries(content)) {
+    for (const name of new Set([...Object.keys(options.fieldTargets ?? {}), ...Object.keys(content)])) {
+      const value = content[name];
       if (['allowed_tools', 'page_plugin', 'source_commit', 'id'].includes(name)) continue;
       const label = el('label', options.kind === 'sme' && name === 'text' ? 'SME definition' : name.replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()));
-      const field = ['title', 'name', 'version', 'model'].includes(name) ? el('input') : el('textarea');
+      const field = createEditBox(name, label.textContent!, value === null ? '' : String(value));
       field.name = name; field.value = value === null ? '' : String(value); field.required = name !== 'output';
       field.maxLength = name === 'output' ? 200000 : name === 'title' && options.kind === 'research' ? 16000 : ['title','name','purpose','model'].includes(name) ? 1000 : name === 'version' ? 128 : 16000;
       field.setAttribute('aria-label', label.textContent!); field.oninput = () => { dirty = true; key = undefined; };
-      label.append(field); fields.set(name, field); form.append(label);
+      fields.set(name, field);
+      const target = options.fieldTargets?.[name];
+      if (target) {
+        replacements.push({ target, field, hidden: target.hidden }); target.hidden = true;
+        field.setAttribute('form', form.id); target.after(field);
+      } else { label.append(field); form.append(label); }
     }
     const save = el('button', 'Save'); save.type = 'submit';
-    const cancel = button('Cancel', () => { if (busy) return; editing = false; dirty = false; key = undefined; area.replaceChildren(); markEditing(false); edit.disabled = false; status(); edit.focus(); });
-    form.append(save, cancel); area.append(form);
+    const cancel = button('Cancel', () => { if (busy) return; editing = false; dirty = false; key = undefined; clearForm(); markEditing(false); edit.disabled = false; status(); edit.focus(); });
+    const actions = el('div', '', 'edit-box-actions'); actions.append(save, cancel);
+    form.append(actions); area.append(form);
     form.onsubmit = event => {
       event.preventDefault(); if (busy || !current) return;
       const next = { ...content }; for (const [name, field] of fields) next[name] = name === 'output' && content[name] === null && field.value === '' ? null : field.value;
@@ -78,7 +93,7 @@ export function mountDocumentEditor(host: HTMLElement, options: Options, reader:
           const saved = checked(await saver(parsed.data));
           if (saved.version !== parsed.data.base_version + 1) throw new Error('Unexpected saved version.');
           if (disposed) return;
-          current = saved; dirty = false; editing = false; key = undefined; area.replaceChildren(); markEditing(false); edit.disabled = false; status(); edit.focus();
+          current = saved; dirty = false; editing = false; key = undefined; clearForm(); markEditing(false); edit.disabled = false; status(); edit.focus();
           options.onSaved?.(saved);
         } catch { if (!disposed) message.textContent = 'Save could not be confirmed. Your text is retained. Retry unchanged to use the same save key. If another version was saved, copy your text, Cancel, and reopen Edit.'; }
         finally { busy = false; if (!disposed) { save.disabled = false; cancel.disabled = false; fields.forEach(field => { field.disabled = false; }); } }
@@ -102,7 +117,7 @@ export function mountDocumentEditor(host: HTMLElement, options: Options, reader:
     finally { if (!disposed) versions.disabled = false; }
   }
   const guard = (event: MouseEvent) => {
-    if (!dirty || panel.contains(event.target as Node) || controls.contains(event.target as Node)) return;
+    if (!dirty || panel.contains(event.target as Node) || controls.contains(event.target as Node) || replacements.some(({ field }) => field.contains(event.target as Node))) return;
     if (!(event.target as Element).closest('button,a')) return;
     if (busy || !win.confirm('Discard unsaved document changes?')) { event.preventDefault(); event.stopImmediatePropagation(); }
     else dirty = false;
@@ -110,5 +125,5 @@ export function mountDocumentEditor(host: HTMLElement, options: Options, reader:
   const unload = (event: BeforeUnloadEvent) => { if (dirty || busy) { event.preventDefault(); event.returnValue = ''; } };
   doc.addEventListener('click', guard, true); win.addEventListener('beforeunload', unload);
   if (options.eager) void fetchDocument().then(record => { if (!disposed && !editing && !busy && (!current || record.version >= current.version)) { current = record; status(); if (record.version > 0 && options.kind === 'sme') options.onSaved?.(record); } }).catch(() => { if (!disposed) message.textContent = 'Local document unavailable. Refresh to check saved drafts.'; });
-  return () => { disposed = true; markEditing(false); if (options.actionsHost) controls.remove(); doc.removeEventListener('click', guard, true); win.removeEventListener('beforeunload', unload); };
+  return () => { disposed = true; clearForm(); markEditing(false); if (options.actionsHost) controls.remove(); doc.removeEventListener('click', guard, true); win.removeEventListener('beforeunload', unload); };
 }

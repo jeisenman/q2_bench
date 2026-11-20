@@ -13,8 +13,6 @@
 .semantic-workspace .sme-definition.document-editing,.semantic-workspace .lineage-detail:has(.sme-edit-actions button:first-child:is(:hover,:focus-visible)) .sme-definition{border-color:var(--rust);background:color-mix(in srgb,var(--rust) 5%,var(--paper))}
 .semantic-workspace .sme-definition.document-editing .sme-source-text,.semantic-workspace .sme-definition.document-editing .sme-local-draft{display:none}
 .semantic-workspace .sme-definition .document-editor{border-top:0;margin:0;padding:0}
-.semantic-workspace .sme-definition textarea{font:16px/1.7 Georgia,serif;padding:12px;background:var(--paper);color:var(--ink);border:1px solid var(--rust)}
-.semantic-workspace .sme-definition form>button{justify-self:end}
 /* Knowledge navigation is confined to the Semantic Layer mount. */
 .semantic-workspace .semantic-heading{margin-bottom:24px;max-width:none;border-bottom:1px solid var(--ink);padding-bottom:20px}
 .semantic-workspace .semantic-heading h1{font-size:38px;letter-spacing:-1px;margin:0}

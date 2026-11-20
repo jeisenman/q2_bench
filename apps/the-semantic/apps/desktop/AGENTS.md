@@ -68,6 +68,10 @@ Research edits preserve original execution evidence. Agent edits create a new
 immutable version. SME drafts are MLflow documents, separate from upstream
 approved definitions; never label a local edit as upstream approval.
 
+Document fields share `edit-box.ts` and `edit-box.css`. Bind displayed content
+with `fieldTargets` for in-place editing. Keep targets stable until disposal.
+See `../../docs/edit-boxes.md` for the design and behavior standard.
+
 Semantic Layer navigation stays inside `semantic-view.ts`: Lineage, Zendesk,
 Definitions, Repositories, and Research are the five peer knowledge bases.
 Lineage owns the Catalog/Graph switch. `semantic-sections.ts` owns repository

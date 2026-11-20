@@ -97,7 +97,8 @@ async function detail(id: string): Promise<void> {
     meta.append(el('strong', `${r.agent_id} / ${r.agent_version}`), el('span', r.model), el('span', utc(r.created_at)));
     main.append(meta);
     const editorHost = el('div'); main.append(editorHost);
-    const disposeEditor = mountDocumentEditor(editorHost, { kind:'research', id:r.research_id, eager:true, onSaved: () => { void detail(id); } });
+    const fieldTargets: Record<string, HTMLElement> = { title: main.querySelector('h1')! };
+    const disposeEditor = mountDocumentEditor(editorHost, { kind:'research', id:r.research_id, eager:true, fieldTargets, onSaved: () => { void detail(id); } });
     disposePlugin = disposeEditor;
     const steps = el('div', '', 'provenance');
     for (const [i, label] of ['Question', 'Hypothesis', 'Experiment', 'Runs', 'Graphs'].entries()) {
@@ -109,9 +110,12 @@ async function detail(id: string): Promise<void> {
       const section = el('section', '', 'stage'); section.id = `stage-${number}`;
       section.append(el('p', `0${number + 1} / ${title.toUpperCase()}`, 'eyebrow'), el('h2', title), el('p', value, 'pre-line')); body.append(section); return section;
     };
-    stage(0, 'Question', r.question); stage(1, 'Hypothesis', r.hypothesis); stage(2, 'Experiment', r.plan);
+    for (const [index, name, label] of [[0, 'question', 'Question'], [1, 'hypothesis', 'Hypothesis'], [2, 'plan', 'Experiment']] as const) {
+      fieldTargets[name] = stage(index, label, r[name]).querySelector('.pre-line')!;
+    }
     const runs = stage(3, 'Runs', `One accepted attempt · ${r.status}`);
     runs.append(el('h3', 'Retained output'), el('pre', r.output ?? 'No output is retained.', 'output'));
+    fieldTargets.output = runs.querySelector('.output')!;
     if (r.error) runs.append(el('p', r.error, 'error'));
     const graphs = stage(4, 'Graphs', 'Measurements and output from the selected retained attempt.');
     const pluginHost = el('div', '', 'plugin-host'); graphs.append(pluginHost);
@@ -142,7 +146,9 @@ function renderAgents(): void {
       el('h4', 'Model'), el('code', agent.model), el('h4', 'Instructions'), el('p', agent.instructions, 'pre-line'),
       el('h4', 'Tool scope'), el('p', 'No tools · one text-only model call'), el('h4', 'Page plugin'), el('code', agent.page_plugin),
       el('h4', 'Definition digest'), el('code', agent.definition_digest), el('h4', 'MLflow agent run'), el('code', agent.mlflow_run_id));
-    const stopEditor = mountDocumentEditor(section, {kind:'agent', id:agent.mlflow_run_id, onSaved: () => { void load(); }});
+    const fieldTargets: Record<string, HTMLElement> = { name: section.querySelector('h2')!, purpose: section.querySelector('h2 + p')!, instructions: section.querySelector('.pre-line')!, model: section.querySelector('code')! };
+    const version = el('span', agent.version); section.querySelector('.eyebrow')!.replaceChildren(document.createTextNode(`${agent.id} / VERSION `), version); fieldTargets.version = version;
+    const stopEditor = mountDocumentEditor(section, {kind:'agent', id:agent.mlflow_run_id, fieldTargets, onSaved: () => { void load(); }});
     const previous = disposePlugin; disposePlugin = () => { previous(); stopEditor(); };
     list.append(section);
   }

@@ -20,3 +20,8 @@ checks use Edit and Cancel without changing an existing user document.
 Bounds: at most 100 retained versions including the original. One API process
 serializes writes. Cross-service transactions and upstream SME publication are
 outside this feature. Missing storage is an explicit error.
+
+Desktop edit boxes now follow [the shared standard](../docs/edit-boxes.md).
+Proposal, research and agent fields replace their displayed values in place.
+The proposal dialog and local SME form share the same field styling. Cancel,
+confirmed Save and disposal remove temporary fields and restore the read view.

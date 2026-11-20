@@ -2,6 +2,7 @@ import { ProposalInputSchema, ProposalListSchema, ProposalRecordSchema, type Pro
 import { read, saveProposal } from './client.js';
 import { mountDocumentEditor } from './document-editor.js';
 import { el, button, utc } from './dom.js';
+import { createEditBox } from './edit-box.js';
 
 /** Displays and saves drafts without accepting or executing research. */
 export function mountProposals(host: HTMLElement, reader: typeof read = read, saver: typeof saveProposal = saveProposal): () => void {
@@ -34,13 +35,19 @@ export function mountProposals(host: HTMLElement, reader: typeof read = read, sa
     if (!selected) { detail.append(el('h2', 'Select a proposal.'), el('p', 'Open a draft or create one for review.')); return; }
     detail.append(el('p', 'DRAFT · NOT ACCEPTED', 'eyebrow'), el('h2', selected.title), el('p', `Created ${utc(selected.created_at)}`, 'caption'));
     const text = el('div');
-    const drawText = () => { text.replaceChildren(); for (const [label, value] of [['Question', selected!.question], ['Hypothesis', selected!.hypothesis], ['Plan', selected!.plan]]) text.append(el('h3', label), el('p', value, 'pre-line')); };
+    const fieldTargets: Record<string, HTMLElement> = { title: detail.querySelector('h2')! };
+    for (const name of ['question', 'hypothesis', 'plan'] as const) {
+      fieldTargets[name] = el('p', selected[name], 'pre-line');
+      text.append(el('h3', name[0]!.toUpperCase() + name.slice(1)), fieldTargets[name]!);
+    }
+    const drawText = () => { for (const name of ['question', 'hypothesis', 'plan'] as const) fieldTargets[name]!.textContent = selected![name]; };
     const heading = detail.querySelector('h2')!;
-    disposeEditor = mountDocumentEditor(detail, {kind:'proposal', id:selected.proposal_id, eager:true, onSaved: record => {
+    const actionsHost = el('div'); const editorHost = el('div'); detail.append(actionsHost, text, editorHost);
+    disposeEditor = mountDocumentEditor(editorHost, {kind:'proposal', id:selected.proposal_id, eager:true, actionsHost, fieldTargets, onSaved: record => {
       if (!selected) return; Object.assign(selected, record.content); heading.textContent = selected.title; drawText();
       const row = records.find(r => r.proposal_id === selected!.proposal_id); if(row) Object.assign(row, record.content); drawList();
     }});
-    detail.append(text); drawText();
+    drawText();
     detail.append(el('p', `Proposal ID: ${selected.proposal_id}`, 'caption'));
   }
   function form(): void {
@@ -48,7 +55,7 @@ export function mountProposals(host: HTMLElement, reader: typeof read = read, sa
     formElement.append(el('h2', 'New proposal'), el('p', 'All fields are required.'));
     for (const name of ['title', 'question', 'hypothesis', 'plan'] as const) {
       const label = el('label', name[0]!.toUpperCase() + name.slice(1));
-      const input = name === 'title' ? el('input') : el('textarea'); input.name = name; input.required = true; input.maxLength = name === 'title' ? 1000 : 16000;
+      const input = createEditBox(name, label.textContent!, ''); input.required = true; input.maxLength = name === 'title' ? 1000 : 16000;
       input.setAttribute('aria-label', name[0]!.toUpperCase() + name.slice(1)); input.oninput = () => { key = undefined; }; label.append(input); formElement.append(label); fields[name] = input;
     }
     const message = el('p', '', 'error'); message.setAttribute('role', 'status'); const submit = el('button', 'Save draft'); submit.type = 'submit';

@@ -1,5 +1,7 @@
 # The Semantic
 
+Document editors use the shared [in-place edit-box standard](docs/edit-boxes.md).
+
 A local research application with Rust CLI and MCP interfaces, TypeScript
 Electron UI, OpenAI Agents SDK execution, and MLflow evidence storage.
 
