@@ -1,0 +1,50 @@
+{
+  "format": "zendesk-dataset-rollout-summary/1",
+  "date": "2026-11-19",
+  "selected_datasets": 553,
+  "attempted_datasets": 553,
+  "model_edit_passes": 553,
+  "model_retries": 0,
+  "changed": 491,
+  "unchanged": 0,
+  "held": 62,
+  "not_attempted": 0,
+  "static_checks_only": true,
+  "initially_accepted": 455,
+  "initially_held": 98,
+  "artifact_only_validation_corrections_accepted": 36,
+  "additional_model_calls_for_validation": 0,
+  "drafts_with_new_article_urls": 374,
+  "unique_new_article_urls": 76,
+  "held_categories": {
+    "unlinked_text_rewrite": 36,
+    "technical_numeric_removed": 3,
+    "technical_literal_removed": 15,
+    "definition_contract": 6,
+    "source_citation_removed": 2
+  },
+  "prompt": {
+    "version": "2.0.0",
+    "sha256": "6c876bc7a89ae483a6cfead9384fb37de14a60069c8e0852e20171616ae62226"
+  },
+  "caller_policy": {
+    "version": "single-luna-audit-cleanup/1",
+    "sha256": "0b0a9ac8e4ac0d0ab811bdb09955b613bb6d5d0c5c9d3db243a84efcca7acf4f"
+  },
+  "requested_model": "gpt-6-luna",
+  "corpus": {
+    "articles": 396,
+    "chunks": 3404
+  },
+  "frozen_input_manifest_sha256": "d06f76bce87451101a2282578aa0e55cfc9971cc21fbb828731dc35dc0fb84e2",
+  "private_report_sha256": "13e71c23b318f079347230306da1ea41143bf3b8d78adb2e20b844eedb34d4d2",
+  "source_graph_changed": false,
+  "sme_approved": false,
+  "dataset_drafts_public": false,
+  "raw_corpus_public": false,
+  "source_snapshots_public": false,
+  "model_inputs_public": false,
+  "scope_note": "Changed counts include removal of existing audit prose. Held outputs remain unapplied. All drafts require review; this summary is not SME approval or lineage coverage certification.",
+  "draft_runtime_import_performed": false,
+  "accepted_model_unchanged_from_prepared": 77
+}

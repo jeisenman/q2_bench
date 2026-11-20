@@ -27,6 +27,8 @@ EXCLUDED_PARTS = {
     ".venv",
     "build",
     "dist",
+    "node_modules",
+    "target",
     "worktrees",
 }
 

@@ -1,0 +1,13 @@
+/target/
+/node_modules/
+**/node_modules/
+**/dist/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.venv/
+/var/
+.env
+/.codex/config.toml
+*.pyc
+.DS_Store

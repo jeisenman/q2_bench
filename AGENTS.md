@@ -45,6 +45,15 @@ Keep pure domain logic independent from network and provider SDKs.
 Public APIs must be exported deliberately from Go packages and retained Python package __init__.py files.
 Prefer immutable values and dependency injection over global state.
 
+The Semantic app exception
+The user explicitly authorized importing The Semantic into `apps/the-semantic/`.
+This owned app retains its Rust CLI/MCP, TypeScript Electron/runtime, and small
+Python MLflow API with app-local manifests, tests, and instructions. This exception
+is limited to that app; the top-level SDK and MCP production code remain Go.
+Run app checks from its directory with `node scripts/check.mjs`, in addition to
+the repository quality command. Do not import protected Researcher code or share
+provider credentials. Generated app dependencies and build output stay untracked.
+
 Local lineage and Researcher enrichment
 qtwo_bench owns independently reviewed structural lineage manifests under
 `lineage/` and their Go build, version, PR, and backfill checks in
