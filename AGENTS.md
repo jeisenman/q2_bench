@@ -106,6 +106,7 @@ Read docs/README.md, then nearby code and tests before editing.
 Keep changes scoped and preserve backward compatibility unless requested.
 Update tests and documentation with behavior changes.
 Update the agent's AGENTS.md when its architecture, dependencies, or workflow changes.
+For every change within `The Semantic`, provide the user with a UI link to the changed area.
 Run the repository quality command.
 Summarize changed behavior, verification, and remaining risks.
 
